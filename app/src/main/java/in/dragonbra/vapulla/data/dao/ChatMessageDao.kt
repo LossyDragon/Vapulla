@@ -1,8 +1,8 @@
 package `in`.dragonbra.vapulla.data.dao
 
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
-import android.arch.paging.DataSource
-import android.arch.persistence.room.*
+import androidx.paging.DataSource
+import androidx.room.*
 
 @Dao
 interface ChatMessageDao {

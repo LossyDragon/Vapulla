@@ -52,6 +52,8 @@ import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.PersonaStateBuffer
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.VapullaLogger
+import `in`.dragonbra.vapulla.util.info
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -59,24 +61,18 @@ import android.app.Service
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.*
-import android.support.v4.app.NotificationCompat
-import android.support.v4.app.NotificationCompat.MessagingStyle.Message
-import android.support.v4.app.NotificationManagerCompat
-import android.support.v4.app.RemoteInput
-import android.support.v4.app.TaskStackBuilder
 import android.text.format.DateUtils
+import androidx.core.app.*
 import com.bumptech.glide.Glide
-import org.jetbrains.anko.AnkoLogger
-import org.jetbrains.anko.info
-import org.jetbrains.anko.intentFor
 import org.spongycastle.util.encoders.Hex
 import java.io.Closeable
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.math.abs
 
-class SteamService : Service(), AnkoLogger {
+class SteamService : Service(), VapullaLogger {
 
     companion object {
         private const val ONGOING_NOTIFICATION_ID = 100
@@ -108,7 +104,8 @@ class SteamService : Service(), AnkoLogger {
 
     private val subscriptions: MutableSet<Closeable?> = mutableSetOf()
 
-    private val newMessages: MutableMap<SteamID, MutableList<Message>> = mutableMapOf()
+    private val newMessages: MutableMap<SteamID,
+            MutableList<NotificationCompat.MessagingStyle.Message>> = mutableMapOf()
 
     val disconnectedSubs: MutableSet<(DisconnectedCallback) -> Unit> = mutableSetOf()
 
@@ -220,7 +217,7 @@ class SteamService : Service(), AnkoLogger {
 
             when (intent.getStringExtra(EXTRA_ACTION)) {
                 "reply" -> {
-                    val message = intent.getStringExtra(EXTRA_MESSAGE)
+                    val message = intent.getStringExtra(EXTRA_MESSAGE)!!
 
                     runOnBackgroundThread {
                         val emotes = db.emoticonDao().find()
@@ -267,7 +264,7 @@ class SteamService : Service(), AnkoLogger {
     }
 
     private fun setNotification(text: String) {
-        val logOutIntent = intentFor<LogOutReceiver>()
+        val logOutIntent = Intent(this, LogOutReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, logOutIntent, 0)
 
         val builder = NotificationCompat.Builder(this, "vapulla-service")
@@ -275,7 +272,14 @@ class SteamService : Service(), AnkoLogger {
                 .setShowWhen(false)
                 .setContentTitle("Vapulla")
                 .setContentText(text)
-                .setContentIntent(PendingIntent.getActivity(this, 0, intentFor<HomeActivity>(), 0))
+                .setContentIntent(
+                        PendingIntent.getActivity(
+                                this,
+                                0,
+                                Intent(this, HomeActivity::class.java),
+                                0
+                        )
+                )
                 .setSmallIcon(R.drawable.ic_vapulla)
                 .setVibrate(longArrayOf(-1L))
                 .setSound(null)
@@ -325,8 +329,8 @@ class SteamService : Service(), AnkoLogger {
 
         val friend = db.steamFriendDao().find(friendId.convertToUInt64()) ?: return
 
-        val messages: MutableList<Message> = if (!newMessages.containsKey(friendId)) {
-            val list = LinkedList<Message>()
+        val messages: MutableList<NotificationCompat.MessagingStyle.Message> = if (!newMessages.containsKey(friendId)) {
+            val list = LinkedList<NotificationCompat.MessagingStyle.Message>()
             newMessages[friendId] = list
             list
         } else {
@@ -334,12 +338,14 @@ class SteamService : Service(), AnkoLogger {
         }
 
         val currentTs = System.currentTimeMillis()
-        val backoff = !messages.isEmpty() && currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
+        val backoff = messages.isNotEmpty() && currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
-        val newMessage = Message(message, currentTs, friend.name)
+        val steamUser = Person.Builder().setName(friend.name ?: "").build()
+
+        val newMessage = NotificationCompat.MessagingStyle.Message(message, currentTs, steamUser)
         messages.add(newMessage)
 
-        val style = NotificationCompat.MessagingStyle(friend.name ?: "")
+        val style = NotificationCompat.MessagingStyle(steamUser)
 
         messages.forEach {
             style.addMessage(it)
@@ -370,7 +376,9 @@ class SteamService : Service(), AnkoLogger {
                 replyPendingIntent
         ).addRemoteInput(remoteInput).build()
 
-        val intent = intentFor<ChatActivity>(ChatActivity.INTENT_STEAM_ID to friendId.convertToUInt64())
+        val intent = Intent(this, ChatActivity::class.java).apply {
+            putExtra(ChatActivity.INTENT_STEAM_ID, friendId.convertToUInt64())
+        }
         val pendingIntent = TaskStackBuilder.create(this)
                 .addNextIntentWithParentStack(intent)
                 .getPendingIntent(friendId.convertToUInt64().toInt(), PendingIntent.FLAG_UPDATE_CURRENT)
@@ -388,10 +396,10 @@ class SteamService : Service(), AnkoLogger {
 
         notificationManager.notify(friendId.convertToUInt64().toInt(), notification)
 
-        if (isActivityRunning) {
-            // TODO delayed notification remove?
-            //removeNotifications()
-        }
+//        if (isActivityRunning) {
+//            // TODO delayed notification remove?
+//            //removeNotifications()
+//        }
     }
 
     private fun postFriendRequestNotification(state: PersonaState) {
@@ -410,27 +418,27 @@ class SteamService : Service(), AnkoLogger {
         val acceptPendingIntent = PendingIntent.getBroadcast(
                 applicationContext,
                 state.friendID.convertToUInt64().toInt(),
-                intentFor<AcceptRequestReceiver>(
-                        AcceptRequestReceiver.EXTRA_ID to state.friendID.convertToUInt64()
-                ),
+                Intent(this, AcceptRequestReceiver::class.java).apply {
+                    putExtra(AcceptRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
+                },
                 PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val ignorePendingIntent = PendingIntent.getBroadcast(
                 applicationContext,
                 state.friendID.convertToUInt64().toInt(),
-                intentFor<IgnoreRequestReceiver>(
-                        IgnoreRequestReceiver.EXTRA_ID to state.friendID.convertToUInt64()
-                ),
+                Intent(this, IgnoreRequestReceiver::class.java).apply {
+                    putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
+                },
                 PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val blockPendingIntent = PendingIntent.getBroadcast(
                 applicationContext,
                 state.friendID.convertToUInt64().toInt(),
-                intentFor<BlockRequestReceiver>(
-                        IgnoreRequestReceiver.EXTRA_ID to state.friendID.convertToUInt64()
-                ),
+                Intent(this, BlockRequestReceiver::class.java).apply {
+                    putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
+                },
                 PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -442,7 +450,7 @@ class SteamService : Service(), AnkoLogger {
                 .setContentTitle(getString(R.string.notificationTitleFriendRequest))
                 .setAutoCancel(true)
                 .setPriority(Notification.PRIORITY_DEFAULT)
-                .setContentIntent(PendingIntent.getActivity(this, 0, intentFor<HomeActivity>(), 0))
+                .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, HomeActivity::class.java), 0))
                 .addAction(R.drawable.ic_check, getString(R.string.notificationActionAccept), acceptPendingIntent)
                 .addAction(R.drawable.ic_close, getString(R.string.notificationActionIgnore), ignorePendingIntent)
                 .addAction(R.drawable.ic_block, getString(R.string.notificationActionBlock), blockPendingIntent)
@@ -452,7 +460,9 @@ class SteamService : Service(), AnkoLogger {
     }
 
     private fun getMessageReplyIntent(id: Long): Intent =
-            intentFor<ReplyReceiver>(ReplyReceiver.EXTRA_ID to id)
+            Intent(this, ReplyReceiver::class.java).apply {
+                putExtra(ReplyReceiver.EXTRA_ID, id)
+            }
 
     private fun clearMessageNotifications(id: SteamID) {
         newMessages[id]?.clear()
@@ -482,12 +492,12 @@ class SteamService : Service(), AnkoLogger {
         getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
 
         db.chatMessageDao().insert(ChatMessage(
-                emoteMessage,
-                System.currentTimeMillis(),
-                id.convertToUInt64(),
-                true,
-                false,
-                false
+                message = emoteMessage,
+                timestamp = System.currentTimeMillis(),
+                friendId = id.convertToUInt64(),
+                fromLocal = true,
+                unread = false,
+                timestampConfirmed = false
         ))
 
         clearMessageNotifications(id)
@@ -502,7 +512,7 @@ class SteamService : Service(), AnkoLogger {
                         disconnectedSubs.remove(callbackFunc)
                     }
                 }
-                else -> callbackMgr.subscribe(T::class.java, { callbackFunc(it) })
+                else -> callbackMgr.subscribe(T::class.java) { callbackFunc(it) }
             }
 
     private val steamThread: Runnable = Runnable {
@@ -575,7 +585,7 @@ class SteamService : Service(), AnkoLogger {
     }
 
     private val onNewLoginKey: Consumer<LoginKeyCallback> = Consumer {
-        info { "received login key" }
+        info("received login key")
         account.loginKey = it.loginKey
         account.uniqueId = it.uniqueID
 
@@ -583,7 +593,7 @@ class SteamService : Service(), AnkoLogger {
     }
 
     private val onUpdateMachineAuth: Consumer<UpdateMachineAuthCallback> = Consumer {
-        info { "received sentry file called ${it.fileName}" }
+        info("received sentry file called ${it.fileName}")
         account.updateSentryFile(it)
 
         val otp = OTPDetails()
@@ -605,23 +615,23 @@ class SteamService : Service(), AnkoLogger {
     }
 
     private val onPersonaState: Consumer<PersonaStatesCallback> = Consumer {
-        it.personaStates.forEach {
-            if (!it.friendID.isIndividualAccount) {
+        it.personaStates.forEach { state ->
+            if (!state.friendID.isIndividualAccount) {
                 return@forEach
             }
 
-            if (it.friendID == steamClient.steamID) {
-                account.saveLocalUser(it)
+            if (state.friendID == steamClient.steamID) {
+                account.saveLocalUser(state)
                 return@forEach
             }
 
-            info("${it.state} - ${it.name} - ${it.lastLogOff.time} - ${it.lastLogOn.time}")
+            info("${state.state} - ${state.name} - ${state.lastLogOff.time} - ${state.lastLogOn.time}")
 
-            stateBuffer.push(it)
+            stateBuffer.push(state)
 
-            if (requestsToNotify.contains(it.friendID)) {
-                postFriendRequestNotification(it)
-                requestsToNotify.remove(it.friendID)
+            if (requestsToNotify.contains(state.friendID)) {
+                postFriendRequestNotification(state)
+                requestsToNotify.remove(state.friendID)
             }
         }
     }
@@ -633,22 +643,24 @@ class SteamService : Service(), AnkoLogger {
         val friendsToAdd: MutableList<SteamFriend> = LinkedList()
         val friendsToUpdate: MutableList<SteamFriend> = LinkedList()
         val friendsToRemove: MutableList<SteamFriend> = LinkedList()
-        it.friendList.forEach {
-            if (!it.steamID.isIndividualAccount) {
+        it.friendList.forEach { currentFriend ->
+            if (!currentFriend.steamID.isIndividualAccount) {
                 return@forEach
             }
 
-            var friend = dao.find(it.steamID.convertToUInt64())
+            var friend = dao.find(currentFriend.steamID.convertToUInt64())
 
             if (friend == null) {
-                if (it.relationship == EFriendRelationship.Friend || it.relationship == EFriendRelationship.RequestRecipient) {
-                    friend = SteamFriend(it.steamID.convertToUInt64())
-                    friend.relation = it.relationship.code()
+                if (currentFriend.relationship == EFriendRelationship.Friend ||
+                        currentFriend.relationship == EFriendRelationship.RequestRecipient) {
+                    friend = SteamFriend(currentFriend.steamID.convertToUInt64())
+                    friend.relation = currentFriend.relationship.code()
                     friendsToAdd.add(friend)
                 }
             } else {
-                if (it.relationship == EFriendRelationship.Friend || it.relationship == EFriendRelationship.RequestRecipient) {
-                    friend.relation = it.relationship.code()
+                if (currentFriend.relationship == EFriendRelationship.Friend ||
+                        currentFriend.relationship == EFriendRelationship.RequestRecipient) {
+                    friend.relation = currentFriend.relationship.code()
                     friendsToUpdate.add(friend)
                 } else {
                     friendsToRemove.add(friend)
@@ -656,7 +668,7 @@ class SteamService : Service(), AnkoLogger {
             }
 
             if (inc && friend!!.relation == EFriendRelationship.RequestRecipient.code()) {
-                requestsToNotify.add(it.steamID)
+                requestsToNotify.add(currentFriend.steamID)
             }
         }
 
@@ -678,7 +690,7 @@ class SteamService : Service(), AnkoLogger {
 
             val unconfirmedMessages = db.chatMessageDao().find(it.message, friendId, fromLocal, false)
                     .sortedWith(kotlin.Comparator { o1, o2 ->
-                        (Math.abs(timestamp - o1.timestamp) - Math.abs(timestamp - o2.timestamp)).toInt()
+                        (abs(timestamp - o1.timestamp) - abs(timestamp - o2.timestamp)).toInt()
                     })
 
             if (unconfirmedMessages.isNotEmpty()) {
@@ -688,12 +700,12 @@ class SteamService : Service(), AnkoLogger {
                 db.chatMessageDao().update(unconfirmedMessages[0])
             } else {
                 db.chatMessageDao().insert(ChatMessage(
-                        it.message,
-                        timestamp,
-                        friendId,
-                        fromLocal,
-                        it.isUnread,
-                        true
+                        message = it.message,
+                        timestamp = timestamp,
+                        friendId = friendId,
+                        fromLocal = fromLocal,
+                        unread = it.isUnread,
+                        timestampConfirmed = true
                 ))
             }
         }
@@ -731,11 +743,11 @@ class SteamService : Service(), AnkoLogger {
     private val onNicknameList: Consumer<NicknameListCallback> = Consumer {
         db.steamFriendDao().clearNicknames()
 
-        it.nicknames.forEach {
-            val friend = db.steamFriendDao().find(it.steamID.convertToUInt64())
+        it.nicknames.forEach { playerName ->
+            val friend = db.steamFriendDao().find(playerName.steamID.convertToUInt64())
 
             if (friend != null) {
-                friend.nickname = it.nickname
+                friend.nickname = playerName.nickname
                 db.steamFriendDao().update(friend)
             }
         }
@@ -748,7 +760,9 @@ class SteamService : Service(), AnkoLogger {
     }
 
     private val onEmoticonList: Consumer<EmoticonListCallback> = Consumer {
-        val emoticons = it.emoticons.map { Emoticon(it.name.substring(1, it.name.length - 1)) }.toTypedArray()
+        val emoticons = it.emoticons.map { emoticon ->
+            Emoticon(emoticon.name.substring(1, emoticon.name.length - 1))
+        }.toTypedArray()
 
         db.emoticonDao().delete()
         db.emoticonDao().insert(*emoticons)
@@ -758,12 +772,12 @@ class SteamService : Service(), AnkoLogger {
         lastEcho = System.currentTimeMillis()
 
         db.chatMessageDao().insert(ChatMessage(
-                it.message,
-                System.currentTimeMillis(),
-                it.sender.convertToUInt64(),
-                true,
-                false,
-                false
+                message = it.message,
+                timestamp = System.currentTimeMillis(),
+                friendId = it.sender.convertToUInt64(),
+                fromLocal = true,
+                unread = false,
+                timestampConfirmed = false
         ))
         db.chatMessageDao().markRead(it.sender.convertToUInt64())
 

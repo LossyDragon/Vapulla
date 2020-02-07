@@ -1,6 +1,6 @@
 package `in`.dragonbra.vapulla.data.entity
 
-import android.arch.persistence.room.*
+import androidx.room.*
 import java.text.DateFormat
 import java.util.*
 

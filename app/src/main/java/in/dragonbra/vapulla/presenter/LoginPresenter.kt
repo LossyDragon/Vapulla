@@ -10,13 +10,13 @@ import `in`.dragonbra.vapulla.extension.getErrorMessage
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.util.info
+import `in`.dragonbra.vapulla.util.warn
 import `in`.dragonbra.vapulla.view.LoginView
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.IBinder
-import org.jetbrains.anko.info
-import org.jetbrains.anko.startService
-import org.jetbrains.anko.warn
 
 class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
@@ -39,16 +39,16 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         info("Bound to Steam service")
 
-        subscribe(steamService?.subscribe<LoggedOnCallback>({ onLoggedOn(it) }))
+        subscribe(steamService?.subscribe<LoggedOnCallback> { onLoggedOn(it) })
 
         if (account.hasLoginKey()) {
             ifViewAttached {
-                it.startLoading({
+                it.startLoading {
                     logOnDetails.username = account.username
                     logOnDetails.password = null
                     logOnDetails.loginKey = account.loginKey
                     startSteamService()
-                })
+                }
             }
         } else {
             if (!expectSteamGuard) {
@@ -91,7 +91,7 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
                     it.showSteamGuard(is2Fa)
                 }
             } else {
-                warn { "Failed to log in ${callback.result} / ${callback.extendedResult}" }
+                warn ("Failed to log in ${callback.result} / ${callback.extendedResult}")
                 expectSteamGuard = false
 
                 val errorMessage = context.getErrorMessage(callback.result, callback.extendedResult)
@@ -136,7 +136,7 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
     private fun startSteamService() {
         info("Starting steam service...")
-        context.startService<SteamService>()
+        context.startService(Intent(context, SteamService::class.java))
 
         if (steamService?.isRunning != true) {
             steamService?.connect()

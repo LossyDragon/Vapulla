@@ -20,31 +20,30 @@ import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.ChatAdapterDataObserver
 import `in`.dragonbra.vapulla.view.ChatView
-import android.arch.paging.PagedList
+import android.annotation.SuppressLint
 import android.content.ClipboardManager
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.support.design.widget.Snackbar
-import android.support.v4.app.NavUtils
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.PopupMenu
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.app.NavUtils
+import androidx.core.content.ContextCompat
+import androidx.paging.PagedList
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_chat.*
 import kotlinx.android.synthetic.main.dialog_nickname.view.*
-import org.jetbrains.anko.browse
-import org.jetbrains.anko.startActivity
-import org.jetbrains.anko.textColor
 import javax.inject.Inject
 
 
@@ -106,7 +105,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         emoteLayoutManager.flexDirection = FlexDirection.ROW
         emoteLayoutManager.justifyContent = JustifyContent.CENTER
 
-        emoteList.layoutManager = emoteLayoutManager;
+        emoteList.layoutManager = emoteLayoutManager
         emoteList.adapter = emoteAdapter
 
         messageBox.addTextChangedListener(this)
@@ -162,11 +161,11 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             if ((friend.lastMessageTime == null || friend.typingTs > friend.lastMessageTime!!)
                     && friend.typingTs > System.currentTimeMillis() - 20000L) {
                 friendStatus.text = getString(R.string.statusTyping)
-                friendStatus.textColor = ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
+                friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, R.color.colorAccent))
                 friendStatus.bold()
             } else {
                 friendStatus.text = Utils.getStatusText(this@ChatActivity, state, friend.gameAppId, friend.gameName, friend.lastLogOff)
-                friendStatus.textColor = ContextCompat.getColor(this@ChatActivity, android.R.color.secondary_text_dark)
+                friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, android.R.color.secondary_text_dark))
                 friendStatus.normal()
             }
 
@@ -227,7 +226,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
         builder.setMessage(getString(R.string.dialogMessageRemoveFriend, name))
                 .setTitle(getString(R.string.dialogTitleRemoveFriend, name))
-                .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmRemoveFriend() })
+                .setPositiveButton(R.string.dialogYes) { _, _ -> presenter.confirmRemoveFriend() }
                 .setNegativeButton(R.string.dialogNo, null)
 
         builder.create().show()
@@ -238,12 +237,13 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
         builder.setMessage(getString(R.string.dialogMessageBlockFriend, name))
                 .setTitle(getString(R.string.dialogTitleBlockFriend, name))
-                .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmBlockFriend() })
+                .setPositiveButton(R.string.dialogYes) { _, _ -> presenter.confirmBlockFriend() }
                 .setNegativeButton(R.string.dialogNo, null)
 
         builder.create().show()
     }
 
+    @SuppressLint("InflateParams")
     override fun showNicknameDialog(nickname: String) {
         val v = LayoutInflater.from(this).inflate(R.layout.dialog_nickname, null)
         v.nickname.setText(nickname)
@@ -251,14 +251,16 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         val builder = AlertDialog.Builder(this)
                 .setTitle(R.string.dialogTitleNickname)
                 .setView(v)
-                .setPositiveButton(R.string.dialogSet, { _, _ -> presenter.setNickname(v.nickname.text.toString()) })
+                .setPositiveButton(R.string.dialogSet) { _, _ -> presenter.setNickname(v.nickname.text.toString()) }
                 .setNegativeButton(R.string.dialogCancel, null)
 
         builder.create().show()
     }
 
     override fun browseUrl(url: String) {
-        browse(url)
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(url)
+        startActivity(intent)
     }
 
     override fun showAliases(names: List<String>) {
@@ -286,7 +288,9 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
         builder.setMessage(R.string.dialogMessageImgur)
                 .setTitle(R.string.dialogTitleImgur)
-                .setPositiveButton(R.string.dialogYes, { _, _ -> startActivity<SettingsActivity>() })
+                .setPositiveButton(R.string.dialogYes) { _, _ ->
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                }
                 .setNegativeButton(R.string.dialogCancel, null)
 
         builder.create().show()
@@ -300,9 +304,10 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_GET && resultCode == RESULT_OK) {
-            presenter.sendImage(data.data)
+            presenter.sendImage(data?.data!!)
         }
     }
 

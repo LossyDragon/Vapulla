@@ -4,12 +4,12 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion "27.0.3"
+    compileSdkVersion 29
+    buildToolsVersion '29.0.2'
     defaultConfig {
         applicationId "in.dragonbra.vapulla"
         minSdkVersion 21
-        targetSdkVersion 27
+        targetSdkVersion 29
         versionCode 3
         versionName "0.2.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -36,40 +36,54 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "android.arch.lifecycle:livedata:1.1.1"
-    implementation "android.arch.paging:runtime:1.0.0-alpha7"
-    implementation "android.arch.persistence.room:runtime:$room_version"
-    kapt "android.arch.persistence.room:compiler:$room_version"
-    implementation "com.android.support:support-annotations:$android_support_version"
-    implementation "com.android.support:appcompat-v7:$android_support_version"
-    implementation "com.android.support:design:$android_support_version"
-    implementation "com.android.support:recyclerview-v7:$android_support_version"
-    implementation "com.android.support:support-v4:$android_support_version"
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0-beta6'
-    implementation 'com.brandongogetap:stickyheaders:0.5.0'
+    implementation "androidx.lifecycle:lifecycle-livedata:2.2.0"
+    implementation "androidx.paging:paging-runtime:2.1.1"
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.annotation:annotation:1.1.0"
+    implementation "androidx.appcompat:appcompat:1.1.0"
+    implementation "com.google.android.material:material:1.2.0-alpha04"
+    implementation "androidx.recyclerview:recyclerview:1.2.0-alpha01"
+    implementation 'com.android.support.constraint:constraint-layout:2.0.0-beta4'
+    implementation "androidx.core:core-ktx:1.1.0"
+    implementation 'com.brandongogetap:stickyheaders:0.6.1'
     implementation "com.github.bumptech.glide:glide:$glide_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
     implementation "com.google.dagger:dagger:$dagger_version"
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
-    implementation 'com.google.android:flexbox:0.3.2'
-    implementation 'com.google.firebase:firebase-core:12.0.1'
-    implementation 'com.google.firebase:firebase-crash:12.0.1'
-    implementation 'com.hannesdorfmann.mosby3:mvp:3.1.0'
+    implementation 'com.google.android:flexbox:2.0.1'
+    implementation 'com.google.firebase:firebase-analytics:17.2.2'
+    implementation 'com.google.firebase:firebase-crashlytics:17.0.0-beta01'
+    implementation 'com.hannesdorfmann.mosby3:mvp:3.1.1'
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
-    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.3.1'
     implementation "com.squareup.retrofit2:retrofit:$retrofit_verson"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit_verson"
-    implementation 'in.dragonbra:javasteam:1.0.0-SNAPSHOT'
-    implementation "org.jetbrains.anko:anko:$anko_version"
+    //implementation('in.dragonbra:javasteam:1.0.0-SNAPSHOT') { changing = true }
+    implementation files('libs/javasteam-1.0.0-SNAPSHOT.jar')
+    implementation "androidx.preference:preference:$androidx_preference"
+    implementation "androidx.preference:preference-ktx:$androidx_preference"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    testImplementation 'junit:junit:4.13'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+    // Fixme
+    // Might be self generated javasteam-1.0.0-SNAPSHOT.jar
+    // Need this to talk to protobufs (i.e. ...Builder)
+    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.11.1'
+    // Need this to fix: Failed resolution of: Lorg/apache/commons/lang3/SystemUtils;
+    api group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
 }
 
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'

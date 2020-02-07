@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.util.recyclerview
 
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import android.content.Context
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 
 class FriendsComparator(context: Context, private val updateTime: Long) : Comparator<FriendListItem> {
 
@@ -11,7 +11,7 @@ class FriendsComparator(context: Context, private val updateTime: Long) : Compar
     init {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
-        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000").toLong()
+        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
     }
 
     override fun compare(o1: FriendListItem, o2: FriendListItem): Int {
@@ -19,14 +19,19 @@ class FriendsComparator(context: Context, private val updateTime: Long) : Compar
             return o1.relation - o2.relation
         }
 
-        val (isRecent1, isRecent2) = if (recentsTimeout > 0) {
-            Pair(o1.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true,
-                    o2.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true)
-        } else if (recentsTimeout == 0L) {
-            Pair(o1.lastMessageTime != null, o2.lastMessageTime != null)
-        } else {
-            Pair(false, false)
-        }
+        val (isRecent1, isRecent2) =
+                when {
+                    recentsTimeout > 0 -> {
+                        Pair(o1.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true,
+                                o2.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true)
+                    }
+                    recentsTimeout == 0L -> {
+                        Pair(o1.lastMessageTime != null, o2.lastMessageTime != null)
+                    }
+                    else -> {
+                        Pair(first = false, second = false)
+                    }
+                }
 
         if (isRecent1 && isRecent2) {
             return (o2.lastMessageTime!! - o1.lastMessageTime!!).toInt()

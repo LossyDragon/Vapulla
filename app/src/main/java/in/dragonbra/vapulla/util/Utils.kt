@@ -5,11 +5,12 @@ import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.R
 import android.app.Activity
 import android.content.Context
-import android.support.v4.content.ContextCompat
+import android.os.Build
 import android.text.format.DateUtils
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat
 import com.bumptech.glide.request.RequestOptions
 import java.util.regex.Pattern
 
@@ -18,12 +19,21 @@ object Utils {
     val avatarOptions = RequestOptions()
             .transform(CircleTransform())
 
-    val EMOTE_PATTERN = Pattern.compile(":([a-zA-Z0-9]+):")
+    private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
 
-    fun getAvatarUrl(avatar: String?) = if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == "0000000000000000000000000000000000000000") {
-        "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
+    private const val DEFAULT_AVATAR = "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    private const val AVATAR_URL = "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/"
+    const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
+    const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
+
+    fun isAtLeastN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
+
+    fun getAvatarUrl(avatar: String?) =
+            if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == ALL_ZEROS) {
+                DEFAULT_AVATAR
     } else {
-        "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/${avatar.substring(0, 2)}/${avatar}_full.jpg"
+        "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
     }
 
     fun getStatusColor(context: Context, state: EPersonaState?, gameAppId: Int, gameName: String?) =
@@ -52,7 +62,7 @@ object Utils {
                             DateUtils.getRelativeTimeSpanString(lastLogOff, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS))
                 }
             } else {
-                context.getString(R.string.statusPlaying, if (gameName == null) "" else gameName)
+                context.getString(R.string.statusPlaying, gameName ?: "")
             }
 
     fun hideKeyboardFrom(context: Context, view: View) {
@@ -74,14 +84,14 @@ object Utils {
 
             val emote = result.group(1)
 
-            if (emoteSet.contains(emote)) {
+            return if (emoteSet.contains(emote)) {
                 val builder = StringBuilder(message)
                 builder.setCharAt(result.start(), '\u02D0')
                 builder.setCharAt(result.end() - 1, '\u02D0')
 
-                return findEmotes(builder.toString(), emoteSet)
+                findEmotes(builder.toString(), emoteSet)
             } else {
-                return message.substring(0, result.end() - 1) + findEmotes(message.substring(result.end() - 1), emoteSet)
+                message.substring(0, result.end() - 1) + findEmotes(message.substring(result.end() - 1), emoteSet)
             }
         } else {
             return message

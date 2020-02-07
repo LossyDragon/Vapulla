@@ -1,12 +1,14 @@
 package `in`.dragonbra.vapulla.data.entity
 
-import android.arch.persistence.room.ColumnInfo
-import android.arch.persistence.room.Entity
-import android.arch.persistence.room.Ignore
-import android.arch.persistence.room.PrimaryKey
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 
 @Entity(tableName = "steam_friend")
-data class SteamFriend (
+data class
+
+SteamFriend (
         @PrimaryKey var id: Long,
         @ColumnInfo(name = "name") var name: String?,
         @ColumnInfo(name = "avatar") var avatar: String?,

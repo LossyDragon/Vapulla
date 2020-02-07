@@ -1,8 +1,8 @@
 package `in`.dragonbra.vapulla.anim
 
-import android.support.transition.ChangeBounds
-import android.support.transition.Fade
-import android.support.transition.TransitionSet
+import androidx.transition.ChangeBounds
+import androidx.transition.Fade
+import androidx.transition.TransitionSet
 
 class AutoParallelTransition : TransitionSet() {
     init {

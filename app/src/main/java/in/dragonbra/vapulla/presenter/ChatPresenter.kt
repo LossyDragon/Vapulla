@@ -19,11 +19,8 @@ import `in`.dragonbra.vapulla.retrofit.ImageRequestBody
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.view.ChatView
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.Observer
-import android.arch.paging.LivePagedListBuilder
-import android.arch.paging.PagedList
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
@@ -32,7 +29,10 @@ import android.os.Handler
 import android.os.IBinder
 import android.provider.MediaStore
 import android.text.format.DateUtils
-import org.jetbrains.anko.info
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import androidx.paging.LivePagedListBuilder
+import androidx.paging.PagedList
 import java.io.ByteArrayOutputStream
 
 class ChatPresenter(context: Context,
@@ -158,7 +158,7 @@ class ChatPresenter(context: Context,
         updateHandler.postDelayed({ updateFriend() }, UPDATE_INTERVAL)
     }
 
-    fun getMessageHistory() {
+    private fun getMessageHistory() {
         runOnBackgroundThread {
             steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
         }
@@ -170,13 +170,13 @@ class ChatPresenter(context: Context,
         }
     }
 
-    fun onAliasHistory(callback: AliasHistoryCallback) {
+    private fun onAliasHistory(callback: AliasHistoryCallback) {
         if (aliasJobId == callback.jobID) {
-            ifViewAttached {
+            ifViewAttached { chatView ->
                 val list = callback.responses[0].names.toMutableList()
                 list.sortByDescending { it.nameSince }
                 val names = list.map { it.name }
-                it.showAliases(names)
+                chatView.showAliases(names)
             }
         }
     }
@@ -273,9 +273,9 @@ class ChatPresenter(context: Context,
             val baos = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
             bitmap.recycle()
-            val body = ImageRequestBody(baos.toByteArray(), { total, progress ->
+            val body = ImageRequestBody(baos.toByteArray()) { total, progress ->
                 ifViewAttached { it.imageUploadProgress(total, progress) }
-            })
+            }
 
             val call = imgurAuthService.postImage(body)
 

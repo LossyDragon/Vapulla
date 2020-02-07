@@ -1,8 +1,9 @@
 package `in`.dragonbra.vapulla.util.recyclerview
 
 import `in`.dragonbra.vapulla.adapter.ChatAdapter
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+
 
 class ChatAdapterDataObserver(private val adapter: ChatAdapter, private val layoutManager: LinearLayoutManager,
                               private val recyclerView: RecyclerView) : RecyclerView.AdapterDataObserver() {

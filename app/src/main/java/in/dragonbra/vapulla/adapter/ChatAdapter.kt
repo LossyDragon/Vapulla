@@ -6,16 +6,16 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.extension.hide
 import `in`.dragonbra.vapulla.extension.longClick
 import `in`.dragonbra.vapulla.extension.show
-import android.arch.paging.PagedListAdapter
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.support.v7.util.DiffUtil
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.paging.PagedListAdapter
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.list_chat_sent.view.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,14 +28,14 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
         const val VIEW_TYPE_RECEIVED = 0
         const val VIEW_TYPE_SENT = 1
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ChatMessage>() {
-            override fun areItemsTheSame(oldItem: ChatMessage?, newItem: ChatMessage?): Boolean {
-                return oldItem?.message == newItem?.message &&
-                        oldItem?.timestamp == newItem?.timestamp &&
-                        oldItem?.fromLocal == newItem?.fromLocal &&
-                        oldItem?.friendId == newItem?.friendId
+            override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
+                return oldItem.message == newItem.message &&
+                        oldItem.timestamp == newItem.timestamp &&
+                        oldItem.fromLocal == newItem.fromLocal &&
+                        oldItem.friendId == newItem.friendId
             }
 
-            override fun areContentsTheSame(oldItem: ChatMessage?, newItem: ChatMessage?): Boolean {
+            override fun areContentsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
                 return oldItem == newItem
             }
         }
@@ -64,10 +64,10 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
 
     override fun getItemViewType(position: Int): Int {
         val message = getItem(position)
-        if (message == null || !message.fromLocal) {
-            return VIEW_TYPE_RECEIVED
+        return if (message == null || !message.fromLocal) {
+            VIEW_TYPE_RECEIVED
         } else {
-            return VIEW_TYPE_SENT
+            VIEW_TYPE_SENT
         }
     }
 
@@ -82,7 +82,7 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
 
             v.chatLayout.longClick {
                 val clip = ClipData.newPlainText("steam message", v.message.text)
-                clipboard.primaryClip = clip
+                clipboard.setPrimaryClip(clip)
 
                 Toast.makeText(context, R.string.toastClipboard, Toast.LENGTH_SHORT).show()
                 true

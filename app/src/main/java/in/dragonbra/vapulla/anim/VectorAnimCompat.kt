@@ -1,17 +1,17 @@
 package `in`.dragonbra.vapulla.anim
 
+import `in`.dragonbra.vapulla.util.Utils.isAtLeastN
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Animatable2
 import android.graphics.drawable.AnimatedVectorDrawable
 import android.graphics.drawable.Drawable
-import android.os.Build
-import android.support.graphics.drawable.Animatable2Compat
-import android.support.graphics.drawable.AnimatedVectorDrawableCompat
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat
+import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 
 object VectorAnimCompat {
 
     fun registerAnimationCallback(drawable: Animatable, callback: Animatable2Compat.AnimationCallback) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+        if (isAtLeastN()) {
             val d = drawable as? AnimatedVectorDrawableCompat
             d?.registerAnimationCallback(callback)
         } else {
@@ -29,7 +29,7 @@ object VectorAnimCompat {
     }
 
     fun clearAnimationCallbacks(drawable: Animatable) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+        if (isAtLeastN()) {
             (drawable as? AnimatedVectorDrawableCompat)?.clearAnimationCallbacks()
         } else {
             (drawable as? AnimatedVectorDrawable)?.clearAnimationCallbacks()

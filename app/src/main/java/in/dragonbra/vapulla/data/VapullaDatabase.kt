@@ -8,8 +8,8 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.data.entity.GameSchema
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import android.arch.persistence.room.Database
-import android.arch.persistence.room.RoomDatabase
+import androidx.room.Database
+import androidx.room.RoomDatabase
 
 @Database(entities = [SteamFriend::class, ChatMessage::class, GameSchema::class, Emoticon::class],
         version = 1, exportSchema = true)

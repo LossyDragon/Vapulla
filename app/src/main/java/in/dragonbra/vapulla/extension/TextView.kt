@@ -17,7 +17,7 @@ fun TextView.normal() {
 
 fun TextView.maxLineWidth(): Float {
     var res = 0.0f
-    for (i in 0..(this.lineCount - 1)) {
+    for (i in 0 until this.lineCount) {
         val width = this.layout.getLineWidth(i)
         if (res < width) {
             res = width

@@ -12,25 +12,22 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
-import android.content.ComponentName
-import android.content.Context
-import android.content.ServiceConnection
-import android.content.SharedPreferences
+import android.annotation.SuppressLint
+import android.content.*
+import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
-import android.preference.ListPreference
 import android.preference.Preference
-import android.preference.PreferenceActivity
-import android.preference.PreferenceManager
-import android.support.design.widget.Snackbar
-import android.support.v4.app.NavUtils
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.Toolbar
+import androidx.core.app.NavUtils
+import androidx.preference.ListPreference
+import androidx.preference.PreferenceManager
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.dialog_nickname.view.*
-import org.jetbrains.anko.*
 import java.io.Closeable
 import java.util.*
 import javax.inject.Inject
@@ -69,7 +66,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             val binder = service as SteamService.SteamBinder
             steamService = binder.getService()
-            subs.add(steamService.subscribe<DisconnectedCallback>({ onDisconnected() }))
+            subs.add(steamService.subscribe<DisconnectedCallback> { onDisconnected() })
         }
     }
 
@@ -79,12 +76,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
-        val v = find<ViewGroup>(android.R.id.list).parent.parent.parent as ViewGroup
+        val v = findViewById<ViewGroup>(android.R.id.list).parent.parent.parent as ViewGroup
         val toolbar = layoutInflater.inflate(R.layout.toolbar, v, false) as Toolbar?
 
         v.addView(toolbar, 0)
 
-        setSupportActionBar(find(R.id.toolbar))
+        setSupportActionBar(findViewById(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         setupPreferences()
@@ -105,7 +102,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
     override fun onStart() {
         super.onStart()
-        bindService(intentFor<SteamService>(), connection, Context.BIND_AUTO_CREATE)
+        bindService(Intent(this, SteamService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
@@ -125,6 +122,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         return super.onMenuItemSelected(featureId, item)
     }
 
+    @SuppressLint("InflateParams")
     @Suppress("DEPRECATION")
     private fun setupPreferences() {
         addPreferencesFromResource(R.xml.pref_general)
@@ -150,12 +148,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
             builder.setMessage(getString(R.string.dialogMessageChangeUser))
                     .setTitle(getString(R.string.dialogTitleChangeUser))
-                    .setPositiveButton(R.string.dialogYes, { _, _ ->
+                    .setPositiveButton(R.string.dialogYes) { _, _ ->
                         runOnBackgroundThread {
                             runOnBackgroundThread { steamService.disconnect() }
                             clearData()
                         }
-                    })
+                    }
                     .setNegativeButton(R.string.dialogNo, null)
 
             builder.create().show()
@@ -171,7 +169,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             val builder = AlertDialog.Builder(this)
                     .setTitle(R.string.dialogTitleNickname)
                     .setView(v)
-                    .setPositiveButton(R.string.dialogSet, { _, _ ->
+                    .setPositiveButton(R.string.dialogSet) { _, _ ->
                         val name = v.nickname.text.toString()
                         if (Strings.isNullOrEmpty(name)) {
                             return@setPositiveButton
@@ -180,7 +178,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
                             steamService.getHandler<SteamFriends>()?.setPersonaName(name)
                         }
                         changeProfileName.summary = name
-                    })
+                    }
                     .setNegativeButton(R.string.dialogCancel, null)
 
             builder.create().show()
@@ -191,10 +189,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
         findPreference("pref_version").summary = BuildConfig.VERSION_NAME
 
+        //TODO
         findPreference("pref_rate_app").click {
-            if (!browse("market://details?id=$packageName")) {
-                browse("https://play.google.com/store/apps/details?id=$packageName")
-            }
+            browse("market://details?id=$packageName")
+            //if (!browse("market://details?id=$packageName")) {
+            //    browse("https://play.google.com/store/apps/details?id=$packageName")
+            //}
             true
         }
 
@@ -226,7 +226,9 @@ class SettingsActivity : AppCompatPreferenceActivity() {
     }
 
     fun onDisconnected() {
-        startActivity(intentFor<LoginActivity>().newTask().clearTask())
+        val loginIntent = Intent(this, LoginActivity::class.java)
+        loginIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(loginIntent)
     }
 
     private fun updateImgurPref() {
@@ -246,6 +248,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
             findPreference("pref_imgur").setOnPreferenceClickListener {
                 browse(imgurAuthService.getAuthUrl())
+                true
             }
         }
     }
@@ -262,13 +265,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             if (preference is ListPreference) {
                 // For list preferences, look up the correct display value in
                 // the preference's 'entries' list.
-                val listPreference = preference
-                val index = listPreference.findIndexOfValue(stringValue)
+                val index = preference.findIndexOfValue(stringValue)
 
                 // Set the summary to reflect the new value.
                 preference.setSummary(
                         if (index >= 0)
-                            listPreference.entries[index]
+                            preference.entries[index]
                         else
                             null)
 
@@ -322,5 +324,11 @@ class SettingsActivity : AppCompatPreferenceActivity() {
                             .getDefaultSharedPreferences(preference.context)
                             .getString(preference.key, ""))
         }
+    }
+
+    private fun browse(url: String) {
+        startActivity(Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse(url)
+        })
     }
 }

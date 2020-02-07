@@ -15,12 +15,6 @@ import `in`.dragonbra.vapulla.view.HomeView
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.support.constraint.ConstraintSet
-import android.support.transition.ChangeBounds
-import android.support.transition.Transition
-import android.support.transition.TransitionManager
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.PopupMenu
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.format.DateUtils
@@ -28,12 +22,17 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.AnticipateOvershootInterpolator
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.PopupMenu
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.transition.ChangeBounds
+import androidx.transition.Transition
+import androidx.transition.TransitionManager
 import com.brandongogetap.stickyheaders.StickyLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import kotlinx.android.synthetic.main.activity_home.*
 import kotlinx.android.synthetic.main.home_toolbar.*
-import org.jetbrains.anko.startActivity
 import javax.inject.Inject
 
 class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, PopupMenu.OnMenuItemClickListener, FriendListAdapter.OnItemSelectedListener {
@@ -78,7 +77,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
         closeSearchButton.click(this::closeSearch)
 
         searchInput.isEnabled = false
-        searchInput.addTextChangedListener(object: TextWatcher{
+        searchInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
                 presenter.search(s.toString())
             }
@@ -119,7 +118,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
             true
         }
         R.id.settings -> {
-            startActivity<SettingsActivity>()
+            startActivity(Intent(this, SettingsActivity::class.java))
             true
         }
         else -> false
@@ -153,7 +152,9 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
     }
 
     override fun onItemSelected(friend: FriendListItem) {
-        startActivity<ChatActivity>(ChatActivity.INTENT_STEAM_ID to friend.id)
+        startActivity(Intent(this, ChatActivity::class.java).also {
+            it.putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
+        })
     }
 
     override fun onRequestAccept(friend: FriendListItem) {
@@ -174,7 +175,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
 
         builder.setMessage(getString(R.string.dialogMessageBlockFriend, name))
                 .setTitle(getString(R.string.dialogTitleBlockFriend, name))
-                .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmBlockFriend(friend) })
+                .setPositiveButton(R.string.dialogYes) { _, _ -> presenter.confirmBlockFriend(friend) }
                 .setNegativeButton(R.string.dialogNo, null)
 
         builder.create().show()
@@ -195,7 +196,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
     private fun openStatusMenu(v: View) {
         val popup = PopupMenu(this, v)
         popup.menuInflater.inflate(R.menu.menu_status, popup.menu)
-        popup.setOnMenuItemClickListener({
+        popup.setOnMenuItemClickListener {
             val status = when (it.itemId) {
                 R.id.online -> EPersonaState.Online
                 R.id.away -> EPersonaState.Away
@@ -206,7 +207,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
             }
             presenter.changeStatus(status)
             true
-        })
+        }
         popup.show()
     }
 
@@ -231,12 +232,16 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
                 searchInput.isEnabled = false
                 Utils.hideKeyboardFrom(this@HomeActivity, v)
             }
+
             override fun onTransitionResume(transition: Transition) {
             }
+
             override fun onTransitionPause(transition: Transition) {
             }
+
             override fun onTransitionCancel(transition: Transition) {
             }
+
             override fun onTransitionStart(transition: Transition) {
             }
         })

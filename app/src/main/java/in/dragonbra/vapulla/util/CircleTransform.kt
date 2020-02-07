@@ -5,7 +5,7 @@ import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import java.security.MessageDigest
 
-class CircleTransform() : BitmapTransformation() {
+class CircleTransform : BitmapTransformation() {
 
     override fun transform(pool: BitmapPool, toTransform: Bitmap, outWidth: Int, outHeight: Int): Bitmap? {
         return circleCrop(pool, toTransform)
@@ -14,7 +14,7 @@ class CircleTransform() : BitmapTransformation() {
     private fun circleCrop(pool: BitmapPool, source: Bitmap?): Bitmap? {
         if (source == null) return null
 
-        val size = Math.min(source.width, source.height)
+        val size = source.width.coerceAtMost(source.height)
         val x = (source.width - size) / 2
         val y = (source.height - size) / 2
 

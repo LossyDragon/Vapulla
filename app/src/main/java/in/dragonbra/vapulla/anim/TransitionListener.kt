@@ -1,6 +1,6 @@
 package `in`.dragonbra.vapulla.anim
 
-import android.support.transition.Transition
+import androidx.transition.Transition
 
 abstract class TransitionListener : Transition.TransitionListener {
     override fun onTransitionEnd(transition: Transition) {

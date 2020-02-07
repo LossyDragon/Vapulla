@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rootLayout"
@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:context="in.dragonbra.vapulla.activity.ChatActivity">
 
-    <android.support.design.widget.AppBarLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,7 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="56dp">
@@ -50,9 +50,9 @@
                 android:id="@+id/nameLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
                 android:layout_marginStart="76dp"
                 android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
                 android:gravity="left"
                 app:layout_constraintEnd_toStartOf="@id/moreButton"
                 app:layout_constraintStart_toStartOf="parent"
@@ -84,8 +84,8 @@
                 android:id="@+id/friendStatus"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
                 android:layout_marginStart="76dp"
+                android:layout_marginEnd="8dp"
                 app:layout_constraintEnd_toStartOf="@+id/moreButton"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/nameLayout"
@@ -95,8 +95,8 @@
                 android:id="@+id/moreButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
                 android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="8dp"
                 android:src="@drawable/ic_dots_vertical"
@@ -104,11 +104,11 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-    </android.support.design.widget.AppBarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chatList"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -118,7 +118,7 @@
         app:layout_constraintTop_toBottomOf="@id/appBarLayout"
         tools:listitem="@layout/list_chat_received">
 
-    </android.support.v7.widget.RecyclerView>
+    </androidx.recyclerview.widget.RecyclerView>
 
     <ProgressBar
         android:id="@+id/uploadProgressBar"
@@ -131,13 +131,13 @@
         app:layout_constraintTop_toTopOf="@+id/chatList"
         tools:visibility="visible" />
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/messageBoxLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
         android:layout_marginLeft="4dp"
         android:layout_marginRight="4dp"
+        android:layout_marginBottom="4dp"
         android:background="@drawable/bubble_input"
         app:layout_constraintBottom_toTopOf="@+id/emoteList"
         app:layout_constraintEnd_toStartOf="@+id/sendButton"
@@ -153,10 +153,10 @@
             android:hint="@string/editTextHintMessage"
             android:inputType="textCapSentences|textMultiLine"
             android:maxLines="3"
-            android:paddingBottom="11dp"
             android:paddingLeft="16dp"
-            android:paddingRight="16dp"
             android:paddingTop="11dp"
+            android:paddingRight="16dp"
+            android:paddingBottom="11dp"
             android:textColor="@color/textPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/imageButton"
@@ -166,8 +166,8 @@
             android:id="@+id/emoteButton"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:layout_marginEnd="8dp"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:onClick="toggleEmote"
             android:tint="@color/textPrimary"
@@ -179,8 +179,8 @@
             android:id="@+id/imageButton"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:layout_marginEnd="8dp"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:onClick="sendImage"
             android:tint="@color/textPrimary"
@@ -188,21 +188,21 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_image" />
 
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <android.support.design.widget.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/sendButton"
         android:layout_width="46dp"
         android:layout_height="46dp"
-        android:layout_marginBottom="4dp"
         android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
         android:onClick="sendMessage"
         android:src="@drawable/ic_send"
         android:tint="#fff"
         app:layout_constraintBottom_toTopOf="@+id/emoteList"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/emoteList"
         android:layout_width="0dp"
         android:layout_height="200dp"
@@ -214,4 +214,4 @@
         tools:listitem="@layout/list_emote"
         tools:visibility="visible" />
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

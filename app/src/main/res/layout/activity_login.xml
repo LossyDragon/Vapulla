@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
@@ -37,11 +36,12 @@
         layout="@layout/login_steam_guard_button"
         android:visibility="invisible" />
 
-    <include layout="@layout/login_steam_guard_cancel"
+    <include
+        layout="@layout/login_steam_guard_cancel"
         android:visibility="invisible" />
 
     <include
         layout="@layout/login_retry_button"
         android:visibility="invisible" />
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

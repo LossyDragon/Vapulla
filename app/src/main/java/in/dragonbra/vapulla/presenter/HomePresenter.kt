@@ -9,14 +9,14 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
 import `in`.dragonbra.vapulla.view.HomeView
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.Observer
 import android.content.ComponentName
 import android.content.Context
 import android.os.IBinder
-import org.jetbrains.anko.info
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 
 class HomePresenter(context: Context,
                     private val steamFriendDao: SteamFriendDao,
@@ -80,8 +80,10 @@ class HomePresenter(context: Context,
 
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
         val updateTime = System.currentTimeMillis()
-        ifViewAttached { it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
-                ?: listOf(), updateTime) }
+        ifViewAttached {
+            it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
+                    ?: listOf(), updateTime)
+        }
     }
 
     fun disconnect() {

@@ -9,22 +9,22 @@
         android:id="@+id/date"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
+        android:gravity="center"
         android:visibility="gone"
-        tools:visibility="visible"
-        tools:text="DATE HERE"/>
+        tools:text="DATE HERE"
+        tools:visibility="visible" />
 
     <in.dragonbra.vapulla.view.ChatLayout
         android:id="@+id/chatLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
-        android:layout_marginBottom="2dp"
-        android:layout_marginEnd="16dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="2dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="2dp"
         android:background="@drawable/bubble_right"
         android:padding="8dp">
 

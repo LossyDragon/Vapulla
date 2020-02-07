@@ -5,7 +5,6 @@ import android.app.RemoteInput
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.jetbrains.anko.startService
 
 class ReplyReceiver : BroadcastReceiver() {
 
@@ -25,10 +24,12 @@ class ReplyReceiver : BroadcastReceiver() {
 
         val message = remoteInput.getCharSequence(KEY_TEXT_REPLY)
 
-        context.startService<SteamService>(
-                SteamService.EXTRA_ACTION to "reply",
-                SteamService.EXTRA_ID to id,
-                SteamService.EXTRA_MESSAGE to message
+        context.startService(
+                Intent(context, SteamService::class.java).apply {
+                    putExtra(SteamService.EXTRA_ACTION, "reply")
+                    putExtra(SteamService.EXTRA_ID, id)
+                    putExtra(SteamService.EXTRA_MESSAGE, message)
+                }
         )
     }
 }

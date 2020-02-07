@@ -13,9 +13,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import android.preference.PreferenceManager
 import android.util.Log
-import com.google.firebase.crash.FirebaseCrash
+import androidx.preference.PreferenceManager
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 class VapullaApplication : Application() {
 
@@ -25,7 +25,7 @@ class VapullaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        FirebaseCrash.setCrashCollectionEnabled(!BuildConfig.DEBUG)
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
 
         LogManager.addListener { clazz, message, throwable ->
             Log.d(clazz.simpleName, message, throwable)

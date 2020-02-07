@@ -4,7 +4,6 @@ import `in`.dragonbra.vapulla.service.SteamService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.jetbrains.anko.startService
 
 class IgnoreRequestReceiver : BroadcastReceiver() {
 
@@ -17,9 +16,11 @@ class IgnoreRequestReceiver : BroadcastReceiver() {
             throw IllegalStateException("missing extra steam id")
         }
 
-        context.startService<SteamService>(
-                SteamService.EXTRA_ID to intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L),
-                SteamService.EXTRA_ACTION to "ignore_request"
+        context.startService(
+                Intent(context, SteamService::class.java).apply {
+                    putExtra(SteamService.EXTRA_ID, intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L))
+                    putExtra(SteamService.EXTRA_ACTION, "ignore_request")
+                }
         )
     }
 }

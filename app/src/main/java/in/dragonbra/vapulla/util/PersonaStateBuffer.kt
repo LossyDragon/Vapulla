@@ -6,12 +6,10 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import org.jetbrains.anko.AnkoLogger
-import org.jetbrains.anko.info
 import org.spongycastle.util.encoders.Hex
 import java.util.*
 
-class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : AnkoLogger {
+class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : VapullaLogger {
     private val map: MutableMap<SteamID, PersonaState> = hashMapOf()
 
     private val mapLock: Any = Any()

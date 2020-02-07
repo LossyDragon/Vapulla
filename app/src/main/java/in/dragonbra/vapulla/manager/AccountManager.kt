@@ -5,7 +5,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
 import android.content.Context
 import android.content.SharedPreferences
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import org.spongycastle.util.encoders.Hex
 import java.io.File
 import java.io.FileInputStream

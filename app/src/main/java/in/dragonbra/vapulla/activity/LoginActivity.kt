@@ -9,15 +9,16 @@ import `in`.dragonbra.vapulla.extension.*
 import `in`.dragonbra.vapulla.presenter.LoginPresenter
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.view.LoginView
+import android.content.Intent
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
-import android.support.constraint.ConstraintSet
-import android.support.graphics.drawable.Animatable2Compat
-import android.support.transition.Transition
-import android.support.transition.TransitionManager
 import android.view.animation.AnimationUtils
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.transition.Transition
+import androidx.transition.TransitionManager
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.login_button.*
 import kotlinx.android.synthetic.main.login_error_text.*
@@ -29,9 +30,6 @@ import kotlinx.android.synthetic.main.login_steam_guard.*
 import kotlinx.android.synthetic.main.login_steam_guard_button.*
 import kotlinx.android.synthetic.main.login_steam_guard_cancel.*
 import kotlinx.android.synthetic.main.login_username.*
-import org.jetbrains.anko.clearTask
-import org.jetbrains.anko.intentFor
-import org.jetbrains.anko.newTask
 import javax.inject.Inject
 
 
@@ -139,7 +137,9 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
     }
 
     override fun loginSuccess() {
-        startActivity(intentFor<HomeActivity>().newTask().clearTask())
+        val loginIntent = Intent(this, HomeActivity::class.java)
+        loginIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(loginIntent)
         finish()
     }
 
@@ -204,7 +204,7 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
         }
     }
 
-    fun login() {
+    private fun login() {
         val username = username.text.toString()
 
         if (Strings.isNullOrEmpty(username)) {
@@ -221,7 +221,7 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
 
         Utils.hideKeyboardFrom(this@LoginActivity, login)
 
-        startLoading({ presenter.login(username, password) })
+        startLoading { presenter.login(username, password) }
     }
 
     private fun startLoadingAnimation() {

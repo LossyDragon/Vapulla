@@ -14,24 +14,22 @@ import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.TextHeader
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
-import android.preference.PreferenceManager
-import android.support.v4.content.ContextCompat
-import android.support.v7.util.DiffUtil
-import android.support.v7.widget.PopupMenu
-import android.support.v7.widget.RecyclerView
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat.getColor
+import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import com.brandongogetap.stickyheaders.exposed.StickyHeaderHandler
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import kotlinx.android.synthetic.main.list_friend.view.*
 import kotlinx.android.synthetic.main.list_friend_request.view.*
-import org.jetbrains.anko.find
-import org.jetbrains.anko.textColor
 import java.text.DateFormat
 import java.util.*
 
@@ -60,7 +58,7 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
 
     private var updateTime = 0L
 
-    private var recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000").toLong()
+    private var recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutRes = when (viewType) {
@@ -108,12 +106,12 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
 
     fun swap(list: List<FriendListItem>, updateTime: Long) {
         this.updateTime = updateTime
-        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000").toLong()
+        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
 
         var currentViewType = -1
         val newList: MutableList<Any> = LinkedList(list)
 
-        if (!newList.isEmpty()) {
+        if (newList.isNotEmpty()) {
             for (i in (list.size - 1) downTo 0) {
                 val type = getItemType(newList[i])
                 if (currentViewType == -1) {
@@ -141,13 +139,13 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
 
             (item as? FriendListItem)?.let { friend ->
                 Glide.with(context)
-                        .clear(v.find<ImageView>(R.id.avatar))
+                        .clear(v.findViewById<ImageView>(R.id.avatar))
 
                 Glide.with(context)
                         .load(Utils.getAvatarUrl(friend.avatar))
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .apply(Utils.avatarOptions)
-                        .into(v.find(R.id.avatar))
+                        .into(v.findViewById(R.id.avatar))
 
                 when (friend.relation) {
                     EFriendRelationship.RequestRecipient.code() -> {
@@ -197,12 +195,12 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
                                 && friend.typingTs > System.currentTimeMillis() - 20000L) {
                             offlineStatusUpdater.clear(v.status)
                             v.status.text = context.getString(R.string.statusTyping)
-                            v.status.textColor = ContextCompat.getColor(context, R.color.colorAccent)
+                            v.status.setTextColor(getColor(context, R.color.colorAccent))
                             v.status.bold()
                         } else {
                             offlineStatusUpdater.schedule(v.status, friend)
                             v.status.text = Utils.getStatusText(context, state, friend.gameAppId, friend.gameName, friend.lastLogOff)
-                            v.status.textColor = ContextCompat.getColor(context, R.color.textSecondary)
+                            v.status.setTextColor(getColor(context, R.color.textSecondary))
                             v.status.normal()
                         }
 
@@ -210,16 +208,16 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
 
                         val newMessages: Int = friend.newMessageCount ?: 0
                         if (newMessages > 0) {
-                            v.lastMessage.textColor = ContextCompat.getColor(context, R.color.textPrimary)
+                            v.lastMessage.setTextColor(getColor(context, R.color.textPrimary))
                             v.lastMessage.bold()
                             v.newMessageCount.text = newMessages.toString()
                             v.newMessageCount.show()
-                            v.find<TextView>(R.id.username).bold()
+                            v.findViewById<TextView>(R.id.username).bold()
                         } else {
-                            v.lastMessage.textColor = ContextCompat.getColor(context, R.color.textSecondary)
+                            v.lastMessage.setTextColor(getColor(context, R.color.textSecondary))
                             v.lastMessage.normal()
                             v.newMessageCount.hide()
-                            v.find<TextView>(R.id.username).normal()
+                            v.findViewById<TextView>(R.id.username).normal()
                         }
 
                         (v.statusIndicator.drawable as GradientDrawable).setColor(Utils.getStatusColor(context, state, friend.gameAppId, friend.gameName))
@@ -246,7 +244,7 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
                     }
                 }
 
-                v.find<TextView>(R.id.username).text = friend.name
+                v.findViewById<TextView>(R.id.username).text = friend.name
 
             }
         }

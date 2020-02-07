@@ -3,19 +3,19 @@ package `in`.dragonbra.vapulla.presenter
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.util.VapullaLogger
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import com.hannesdorfmann.mosby3.mvp.MvpBasePresenter
 import com.hannesdorfmann.mosby3.mvp.MvpView
-import org.jetbrains.anko.AnkoLogger
-import org.jetbrains.anko.intentFor
 import java.io.Closeable
 import java.util.*
 
-abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePresenter<V>(), AnkoLogger {
+abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePresenter<V>(), VapullaLogger {
 
     protected var bound = false
 
@@ -34,8 +34,8 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             val binder = service as SteamService.SteamBinder
             steamService = binder.getService()
-            subs.add(steamService?.subscribe<ConnectedCallback>({ onConnected() }))
-            subs.add(steamService?.subscribe<DisconnectedCallback>({ onDisconnected() }))
+            subs.add(steamService?.subscribe<ConnectedCallback> { onConnected() })
+            subs.add(steamService?.subscribe<DisconnectedCallback> { onDisconnected() })
             bound = true
             this@VapullaPresenter.onServiceConnected(name, service)
         }
@@ -45,7 +45,7 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
     }
     @CallSuper
     open fun onStart() {
-        context.bindService(context.intentFor<SteamService>(), connection, Context.BIND_AUTO_CREATE)
+        context.bindService(Intent(context, SteamService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
     open fun onResume() {}
     open fun onPause() {}

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/toolbarLayout"
@@ -21,8 +21,8 @@
         android:id="@+id/localUsername"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="88dp"
+        android:layout_marginEnd="8dp"
         android:ellipsize="end"
         android:lines="1"
         android:textColor="@color/textPrimary"
@@ -36,9 +36,9 @@
         android:id="@+id/localStatus"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="88dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toTopOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/statusButton"
         app:layout_constraintStart_toStartOf="parent"
@@ -48,8 +48,8 @@
         android:id="@+id/moreButton"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:padding="8dp"
         android:src="@drawable/ic_dots_vertical"
@@ -85,8 +85,8 @@
         android:id="@+id/closeSearchButton"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:padding="8dp"
         android:src="@drawable/ic_close"
@@ -108,4 +108,4 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,8 +2,8 @@ package `in`.dragonbra.vapulla.module
 
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
-import android.arch.persistence.room.Room
 import android.content.Context
+import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton

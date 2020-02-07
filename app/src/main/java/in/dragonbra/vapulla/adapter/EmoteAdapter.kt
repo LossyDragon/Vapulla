@@ -3,12 +3,13 @@ package `in`.dragonbra.vapulla.adapter
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.extension.click
+import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
 import android.content.Context
-import android.support.v7.util.DiffUtil
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import kotlinx.android.synthetic.main.list_emote.view.*
@@ -49,7 +50,7 @@ class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : 
             v.emote.click { listener?.onEmoteSelected(emote) }
 
             Glide.with(context)
-                    .load("https://steamcommunity-a.akamaihd.net/economy/emoticon/:${emote.name}:")
+                    .load("$EMOTE_URL:${emote.name}:")
                     .transition(DrawableTransitionOptions.withCrossFade())
                     .into(v.emote)
         }

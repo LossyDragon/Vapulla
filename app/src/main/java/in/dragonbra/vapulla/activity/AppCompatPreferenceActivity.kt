@@ -2,14 +2,15 @@ package `in`.dragonbra.vapulla.activity
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.preference.PreferenceActivity
-import android.support.annotation.LayoutRes
-import android.support.v7.app.ActionBar
-import android.support.v7.app.AppCompatDelegate
-import android.support.v7.widget.Toolbar
 import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.LayoutRes
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.widget.Toolbar
 
 /**
  * A [android.preference.PreferenceActivity] which implements and proxies the necessary calls
@@ -17,10 +18,10 @@ import android.view.ViewGroup
  */
 abstract class AppCompatPreferenceActivity : PreferenceActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
+        super.onCreate(savedInstanceState, persistentState)
         delegate.installViewFactory()
         delegate.onCreate(savedInstanceState)
-        super.onCreate(savedInstanceState)
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {

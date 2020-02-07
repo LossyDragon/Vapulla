@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.chat
 
+import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
 import android.content.Context
 import android.text.SpannableString
 import android.text.Spanned
@@ -11,10 +12,10 @@ import com.bumptech.glide.Glide
 import java.util.*
 import java.util.regex.Pattern
 
-class PaperPlane(val context: Context, val emoteSizeDp: Float) {
+class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
 
     companion object {
-        val EMOTE_PATTERN = Pattern.compile("\\u02D0([a-zA-Z0-9]+)\\u02D0")
+        val EMOTE_PATTERN: Pattern = Pattern.compile("\\u02D0([a-zA-Z0-9]+)\\u02D0")
     }
 
     private val targets: MutableMap<TextView, MutableList<EmoteTarget>> = HashMap()
@@ -55,7 +56,7 @@ class PaperPlane(val context: Context, val emoteSizeDp: Float) {
 
             Glide.with(context)
                     .asBitmap()
-                    .load("https://steamcommunity-a.akamaihd.net/economy/emoticon/:$emote:")
+                    .load("$EMOTE_URL:$emote:")
                     .into(target)
         }
     }
@@ -69,8 +70,8 @@ class PaperPlane(val context: Context, val emoteSizeDp: Float) {
 
     fun clearAll() {
         targets.entries.forEach {
-            it.value.forEach {
-                it.cancel()
+            it.value.forEach { target ->
+                target.cancel()
             }
         }
         targets.clear()

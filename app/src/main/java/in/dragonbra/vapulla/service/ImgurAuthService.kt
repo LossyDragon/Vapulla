@@ -6,8 +6,8 @@ import `in`.dragonbra.vapulla.retrofit.Imgur
 import `in`.dragonbra.vapulla.retrofit.response.ImgurToken
 import android.content.Context
 import android.net.Uri
-import android.preference.PreferenceManager
 import android.util.Log
+import androidx.preference.PreferenceManager
 import okhttp3.HttpUrl
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -16,7 +16,7 @@ import retrofit2.Response
 import java.math.BigInteger
 import java.security.SecureRandom
 
-class ImgurAuthService(context: Context, val imgur: Imgur) {
+class ImgurAuthService(context: Context, private val imgur: Imgur) {
 
     companion object {
         val TAG = ImgurAuthService::class.simpleName
@@ -77,7 +77,7 @@ class ImgurAuthService(context: Context, val imgur: Imgur) {
 
         val expiresIn = paramsUri.getQueryParameter("expires_in")
 
-        if (Strings.isNullOrEmpty(refreshToken)) {
+        if (Strings.isNullOrEmpty(expiresIn)) {
             Log.d(TAG, "missing expires_in")
             return false
         }
@@ -107,7 +107,7 @@ class ImgurAuthService(context: Context, val imgur: Imgur) {
         return true
     }
 
-    fun getUsername(): String = prefs.getString(KEY_IMGUR_USERNAME, "")
+    fun getUsername(): String = prefs.getString(KEY_IMGUR_USERNAME, "")!!
 
     fun clear() {
         prefs.edit()
@@ -122,7 +122,7 @@ class ImgurAuthService(context: Context, val imgur: Imgur) {
     fun refreshTokenIfNeeded() {
         if (prefs.getLong(KEY_IMGUR_LAST_UPDATE, 0L) < System.currentTimeMillis() - 1728000000L) {
             val call = imgur.refreshToken(
-                    prefs.getString(KEY_IMGUR_REFRESH_TOKEN, null),
+                    prefs.getString(KEY_IMGUR_REFRESH_TOKEN, null)!!,
                     BuildConfig.IMGUR_CLIENT_ID,
                     BuildConfig.IMGUR_CLIENT_SECRET,
                     "refresh_token"

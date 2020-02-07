@@ -7,7 +7,7 @@ import `in`.dragonbra.vapulla.retrofit.StoreFront
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import android.content.ClipboardManager
 import android.content.Context
-import android.support.v4.app.NotificationManagerCompat
+import androidx.core.app.NotificationManagerCompat
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton

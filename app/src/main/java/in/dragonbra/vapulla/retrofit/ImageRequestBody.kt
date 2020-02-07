@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.retrofit
 
 import android.os.Handler
 import android.os.Looper
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okio.BufferedSink
 import java.io.ByteArrayInputStream
@@ -17,7 +17,7 @@ class ImageRequestBody(private val content: ByteArray, private val callback: ((I
 
     override fun contentLength(): Long = content.size.toLong()
 
-    override fun contentType() = MediaType.parse("image/*")
+    override fun contentType() = "image/*".toMediaTypeOrNull()
 
     override fun writeTo(sink: BufferedSink) {
         val buffer = ByteArray(BUFFER_SIZE)
@@ -29,7 +29,7 @@ class ImageRequestBody(private val content: ByteArray, private val callback: ((I
             sink.write(buffer, 0, read)
 
             sent += read
-            handler.post({ callback?.invoke(content.size, sent) })
+            handler.post { callback?.invoke(content.size, sent) }
         }
     }
 }
