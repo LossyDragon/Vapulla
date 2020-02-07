@@ -52,13 +52,18 @@ import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.*
+import `in`.dragonbra.vapulla.util.Utils.avatarOptions
+import `in`.dragonbra.vapulla.util.Utils.isAtLeastN
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.*
+import android.os.Binder
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.IBinder
 import android.text.format.DateUtils
 import androidx.core.app.*
 import com.bumptech.glide.Glide
@@ -284,7 +289,7 @@ class SteamService : Service(), VapullaLogger {
                 .setSound(null)
                 .addAction(R.drawable.ic_exit_to_app, getString(R.string.notificationActionLogOut), pendingIntent)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (isAtLeastN()) {
             builder.priority = NotificationManager.IMPORTANCE_LOW
         } else {
             @Suppress("DEPRECATION")
@@ -356,7 +361,7 @@ class SteamService : Service(), VapullaLogger {
             bitmap = Glide.with(applicationContext)
                     .asBitmap()
                     .load(Utils.getAvatarUrl(friend.avatar))
-                    .apply(Utils.avatarOptions)
+                    .apply(avatarOptions)
                     .submit()
                     .get(5, TimeUnit.SECONDS)
         } catch (ignored: Exception) {
@@ -408,7 +413,7 @@ class SteamService : Service(), VapullaLogger {
             bitmap = Glide.with(applicationContext)
                     .asBitmap()
                     .load(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
-                    .apply(Utils.avatarOptions)
+                    .apply(avatarOptions)
                     .submit()
                     .get(5, TimeUnit.SECONDS)
         } catch (ignored: Exception) {

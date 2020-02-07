@@ -9,6 +9,7 @@
     <color name="textLink">#ffffff</color>
     <color name="textError">#EF5350</color>
     <color name="colorTyping">#546E7A</color>
+    <color name="colorButton">#5A5A5C</color>
 
     <color name="statusOnline">#00ff00</color>
     <color name="statusBusy">#ff0000</color>

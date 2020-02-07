@@ -10,8 +10,8 @@ android {
         applicationId "in.dragonbra.vapulla"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 3
-        versionName "0.2.1"
+        versionCode 4
+        versionName "0.3.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
 
@@ -42,6 +42,12 @@ android {
     }
 }
 
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "androidx.lifecycle:lifecycle-livedata:2.2.0"
@@ -53,10 +59,11 @@ dependencies {
     implementation "com.google.android.material:material:1.2.0-alpha04"
     implementation "androidx.recyclerview:recyclerview:1.2.0-alpha01"
     implementation 'com.android.support.constraint:constraint-layout:2.0.0-beta4'
-    implementation "androidx.core:core-ktx:1.1.0"
+    implementation "androidx.core:core-ktx:1.2.0"
     implementation 'com.brandongogetap:stickyheaders:0.6.1'
     implementation "com.github.bumptech.glide:glide:$glide_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
+    implementation 'com.mikhaellopez:circularimageview:4.2.0'
     implementation "com.github.penfeizhou.android.animation:apng:$apng_version"
     implementation "com.google.dagger:dagger:$dagger_version"
     kapt "com.google.dagger:dagger-compiler:$dagger_version"
@@ -74,11 +81,13 @@ dependencies {
     implementation "androidx.preference:preference-ktx:$androidx_preference"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "com.afollestad.material-dialogs:core:$material_dialogs"
+    implementation "com.afollestad.material-dialogs:bottomsheets:$material_dialogs"
+    implementation "com.afollestad.material-dialogs:input:$material_dialogs"
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
-    // Fixme
     // Might be self generated javasteam-1.0.0-SNAPSHOT.jar
     // Need this to talk to protobufs (i.e. ...Builder)
     api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.11.1'

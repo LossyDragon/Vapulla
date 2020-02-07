@@ -131,56 +131,44 @@
         app:layout_constraintTop_toTopOf="@+id/chatList"
         tools:visibility="visible" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:id="@+id/messageBoxLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="4dp"
-        android:layout_marginRight="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/bubble_input"
+        android:minHeight="48dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/emoteList"
-        app:layout_constraintEnd_toStartOf="@+id/sendButton"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
 
         <EditText
             android:id="@+id/messageBox"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_gravity="center"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_weight="1"
             android:background="@android:color/transparent"
             android:ems="10"
             android:hint="@string/editTextHintMessage"
             android:inputType="textCapSentences|textMultiLine"
-            android:maxLines="3"
-            android:paddingLeft="16dp"
-            android:paddingTop="11dp"
-            android:paddingRight="16dp"
-            android:paddingBottom="11dp"
+            android:maxLines="5"
             android:textColor="@color/textPrimary"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/imageButton"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <ImageView
-            android:id="@+id/emoteButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:onClick="toggleEmote"
-            android:tint="@color/textPrimary"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_emoticon" />
+            tools:ignore="Autofill" />
 
         <ImageView
             android:id="@+id/imageButton"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:layout_marginTop="8dp"
+            android:layout_gravity="bottom"
             android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:onClick="sendImage"
             android:tint="@color/textPrimary"
@@ -188,19 +176,34 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_image" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <ImageView
+            android:id="@+id/emoteButton"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="bottom"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:onClick="toggleEmote"
+            android:tint="@color/textPrimary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_emoticon"
+            tools:ignore="ContentDescription" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/sendButton"
-        android:layout_width="46dp"
-        android:layout_height="46dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginBottom="4dp"
-        android:onClick="sendMessage"
-        android:src="@drawable/ic_send"
-        android:tint="#fff"
-        app:layout_constraintBottom_toTopOf="@+id/emoteList"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="bottom"
+            android:onClick="sendMessage"
+            android:scaleType="center"
+            android:src="@drawable/ic_send"
+            android:tint="@android:color/white"
+            app:borderWidth="0dp"
+            app:fabCustomSize="48dp"
+            app:fabSize="mini" />
+
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/emoteList"
@@ -212,6 +215,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         tools:listitem="@layout/list_emote"
-        tools:visibility="visible" />
+        tools:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

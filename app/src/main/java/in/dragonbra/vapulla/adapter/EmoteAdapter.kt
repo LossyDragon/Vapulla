@@ -56,7 +56,7 @@ class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : 
         fun bind(emote: Emoticon) {
             v.emote.click { listener?.onEmoteSelected(emote) }
 
-            when(emote.isSticker) {
+            when (emote.isSticker) {
                 true -> loadSticker(emote, v)
                 false -> loadEmote(emote, v)
             }

@@ -116,7 +116,7 @@ class HomePresenter(context: Context,
 
     fun search(query: String) {
         val trimmedQuery = query.trim()
-        friendsData.value?.let { list ->
+        friendsData?.value?.let { list ->
             val updateTime = System.currentTimeMillis()
             if (Strings.isNullOrEmpty(trimmedQuery)) {
                 ifViewAttached { it.showFriends(list.sortedWith(FriendsComparator(context, updateTime)), updateTime) }

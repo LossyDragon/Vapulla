@@ -6,13 +6,13 @@ import `in`.dragonbra.vapulla.component.VapullaComponent
 import `in`.dragonbra.vapulla.module.AppModule
 import `in`.dragonbra.vapulla.module.PresenterModule
 import `in`.dragonbra.vapulla.module.StorageModule
+import `in`.dragonbra.vapulla.util.Utils.isGreaterThanO
 import android.annotation.SuppressLint
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import androidx.preference.PreferenceManager
 import com.google.firebase.crashlytics.FirebaseCrashlytics
@@ -31,7 +31,7 @@ class VapullaApplication : Application() {
             Log.d(clazz.simpleName, message, throwable)
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (isGreaterThanO()) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val serviceChannel = NotificationChannel("vapulla-service",
                     "Vapulla service",

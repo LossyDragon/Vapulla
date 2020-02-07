@@ -11,6 +11,7 @@ import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.presenter.HomePresenter
 import `in`.dragonbra.vapulla.util.OfflineStatusUpdater
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.warn
 import `in`.dragonbra.vapulla.view.HomeView
 import android.content.Intent
 import android.os.Bundle
@@ -22,12 +23,12 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.AnticipateOvershootInterpolator
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.transition.ChangeBounds
 import androidx.transition.Transition
 import androidx.transition.TransitionManager
+import com.afollestad.materialdialogs.MaterialDialog
 import com.brandongogetap.stickyheaders.StickyLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
@@ -79,7 +80,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
         searchInput.isEnabled = false
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
-                presenter.search(s.toString())
+                presenter?.search(s.toString())
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -170,15 +171,15 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
     }
 
     override fun showBlockFriendDialog(friend: FriendListItem) {
-        val name = friend.name ?: ""
-        val builder = AlertDialog.Builder(this)
+        if (friend.name.isNullOrBlank())
+            warn("showBlockFriendDialog() name is null or blank!")
 
-        builder.setMessage(getString(R.string.dialogMessageBlockFriend, name))
-                .setTitle(getString(R.string.dialogTitleBlockFriend, name))
-                .setPositiveButton(R.string.dialogYes) { _, _ -> presenter.confirmBlockFriend(friend) }
-                .setNegativeButton(R.string.dialogNo, null)
-
-        builder.create().show()
+        MaterialDialog(this).show {
+            title(text = getString(R.string.dialogTitleBlockFriend, friend.name))
+            message(text =  getString(R.string.dialogMessageBlockFriend, friend.name))
+            positiveButton(R.string.dialogYes) { presenter.confirmBlockFriend(friend) }
+            negativeButton(R.string.dialogNo)
+        }
     }
 
     private fun updateList() {

@@ -36,7 +36,7 @@ class ChatLayout : RelativeLayout {
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
 
-        var widthSize = View.MeasureSpec.getSize(widthMeasureSpec)
+        var widthSize = MeasureSpec.getSize(widthMeasureSpec)
 
         if (widthSize <= 0) {
             return
@@ -45,11 +45,11 @@ class ChatLayout : RelativeLayout {
         val availableWidth = widthSize - paddingLeft - paddingRight
         //val availableHeight = heightSize - paddingTop - paddingBottom
 
-        val viewPartMainLayoutParams = viewPartMain.layoutParams as RelativeLayout.LayoutParams
+        val viewPartMainLayoutParams = viewPartMain.layoutParams as LayoutParams
         val viewPartMainWidth = viewPartMain.maxLineWidth().toInt() + viewPartMainLayoutParams.leftMargin + viewPartMainLayoutParams.rightMargin
         val viewPartMainHeight = viewPartMain.measuredHeight + viewPartMainLayoutParams.topMargin + viewPartMainLayoutParams.bottomMargin
 
-        val viewPartSlaveLayoutParams = viewPartSlave.layoutParams as RelativeLayout.LayoutParams
+        val viewPartSlaveLayoutParams = viewPartSlave.layoutParams as LayoutParams
         viewPartSlaveWidth = viewPartSlave.measuredWidth + viewPartSlaveLayoutParams.leftMargin + viewPartSlaveLayoutParams.rightMargin
         viewPartSlaveHeight = viewPartSlave.measuredHeight + viewPartSlaveLayoutParams.topMargin + viewPartSlaveLayoutParams.bottomMargin
 
@@ -72,7 +72,7 @@ class ChatLayout : RelativeLayout {
         }
 
         setMeasuredDimension(widthSize, heightSize)
-        super.onMeasure(View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(heightSize, View.MeasureSpec.EXACTLY))
+        super.onMeasure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY))
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {

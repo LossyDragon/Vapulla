@@ -13,7 +13,6 @@ import `in`.dragonbra.vapulla.util.OfflineStatusUpdater
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.TextHeader
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -27,7 +26,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.brandongogetap.stickyheaders.exposed.StickyHeaderHandler
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.mikhaellopez.circularimageview.CircularImageView
 import kotlinx.android.synthetic.main.list_friend.view.*
 import kotlinx.android.synthetic.main.list_friend_request.view.*
 import java.text.DateFormat
@@ -143,7 +142,7 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
 
                 Glide.with(context)
                         .load(Utils.getAvatarUrl(friend.avatar))
-                        .transition(DrawableTransitionOptions.withCrossFade())
+                        //.transition(DrawableTransitionOptions.withCrossFade())
                         .apply(Utils.avatarOptions)
                         .into(v.findViewById(R.id.avatar))
 
@@ -220,7 +219,8 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
                             v.findViewById<TextView>(R.id.username).normal()
                         }
 
-                        (v.statusIndicator.drawable as GradientDrawable).setColor(Utils.getStatusColor(context, state, friend.gameAppId, friend.gameName))
+                        v.findViewById<CircularImageView>(R.id.avatar).borderColor =
+                                Utils.getStatusColor(context, state, friend.gameAppId, friend.gameName)
 
                         v.mobileIndicator.hide()
                         v.webIndicator.hide()

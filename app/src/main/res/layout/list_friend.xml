@@ -2,6 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/list_friend"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="#303030">
@@ -14,7 +15,8 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="16dp"
-        tools:text="Header" />
+        tools:text="Header"
+        tools:visibility="gone" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/friendLayout"
@@ -23,23 +25,18 @@
         android:background="?attr/selectableItemBackground"
         android:paddingBottom="8dp">
 
-        <ImageView
+        <com.mikhaellopez.circularimageview.CircularImageView
             android:id="@+id/avatar"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
+            android:src="@color/statusOffline"
+            app:civ_border="true"
+            app:civ_border_color="@color/statusOffline"
+            app:civ_border_width="2dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@color/colorPrimary" />
-
-        <ImageView
-            android:id="@+id/statusIndicator"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            app:layout_constraintBottom_toBottomOf="@id/avatar"
-            app:layout_constraintEnd_toEndOf="@id/avatar"
-            app:srcCompat="@drawable/status_indicator" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <RelativeLayout
             android:id="@+id/nameLayout"
@@ -48,7 +45,7 @@
             android:layout_marginStart="88dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
-            android:gravity="left"
+            android:gravity="start"
             app:layout_constraintEnd_toStartOf="@id/time"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -57,7 +54,6 @@
                 android:id="@+id/username"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_toStartOf="@id/nickname"
                 android:ellipsize="marquee"
                 android:singleLine="true"
                 android:textColor="@color/textPrimary"
@@ -67,9 +63,10 @@
             <TextView
                 android:id="@+id/nickname"
                 android:layout_width="wrap_content"
+                android:layout_toEndOf="@id/username"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_marginLeft="4dp"
+                android:layout_marginStart="4dp"
                 android:textSize="16sp"
                 tools:text="(nickname)" />
 

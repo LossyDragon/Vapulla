@@ -7,4 +7,5 @@
     android:background="?attr/selectableItemBackgroundBorderless"
     android:padding="12dp"
     tools:srcCompat="@drawable/ic_emoticon"
-    tools:tint="#fff" />
+    tools:tint="#fff"
+    tools:ignore="ContentDescription" />

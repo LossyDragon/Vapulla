@@ -27,7 +27,9 @@ object Utils {
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
 
-    fun isAtLeastN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
+    fun isLessThanN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
+    fun isAtLeastN() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+    fun isGreaterThanO() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
     fun getAvatarUrl(avatar: String?) =
             if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == ALL_ZEROS) {

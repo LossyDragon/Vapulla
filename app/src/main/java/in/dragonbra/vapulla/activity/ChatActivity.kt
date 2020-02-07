@@ -27,15 +27,18 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NavUtils
 import androidx.core.content.ContextCompat
 import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.afollestad.materialdialogs.LayoutMode
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.bottomsheets.BottomSheet
+import com.afollestad.materialdialogs.input.input
+import com.afollestad.materialdialogs.list.listItems
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.flexbox.FlexDirection
@@ -43,7 +46,6 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_chat.*
-import kotlinx.android.synthetic.main.dialog_nickname.view.*
 import javax.inject.Inject
 
 
@@ -223,39 +225,34 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     }
 
     override fun showRemoveFriendDialog(name: String) {
-        val builder = AlertDialog.Builder(this)
-
-        builder.setMessage(getString(R.string.dialogMessageRemoveFriend, name))
-                .setTitle(getString(R.string.dialogTitleRemoveFriend, name))
-                .setPositiveButton(R.string.dialogYes) { _, _ -> presenter.confirmRemoveFriend() }
-                .setNegativeButton(R.string.dialogNo, null)
-
-        builder.create().show()
+        MaterialDialog(this).show {
+            title(text = getString(R.string.dialogTitleRemoveFriend, name))
+            message(text = getString(R.string.dialogMessageRemoveFriend, name))
+            positiveButton(R.string.dialogYes) { presenter.confirmRemoveFriend() }
+            negativeButton(R.string.dialogNo)
+        }
     }
 
     override fun showBlockFriendDialog(name: String) {
-        val builder = AlertDialog.Builder(this)
-
-        builder.setMessage(getString(R.string.dialogMessageBlockFriend, name))
-                .setTitle(getString(R.string.dialogTitleBlockFriend, name))
-                .setPositiveButton(R.string.dialogYes) { _, _ -> presenter.confirmBlockFriend() }
-                .setNegativeButton(R.string.dialogNo, null)
-
-        builder.create().show()
+        MaterialDialog(this).show {
+            title(text = getString(R.string.dialogTitleBlockFriend, name))
+            message(text = getString(R.string.dialogMessageBlockFriend, name))
+            positiveButton(R.string.dialogYes) { presenter.confirmBlockFriend() }
+            negativeButton(R.string.dialogNo)
+        }
     }
 
     @SuppressLint("InflateParams")
     override fun showNicknameDialog(nickname: String) {
-        val v = LayoutInflater.from(this).inflate(R.layout.dialog_nickname, null)
-        v.nickname.setText(nickname)
+        MaterialDialog(this).show {
+            title(R.string.dialogTitleNickname)
+            input(hint = nickname, waitForPositiveButton = true) { _, text ->
+                presenter.setNickname(text.toString())
+            }
+            positiveButton(R.string.dialogSet)
+            negativeButton(R.string.dialogCancel)
+        }
 
-        val builder = AlertDialog.Builder(this)
-                .setTitle(R.string.dialogTitleNickname)
-                .setView(v)
-                .setPositiveButton(R.string.dialogSet) { _, _ -> presenter.setNickname(v.nickname.text.toString()) }
-                .setNegativeButton(R.string.dialogCancel, null)
-
-        builder.create().show()
     }
 
     override fun browseUrl(url: String) {
@@ -266,13 +263,11 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
     override fun showAliases(names: List<String>) {
         runOnUiThread {
-            val builder = AlertDialog.Builder(this)
-
-            builder.setTitle(R.string.dialogTitleAliases)
-                    .setItems(names.toTypedArray(), null)
-                    .setNegativeButton(R.string.dialogClose, null)
-
-            builder.create().show()
+            MaterialDialog(this, BottomSheet(LayoutMode.WRAP_CONTENT)).show {
+                title(R.string.dialogTitleAliases)
+                listItems(items = names)
+                positiveButton(R.string.dialogClose)
+            }
         }
     }
 
@@ -285,16 +280,14 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     }
 
     override fun showImgurDialog() {
-        val builder = AlertDialog.Builder(this)
-
-        builder.setMessage(R.string.dialogMessageImgur)
-                .setTitle(R.string.dialogTitleImgur)
-                .setPositiveButton(R.string.dialogYes) { _, _ ->
-                    startActivity(Intent(this, SettingsActivity::class.java))
-                }
-                .setNegativeButton(R.string.dialogCancel, null)
-
-        builder.create().show()
+        MaterialDialog(this).show {
+            title(R.string.dialogTitleImgur)
+            message(R.string.dialogMessageImgur)
+            positiveButton(R.string.dialogYes) {
+                Intent(this@ChatActivity, SettingsActivity::class.java)
+            }
+            negativeButton(R.string.dialogCancel)
+        }
     }
 
     override fun showPhotoSelector() {
