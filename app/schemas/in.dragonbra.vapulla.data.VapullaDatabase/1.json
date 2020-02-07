@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "81dcfd4676770239ec902684af01aaca",
+    "identityHash": "aa767b956bb0c1d7244f17c6dbd3061a",
     "entities": [
       {
         "tableName": "steam_friend",
@@ -150,7 +150,7 @@
             "columnNames": [
               "friend_id"
             ],
-            "createSql": "CREATE  INDEX `index_chat_message_friend_id` ON `${TABLE_NAME}` (`friend_id`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_chat_message_friend_id` ON `${TABLE_NAME}` (`friend_id`)"
           }
         ],
         "foreignKeys": []
@@ -189,12 +189,18 @@
       },
       {
         "tableName": "emoticon",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, PRIMARY KEY(`name`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `isSticker` INTEGER NOT NULL, PRIMARY KEY(`name`))",
         "fields": [
           {
             "fieldPath": "name",
             "columnName": "name",
             "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSticker",
+            "columnName": "isSticker",
+            "affinity": "INTEGER",
             "notNull": true
           }
         ],
@@ -208,9 +214,10 @@
         "foreignKeys": []
       }
     ],
+    "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"81dcfd4676770239ec902684af01aaca\")"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aa767b956bb0c1d7244f17c6dbd3061a')"
     ]
   }
 }

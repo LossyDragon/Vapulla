@@ -50,10 +50,7 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
-import `in`.dragonbra.vapulla.util.PersonaStateBuffer
-import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.VapullaLogger
-import `in`.dragonbra.vapulla.util.info
+import `in`.dragonbra.vapulla.util.*
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -759,9 +756,15 @@ class SteamService : Service(), VapullaLogger {
         }
     }
 
-    private val onEmoticonList: Consumer<EmoticonListCallback> = Consumer {
-        val emoticons = it.emoticons.map { emoticon ->
-            Emoticon(emoticon.name.substring(1, emoticon.name.length - 1))
+    private val onEmoticonList: Consumer<EmoticonListCallback> = Consumer { emoticon ->
+        debug("onEmoticonList")
+
+        val emoticons = emoticon.getEmoteList().map {
+            if (it.isSticker) {
+                Emoticon(it.name, it.isSticker)
+            } else {
+                Emoticon(it.name.substring(1, it.name.length - 1), it.isSticker)
+            }
         }.toTypedArray()
 
         db.emoticonDao().delete()
