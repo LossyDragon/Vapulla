@@ -73,7 +73,7 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
 
     inner class ViewHolder(val v: View) : RecyclerView.ViewHolder(v) {
         fun bind(message: ChatMessage, showDate: Boolean) {
-            paperPlane.load(v.message, message.message, true)
+            paperPlane.load(v.message, message.message, showUrl = true, showStickers = true)
 
             // TODO the spannable breaks events, the selector of the parent is still broken
             v.message.longClick {

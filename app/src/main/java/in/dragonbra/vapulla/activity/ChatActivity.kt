@@ -109,6 +109,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         emoteList.adapter = emoteAdapter
 
         messageBox.addTextChangedListener(this)
+        messageBox.requestFocus()
         messageBox.setOnClickListener { emoteList.hide() }
 
         moreButton.setOnClickListener {
@@ -165,7 +166,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
                 friendStatus.bold()
             } else {
                 friendStatus.text = Utils.getStatusText(this@ChatActivity, state, friend.gameAppId, friend.gameName, friend.lastLogOff)
-                friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, android.R.color.secondary_text_dark))
+                friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, R.color.colorTyping))
                 friendStatus.normal()
             }
 
@@ -361,7 +362,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         emoteList.toggleVisibility()
 
         if (emoteList.isVisible()) {
-            Utils.hideKeyboardFrom(this, messageBox)
+            Utils.hideKeyboardFrom(this, messageBoxLayout)
             presenter.requestEmotes()
         }
     }

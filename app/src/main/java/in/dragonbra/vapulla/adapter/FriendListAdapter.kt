@@ -204,7 +204,7 @@ class FriendListAdapter(val context: Context, val schemaManager: GameSchemaManag
                             v.status.normal()
                         }
 
-                        paperPlane.load(v.lastMessage, friend.lastMessage ?: "", false)
+                        paperPlane.load(v.lastMessage, friend.lastMessage ?: "", showUrl = false, showStickers = false)
 
                         val newMessages: Int = friend.newMessageCount ?: 0
                         if (newMessages > 0) {

@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.chat
 
+import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
 import `in`.dragonbra.vapulla.util.Utils.STICKER_URL
 import android.content.Context
@@ -23,7 +24,7 @@ class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
 
     private val targets: MutableMap<TextView, MutableList<Any>> = HashMap()
 
-    fun load(view: TextView, message: String, showUrl: Boolean) {
+    fun load(view: TextView, message: String, showUrl: Boolean, showStickers: Boolean) {
         clear(view)
 
         val spannable = SpannableString(message)
@@ -70,21 +71,26 @@ class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
         //region [Region] Sticker
         val stickerMatcher = STICKER_PATTERN.matcher(message)
 
-        while (stickerMatcher.find()) {
-            if (!targets.containsKey(view)) {
-                targets[view] = LinkedList()
+        if (!showStickers && stickerMatcher.matches()) {
+            val sticker = stickerMatcher.toMatchResult().group(1)
+            view.text = context.getString(R.string.messageSentSticker, sticker)
+        } else {
+            while (stickerMatcher.find()) {
+                if (!targets.containsKey(view)) {
+                    targets[view] = LinkedList()
+                }
+
+                val result = stickerMatcher.toMatchResult()
+
+                val sticker = result.group(1)
+
+                val target = StickerTarget(context, view, spannable, result.start(), result.end(), targets[view])
+
+                Glide.with(view)
+                        .asFile()
+                        .load("$STICKER_URL$sticker")
+                        .into(target)
             }
-
-            val result = stickerMatcher.toMatchResult()
-
-            val sticker = result.group(1)
-
-            val target = StickerTarget(context, view, spannable, result.start(), result.end(), targets[view])
-
-            Glide.with(view)
-                    .asFile()
-                    .load("$STICKER_URL$sticker")
-                    .into(target)
         }
         //endregion
     }
