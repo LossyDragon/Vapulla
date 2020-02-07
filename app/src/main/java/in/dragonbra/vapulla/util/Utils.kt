@@ -20,6 +20,7 @@ object Utils {
             .transform(CircleTransform())
 
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
+    private val STICKER_PATTERN: Pattern = Pattern.compile("/sticker ([a-zA-Z0-9]+)")
 
     private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
     private const val DEFAULT_AVATAR = "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
@@ -34,9 +35,9 @@ object Utils {
     fun getAvatarUrl(avatar: String?) =
             if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == ALL_ZEROS) {
                 DEFAULT_AVATAR
-    } else {
-        "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
-    }
+            } else {
+                "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
+            }
 
     fun getStatusColor(context: Context, state: EPersonaState?, gameAppId: Int, gameName: String?) =
             if (state == EPersonaState.Offline || gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
@@ -80,6 +81,17 @@ object Utils {
 
     fun findEmotes(message: String, emoteSet: Set<String>): String {
         val matcher = EMOTE_PATTERN.matcher(message)
+        val matcher2 = STICKER_PATTERN.matcher(message)
+
+        if (matcher2.find()) {
+            val result = matcher2.toMatchResult()
+
+            val emote = result.group(1)
+
+             if(emoteSet.contains(emote)) {
+                 return "[sticker type=\"$emote\" limit=\"0\"][/sticker]"
+            }
+        }
 
         if (matcher.find()) {
             val result = matcher.toMatchResult()

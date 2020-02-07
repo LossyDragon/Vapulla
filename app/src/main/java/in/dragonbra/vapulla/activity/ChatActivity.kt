@@ -276,7 +276,13 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     }
 
     override fun onEmoteSelected(emoticon: Emoticon) {
-        messageBox.text.insert(messageBox.selectionStart, ":${emoticon.name}:")
+
+        if(emoticon.isSticker) {
+            val stickerText = "/sticker ${emoticon.name}"
+            presenter.sendMessage(stickerText)
+        } else {
+            messageBox.text.insert(messageBox.selectionStart, ":${emoticon.name}:")
+        }
     }
 
     override fun showImgurDialog() {

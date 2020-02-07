@@ -50,6 +50,7 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
+import `in`.dragonbra.vapulla.steam.callback.ServiceServiceMethodCallback
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.*
 import `in`.dragonbra.vapulla.util.Utils.avatarOptions
@@ -198,6 +199,7 @@ class SteamService : Service(), VapullaLogger {
         subscriptions.add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
         subscriptions.add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
         subscriptions.add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethod))
+        subscriptions.add(callbackMgr.subscribe(ServiceServiceMethodCallback::class.java, onServiceMethodResponse))
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
                 .setLabel("Reply")
@@ -493,7 +495,8 @@ class SteamService : Service(), VapullaLogger {
 
         val emoteMessage = Utils.findEmotes(trimmed.replace('\u02D0', ':'), emoteSet)
 
-        getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
+        //getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
+        getHandler<VapullaHandler>()?.sendMessage(id, message)
 
         db.chatMessageDao().insert(ChatMessage(
                 message = emoteMessage,
@@ -797,6 +800,18 @@ class SteamService : Service(), VapullaLogger {
         db.chatMessageDao().markRead(it.sender.convertToUInt64())
 
         clearMessageNotifications(it.sender)
+    }
+
+    //TODO
+    private val onServiceMethodResponse: Consumer<ServiceServiceMethodCallback> = Consumer { method ->
+        info("onServiceMethodResponse")
+
+        if (method.jobName == "FriendMessages.SendMessage#1") {
+            debug(method.modifiedMessage)
+            debug(method.jobName)
+            debug(method.timestamp.toString())
+        }
+
     }
 
     //TODO
