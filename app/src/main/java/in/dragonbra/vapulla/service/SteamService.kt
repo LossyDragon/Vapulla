@@ -49,6 +49,7 @@ import `in`.dragonbra.vapulla.extension.vapulla
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
+import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.*
 import android.app.Notification
@@ -191,6 +192,7 @@ class SteamService : Service(), VapullaLogger {
         subscriptions.add(callbackMgr.subscribe(OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
         subscriptions.add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
         subscriptions.add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
+        subscriptions.add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethod))
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
                 .setLabel("Reply")
@@ -570,6 +572,11 @@ class SteamService : Service(), VapullaLogger {
             EResult.OK -> {
                 isLoggedIn = true
                 getHandler<SteamNotifications>()?.requestOfflineMessageCount()
+
+                // Set the client's "UI" mode to receive new callbacks.
+                if (steamClient.isConnected)
+                    getHandler<VapullaHandler>()?.setClientUIMode()
+
             }
             EResult.InvalidPassword -> account.loginKey = null
             else -> {
@@ -724,14 +731,14 @@ class SteamService : Service(), VapullaLogger {
                     postMessageNotification(it.sender, it.message)
                 }
             }
-            EChatEntryType.Typing -> {
-                val friend = db.steamFriendDao().find(it.sender.convertToUInt64())
-
-                if (friend != null) {
-                    friend.typingTs = System.currentTimeMillis()
-                    db.steamFriendDao().update(friend)
-                }
-            }
+//            EChatEntryType.Typing -> {
+//                val friend = db.steamFriendDao().find(it.sender.convertToUInt64())
+//
+//                if (friend != null) {
+//                    friend.typingTs = System.currentTimeMillis()
+//                    db.steamFriendDao().update(friend)
+//                }
+//            }
             else -> {
             }
         }
@@ -785,6 +792,43 @@ class SteamService : Service(), VapullaLogger {
         db.chatMessageDao().markRead(it.sender.convertToUInt64())
 
         clearMessageNotifications(it.sender)
+    }
+
+    //TODO
+    private val onServiceMethod: Consumer<ServiceMethodCallback> = Consumer { method ->
+        info("onServiceMethod")
+
+        // Incoming Message! [Chat Message or Typing]
+        if (method.jobName == "FriendMessagesClient.IncomingMessage#1") {
+            //Friend is typing
+            if (method.entryType == EChatEntryType.Typing) {
+                val friend = db.steamFriendDao().find(method.steamID.convertToUInt64())
+
+                if (friend != null) {
+                    friend.typingTs = System.currentTimeMillis()
+                    db.steamFriendDao().update(friend)
+                }
+            }
+
+            // Handle incoming stickers for now
+            if (method.entryType == EChatEntryType.ChatMsg &&
+                    method.message.contains("limit=\"0\"][/sticker]") &&
+                    method.message.isNotEmpty()) {
+
+                db.chatMessageDao().insert(ChatMessage(
+                        method.message,
+                        System.currentTimeMillis(),
+                        method.steamID.convertToUInt64(),
+                        false,
+                        chatFriendId != method.steamID.convertToUInt64(),
+                        false
+                ))
+
+                if (method.steamID.convertToUInt64() != chatFriendId) {
+                    postMessageNotification(method.steamID, method.message)
+                }
+            }
+        }
     }
 
     //endregion

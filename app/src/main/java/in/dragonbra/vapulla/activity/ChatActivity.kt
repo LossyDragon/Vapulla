@@ -159,7 +159,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             }
 
             if ((friend.lastMessageTime == null || friend.typingTs > friend.lastMessageTime!!)
-                    && friend.typingTs > System.currentTimeMillis() - 20000L) {
+                    && friend.typingTs > System.currentTimeMillis() - 15000L) {
                 friendStatus.text = getString(R.string.statusTyping)
                 friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, R.color.colorAccent))
                 friendStatus.bold()

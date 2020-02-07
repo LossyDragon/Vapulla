@@ -3,22 +3,25 @@ package `in`.dragonbra.vapulla.chat
 import `in`.dragonbra.vapulla.util.Utils
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.text.Spannable
 import android.text.style.ImageSpan
 import android.widget.TextView
-import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import kotlin.math.roundToInt
 
 class EmoteTarget(val context: Context,
                   val view: TextView,
-                  val span: Spannable,
+                  private val span: Spannable,
                   val start: Int,
                   val end: Int,
                   sizeDp: Float,
-                  val targets: MutableList<EmoteTarget>?) :
-        SimpleTarget<Bitmap>(Utils.convertDpToPixel(sizeDp, context).roundToInt(),
-                Utils.convertDpToPixel(sizeDp, context).roundToInt()) {
+                  private val targets: MutableList<Any>?) :
+        CustomTarget<Bitmap>(
+                Utils.convertDpToPixel(sizeDp, context).roundToInt(),
+                Utils.convertDpToPixel(sizeDp, context).roundToInt()
+        ) {
 
     @Volatile
     private var cancelled = false
@@ -31,6 +34,10 @@ class EmoteTarget(val context: Context,
             view.requestLayout()
             targets?.remove(this)
         }
+    }
+
+    override fun onLoadCleared(placeholder: Drawable?) {
+
     }
 
     fun cancel() {

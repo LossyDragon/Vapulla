@@ -7,20 +7,23 @@ import `in`.dragonbra.javasteam.handlers.ClientMsgHandler
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverFriends.CMsgClientEmoticonList
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverFriends.CMsgClientGetEmoticonList
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_Notification
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
+import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
 
 class VapullaHandler : ClientMsgHandler() {
 
     override fun handleMsg(packetMsg: IPacketMsg) {
         when (packetMsg.msgType) {
             EMsg.ClientEmoticonList -> handleEmoticonList(packetMsg)
+            EMsg.ServiceMethod -> handleServiceMethod(packetMsg)
             else -> {
             }
         }
     }
 
     // Set the UIMode so that we can receive Unified callbacks
-    // Send this on onLoggedIn to enable 'new' steam features.
+    // Send this on onLoggedOn to enable 'new' steam features.
     fun setClientUIMode() {
         val request = ClientMsgProtobuf<SteammessagesClientserver2.CMsgClientUIMode.Builder>(
                 SteammessagesClientserver2.CMsgClientUIMode::class.java, EMsg.ClientCurrentUIMode).apply {
@@ -42,5 +45,12 @@ class VapullaHandler : ClientMsgHandler() {
                 CMsgClientEmoticonList::class.java, packetMsg)
 
         client.postCallback(EmoticonListCallback(msg.body))
+    }
+
+    private fun handleServiceMethod(packetMsg: IPacketMsg) {
+        val msg = ClientMsgProtobuf<CFriendMessages_IncomingMessage_Notification.Builder>(
+                CFriendMessages_IncomingMessage_Notification::class.java, packetMsg)
+
+        client.postCallback(ServiceMethodCallback(msg.body, msg.header.proto.targetJobName))
     }
 }
