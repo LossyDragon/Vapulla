@@ -17,7 +17,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        tools:ignore="AllowBackup">
+        tools:ignore="AllowBackup,UnusedAttribute">
         <activity
             android:name=".activity.LoginActivity"
             android:launchMode="singleTop"
@@ -59,6 +59,7 @@
         <activity
             android:name=".activity.SettingsActivity"
             android:label="@string/title_activity_settings"
+            android:theme="@style/AppTheme.Settings"
             android:parentActivityName=".activity.HomeActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

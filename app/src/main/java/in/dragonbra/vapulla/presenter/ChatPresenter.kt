@@ -19,11 +19,13 @@ import `in`.dragonbra.vapulla.retrofit.ImageRequestBody
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.view.ChatView
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Handler
 import android.os.IBinder
@@ -99,10 +101,12 @@ class ChatPresenter(context: Context,
 
     override fun onPostCreate() {
         chatData = LivePagedListBuilder(chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50).build()
-        chatData.observe(view as ChatActivity, chatObserver)
+        //chatData.observe(view as ChatActivity, chatObserver)
+        ifViewAttached { chatData.observe(it as ChatActivity, chatObserver) }
 
         friendData = steamFriendsDao.findLive(steamId.convertToUInt64())
-        friendData.observe(view as ChatActivity, friendObserver)
+        //friendData.observe(view as ChatActivity, friendObserver)
+        ifViewAttached { friendData.observe(it as ChatActivity, friendObserver) }
 
         friendData.value?.let {
             if (it.gameAppId > 0) {
@@ -113,7 +117,8 @@ class ChatPresenter(context: Context,
         }
 
         emoticonData = emoticonDao.getLive()
-        emoticonData.observe(view as ChatActivity, emoteObserver)
+        //emoticonData.observe(view as ChatActivity, emoteObserver)
+        ifViewAttached { emoticonData.observe(it as ChatActivity, emoteObserver) }
 
         ifViewAttached {
             it.showChat(chatData.value)
@@ -158,9 +163,11 @@ class ChatPresenter(context: Context,
         updateHandler.postDelayed({ updateFriend() }, UPDATE_INTERVAL)
     }
 
+    //TODO getMessageHistory
     private fun getMessageHistory() {
         runOnBackgroundThread {
             steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
+            steamService?.getMessageHistory(steamId)
         }
     }
 
@@ -268,7 +275,13 @@ class ChatPresenter(context: Context,
             it.showUploadDialog()
         }
         runOnBackgroundThread {
-            val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, image)
+            val bitmap = if (Utils.isGreaterThanP()) {
+                val source = ImageDecoder.createSource(context.contentResolver, image)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaStore.Images.Media.getBitmap(context.contentResolver, image)
+            }
 
             val baos = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)

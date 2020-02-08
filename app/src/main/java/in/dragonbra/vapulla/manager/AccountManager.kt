@@ -63,12 +63,12 @@ class AccountManager(private val context: Context) {
 
     var sentrySize: Long
         get() = File(context.filesDir, SENTRY_FILE_NAME).length()
-        private set(value) {}
+        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     fun updateSentryFile(callback: UpdateMachineAuthCallback) {
         val sentryFile = File(context.filesDir, SENTRY_FILE_NAME)
         FileOutputStream(sentryFile).use {
-            val channel = it.channel;
+            val channel = it.channel
             channel.position(callback.offset.toLong())
             channel.write(ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite))
         }
@@ -95,7 +95,7 @@ class AccountManager(private val context: Context) {
         val digest = MessageDigest.getInstance("SHA-1")
 
         val buffer = ByteArray(8192)
-        var n = 0;
+        var n = 0
 
         FileInputStream(file).use {
             while (n != -1) {

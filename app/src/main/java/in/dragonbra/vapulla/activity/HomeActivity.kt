@@ -77,6 +77,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
         searchButton.click(this::openSearch)
         closeSearchButton.click(this::closeSearch)
 
+        //kotlin.UninitializedPropertyAccessException: lateinit property friendsData has not been initialized
         searchInput.isEnabled = false
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable) {

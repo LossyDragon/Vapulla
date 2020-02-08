@@ -252,7 +252,6 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             positiveButton(R.string.dialogSet)
             negativeButton(R.string.dialogCancel)
         }
-
     }
 
     override fun browseUrl(url: String) {
@@ -276,10 +275,8 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     }
 
     override fun onEmoteSelected(emoticon: Emoticon) {
-
         if(emoticon.isSticker) {
-            val stickerText = "/sticker ${emoticon.name}"
-            presenter.sendMessage(stickerText)
+            presenter.sendMessage("/sticker ${emoticon.name}")
         } else {
             messageBox.text.insert(messageBox.selectionStart, ":${emoticon.name}:")
         }
@@ -353,7 +350,6 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             messageBox.setText("")
             presenter.sendMessage(message)
         }
-
     }
 
     @Suppress("UNUSED_PARAMETER")

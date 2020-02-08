@@ -31,6 +31,7 @@ object Utils {
     fun isLessThanN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
     fun isAtLeastN() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
     fun isGreaterThanO() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+    fun isGreaterThanP() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
     fun getAvatarUrl(avatar: String?) =
             if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == ALL_ZEROS) {

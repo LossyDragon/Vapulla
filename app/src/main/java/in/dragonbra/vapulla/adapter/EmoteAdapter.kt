@@ -6,6 +6,7 @@ import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
 import `in`.dragonbra.vapulla.util.Utils.STICKER_URL
 import android.content.Context
+import android.os.Handler
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +21,7 @@ import com.bumptech.glide.request.target.Target
 import com.github.penfeizhou.animation.apng.APNGDrawable
 import kotlinx.android.synthetic.main.list_emote.view.*
 import java.io.File
+
 
 class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : RecyclerView.Adapter<EmoteAdapter.ViewHolder>() {
 
@@ -73,10 +75,12 @@ class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : 
                     override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<File>?, isFirstResource: Boolean): Boolean = false
 
                     override fun onResourceReady(resource: File?, model: Any?, target: Target<File>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                        v.emote.setImageDrawable(APNGDrawable.fromFile(resource!!.absolutePath))
+                        //Only the original thread that created a view hierarchy can touch its views.
+                        Handler(v.context.mainLooper).post {
+                            v.emote.setImageDrawable(APNGDrawable.fromFile(resource!!.absolutePath))
+                        }
                         return true
                     }
-
                 })
                 .submit()
     }

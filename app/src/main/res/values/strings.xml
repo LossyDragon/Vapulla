@@ -87,7 +87,7 @@
 
     <string name="dialogYes">Yes</string>
     <string name="dialogNo">No</string>
-    <string name="dialogTitleNickname">Set nickname</string>
+    <string name="dialogTitleNickname">Set profile name</string>
     <string name="dialogCancel">Cancel</string>
     <string name="dialogSet">Set</string>
     <string name="dialogMessageImgur">Link your Imgur account to send images to your friends.</string>
@@ -169,6 +169,8 @@
     <string name="loadingTextLoggingIn">Logging in…</string>
     <string name="loadingTextSteamGuardMobile">Enter your steam guard code from your mobile authenticator app</string>
     <string name="loadingTextSteamGuardEmail">Enter your steam guard code you get through your email</string>
+    <string name="prefTitleClearNotifications">Clear notifications</string>
+    <string name="prefSummaryClearNotifications">Clear any chat or request notifications once the app is open.</string>
 
     <!--endregion-->
 

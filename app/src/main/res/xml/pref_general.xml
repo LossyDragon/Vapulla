@@ -27,15 +27,21 @@
 
     </PreferenceCategory>
 
-    <!--<PreferenceCategory android:title="@string/prefCategoryOther">
+    <PreferenceCategory android:title="@string/prefCategoryOther">
+
+        <!--        <SwitchPreference-->
+        <!--            android:defaultValue="false"-->
+        <!--            android:icon="@drawable/ic_bubble"-->
+        <!--            android:key="pref_chat_bubble"-->
+        <!--            android:title="@string/prefTitleChatBubble" />-->
 
         <SwitchPreference
             android:defaultValue="false"
-            android:icon="@drawable/ic_bubble"
-            android:key="pref_chat_bubble"
-            android:title="@string/prefTitleChatBubble" />
+            android:key="pref_clear_notifications"
+            android:title="@string/prefTitleClearNotifications"
+            android:summary="@string/prefSummaryClearNotifications"/>
 
-    </PreferenceCategory>-->
+    </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/prefCategoryAbout">
 

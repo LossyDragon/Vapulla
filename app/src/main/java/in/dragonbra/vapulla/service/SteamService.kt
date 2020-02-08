@@ -60,6 +60,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.os.Binder
 import android.os.Handler
@@ -67,6 +68,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.text.format.DateUtils
 import androidx.core.app.*
+import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import org.spongycastle.util.encoders.Hex
 import java.io.Closeable
@@ -119,6 +121,8 @@ class SteamService : Service(), VapullaLogger {
 
     private lateinit var handler: Handler
 
+    private lateinit var prefs: SharedPreferences
+
     @Inject
     lateinit var db: VapullaDatabase
 
@@ -160,6 +164,7 @@ class SteamService : Service(), VapullaLogger {
     override fun onCreate() {
         vapulla().graph.inject(this)
         super.onCreate()
+
         info("onCreate")
 
         handlerThread.start()
@@ -170,40 +175,46 @@ class SteamService : Service(), VapullaLogger {
         val config = SteamConfiguration.create {
             it.withServerListProvider(FileServerListProvider(File(filesDir, SERVERS_FILE)))
         }
-        steamClient = SteamClient(config)
-        steamClient.addHandler(VapullaHandler())
 
-        steamClient.removeHandler(SteamApps::class.java)
-        steamClient.removeHandler(SteamCloud::class.java)
-        steamClient.removeHandler(SteamGameCoordinator::class.java)
-        steamClient.removeHandler(SteamGameServer::class.java)
-        steamClient.removeHandler(SteamMasterServer::class.java)
-        steamClient.removeHandler(SteamScreenshots::class.java)
-        steamClient.removeHandler(SteamUserStats::class.java)
-        steamClient.removeHandler(SteamWorkshop::class.java)
+        steamClient = SteamClient(config).apply {
+            addHandler(VapullaHandler())
+
+            removeHandler(SteamApps::class.java)
+            removeHandler(SteamCloud::class.java)
+            removeHandler(SteamGameCoordinator::class.java)
+            removeHandler(SteamGameServer::class.java)
+            removeHandler(SteamMasterServer::class.java)
+            removeHandler(SteamScreenshots::class.java)
+            removeHandler(SteamUserStats::class.java)
+            removeHandler(SteamWorkshop::class.java)
+        }
 
         callbackMgr = CallbackManager(steamClient)
 
-        subscriptions.add(callbackMgr.subscribe(DisconnectedCallback::class.java, onDisconnected))
-        subscriptions.add(callbackMgr.subscribe(ConnectedCallback::class.java, onConnected))
-        subscriptions.add(callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn))
-        subscriptions.add(callbackMgr.subscribe(LoggedOffCallback::class.java, onLoggedOff))
-        subscriptions.add(callbackMgr.subscribe(LoginKeyCallback::class.java, onNewLoginKey))
-        subscriptions.add(callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth))
-        subscriptions.add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
-        subscriptions.add(callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList))
-        subscriptions.add(callbackMgr.subscribe(FriendMsgHistoryCallback::class.java, onFriendMsgHistory))
-        subscriptions.add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
-        subscriptions.add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
-        subscriptions.add(callbackMgr.subscribe(OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
-        subscriptions.add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
-        subscriptions.add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
-        subscriptions.add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethod))
-        subscriptions.add(callbackMgr.subscribe(ServiceServiceMethodCallback::class.java, onServiceMethodResponse))
+        subscriptions.apply {
+            add(callbackMgr.subscribe(DisconnectedCallback::class.java, onDisconnected))
+            add(callbackMgr.subscribe(ConnectedCallback::class.java, onConnected))
+            add(callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn))
+            add(callbackMgr.subscribe(LoggedOffCallback::class.java, onLoggedOff))
+            add(callbackMgr.subscribe(LoginKeyCallback::class.java, onNewLoginKey))
+            add(callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth))
+            add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
+            add(callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList))
+            add(callbackMgr.subscribe(FriendMsgHistoryCallback::class.java, onFriendMsgHistory))
+            add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
+            add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
+            add(callbackMgr.subscribe(OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
+            add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
+            add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
+            add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethod))
+            add(callbackMgr.subscribe(ServiceServiceMethodCallback::class.java, onServiceMethodResponse))
+        }
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
                 .setLabel("Reply")
                 .build()
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -388,6 +399,8 @@ class SteamService : Service(), VapullaLogger {
         val pendingIntent = TaskStackBuilder.create(this)
                 .addNextIntentWithParentStack(intent)
                 .getPendingIntent(friendId.convertToUInt64().toInt(), PendingIntent.FLAG_UPDATE_CURRENT)
+
+
         val notification = NotificationCompat.Builder(this, "vapulla-message")
                 .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
                 .setStyle(style)
@@ -395,17 +408,20 @@ class SteamService : Service(), VapullaLogger {
                 .setLargeIcon(bitmap)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
-                .setPriority(Notification.PRIORITY_HIGH)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setOnlyAlertOnce(backoff)
                 .addAction(replyAction)
                 .build()
 
         notificationManager.notify(friendId.convertToUInt64().toInt(), notification)
 
-//        if (isActivityRunning) {
-//            // TODO delayed notification remove?
-//            //removeNotifications()
-//        }
+        if (isActivityRunning && prefs.getBoolean("pref_clear_notifications", false)) {
+            removeNotifications()
+        }
+    }
+
+    private fun removeNotifications() {
+        notificationManager.cancelAll()
     }
 
     private fun postFriendRequestNotification(state: PersonaState) {
@@ -455,7 +471,7 @@ class SteamService : Service(), VapullaLogger {
                 .setContentText(getString(R.string.notificationMessageFriendRequest, state.name))
                 .setContentTitle(getString(R.string.notificationTitleFriendRequest))
                 .setAutoCancel(true)
-                .setPriority(Notification.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, HomeActivity::class.java), 0))
                 .addAction(R.drawable.ic_check, getString(R.string.notificationActionAccept), acceptPendingIntent)
                 .addAction(R.drawable.ic_close, getString(R.string.notificationActionIgnore), ignorePendingIntent)
@@ -484,6 +500,10 @@ class SteamService : Service(), VapullaLogger {
 
     fun removeChatFriendId() {
         chatFriendId = null
+    }
+
+    fun getMessageHistory(steamID2: SteamID) {
+        getHandler<VapullaHandler>()?.getRecentMessages(account.steamId, steamID2)
     }
 
     fun sendMessage(id: SteamID, message: String, emoteSet: Set<String>) {
@@ -807,9 +827,17 @@ class SteamService : Service(), VapullaLogger {
         info("onServiceMethodResponse")
 
         if (method.jobName == "FriendMessages.SendMessage#1") {
-            debug(method.modifiedMessage)
-            debug(method.jobName)
+            debug(method.modifiedMessage!!)
+            debug(method.jobName!!)
             debug(method.timestamp.toString())
+        }
+
+        //TODO: Resume implementing this.
+        if (method.jobName == "FriendMessages.GetRecentMessages#1") {
+            debug(method.jobName!!)
+            method.messageHistory!!.forEach {
+                debug(it.toString())
+            }
         }
 
     }

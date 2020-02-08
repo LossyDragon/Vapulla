@@ -1,39 +1,24 @@
 package `in`.dragonbra.vapulla.activity
 
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
-import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
-import `in`.dragonbra.javasteam.util.Strings
-import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.VapullaApplication
 import `in`.dragonbra.vapulla.data.VapullaDatabase
-import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.ImgurAuthService
-import `in`.dragonbra.vapulla.service.SteamService
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
-import android.annotation.SuppressLint
-import android.content.*
-import android.net.Uri
 import android.os.Bundle
-import android.os.IBinder
-import android.preference.Preference
-import android.view.LayoutInflater
 import android.view.MenuItem
-import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.Toolbar
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
 import androidx.preference.ListPreference
+import androidx.preference.Preference
 import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.android.synthetic.main.dialog_nickname.view.*
-import java.io.Closeable
-import java.util.*
+import kotlinx.android.synthetic.main.activity_settings.*
 import javax.inject.Inject
 
+
 /**
- * A [PreferenceActivity] that presents a set of application settings. On
+ * A [SettingsActivity] that presents a set of application settings. On
  * handset devices, settings are presented as a single list. On tablets,
  * settings are split by category, with category headers shown to the left of
  * the list of settings.
@@ -42,7 +27,7 @@ import javax.inject.Inject
  * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
  * for more information on developing a Settings UI.
  */
-class SettingsActivity : AppCompatPreferenceActivity() {
+class SettingsActivity : AppCompatActivity() {
 
     @Inject
     lateinit var imgurAuthService: ImgurAuthService
@@ -53,38 +38,19 @@ class SettingsActivity : AppCompatPreferenceActivity() {
     @Inject
     lateinit var db: VapullaDatabase
 
-    private lateinit var prefs: SharedPreferences
-
-    private lateinit var steamService: SteamService
-
-    private val subs: MutableList<Closeable?> = LinkedList()
-
-    private val connection: ServiceConnection = object : ServiceConnection {
-        override fun onServiceDisconnected(name: ComponentName) {
-        }
-
-        override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            val binder = service as SteamService.SteamBinder
-            steamService = binder.getService()
-            subs.add(steamService.subscribe<DisconnectedCallback> { onDisconnected() })
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         (application as VapullaApplication).graph.inject(this)
 
-        prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        setContentView(R.layout.activity_settings)
 
-        val v = findViewById<ViewGroup>(android.R.id.list).parent.parent.parent as ViewGroup
-        val toolbar = layoutInflater.inflate(R.layout.toolbar, v, false) as Toolbar?
-
-        v.addView(toolbar, 0)
-
-        setSupportActionBar(findViewById(R.id.toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        setupPreferences()
+        supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.activity_settings, SettingsFragment())
+                .commit()
 
         val uri = intent.data
 
@@ -92,168 +58,51 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             val success = imgurAuthService.authorize(uri)
 
             if (success) {
-                updateImgurPref()
-                Snackbar.make(v, getString(R.string.snackbarImgurLinked), Snackbar.LENGTH_SHORT).show()
+                val fragment: SettingsFragment =
+                        supportFragmentManager.findFragmentById(R.id.activity_settings) as SettingsFragment
+                fragment.updateImgurPref()
+
+                Snackbar.make(activity_settings, getString(R.string.snackbarImgurLinked), Snackbar.LENGTH_SHORT).show()
             } else {
-                Snackbar.make(v, getString(R.string.snackbarImgurLinkFailed), Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(activity_settings, getString(R.string.snackbarImgurLinkFailed), Snackbar.LENGTH_SHORT).show()
             }
         }
+
+
     }
 
-    override fun onStart() {
-        super.onStart()
-        bindService(Intent(this, SteamService::class.java), connection, Context.BIND_AUTO_CREATE)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        unbindService(connection)
-        subs.forEach { it?.close() }
-    }
-
-    override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
         if (id == android.R.id.home) {
-            if (!super.onMenuItemSelected(featureId, item)) {
+            if (!super.onOptionsItemSelected(item)) {
                 NavUtils.navigateUpFromSameTask(this)
             }
             return true
         }
-        return super.onMenuItemSelected(featureId, item)
-    }
-
-    @SuppressLint("InflateParams")
-    @Suppress("DEPRECATION")
-    private fun setupPreferences() {
-        addPreferencesFromResource(R.xml.pref_general)
-
-        /*val chatBubble = findPreference("pref_chat_bubble") as SwitchPreference
-
-        chatBubble.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newVal ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (newVal as Boolean && !Settings.canDrawOverlays(this@SettingsActivity)) {
-                    startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
-                    return@OnPreferenceChangeListener false
-                }
-            }
-            true
-        }*/
-
-        updateImgurPref()
-
-        val changeUserPreference = findPreference("pref_change_user")
-        changeUserPreference.summary = getString(R.string.prefSummaryChangeUser, accountManager.username)
-        changeUserPreference.click {
-            val builder = AlertDialog.Builder(this)
-
-            builder.setMessage(getString(R.string.dialogMessageChangeUser))
-                    .setTitle(getString(R.string.dialogTitleChangeUser))
-                    .setPositiveButton(R.string.dialogYes) { _, _ ->
-                        runOnBackgroundThread {
-                            runOnBackgroundThread { steamService.disconnect() }
-                            clearData()
-                        }
-                    }
-                    .setNegativeButton(R.string.dialogNo, null)
-
-            builder.create().show()
-            true
-        }
-
-        val changeProfileName = findPreference("pref_change_profile_name")
-        changeProfileName.summary = accountManager.nickname
-        changeProfileName.click {
-            val v = LayoutInflater.from(this).inflate(R.layout.dialog_nickname, null)
-            v.nickname.setText(accountManager.nickname)
-
-            val builder = AlertDialog.Builder(this)
-                    .setTitle(R.string.dialogTitleNickname)
-                    .setView(v)
-                    .setPositiveButton(R.string.dialogSet) { _, _ ->
-                        val name = v.nickname.text.toString()
-                        if (Strings.isNullOrEmpty(name)) {
-                            return@setPositiveButton
-                        }
-                        runOnBackgroundThread {
-                            steamService.getHandler<SteamFriends>()?.setPersonaName(name)
-                        }
-                        changeProfileName.summary = name
-                    }
-                    .setNegativeButton(R.string.dialogCancel, null)
-
-            builder.create().show()
-            true
-        }
-
-        // region About
-
-        findPreference("pref_version").summary = BuildConfig.VERSION_NAME
-
-        //TODO
-        findPreference("pref_rate_app").click {
-            browse("market://details?id=$packageName")
-            //if (!browse("market://details?id=$packageName")) {
-            //    browse("https://play.google.com/store/apps/details?id=$packageName")
-            //}
-            true
-        }
-
-        findPreference("pref_source_code").click {
-            browse("https://github.com/Longi94/Vapulla")
-            true
-        }
-
-        findPreference("pref_licences").click {
-            browse("https://raw.githubusercontent.com/Longi94/Vapulla/master/third_party.txt")
-            true
-        }
-
-        // endregion
-
-        bindPreferenceSummaryToValue(findPreference("pref_friends_list_recents"))
-    }
-
-    private fun clearData() {
-        accountManager.clear()
-        imgurAuthService.clear()
-
-        db.steamFriendDao().delete()
-        db.chatMessageDao().delete()
-        db.emoticonDao().delete()
-
-        prefs.edit().clear().apply()
-        PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
-    }
-
-    fun onDisconnected() {
-        val loginIntent = Intent(this, LoginActivity::class.java)
-        loginIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(loginIntent)
-    }
-
-    private fun updateImgurPref() {
-        val pref = findPreference("pref_imgur")
-        if (prefs.contains(ImgurAuthService.KEY_IMGUR_USERNAME)) {
-            pref.title = getString(R.string.prefTitleImgurLinked)
-            pref.summary = getString(R.string.prefSummaryImgurLinked, imgurAuthService.getUsername())
-
-            findPreference("pref_imgur").setOnPreferenceClickListener {
-                imgurAuthService.clear()
-                updateImgurPref()
-                true
-            }
-        } else {
-            pref.title = getString(R.string.prefTitleImgur)
-            pref.summary = null
-
-            findPreference("pref_imgur").setOnPreferenceClickListener {
-                browse(imgurAuthService.getAuthUrl())
-                true
-            }
-        }
+        return super.onOptionsItemSelected(item)
     }
 
     companion object {
+        /**
+         * Binds a preference's summary to its value. More specifically, when the
+         * preference's value is changed, its summary (line of text below the
+         * preference title) is updated to reflect the value. The summary is also
+         * immediately updated upon calling this method. The exact display format is
+         * dependent on the type of preference.
+
+         * @see .sBindPreferenceSummaryToValueListener
+         */
+        fun bindPreferenceSummaryToValue(preference: Preference?) {
+            // Set the listener to watch for value changes.
+            preference?.onPreferenceChangeListener = sBindPreferenceSummaryToValueListener
+
+            // Trigger the listener immediately with the preference's
+            // current value.
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                    PreferenceManager
+                            .getDefaultSharedPreferences(preference?.context)
+                            .getString(preference?.key, ""))
+        }
 
         /**
          * A preference value change listener that updates the preference's summary
@@ -274,61 +123,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
                         else
                             null)
 
-            }/* else if (preference is RingtonePreference) {
-                // For ringtone preferences, look up the correct display value
-                // using RingtoneManager.
-                if (TextUtils.isEmpty(stringValue)) {
-                    // Empty values correspond to 'silent' (no ringtone).
-                    preference.setSummary(R.string.pref_ringtone_silent)
-
-                } else {
-                    val ringtone = RingtoneManager.getRingtone(
-                            preference.getContext(), Uri.parse(stringValue))
-
-                    if (ringtone == null) {
-                        // Clear the summary if there was a lookup error.
-                        preference.setSummary(null)
-                    } else {
-                        // Set the summary to reflect the new ringtone display
-                        // name.
-                        val name = ringtone.getTitle(preference.getContext())
-                        preference.setSummary(name)
-                    }
-                }
-
-            } */ else {
+            } else {
                 // For all other preferences, set the summary to the value's
                 // simple string representation.
                 preference.summary = stringValue
             }
             true
         }
-
-        /**
-         * Binds a preference's summary to its value. More specifically, when the
-         * preference's value is changed, its summary (line of text below the
-         * preference title) is updated to reflect the value. The summary is also
-         * immediately updated upon calling this method. The exact display format is
-         * dependent on the type of preference.
-
-         * @see .sBindPreferenceSummaryToValueListener
-         */
-        private fun bindPreferenceSummaryToValue(preference: Preference) {
-            // Set the listener to watch for value changes.
-            preference.onPreferenceChangeListener = sBindPreferenceSummaryToValueListener
-
-            // Trigger the listener immediately with the preference's
-            // current value.
-            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                    PreferenceManager
-                            .getDefaultSharedPreferences(preference.context)
-                            .getString(preference.key, ""))
-        }
-    }
-
-    private fun browse(url: String) {
-        startActivity(Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(url)
-        })
     }
 }

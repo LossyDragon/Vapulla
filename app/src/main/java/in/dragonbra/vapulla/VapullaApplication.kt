@@ -33,25 +33,33 @@ class VapullaApplication : Application() {
 
         if (isGreaterThanO()) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val serviceChannel = NotificationChannel("vapulla-service",
+            val serviceChannel = NotificationChannel(
+                    "vapulla-service",
                     "Vapulla service",
-                    NotificationManager.IMPORTANCE_LOW)
+                    NotificationManager.IMPORTANCE_LOW
+            )
+
             serviceChannel.enableVibration(false)
             serviceChannel.importance = NotificationManager.IMPORTANCE_LOW
             serviceChannel.enableLights(false)
             notificationManager.createNotificationChannel(serviceChannel)
 
-            val friendRequestChannel = NotificationChannel("vapulla-friend-request",
+            val friendRequestChannel = NotificationChannel(
+                    "vapulla-friend-request",
                     "Friend request",
-                    NotificationManager.IMPORTANCE_DEFAULT)
+                    NotificationManager.IMPORTANCE_DEFAULT
+            )
+
             friendRequestChannel.importance = NotificationManager.IMPORTANCE_DEFAULT
             friendRequestChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             friendRequestChannel.lightColor = 0xffffffff.toInt()
             notificationManager.createNotificationChannel(friendRequestChannel)
 
-
-            val messageChannel = NotificationChannel("vapulla-message", "New messages",
-                    NotificationManager.IMPORTANCE_HIGH)
+            val messageChannel = NotificationChannel(
+                    "vapulla-message",
+                    "New messages",
+                    NotificationManager.IMPORTANCE_HIGH
+            )
 
             messageChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             messageChannel.lightColor = 0xffffffff.toInt()

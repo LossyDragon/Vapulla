@@ -18,7 +18,7 @@ class CircleTransform : BitmapTransformation() {
         val x = (source.width - size) / 2
         val y = (source.height - size) / 2
 
-        // TODO this could be acquired from the pool too
+        // TO DO this could be acquired from the pool too
         val squared = Bitmap.createBitmap(source, x, y, size, size)
 
         val result = pool.get(size, size, Bitmap.Config.ARGB_8888)

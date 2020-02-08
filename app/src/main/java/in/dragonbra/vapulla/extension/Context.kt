@@ -3,6 +3,7 @@ package `in`.dragonbra.vapulla.extension
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.R
 import android.content.Context
+import android.util.Log
 
 fun Context.getErrorMessage(result: EResult, extendedResult: EResult? = null): String =
         when (result) {
@@ -11,4 +12,6 @@ fun Context.getErrorMessage(result: EResult, extendedResult: EResult? = null): S
             EResult.TwoFactorCodeMismatch -> getString(R.string.errorMessageTwoFactorCodeMismatch)
             EResult.InvalidLoginAuthCode -> getString(R.string.errorMessageInvalidLoginAuthCode)
             else -> result.toString()
+        }.also {
+            Log.w(this::class.java.simpleName, "getErrorMessage(): $extendedResult")
         }

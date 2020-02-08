@@ -152,8 +152,12 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
                 errorText.text = errorMessage
             }
 
-            loadingText.setText(if (is2Fa) getString(R.string.loadingTextSteamGuardMobile) else
-                getString(R.string.loadingTextSteamGuardEmail))
+            loadingText.setText(
+                    if (is2Fa)
+                        getString(R.string.loadingTextSteamGuardMobile)
+                    else
+                        getString(R.string.loadingTextSteamGuardEmail)
+            )
 
             val layout = errorMessage?.let { R.layout.activity_login_frame_steamguard_error }
                     ?: run { R.layout.activity_login_frame_steamguard }

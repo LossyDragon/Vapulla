@@ -6,6 +6,7 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.extension.hide
 import `in`.dragonbra.vapulla.extension.longClick
 import `in`.dragonbra.vapulla.extension.show
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -24,6 +25,7 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
     : PagedListAdapter<ChatMessage, ChatAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     companion object {
+        @SuppressLint("ConstantLocale")
         private val TIME_FORMAT = SimpleDateFormat("HH:mm", Locale.getDefault())
         const val VIEW_TYPE_RECEIVED = 0
         const val VIEW_TYPE_SENT = 1
@@ -75,7 +77,7 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
         fun bind(message: ChatMessage, showDate: Boolean) {
             paperPlane.load(v.message, message.message, showUrl = true, showStickers = true)
 
-            // TODO the spannable breaks events, the selector of the parent is still broken
+            // TO DO the spannable breaks events, the selector of the parent is still broken
             v.message.longClick {
                 (it.parent as View).performLongClick()
             }
