@@ -8,6 +8,7 @@ import `in`.dragonbra.vapulla.activity.HomeActivity
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
@@ -84,6 +85,10 @@ class HomePresenter(context: Context,
             it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
                     ?: listOf(), updateTime)
         }
+    }
+
+    fun refreshFriendsList() {
+        runOnBackgroundThread { steamService?.getHandler<VapullaHandler>()?.getFriendsList() }
     }
 
     fun disconnect() {

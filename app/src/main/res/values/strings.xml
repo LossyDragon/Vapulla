@@ -13,6 +13,7 @@
     <string name="statusOffline">Last seen %1$s</string>
     <string name="statusOfflineLabel">Offline</string>
     <string name="statusAway">Away</string>
+    <string name="statusInvisible">Invisible</string>
     <string name="statusSnooze">Snooze</string>
     <string name="statusBusy">Busy</string>
     <string name="statusPlaying">Playing %1$s</string>

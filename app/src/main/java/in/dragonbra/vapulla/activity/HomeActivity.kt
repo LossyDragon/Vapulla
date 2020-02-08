@@ -89,6 +89,11 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             }
         })
+
+        friendsListSwipe.setOnRefreshListener {
+            presenter.refreshFriendsList()
+            friendsListSwipe.isRefreshing = false
+        }
     }
 
     override fun onResume() {
@@ -201,9 +206,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
             val status = when (it.itemId) {
                 R.id.online -> EPersonaState.Online
                 R.id.away -> EPersonaState.Away
-                R.id.busy -> EPersonaState.Busy
-                R.id.lookingToTrade -> EPersonaState.LookingToTrade
-                R.id.lookingToPlay -> EPersonaState.LookingToPlay
+                R.id.invisible -> EPersonaState.Invisible
                 else -> EPersonaState.Offline
             }
             presenter.changeStatus(status)

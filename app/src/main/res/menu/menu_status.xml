@@ -7,14 +7,8 @@
         android:id="@+id/away"
         android:title="@string/statusAway" />
     <item
-        android:id="@+id/busy"
-        android:title="@string/statusBusy" />
-    <item
-        android:id="@+id/lookingToTrade"
-        android:title="@string/statusLookingTrade" />
-    <item
-        android:id="@+id/lookingToPlay"
-        android:title="@string/statusLookingPlay" />
+        android:id="@+id/invisible"
+        android:title="@string/statusInvisible" />
     <item
         android:id="@+id/offline"
         android:title="@string/statusOfflineLabel" />
