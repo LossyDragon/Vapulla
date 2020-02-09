@@ -39,7 +39,7 @@
 
     <!--region Preference titles-->
 
-    <string name="prefTitleChatBubble">Chat Bubbles</string>
+<!--    <string name="prefTitleChatBubble">Chat Bubbles</string>-->
     <string name="prefTitleImgur">Link Imgur account</string>
     <string name="prefTitleImgurLinked">Imgur</string>
     <string name="prefTitleChangeUser">Change user</string>
@@ -111,7 +111,7 @@
     <string name="editTextHintMessage">Type a message…</string>
     <string name="editTextHintUsername">Username</string>
     <string name="editTextHintPassword">Password</string>
-    <string name="editTextHingNickname">Nickname</string>
+<!--    <string name="editTextHingNickname">Nickname</string>-->
     <string name="editTextHintSteamGuard">Steam guard</string>
     <string name="editTextHintSearchFriend">Search for a friend…</string>
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge xmlns:android="http://schemas.android.com/apk/res/android"
+<merge xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <ImageView
@@ -10,7 +11,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/animated_vapulla_bottom" />
+        app:srcCompat="@drawable/animated_vapulla_bottom"
+        tools:ignore="ContentDescription" />
 
     <ImageView
         android:id="@+id/vapullaLogoMiddle"
@@ -20,7 +22,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/animated_vapulla_middle" />
+        app:srcCompat="@drawable/animated_vapulla_middle"
+        tools:ignore="ContentDescription" />
 
     <ImageView
         android:id="@+id/vapullaLogoTop"
@@ -30,6 +33,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/vapulla_top" />
+        app:srcCompat="@drawable/vapulla_top"
+        tools:ignore="ContentDescription" />
 
 </merge>

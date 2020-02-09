@@ -42,18 +42,20 @@
             android:id="@+id/nameLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:layout_marginStart="88dp"
             android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:gravity="start"
+            android:gravity="left"
             app:layout_constraintEnd_toStartOf="@id/time"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="RtlHardcoded">
 
             <TextView
                 android:id="@+id/username"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_toStartOf="@id/nickname"
                 android:ellipsize="marquee"
                 android:singleLine="true"
                 android:textColor="@color/textPrimary"
@@ -63,7 +65,6 @@
             <TextView
                 android:id="@+id/nickname"
                 android:layout_width="wrap_content"
-                android:layout_toEndOf="@id/username"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_marginStart="4dp"
@@ -72,6 +73,7 @@
 
         </RelativeLayout>
 
+
         <ImageView
             android:id="@+id/mobileIndicator"
             android:layout_width="18dp"
@@ -79,7 +81,8 @@
             android:src="@drawable/ic_cellphone"
             android:tint="@color/textSecondary"
             app:layout_constraintStart_toEndOf="@id/status"
-            app:layout_constraintTop_toTopOf="@id/status" />
+            app:layout_constraintTop_toTopOf="@id/status"
+            tools:ignore="ContentDescription" />
 
         <ImageView
             android:id="@+id/webIndicator"
@@ -88,7 +91,8 @@
             android:src="@drawable/ic_web"
             android:tint="@color/textSecondary"
             app:layout_constraintStart_toEndOf="@id/status"
-            app:layout_constraintTop_toTopOf="@id/status" />
+            app:layout_constraintTop_toTopOf="@id/status"
+            tools:ignore="ContentDescription" />
 
         <TextView
             android:id="@+id/status"

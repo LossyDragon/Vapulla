@@ -15,7 +15,8 @@
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@color/colorPrimary" />
+        app:srcCompat="@color/colorPrimary"
+        tools:ignore="ContentDescription" />
 
     <TextView
         android:id="@+id/localUsername"
@@ -55,7 +56,8 @@
         android:src="@drawable/ic_dots_vertical"
         android:tint="#fff"
         app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="ContentDescription" />
 
     <ImageView
         android:id="@+id/statusButton"
@@ -67,7 +69,8 @@
         android:src="@drawable/ic_arrow_drop_down"
         android:tint="#fff"
         app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/searchButton" />
+        app:layout_constraintEnd_toStartOf="@+id/searchButton"
+        tools:ignore="ContentDescription" />
 
     <ImageView
         android:id="@+id/searchButton"
@@ -79,7 +82,8 @@
         android:src="@drawable/ic_search"
         android:tint="#fff"
         app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/moreButton" />
+        app:layout_constraintEnd_toStartOf="@+id/moreButton"
+        tools:ignore="ContentDescription" />
 
     <ImageView
         android:id="@+id/closeSearchButton"
@@ -92,7 +96,8 @@
         android:src="@drawable/ic_close"
         android:tint="#fff"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ContentDescription" />
 
     <EditText
         android:id="@+id/searchInput"
@@ -106,6 +111,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/closeSearchButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:importantForAutofill="no" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

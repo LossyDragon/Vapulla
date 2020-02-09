@@ -1,7 +1,6 @@
 package `in`.dragonbra.vapulla.steam.callback
 
 import `in`.dragonbra.javasteam.enums.EChatEntryType
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_NotificationOrBuilder
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 import `in`.dragonbra.javasteam.types.SteamID

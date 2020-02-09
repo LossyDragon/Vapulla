@@ -31,7 +31,8 @@
                 android:onClick="navigateUp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@color/colorPrimary" />
+                app:srcCompat="@color/colorPrimary"
+                tools:ignore="ContentDescription" />
 
             <ImageView
                 android:id="@+id/backButton"
@@ -44,19 +45,21 @@
                 android:src="@drawable/ic_chevron_left"
                 android:tint="#fff"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="ContentDescription" />
 
             <RelativeLayout
                 android:id="@+id/nameLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
                 android:layout_marginStart="76dp"
                 android:layout_marginTop="8dp"
-                android:layout_marginEnd="8dp"
                 android:gravity="left"
                 app:layout_constraintEnd_toStartOf="@id/moreButton"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="RtlHardcoded">
 
                 <TextView
                     android:id="@+id/friendUsername"
@@ -102,7 +105,8 @@
                 android:src="@drawable/ic_dots_vertical"
                 android:tint="#fff"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="ContentDescription" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -174,7 +178,8 @@
             android:tint="@color/textPrimary"
             app:layout_constraintEnd_toStartOf="@+id/emoteButton"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_image" />
+            app:srcCompat="@drawable/ic_image"
+            tools:ignore="ContentDescription" />
 
         <ImageView
             android:id="@+id/emoteButton"

@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.data.entity
 
+import android.annotation.SuppressLint
 import androidx.room.*
 import java.text.DateFormat
 import java.util.*
@@ -15,11 +16,12 @@ data class ChatMessage(
         @ColumnInfo(name = "timestamp_confirmed") var timestampConfirmed: Boolean
 ) {
     companion object {
+        @SuppressLint("ConstantLocale")
         private val DATE_FORMAT = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
     }
 
     @Ignore
-    val formattedTs = DATE_FORMAT.format(Date(timestamp)).toUpperCase()
+    val formattedTs = DATE_FORMAT.format(Date(timestamp)).toUpperCase(Locale.ROOT)
 
     @Ignore
     constructor(message: String, timestamp: Long, friendId: Long, fromLocal: Boolean, unread: Boolean, timestampConfirmed: Boolean)

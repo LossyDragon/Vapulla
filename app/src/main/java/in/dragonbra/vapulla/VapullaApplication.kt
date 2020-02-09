@@ -37,32 +37,34 @@ class VapullaApplication : Application() {
                     "vapulla-service",
                     "Vapulla service",
                     NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                enableVibration(false)
+                importance = NotificationManager.IMPORTANCE_LOW
+                enableLights(false)
+            }
 
-            serviceChannel.enableVibration(false)
-            serviceChannel.importance = NotificationManager.IMPORTANCE_LOW
-            serviceChannel.enableLights(false)
             notificationManager.createNotificationChannel(serviceChannel)
 
             val friendRequestChannel = NotificationChannel(
                     "vapulla-friend-request",
                     "Friend request",
                     NotificationManager.IMPORTANCE_DEFAULT
-            )
+            ).apply {
+                importance = NotificationManager.IMPORTANCE_DEFAULT
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+                lightColor = 0xffffffff.toInt()
+            }
 
-            friendRequestChannel.importance = NotificationManager.IMPORTANCE_DEFAULT
-            friendRequestChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            friendRequestChannel.lightColor = 0xffffffff.toInt()
             notificationManager.createNotificationChannel(friendRequestChannel)
 
             val messageChannel = NotificationChannel(
                     "vapulla-message",
                     "New messages",
                     NotificationManager.IMPORTANCE_HIGH
-            )
-
-            messageChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            messageChannel.lightColor = 0xffffffff.toInt()
+            ).apply {
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+                lightColor = 0xffffffff.toInt()
+            }
 
             notificationManager.createNotificationChannel(messageChannel)
         }

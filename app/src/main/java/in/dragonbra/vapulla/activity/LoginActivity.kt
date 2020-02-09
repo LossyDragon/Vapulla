@@ -14,7 +14,6 @@ import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
-import android.view.animation.AnimationUtils
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.transition.Transition
 import androidx.transition.TransitionManager
@@ -48,8 +47,6 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
         handler = Handler()
 
         loadingText.setFactory(TextSwitcher.factory(this))
-        loadingText.inAnimation = AnimationUtils.loadAnimation(this, android.R.anim.fade_in)
-        loadingText.outAnimation = AnimationUtils.loadAnimation(this, android.R.anim.fade_out)
 
         login.click { login() }
 
@@ -120,6 +117,7 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
 
     override fun startLoading(finishedAction: (() -> Unit)?) {
         val transition = AutoParallelTransition()
+
         /*transition.addListener(object : TransitionListener() {
             override fun onTransitionEnd(transition: Transition) {
                 startLoadingAnimation()
