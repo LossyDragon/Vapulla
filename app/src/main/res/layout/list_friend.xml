@@ -16,7 +16,7 @@
         android:focusable="true"
         android:padding="16dp"
         tools:text="Header"
-        tools:visibility="gone" />
+        tools:visibility="visible" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/friendLayout"
@@ -32,6 +32,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:src="@color/statusOffline"
+            tools:src="@drawable/vapulla"
             app:civ_border="true"
             app:civ_border_color="@color/statusOffline"
             app:civ_border_width="2dp"

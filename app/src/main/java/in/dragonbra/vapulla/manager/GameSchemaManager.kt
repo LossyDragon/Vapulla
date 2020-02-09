@@ -5,7 +5,9 @@ import `in`.dragonbra.vapulla.data.entity.GameSchema
 import `in`.dragonbra.vapulla.retrofit.StoreFront
 import android.text.format.DateUtils
 
-class GameSchemaManager(private val gameSchemaDao: GameSchemaDao, private val storeFront: StoreFront) {
+class GameSchemaManager(private val gameSchemaDao: GameSchemaDao,
+                        private val storeFront: StoreFront
+) {
 
     companion object {
         const val UPDATE_INTERVAL = DateUtils.WEEK_IN_MILLIS

@@ -21,8 +21,10 @@ import kotlinx.android.synthetic.main.list_chat_sent.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboard: ClipboardManager)
-    : PagedListAdapter<ChatMessage, ChatAdapter.ViewHolder>(DIFF_CALLBACK) {
+class ChatAdapter(val context: Context,
+                  val paperPlane: PaperPlane,
+                  val clipboard: ClipboardManager
+) : PagedListAdapter<ChatMessage, ChatAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     companion object {
         @SuppressLint("ConstantLocale")
@@ -55,8 +57,8 @@ class ChatAdapter(val context: Context, val paperPlane: PaperPlane, val clipboar
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val message = getItem(position)
-        val showDate = position == (itemCount - 1)
-                || message?.formattedTs != getItem(position + 1)?.formattedTs
+        val showDate = position == (itemCount - 1) ||
+                message?.formattedTs != getItem(position + 1)?.formattedTs
         if (message != null) {
             holder.bind(message, showDate)
         } else {

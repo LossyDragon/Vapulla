@@ -24,6 +24,11 @@ data class ChatMessage(
     val formattedTs = DATE_FORMAT.format(Date(timestamp)).toUpperCase(Locale.ROOT)
 
     @Ignore
-    constructor(message: String, timestamp: Long, friendId: Long, fromLocal: Boolean, unread: Boolean, timestampConfirmed: Boolean)
-            : this(0L, message, timestamp, friendId, fromLocal, unread, timestampConfirmed)
+    constructor(message: String,
+                timestamp: Long,
+                friendId: Long,
+                fromLocal: Boolean,
+                unread: Boolean,
+                timestampConfirmed: Boolean
+    ) : this(0L, message, timestamp, friendId, fromLocal, unread, timestampConfirmed)
 }

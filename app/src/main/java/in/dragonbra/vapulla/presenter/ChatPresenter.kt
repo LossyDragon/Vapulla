@@ -43,7 +43,8 @@ class ChatPresenter(context: Context,
                     private val emoticonDao: EmoticonDao,
                     private val imgurAuthService: ImgurAuthService,
                     private val schemaManager: GameSchemaManager,
-                    private val steamId: SteamID) : VapullaPresenter<ChatView>(context) {
+                    private val steamId: SteamID
+) : VapullaPresenter<ChatView>(context) {
 
     companion object {
         const val UPDATE_INTERVAL = DateUtils.MINUTE_IN_MILLIS
@@ -100,12 +101,14 @@ class ChatPresenter(context: Context,
     }
 
     override fun onPostCreate() {
-        chatData = LivePagedListBuilder(chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50).build()
-        //chatData.observe(view as ChatActivity, chatObserver)
+        chatData = LivePagedListBuilder(
+                chatMessageDao.findLivePaged(steamId.convertToUInt64()),
+                50).build()
+        // chatData.observe(view as ChatActivity, chatObserver)
         ifViewAttached { chatData.observe(it as ChatActivity, chatObserver) }
 
         friendData = steamFriendsDao.findLive(steamId.convertToUInt64())
-        //friendData.observe(view as ChatActivity, friendObserver)
+        // friendData.observe(view as ChatActivity, friendObserver)
         ifViewAttached { friendData.observe(it as ChatActivity, friendObserver) }
 
         friendData.value?.let {
@@ -117,7 +120,7 @@ class ChatPresenter(context: Context,
         }
 
         emoticonData = emoticonDao.getLive()
-        //emoticonData.observe(view as ChatActivity, emoteObserver)
+        // emoticonData.observe(view as ChatActivity, emoteObserver)
         ifViewAttached { emoticonData.observe(it as ChatActivity, emoteObserver) }
 
         ifViewAttached {
@@ -163,7 +166,7 @@ class ChatPresenter(context: Context,
         updateHandler.postDelayed({ updateFriend() }, UPDATE_INTERVAL)
     }
 
-    //TODO getMessageHistory
+    // TODO getMessageHistory
     private fun getMessageHistory() {
         runOnBackgroundThread {
             steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
@@ -204,7 +207,9 @@ class ChatPresenter(context: Context,
             lastTypingMessage = System.currentTimeMillis()
 
             runOnBackgroundThread {
-                steamService?.getHandler<SteamFriends>()?.sendChatMessage(steamId, EChatEntryType.Typing, "")
+                steamService
+                        ?.getHandler<SteamFriends>()
+                        ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
             }
         }
     }
@@ -246,15 +251,21 @@ class ChatPresenter(context: Context,
     }
 
     fun viewAccountMenuClicked() {
-        ifViewAttached { it.browseUrl("http://steamcommunity.com/profiles/${steamId.convertToUInt64()}") }
+        ifViewAttached {
+            it.browseUrl("http://steamcommunity.com/profiles/${steamId.convertToUInt64()}")
+        }
     }
 
     fun viewAliasesMenuClicked() {
-        runOnBackgroundThread { aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId) }
+        runOnBackgroundThread {
+            aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
+        }
     }
 
     fun requestEmotes() {
-        runOnBackgroundThread { steamService?.getHandler<VapullaHandler>()?.getEmoticonList() }
+        runOnBackgroundThread {
+            steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
+        }
     }
 
     fun imageButtonClicked() {

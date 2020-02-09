@@ -43,36 +43,61 @@ class ChatLayout : RelativeLayout {
         }
 
         val availableWidth = widthSize - paddingLeft - paddingRight
-        //val availableHeight = heightSize - paddingTop - paddingBottom
+        // val availableHeight = heightSize - paddingTop - paddingBottom
 
         val viewPartMainLayoutParams = viewPartMain.layoutParams as LayoutParams
-        val viewPartMainWidth = viewPartMain.maxLineWidth().toInt() + viewPartMainLayoutParams.leftMargin + viewPartMainLayoutParams.rightMargin
-        val viewPartMainHeight = viewPartMain.measuredHeight + viewPartMainLayoutParams.topMargin + viewPartMainLayoutParams.bottomMargin
+        val viewPartMainWidth =
+                viewPartMain.maxLineWidth().toInt() +
+                        viewPartMainLayoutParams.leftMargin +
+                        viewPartMainLayoutParams.rightMargin
+
+        val viewPartMainHeight =
+                viewPartMain.measuredHeight +
+                        viewPartMainLayoutParams.topMargin +
+                        viewPartMainLayoutParams.bottomMargin
 
         val viewPartSlaveLayoutParams = viewPartSlave.layoutParams as LayoutParams
-        viewPartSlaveWidth = viewPartSlave.measuredWidth + viewPartSlaveLayoutParams.leftMargin + viewPartSlaveLayoutParams.rightMargin
-        viewPartSlaveHeight = viewPartSlave.measuredHeight + viewPartSlaveLayoutParams.topMargin + viewPartSlaveLayoutParams.bottomMargin
+        viewPartSlaveWidth =
+                viewPartSlave.measuredWidth +
+                        viewPartSlaveLayoutParams.leftMargin +
+                        viewPartSlaveLayoutParams.rightMargin
+
+        viewPartSlaveHeight =
+                viewPartSlave.measuredHeight +
+                        viewPartSlaveLayoutParams.topMargin +
+                        viewPartSlaveLayoutParams.bottomMargin
 
         val viewPartMainLineCount = viewPartMain.lineCount
-        val viewPartMainLastLineWidth = if (viewPartMainLineCount > 0) viewPartMain.layout.getLineWidth(viewPartMainLineCount - 1) else 0.0f
+        val viewPartMainLastLineWidth =
+                if (viewPartMainLineCount > 0)
+                    viewPartMain.layout.getLineWidth(viewPartMainLineCount - 1)
+                else
+                    0.0f
 
         widthSize = paddingLeft + paddingRight
         var heightSize = paddingTop + paddingBottom + viewPartMainHeight
 
-        if (viewPartMainLineCount > 1 && viewPartMainLastLineWidth + viewPartSlaveWidth < viewPartMain.measuredWidth) {
+        if (viewPartMainLineCount > 1 &&
+                viewPartMainLastLineWidth + viewPartSlaveWidth <
+                viewPartMain.measuredWidth) {
             widthSize += viewPartMainWidth
-        } else if (viewPartMainLineCount > 1 && viewPartMainLastLineWidth + viewPartSlaveWidth >= availableWidth) {
+        } else if (viewPartMainLineCount > 1 &&
+                viewPartMainLastLineWidth + viewPartSlaveWidth >= availableWidth) {
             widthSize += viewPartMainWidth
-            heightSize += + viewPartSlaveHeight
-        } else if (viewPartMainLineCount == 1 && viewPartMainWidth + viewPartSlaveWidth >= availableWidth) {
+            heightSize += +viewPartSlaveHeight
+        } else if (viewPartMainLineCount == 1 &&
+                viewPartMainWidth + viewPartSlaveWidth >= availableWidth) {
             widthSize += viewPartMain.measuredWidth
-            heightSize += + viewPartSlaveHeight
+            heightSize += +viewPartSlaveHeight
         } else {
             widthSize += viewPartMainWidth + viewPartSlaveWidth
         }
 
         setMeasuredDimension(widthSize, heightSize)
-        super.onMeasure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY))
+        super.onMeasure(
+                MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY)
+        )
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {

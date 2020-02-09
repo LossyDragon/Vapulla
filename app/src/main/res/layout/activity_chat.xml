@@ -17,98 +17,54 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/chat_toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp">
+            android:layout_height="wrap_content">
 
-            <ImageView
-                android:id="@+id/friendAvatar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="28dp"
-                android:layout_marginTop="8dp"
-                android:onClick="navigateUp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@color/colorPrimary"
-                tools:ignore="ContentDescription" />
-
-            <ImageView
-                android:id="@+id/backButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:onClick="navigateUp"
-                android:padding="8dp"
-                android:src="@drawable/ic_chevron_left"
-                android:tint="#fff"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:ignore="ContentDescription" />
-
-            <RelativeLayout
-                android:id="@+id/nameLayout"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:layout_marginStart="76dp"
-                android:layout_marginTop="8dp"
-                android:gravity="left"
-                app:layout_constraintEnd_toStartOf="@id/moreButton"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:ignore="RtlHardcoded">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/friendUsername"
-                    android:layout_width="wrap_content"
+                <ImageView
+                    android:id="@+id/friendAvatar"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:layout_marginEnd="10dp"
+                    app:srcCompat="@drawable/vapulla"
+                    tools:ignore="ContentDescription" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_toStartOf="@id/friendNickname"
-                    android:ellipsize="marquee"
-                    android:singleLine="true"
-                    android:textColor="@color/textPrimary"
-                    android:textSize="16sp"
-                    tools:text="Name" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/friendNickname"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_marginLeft="4dp"
-                    android:textSize="16sp"
-                    tools:text="(nickname)" />
+                    <TextView
+                        android:id="@+id/friendUsername"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:ellipsize="end"
+                        android:lines="1"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="19sp"
+                        tools:text="Name" />
 
-            </RelativeLayout>
+                    <TextView
+                        android:id="@+id/friendStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:lines="1"
+                        tools:text="Status" />
 
-            <TextView
-                android:id="@+id/friendStatus"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="76dp"
-                android:layout_marginEnd="8dp"
-                app:layout_constraintEnd_toStartOf="@+id/moreButton"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/nameLayout"
-                tools:text="Status" />
+                </LinearLayout>
 
-            <ImageView
-                android:id="@+id/moreButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:src="@drawable/ic_dots_vertical"
-                android:tint="#fff"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:ignore="ContentDescription" />
+            </LinearLayout>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.appcompat.widget.Toolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
 

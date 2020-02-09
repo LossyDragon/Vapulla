@@ -22,7 +22,6 @@ import com.afollestad.materialdialogs.input.input
 import java.io.Closeable
 import java.util.*
 
-
 class SettingsFragment : PreferenceFragmentCompat() {
 
     private lateinit var steamService: SteamService
@@ -60,7 +59,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onStart() {
         super.onStart()
-        activity?.bindService(Intent(context, SteamService::class.java), connection, Context.BIND_AUTO_CREATE)
+        activity?.bindService(
+                Intent(context, SteamService::class.java),
+                connection,
+                Context.BIND_AUTO_CREATE
+        )
     }
 
     override fun onStop() {
@@ -95,17 +98,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-
     @SuppressLint("InflateParams")
     private fun setupPreferences() {
         val accountManager = (activity as SettingsActivity).accountManager
 
-        //addPreferencesFromResource(R.xml.pref_general)
+        // addPreferencesFromResource(R.xml.pref_general)
 
         updateImgurPref()
 
         val changeUserPreference: Preference? = findPreference("pref_change_user")
-        changeUserPreference?.summary = getString(R.string.prefSummaryChangeUser, accountManager.username)
+        changeUserPreference?.summary =
+                getString(R.string.prefSummaryChangeUser, accountManager.username)
         changeUserPreference?.click {
             val builder = AlertDialog.Builder(context!!)
 
@@ -178,7 +181,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val recents: Preference? = findPreference("pref_friends_list_recents")
         SettingsActivity.bindPreferenceSummaryToValue(recents)
     }
-
 
     private fun clearData() {
         (activity as SettingsActivity).accountManager.clear()

@@ -23,13 +23,14 @@ import `in`.dragonbra.vapulla.view.ChatView
 import android.annotation.SuppressLint
 import android.content.ClipboardManager
 import android.content.Intent
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NavUtils
 import androidx.core.content.ContextCompat
 import androidx.paging.PagedList
@@ -48,9 +49,8 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_chat.*
 import javax.inject.Inject
 
-
 class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, TextWatcher,
-        PopupMenu.OnMenuItemClickListener, EmoteAdapter.EmoteListener {
+        EmoteAdapter.EmoteListener {
 
     companion object {
         const val INTENT_STEAM_ID = "steam_id"
@@ -85,7 +85,12 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     override fun onCreate(savedInstanceState: Bundle?) {
         vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_chat)
+
+        setSupportActionBar(chat_toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         paperPlane = PaperPlane(this, 18.0f)
         chatAdapter = ChatAdapter(this, paperPlane, clipboard)
@@ -113,13 +118,6 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         messageBox.addTextChangedListener(this)
         messageBox.requestFocus()
         messageBox.setOnClickListener { emoteList.hide() }
-
-        moreButton.setOnClickListener {
-            val popup = PopupMenu(this@ChatActivity, it)
-            popup.menuInflater.inflate(R.menu.menu_chat, popup.menu)
-            popup.show()
-            popup.setOnMenuItemClickListener(this@ChatActivity)
-        }
     }
 
     override fun onDestroy() {
@@ -127,9 +125,35 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         paperPlane.clearAll()
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_chat, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            android.R.id.home -> navigateUp()
+            R.id.setNickname -> presenter.nicknameMenuClicked()
+            R.id.viewAliases -> presenter.viewAliasesMenuClicked()
+            R.id.viewAccount -> presenter.viewAccountMenuClicked()
+            R.id.removeFriend -> presenter.removeFriend()
+            R.id.blockFriend -> presenter.blockFriend()
+            else -> return super.onOptionsItemSelected(item)
+        }
+        return true
+    }
+
     override fun createPresenter(): ChatPresenter {
         val steamId = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
-        return ChatPresenter(this, chatMessageDao, steamFriendDao, emoticonDao, imgurAuthService, schemaManager, steamId)
+        return ChatPresenter(
+                this,
+                chatMessageDao,
+                steamFriendDao,
+                emoticonDao,
+                imgurAuthService,
+                schemaManager,
+                steamId
+        )
     }
 
     override fun closeApp() {
@@ -152,23 +176,37 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         }
         runOnUiThread {
             val state = EPersonaState.from(friend.state ?: 0)
-            friendUsername.text = friend.name
 
-            if (Strings.isNullOrEmpty(friend.nickname)) {
-                friendNickname.hide()
+            if (!friend.nickname.isNullOrEmpty()) {
+                // Has nickname
+                friendUsername.setTypeface(null, Typeface.ITALIC)
+                friendUsername.text = getString(R.string.nicknameFormat, friend.nickname)
             } else {
-                friendNickname.show()
-                friendNickname.text = getString(R.string.nicknameFormat, friend.nickname)
+                // No nickname
+                friendUsername.text = friend.name
             }
 
-            if ((friend.lastMessageTime == null || friend.typingTs > friend.lastMessageTime!!)
-                    && friend.typingTs > System.currentTimeMillis() - 15000L) {
+            if ((friend.lastMessageTime == null ||
+                            friend.typingTs > friend.lastMessageTime!!) &&
+                    friend.typingTs > System.currentTimeMillis() - 15000L) {
+
                 friendStatus.text = getString(R.string.statusTyping)
-                friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, R.color.colorAccent))
+                friendStatus.setTextColor(
+                        ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
+                )
                 friendStatus.bold()
             } else {
-                friendStatus.text = Utils.getStatusText(this@ChatActivity, state, friend.gameAppId, friend.gameName, friend.lastLogOff)
-                friendStatus.setTextColor(ContextCompat.getColor(this@ChatActivity, R.color.colorTyping))
+                friendStatus.text =
+                        Utils.getStatusText(
+                                this@ChatActivity,
+                                state, friend.gameAppId,
+                                friend.gameName,
+                                friend.lastLogOff
+                        )
+
+                friendStatus.setTextColor(
+                        ContextCompat.getColor(this@ChatActivity, R.color.colorTyping)
+                )
                 friendStatus.normal()
             }
 
@@ -198,30 +236,6 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         } else {
             imageButton.hide()
         }
-    }
-
-    override fun onMenuItemClick(item: MenuItem) = when (item.itemId) {
-        R.id.removeFriend -> {
-            presenter.removeFriend()
-            true
-        }
-        R.id.blockFriend -> {
-            presenter.blockFriend()
-            true
-        }
-        R.id.setNickname -> {
-            presenter.nicknameMenuClicked()
-            true
-        }
-        R.id.viewAccount -> {
-            presenter.viewAccountMenuClicked()
-            true
-        }
-        R.id.viewAliases -> {
-            presenter.viewAliasesMenuClicked()
-            true
-        }
-        else -> false
     }
 
     override fun showRemoveFriendDialog(name: String) {
@@ -275,7 +289,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     }
 
     override fun onEmoteSelected(emoticon: Emoticon) {
-        if(emoticon.isSticker) {
+        if (emoticon.isSticker) {
             presenter.sendMessage("/sticker ${emoticon.name}")
         } else {
             messageBox.text.insert(messageBox.selectionStart, ":${emoticon.name}:")
@@ -320,7 +334,11 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         runOnUiThread {
             imageButton.isClickable = true
             uploadProgressBar.hide()
-            Snackbar.make(rootLayout, R.string.snackbarImgurUploadFailed, Snackbar.LENGTH_LONG).show()
+            Snackbar.make(
+                    rootLayout,
+                    R.string.snackbarImgurUploadFailed,
+                    Snackbar.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -335,11 +353,6 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         uploadProgressBar.max = total
         uploadProgressBar.progress = progress
         uploadProgressBar.isIndeterminate = false
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    fun navigateUp(v: View) {
-        navigateUp()
     }
 
     @Suppress("UNUSED_PARAMETER")

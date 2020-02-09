@@ -37,7 +37,7 @@ class EmoteTarget(val context: Context,
     }
 
     override fun onLoadCleared(placeholder: Drawable?) {
-
+        // Nothing
     }
 
     fun cancel() {

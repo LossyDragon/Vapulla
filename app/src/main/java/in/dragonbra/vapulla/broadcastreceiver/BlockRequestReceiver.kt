@@ -18,7 +18,10 @@ class BlockRequestReceiver : BroadcastReceiver() {
 
         context.startService(
                 Intent(context, SteamService::class.java).apply {
-                    putExtra(SteamService.EXTRA_ID, intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L))
+                    putExtra(
+                            SteamService.EXTRA_ID,
+                            intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L)
+                    )
                     putExtra(SteamService.EXTRA_ACTION, "block_request")
                 }
         )

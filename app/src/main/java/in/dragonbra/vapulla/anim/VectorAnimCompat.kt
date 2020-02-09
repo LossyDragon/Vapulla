@@ -10,7 +10,10 @@ import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat
 
 object VectorAnimCompat {
 
-    fun registerAnimationCallback(drawable: Animatable, callback: Animatable2Compat.AnimationCallback) {
+    fun registerAnimationCallback(
+            drawable: Animatable,
+            callback: Animatable2Compat.AnimationCallback
+    ) {
         if (isLessThanN()) {
             val d = drawable as? AnimatedVectorDrawableCompat
             d?.registerAnimationCallback(callback)
@@ -34,6 +37,5 @@ object VectorAnimCompat {
         } else {
             (drawable as? AnimatedVectorDrawable)?.clearAnimationCallbacks()
         }
-
     }
 }

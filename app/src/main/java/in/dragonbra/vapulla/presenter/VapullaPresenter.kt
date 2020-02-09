@@ -15,7 +15,9 @@ import com.hannesdorfmann.mosby3.mvp.MvpView
 import java.io.Closeable
 import java.util.*
 
-abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePresenter<V>(), VapullaLogger {
+abstract class VapullaPresenter<V : MvpView>(
+        val context: Context
+) : MvpBasePresenter<V>(), VapullaLogger {
 
     protected var bound = false
 
@@ -43,10 +45,16 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
 
     open fun onPostCreate() {
     }
+
     @CallSuper
     open fun onStart() {
-        context.bindService(Intent(context, SteamService::class.java), connection, Context.BIND_AUTO_CREATE)
+        context.bindService(
+                Intent(context, SteamService::class.java),
+                connection,
+                Context.BIND_AUTO_CREATE
+        )
     }
+
     open fun onResume() {}
     open fun onPause() {}
     @CallSuper
@@ -56,8 +64,8 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
         subs.clear()
         bound = false
     }
-    open fun onDestroy() {
 
+    open fun onDestroy() {
     }
 
     open fun onServiceConnected(name: ComponentName, service: IBinder) {}

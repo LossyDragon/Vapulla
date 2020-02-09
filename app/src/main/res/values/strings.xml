@@ -162,7 +162,7 @@
 
     <!--region Other-->
 
-    <string name="nicknameFormat">(%1$s)</string>
+    <string name="nicknameFormat">%1$s*</string>
     <string name="messageSentSticker">(%1$s)</string>
     <string name="loadingTextFailed">Failed to connect to steam</string>
     <string name="loadingTextConnecting">Connecting to Steam…</string>
@@ -171,6 +171,7 @@
     <string name="loadingTextSteamGuardEmail">Enter your steam guard code you get through your email</string>
     <string name="prefTitleClearNotifications">Clear notifications</string>
     <string name="prefSummaryClearNotifications">Clear any chat or request notifications once the app is open.</string>
+    <string name="menuSearch">Search</string>
 
     <!--endregion-->
 

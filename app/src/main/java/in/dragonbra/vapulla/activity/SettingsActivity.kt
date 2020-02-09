@@ -16,7 +16,6 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_settings.*
 import javax.inject.Inject
 
-
 /**
  * A [SettingsActivity] that presents a set of application settings. On
  * handset devices, settings are presented as a single list. On tablets,
@@ -38,7 +37,6 @@ class SettingsActivity : AppCompatActivity() {
     @Inject
     lateinit var db: VapullaDatabase
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         (application as VapullaApplication).graph.inject(this)
@@ -58,17 +56,24 @@ class SettingsActivity : AppCompatActivity() {
             val success = imgurAuthService.authorize(uri)
 
             if (success) {
-                val fragment: SettingsFragment =
-                        supportFragmentManager.findFragmentById(R.id.activity_settings) as SettingsFragment
+                val fragment: SettingsFragment = supportFragmentManager
+                        .findFragmentById(R.id.activity_settings) as SettingsFragment
+
                 fragment.updateImgurPref()
 
-                Snackbar.make(activity_settings, getString(R.string.snackbarImgurLinked), Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(
+                        activity_settings,
+                        getString(R.string.snackbarImgurLinked),
+                        Snackbar.LENGTH_SHORT
+                ).show()
             } else {
-                Snackbar.make(activity_settings, getString(R.string.snackbarImgurLinkFailed), Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(
+                        activity_settings,
+                        getString(R.string.snackbarImgurLinkFailed),
+                        Snackbar.LENGTH_SHORT
+                ).show()
             }
         }
-
-
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -108,27 +113,23 @@ class SettingsActivity : AppCompatActivity() {
          * A preference value change listener that updates the preference's summary
          * to reflect its new value.
          */
-        private val sBindPreferenceSummaryToValueListener = Preference.OnPreferenceChangeListener { preference, value ->
-            val stringValue = value.toString()
+        private val sBindPreferenceSummaryToValueListener =
+                Preference.OnPreferenceChangeListener { preference, value ->
+                    val stringValue = value.toString()
 
-            if (preference is ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
-                val index = preference.findIndexOfValue(stringValue)
+                    if (preference is ListPreference) {
+                        // For list preferences, look up the correct display value in
+                        // the preference's 'entries' list.
+                        val index = preference.findIndexOfValue(stringValue)
 
-                // Set the summary to reflect the new value.
-                preference.setSummary(
-                        if (index >= 0)
-                            preference.entries[index]
-                        else
-                            null)
-
-            } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
-                preference.summary = stringValue
-            }
-            true
-        }
+                        // Set the summary to reflect the new value.
+                        preference.setSummary(if (index >= 0) preference.entries[index] else null)
+                    } else {
+                        // For all other preferences, set the summary to the value's
+                        // simple string representation.
+                        preference.summary = stringValue
+                    }
+                    true
+                }
     }
 }

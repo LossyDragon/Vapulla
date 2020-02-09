@@ -26,6 +26,8 @@ class HomePresenter(context: Context,
 
     private lateinit var friendsData: LiveData<List<FriendListItem>>
 
+    private var isSearching: Boolean = false
+
     override fun onServiceDisconnected(name: ComponentName) {
         info("Unbound from Steam service")
     }
@@ -43,7 +45,7 @@ class HomePresenter(context: Context,
 
     override fun onPostCreate() {
         friendsData = steamFriendDao.getLive()
-        //friendsData.observe(view as HomeActivity, dataObserver)
+        // friendsData.observe(view as HomeActivity, dataObserver)
         ifViewAttached { friendsData.observe(it as HomeActivity, dataObserver) }
 
         ifViewAttached {
@@ -81,10 +83,12 @@ class HomePresenter(context: Context,
     }
 
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
-        val updateTime = System.currentTimeMillis()
-        ifViewAttached {
-            it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
-                    ?: listOf(), updateTime)
+        if (!isSearching) {
+            val updateTime = System.currentTimeMillis()
+            ifViewAttached {
+                it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
+                        ?: listOf(), updateTime)
+            }
         }
     }
 
@@ -98,16 +102,22 @@ class HomePresenter(context: Context,
 
     fun changeStatus(state: EPersonaState) {
         if (account.state != state) {
-            runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.setPersonaState(state) }
+            runOnBackgroundThread {
+                steamService?.getHandler<SteamFriends>()?.setPersonaState(state)
+            }
         }
     }
 
     fun acceptRequest(friend: FriendListItem) {
-        runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id)) }
+        runOnBackgroundThread {
+            steamService?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id))
+        }
     }
 
     fun ignoreRequest(friend: FriendListItem) {
-        runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id)) }
+        runOnBackgroundThread {
+            steamService?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id))
+        }
     }
 
     fun blockRequest(friend: FriendListItem) {
@@ -116,27 +126,35 @@ class HomePresenter(context: Context,
 
     fun confirmBlockFriend(friend: FriendListItem) {
         runOnBackgroundThread {
-            runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id)) }
+            steamService?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id))
         }
     }
 
+    fun setSearchStatus(searching: Boolean) {
+        isSearching = searching
+    }
+
+    // friendsData might still crash, will need to investigate more when it happens.
     fun search(query: String) {
         val trimmedQuery = query.trim()
-        if (::friendsData.isInitialized) {
-            friendsData.value?.let { list ->
-                val updateTime = System.currentTimeMillis()
-                if (Strings.isNullOrEmpty(trimmedQuery)) {
-                    ifViewAttached { it.showFriends(list.sortedWith(FriendsComparator(context, updateTime)), updateTime) }
-                    return@let
+        friendsData.value?.let { list ->
+            val updateTime = System.currentTimeMillis()
+            if (Strings.isNullOrEmpty(trimmedQuery)) {
+                ifViewAttached {
+                    it.showFriends(
+                            list.sortedWith(FriendsComparator(context, updateTime)),
+                            updateTime
+                    )
                 }
-
-                val filtered = list.filter {
-                    it.name?.contains(trimmedQuery, true) == true ||
-                            it.nickname?.contains(trimmedQuery, true) == true
-                }.sortedWith(FriendsComparator(context, updateTime))
-
-                ifViewAttached { it.showFriends(filtered, updateTime) }
+                return@let
             }
+
+            val filtered = list.filter {
+                it.name?.contains(trimmedQuery, true) == true ||
+                        it.nickname?.contains(trimmedQuery, true) == true
+            }.sortedWith(FriendsComparator(context, updateTime))
+
+            ifViewAttached { it.showFriends(filtered, updateTime) }
         }
     }
 }

@@ -32,7 +32,8 @@ class VapullaApplication : Application() {
         }
 
         if (isGreaterThanO()) {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                    getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val serviceChannel = NotificationChannel(
                     "vapulla-service",
                     "Vapulla service",

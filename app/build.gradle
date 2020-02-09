@@ -91,3 +91,13 @@ dependencies {
 
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
+apply plugin: "org.jlleitschuh.gradle.ktlint"
+
+
+// Run: gradlew ktlintCheck
+ktlint {
+    android = true
+    outputToConsole = true
+    // Ignore: lexicographic ordering, wildcard imports, and indentation warnings
+    disabledRules = ["import-ordering", "no-wildcard-imports", "parameter-list-wrapping"]
+}

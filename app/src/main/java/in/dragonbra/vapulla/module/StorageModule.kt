@@ -18,7 +18,11 @@ class StorageModule {
     @Provides
     @Singleton
     fun provideVapullaDatabase(context: Context) =
-            Room.databaseBuilder(context, VapullaDatabase::class.java, VapullaDatabase.DATABASE_NAME).build()
+            Room.databaseBuilder(
+                    context,
+                    VapullaDatabase::class.java,
+                    VapullaDatabase.DATABASE_NAME
+            ).build()
 
     @Provides
     @Singleton

@@ -17,9 +17,11 @@ import java.util.regex.Pattern
 class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
 
     companion object {
-        val EMOTE_PATTERN: Pattern = Pattern.compile("\\u02D0([a-zA-Z0-9]+)\\u02D0")
-        //val EMOTE_PATTERN: Pattern = Pattern.compile("\\[emoticon]([a-zA-Z0-9]+)\\[/emoticon]")
-        val STICKER_PATTERN: Pattern = Pattern.compile("\\[sticker type=\"([a-zA-Z0-9]+)\".limit=\"0\"]\\[/sticker]")
+        // val EMOTE_PATTERN: Pattern = Pattern.compile("\\[emoticon]([a-zA-Z0-9]+)\\[/emoticon]")
+        val EMOTE_PATTERN: Pattern =
+                Pattern.compile("\\u02D0([a-zA-Z0-9]+)\\u02D0")
+        val STICKER_PATTERN: Pattern =
+                Pattern.compile("\\[sticker type=\"([a-zA-Z0-9]+)\".limit=\"0\"]\\[/sticker]")
     }
 
     private val targets: MutableMap<TextView, MutableList<Any>> = HashMap()
@@ -37,7 +39,12 @@ class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
 
                 val nextSpace = message.indexOf(' ', result.start())
                 val end = if (nextSpace == -1) message.length else nextSpace
-                spannable.setSpan(URLSpan(result.group()), result.start(), end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                spannable.setSpan(
+                        URLSpan(result.group()),
+                        result.start(),
+                        end,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
             }
 
             view.movementMethod = LinkMovementMethod.getInstance()
@@ -59,7 +66,15 @@ class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
 
             val emote = result.group(1)
 
-            val target = EmoteTarget(context, view, spannable, result.start(), result.end(), emoteSizeDp, targets[view])
+            val target = EmoteTarget(
+                    context,
+                    view,
+                    spannable,
+                    result.start(),
+                    result.end(),
+                    emoteSizeDp,
+                    targets[view]
+            )
 
             Glide.with(context)
                     .asBitmap()
@@ -84,7 +99,14 @@ class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
 
                 val sticker = result.group(1)
 
-                val target = StickerTarget(context, view, spannable, result.start(), result.end(), targets[view])
+                val target = StickerTarget(
+                        context,
+                        view,
+                        spannable,
+                        result.start(),
+                        result.end(),
+                        targets[view]
+                )
 
                 Glide.with(view)
                         .asFile()

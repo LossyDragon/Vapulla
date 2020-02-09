@@ -203,11 +203,13 @@ class SteamService : Service(), VapullaLogger {
             add(callbackMgr.subscribe(FriendMsgHistoryCallback::class.java, onFriendMsgHistory))
             add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
             add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
-            add(callbackMgr.subscribe(OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
+            add(callbackMgr.subscribe(
+                    OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
             add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
             add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
             add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethod))
-            add(callbackMgr.subscribe(ServiceServiceMethodCallback::class.java, onServiceMethodResponse))
+            add(callbackMgr.subscribe(
+                    ServiceServiceMethodCallback::class.java, onServiceMethodResponse))
         }
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
@@ -300,7 +302,11 @@ class SteamService : Service(), VapullaLogger {
                 .setSmallIcon(R.drawable.ic_vapulla)
                 .setVibrate(longArrayOf(-1L))
                 .setSound(null)
-                .addAction(R.drawable.ic_exit_to_app, getString(R.string.notificationActionLogOut), pendingIntent)
+                .addAction(
+                        R.drawable.ic_exit_to_app,
+                        getString(R.string.notificationActionLogOut),
+                        pendingIntent
+                )
 
         if (isAtLeastN()) {
             builder.priority = NotificationManager.IMPORTANCE_LOW
@@ -346,16 +352,18 @@ class SteamService : Service(), VapullaLogger {
 
         val friend = db.steamFriendDao().find(friendId.convertToUInt64()) ?: return
 
-        val messages: MutableList<NotificationCompat.MessagingStyle.Message> = if (!newMessages.containsKey(friendId)) {
-            val list = LinkedList<NotificationCompat.MessagingStyle.Message>()
-            newMessages[friendId] = list
-            list
-        } else {
-            newMessages[friendId]!!
-        }
+        val messages: MutableList<NotificationCompat.MessagingStyle.Message> =
+                if (!newMessages.containsKey(friendId)) {
+                    val list = LinkedList<NotificationCompat.MessagingStyle.Message>()
+                    newMessages[friendId] = list
+                    list
+                } else {
+                    newMessages[friendId]!!
+                }
 
         val currentTs = System.currentTimeMillis()
-        val backoff = messages.isNotEmpty() && currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
+        val backoff = messages.isNotEmpty() &&
+                currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
         val steamUser = Person.Builder().setName(friend.name ?: "").build()
 
@@ -398,8 +406,10 @@ class SteamService : Service(), VapullaLogger {
         }
         val pendingIntent = TaskStackBuilder.create(this)
                 .addNextIntentWithParentStack(intent)
-                .getPendingIntent(friendId.convertToUInt64().toInt(), PendingIntent.FLAG_UPDATE_CURRENT)
-
+                .getPendingIntent(
+                        friendId.convertToUInt64().toInt(),
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                )
 
         val notification = NotificationCompat.Builder(this, "vapulla-message")
                 .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
@@ -472,10 +482,27 @@ class SteamService : Service(), VapullaLogger {
                 .setContentTitle(getString(R.string.notificationTitleFriendRequest))
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, HomeActivity::class.java), 0))
-                .addAction(R.drawable.ic_check, getString(R.string.notificationActionAccept), acceptPendingIntent)
-                .addAction(R.drawable.ic_close, getString(R.string.notificationActionIgnore), ignorePendingIntent)
-                .addAction(R.drawable.ic_block, getString(R.string.notificationActionBlock), blockPendingIntent)
+                .setContentIntent(
+                        PendingIntent.getActivity(
+                                this,
+                                0,
+                                Intent(this, HomeActivity::class.java), 0)
+                )
+                .addAction(
+                        R.drawable.ic_check,
+                        getString(R.string.notificationActionAccept),
+                        acceptPendingIntent
+                )
+                .addAction(
+                        R.drawable.ic_close,
+                        getString(R.string.notificationActionIgnore),
+                        ignorePendingIntent
+                )
+                .addAction(
+                        R.drawable.ic_block,
+                        getString(R.string.notificationActionBlock),
+                        blockPendingIntent
+                )
                 .build()
 
         notificationManager.notify(state.friendID.convertToUInt64().toInt(), notification)
@@ -515,7 +542,7 @@ class SteamService : Service(), VapullaLogger {
 
         val emoteMessage = Utils.findEmotes(trimmed.replace('\u02D0', ':'), emoteSet)
 
-        //getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
+        // getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
         getHandler<VapullaHandler>()?.sendMessage(id, message)
 
         db.chatMessageDao().insert(ChatMessage(
@@ -530,7 +557,9 @@ class SteamService : Service(), VapullaLogger {
         clearMessageNotifications(id)
     }
 
-    inline fun <reified T : ICallbackMsg> subscribe(noinline callbackFunc: (T) -> Unit): Closeable? =
+    inline fun <reified T : ICallbackMsg>
+            subscribe(noinline callbackFunc: (T) -> Unit): Closeable? =
+
             when (T::class) {
                 DisconnectedCallback::class -> {
                     @Suppress("UNCHECKED_CAST")
@@ -558,7 +587,8 @@ class SteamService : Service(), VapullaLogger {
         fun getService(): SteamService = this@SteamService
     }
 
-    inline fun <reified T : ClientMsgHandler> getHandler(): T? = this.steamClient.getHandler(T::class.java)
+    inline fun <reified T : ClientMsgHandler> getHandler(): T? =
+            this.steamClient.getHandler(T::class.java)
 
     //region Callback handlers
 
@@ -604,7 +634,6 @@ class SteamService : Service(), VapullaLogger {
                 // Set the client's "UI" mode to receive new callbacks.
                 if (steamClient.isConnected)
                     getHandler<VapullaHandler>()?.setClientUIMode()
-
             }
             EResult.InvalidPassword -> account.loginKey = null
             else -> {
@@ -657,7 +686,11 @@ class SteamService : Service(), VapullaLogger {
                 return@forEach
             }
 
-            info("${state.state} - ${state.name} - ${state.lastLogOff.time} - ${state.lastLogOn.time}")
+            info("${state.state} - " +
+                    "${state.name} - " +
+                    "${state.lastLogOff.time} - " +
+                    "${state.lastLogOn.time}"
+            )
 
             stateBuffer.push(state)
 
@@ -714,16 +747,20 @@ class SteamService : Service(), VapullaLogger {
             val fromLocal = cb.steamID != it.steamID
             val friendId = cb.steamID.convertToUInt64()
             val timestamp = it.timestamp.time
-            val confirmedMessage = db.chatMessageDao().find(it.message, timestamp, friendId, fromLocal, true)
+            val confirmedMessage =
+                    db.chatMessageDao()
+                            .find(it.message, timestamp, friendId, fromLocal, true)
 
             if (confirmedMessage != null) {
                 return@forEach
             }
 
-            val unconfirmedMessages = db.chatMessageDao().find(it.message, friendId, fromLocal, false)
-                    .sortedWith(kotlin.Comparator { o1, o2 ->
-                        (abs(timestamp - o1.timestamp) - abs(timestamp - o2.timestamp)).toInt()
-                    })
+            val unconfirmedMessages =
+                    db.chatMessageDao().find(it.message, friendId, fromLocal, false)
+                            .sortedWith(kotlin.Comparator { o1, o2 ->
+                                (abs(timestamp - o1.timestamp) -
+                                        abs(timestamp - o2.timestamp)).toInt()
+                            })
 
             if (unconfirmedMessages.isNotEmpty()) {
                 unconfirmedMessages[0].timestamp = timestamp
@@ -785,7 +822,8 @@ class SteamService : Service(), VapullaLogger {
         }
     }
 
-    private val onOfflineMessageNotification: Consumer<OfflineMessageNotificationCallback> = Consumer {
+    private val onOfflineMessageNotification:
+            Consumer<OfflineMessageNotificationCallback> = Consumer {
         if (it.messageCount > 0) {
             getHandler<SteamFriends>()?.requestOfflineMessages()
         }
@@ -822,35 +860,34 @@ class SteamService : Service(), VapullaLogger {
         clearMessageNotifications(it.sender)
     }
 
-    //TODO
-    private val onServiceMethodResponse: Consumer<ServiceServiceMethodCallback> = Consumer { method ->
+    // TODO
+    private val onServiceMethodResponse: Consumer<ServiceServiceMethodCallback> = Consumer {
         info("onServiceMethodResponse")
 
-        if (method.jobName == "FriendMessages.SendMessage#1") {
-            debug(method.modifiedMessage!!)
-            debug(method.jobName!!)
-            debug(method.timestamp.toString())
+        if (it.jobName == "FriendMessages.SendMessage#1") {
+            debug(it.modifiedMessage!!)
+            debug(it.jobName!!)
+            debug(it.timestamp.toString())
         }
 
-        //TODO: Resume implementing this.
-        if (method.jobName == "FriendMessages.GetRecentMessages#1") {
-            debug(method.jobName!!)
-            method.messageHistory!!.forEach {
+        // TODO: Resume implementing this.
+        if (it.jobName == "FriendMessages.GetRecentMessages#1") {
+            debug(it.jobName!!)
+            it.messageHistory!!.forEach {
                 debug(it.toString())
             }
         }
-
     }
 
-    //TODO
-    private val onServiceMethod: Consumer<ServiceMethodCallback> = Consumer { method ->
+    // TODO
+    private val onServiceMethod: Consumer<ServiceMethodCallback> = Consumer {
         info("onServiceMethod")
 
         // Incoming Message! [Chat Message or Typing]
-        if (method.jobName == "FriendMessagesClient.IncomingMessage#1") {
-            //Friend is typing
-            if (method.entryType == EChatEntryType.Typing) {
-                val friend = db.steamFriendDao().find(method.steamID.convertToUInt64())
+        if (it.jobName == "FriendMessagesClient.IncomingMessage#1") {
+            // Friend is typing
+            if (it.entryType == EChatEntryType.Typing) {
+                val friend = db.steamFriendDao().find(it.steamID.convertToUInt64())
 
                 if (friend != null) {
                     friend.typingTs = System.currentTimeMillis()
@@ -859,21 +896,21 @@ class SteamService : Service(), VapullaLogger {
             }
 
             // Handle incoming stickers for now
-            if (method.entryType == EChatEntryType.ChatMsg &&
-                    method.message.contains("limit=\"0\"][/sticker]") &&
-                    method.message.isNotEmpty()) {
+            if (it.entryType == EChatEntryType.ChatMsg &&
+                    it.message.contains("limit=\"0\"][/sticker]") &&
+                    it.message.isNotEmpty()) {
 
                 db.chatMessageDao().insert(ChatMessage(
-                        method.message,
+                        it.message,
                         System.currentTimeMillis(),
-                        method.steamID.convertToUInt64(),
+                        it.steamID.convertToUInt64(),
                         false,
-                        chatFriendId != method.steamID.convertToUInt64(),
+                        chatFriendId != it.steamID.convertToUInt64(),
                         false
                 ))
 
-                if (method.steamID.convertToUInt64() != chatFriendId) {
-                    postMessageNotification(method.steamID, method.message)
+                if (it.steamID.convertToUInt64() != chatFriendId) {
+                    postMessageNotification(it.steamID, it.message)
                 }
             }
         }

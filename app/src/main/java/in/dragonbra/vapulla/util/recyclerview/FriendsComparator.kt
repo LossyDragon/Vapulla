@@ -4,7 +4,10 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import android.content.Context
 import androidx.preference.PreferenceManager
 
-class FriendsComparator(context: Context, private val updateTime: Long) : Comparator<FriendListItem> {
+class FriendsComparator(
+        context: Context,
+        private val updateTime: Long
+) : Comparator<FriendListItem> {
 
     private val recentsTimeout: Long
 
@@ -22,8 +25,11 @@ class FriendsComparator(context: Context, private val updateTime: Long) : Compar
         val (isRecent1, isRecent2) =
                 when {
                     recentsTimeout > 0 -> {
-                        Pair(o1.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true,
-                                o2.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true)
+                        Pair(o1.lastMessageTime?.let { it >= updateTime - recentsTimeout } ==
+                                true,
+                                o2.lastMessageTime?.let { it >= updateTime - recentsTimeout } ==
+                                        true
+                        )
                     }
                     recentsTimeout == 0L -> {
                         Pair(o1.lastMessageTime != null, o2.lastMessageTime != null)

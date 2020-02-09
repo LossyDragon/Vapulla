@@ -13,7 +13,9 @@ import com.hannesdorfmann.mosby3.mvp.MvpActivity
 import com.hannesdorfmann.mosby3.mvp.MvpPresenter
 import com.hannesdorfmann.mosby3.mvp.MvpView
 
-abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> : MvpActivity<V, P>(), VapullaLogger {
+abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> :
+        MvpActivity<V, P>(),
+        VapullaLogger {
 
     companion object {
         const val STOP_INTENT = "in.dragonbra.vapulla.SERVICE_STOP"

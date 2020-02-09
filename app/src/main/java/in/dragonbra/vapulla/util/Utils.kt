@@ -14,7 +14,6 @@ import androidx.core.content.ContextCompat
 import com.bumptech.glide.request.RequestOptions
 import java.util.regex.Pattern
 
-
 object Utils {
     val avatarOptions = RequestOptions()
             .transform(CircleTransform())
@@ -23,8 +22,10 @@ object Utils {
     private val STICKER_PATTERN: Pattern = Pattern.compile("/sticker ([a-zA-Z0-9]+)")
 
     private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
-    private const val DEFAULT_AVATAR = "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-    private const val AVATAR_URL = "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/"
+    private const val DEFAULT_AVATAR = "http://cdn.akamai.steamstatic.com/steamcommunity/public/" +
+            "images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    private const val AVATAR_URL = "http://cdn.akamai.steamstatic.com/steamcommunity/public/" +
+            "images/avatars/"
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
 
@@ -40,21 +41,36 @@ object Utils {
                 "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
             }
 
-    fun getStatusColor(context: Context, state: EPersonaState?, gameAppId: Int, gameName: String?) =
-            if (state == EPersonaState.Offline || gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
+    fun getStatusColor(context: Context,
+                       state: EPersonaState?,
+                       gameAppId: Int, gameName: String?
+    ) =
+            if (state == EPersonaState.Offline ||
+                    gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
                 when (state) {
-                    EPersonaState.Online -> ContextCompat.getColor(context, R.color.statusOnline)
-                    EPersonaState.Busy -> ContextCompat.getColor(context, R.color.statusBusy)
-                    EPersonaState.Away, EPersonaState.Snooze -> ContextCompat.getColor(context, R.color.statusAway)
-                    EPersonaState.LookingToTrade, EPersonaState.LookingToPlay -> ContextCompat.getColor(context, R.color.statusLookingTo)
+                    EPersonaState.Online ->
+                        ContextCompat.getColor(context, R.color.statusOnline)
+                    EPersonaState.Busy ->
+                        ContextCompat.getColor(context, R.color.statusBusy)
+                    EPersonaState.Away, EPersonaState.Snooze ->
+                        ContextCompat.getColor(context, R.color.statusAway)
+                    EPersonaState.LookingToTrade,
+                    EPersonaState.LookingToPlay ->
+                        ContextCompat.getColor(context, R.color.statusLookingTo)
                     else -> ContextCompat.getColor(context, R.color.statusOffline)
                 }
             } else {
                 ContextCompat.getColor(context, R.color.statusInGame)
             }
 
-    fun getStatusText(context: Context, state: EPersonaState?, gameAppId: Int, gameName: String?, lastLogOff: Long): String =
-            if (state == EPersonaState.Offline || gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
+    fun getStatusText(context: Context,
+                      state: EPersonaState?,
+                      gameAppId: Int,
+                      gameName: String?,
+                      lastLogOff: Long
+    ): String =
+            if (state == EPersonaState.Offline ||
+                    gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
                 when (state) {
                     EPersonaState.Online -> context.getString(R.string.statusOnline)
                     EPersonaState.Busy -> context.getString(R.string.statusBusy)
@@ -63,7 +79,11 @@ object Utils {
                     EPersonaState.LookingToTrade -> context.getString(R.string.statusLookingTrade)
                     EPersonaState.LookingToPlay -> context.getString(R.string.statusLookingPlay)
                     else -> context.getString(R.string.statusOffline,
-                            DateUtils.getRelativeTimeSpanString(lastLogOff, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS))
+                            DateUtils.getRelativeTimeSpanString(
+                                    lastLogOff,
+                                    System.currentTimeMillis(),
+                                    DateUtils.MINUTE_IN_MILLIS)
+                    )
                 }
             } else {
                 context.getString(R.string.statusPlaying, gameName ?: "")
@@ -89,8 +109,8 @@ object Utils {
 
             val emote = result.group(1)
 
-             if(emoteSet.contains(emote)) {
-                 return "[sticker type=\"$emote\" limit=\"0\"][/sticker]"
+            if (emoteSet.contains(emote)) {
+                return "[sticker type=\"$emote\" limit=\"0\"][/sticker]"
             }
         }
 
@@ -106,7 +126,8 @@ object Utils {
 
                 findEmotes(builder.toString(), emoteSet)
             } else {
-                message.substring(0, result.end() - 1) + findEmotes(message.substring(result.end() - 1), emoteSet)
+                message.substring(0, result.end() - 1) +
+                        findEmotes(message.substring(result.end() - 1), emoteSet)
             }
         } else {
             return message

@@ -7,11 +7,26 @@ import androidx.room.*
 @Dao
 interface ChatMessageDao {
 
-    @Query("SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friend_id = :friendId AND from_local = :fromLocal AND timestamp_confirmed = :confirmed")
-    fun find(message: String, timestamp: Long, friendId: Long, fromLocal: Boolean, confirmed: Boolean): ChatMessage?
+    @Query("SELECT * FROM chat_message WHERE message = :message AND " +
+            "timestamp = :timestamp AND friend_id = :friendId AND " +
+            "from_local = :fromLocal AND timestamp_confirmed = :confirmed")
+    fun find(
+            message: String,
+            timestamp: Long,
+            friendId: Long,
+            fromLocal: Boolean,
+            confirmed: Boolean
+    ): ChatMessage?
 
-    @Query("SELECT * FROM chat_message WHERE message = :message AND friend_id = :friendId AND from_local = :fromLocal AND timestamp_confirmed = :confirmed")
-    fun find(message: String, friendId: Long, fromLocal: Boolean, confirmed: Boolean): List<ChatMessage>
+    @Query("SELECT * FROM chat_message WHERE message = :message AND " +
+            "friend_id = :friendId AND from_local = :fromLocal AND " +
+            "timestamp_confirmed = :confirmed")
+    fun find(
+            message: String,
+            friendId: Long,
+            fromLocal: Boolean,
+            confirmed: Boolean
+    ): List<ChatMessage>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg messages: ChatMessage)

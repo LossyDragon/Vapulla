@@ -31,7 +31,6 @@ import kotlinx.android.synthetic.main.login_steam_guard_cancel.*
 import kotlinx.android.synthetic.main.login_username.*
 import javax.inject.Inject
 
-
 class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginView {
 
     @Inject
@@ -85,15 +84,17 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             val faceAnim = getDrawable(R.drawable.animated_vapulla_from_face)
             vapullaLogoBottom.setImageDrawable(faceAnim)
 
-            VectorAnimCompat.registerAnimationCallback(faceAnim as Animatable, object : Animatable2Compat.AnimationCallback() {
-                override fun onAnimationEnd(drawable: Drawable) {
-                    vapullaLogoTop.setImageDrawable(getDrawable(R.drawable.vapulla_top))
-                    vapullaLogoBottom.show()
-                    vapullaLogoMiddle.show()
-                    startLoadingAnimation()
-                    presenter.retry()
-                }
-            })
+            VectorAnimCompat.registerAnimationCallback(
+                    faceAnim as Animatable,
+                    object : Animatable2Compat.AnimationCallback() {
+                        override fun onAnimationEnd(drawable: Drawable) {
+                            vapullaLogoTop.setImageDrawable(getDrawable(R.drawable.vapulla_top))
+                            vapullaLogoBottom.show()
+                            vapullaLogoMiddle.show()
+                            startLoadingAnimation()
+                            presenter.retry()
+                        }
+                    })
 
             faceAnim.start()
         }
@@ -230,15 +231,17 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
         val d = vapullaLogoMiddle.drawable as Animatable
         val d2 = vapullaLogoBottom.drawable as Animatable
 
-        VectorAnimCompat.registerAnimationCallback(d, object : Animatable2Compat.AnimationCallback() {
-            override fun onAnimationEnd(drawable: Drawable) {
-                d.start()
-                handler.postDelayed({
-                    d2.stop()
-                    d2.start()
-                }, 300)
-            }
-        })
+        VectorAnimCompat.registerAnimationCallback(
+                d,
+                object : Animatable2Compat.AnimationCallback() {
+                    override fun onAnimationEnd(drawable: Drawable) {
+                        d.start()
+                        handler.postDelayed({
+                            d2.stop()
+                            d2.start()
+                        }, 300)
+                    }
+                })
         d.start()
         handler.postDelayed({ d2.start() }, 300)
     }

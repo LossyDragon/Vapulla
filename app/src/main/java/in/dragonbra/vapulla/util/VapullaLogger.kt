@@ -13,7 +13,7 @@ interface VapullaLogger {
         get() = getTag(javaClass)
 }
 
-fun VapullaLogger.info(message: String) =Log.i(loggerTag, message)
+fun VapullaLogger.info(message: String) = Log.i(loggerTag, message)
 
 fun VapullaLogger.warn(message: String) = Log.w(loggerTag, message)
 

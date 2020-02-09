@@ -22,8 +22,9 @@ import com.github.penfeizhou.animation.apng.APNGDrawable
 import kotlinx.android.synthetic.main.list_emote.view.*
 import java.io.File
 
-
-class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : RecyclerView.Adapter<EmoteAdapter.ViewHolder>() {
+class EmoteAdapter(val context: Context,
+                   val listener: EmoteListener? = null
+) : RecyclerView.Adapter<EmoteAdapter.ViewHolder>() {
 
     var emoteList: List<Emoticon> = emptyList()
 
@@ -72,10 +73,19 @@ class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : 
                 .asFile()
                 .load("$STICKER_URL${emoticon.name}")
                 .addListener(object : RequestListener<File> {
-                    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<File>?, isFirstResource: Boolean): Boolean = false
+                    override fun onLoadFailed(e: GlideException?,
+                                              model: Any?,
+                                              target: Target<File>?,
+                                              isFirstResource: Boolean
+                    ): Boolean = false
 
-                    override fun onResourceReady(resource: File?, model: Any?, target: Target<File>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                        //Only the original thread that created a view hierarchy can touch its views.
+                    override fun onResourceReady(resource: File?,
+                                                 model: Any?,
+                                                 target: Target<File>?,
+                                                 dataSource: DataSource?,
+                                                 isFirstResource: Boolean
+                    ): Boolean {
+                        // Only the original thread that created a view hierarchy...
                         Handler(v.context.mainLooper).post {
                             v.emote.setImageDrawable(APNGDrawable.fromFile(resource!!.absolutePath))
                         }
