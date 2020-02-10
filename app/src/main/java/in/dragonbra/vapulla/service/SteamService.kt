@@ -542,7 +542,8 @@ class SteamService : Service(), VapullaLogger {
 
         val emoteMessage = Utils.findEmotes(trimmed.replace('\u02D0', ':'), emoteSet)
 
-        // getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
+        // TODO remove SteamFriends sendChatMessage()
+        getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
         getHandler<VapullaHandler>()?.sendMessage(id, message)
 
         db.chatMessageDao().insert(ChatMessage(
@@ -796,14 +797,6 @@ class SteamService : Service(), VapullaLogger {
                     postMessageNotification(it.sender, it.message)
                 }
             }
-//            EChatEntryType.Typing -> {
-//                val friend = db.steamFriendDao().find(it.sender.convertToUInt64())
-//
-//                if (friend != null) {
-//                    friend.typingTs = System.currentTimeMillis()
-//                    db.steamFriendDao().update(friend)
-//                }
-//            }
             else -> {
             }
         }
@@ -860,10 +853,10 @@ class SteamService : Service(), VapullaLogger {
         clearMessageNotifications(it.sender)
     }
 
-    // TODO
-    private val onServiceMethodResponse: Consumer<ServiceServiceMethodCallback> = Consumer {
+    private val onServiceMethodResponse: Consumer<ServiceServiceMethodCallback> = Consumer { it ->
         info("onServiceMethodResponse")
 
+        // TODO: Resume implementing this.
         if (it.jobName == "FriendMessages.SendMessage#1") {
             debug(it.modifiedMessage!!)
             debug(it.jobName!!)

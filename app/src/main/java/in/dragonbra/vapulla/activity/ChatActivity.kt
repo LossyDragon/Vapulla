@@ -49,7 +49,9 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_chat.*
 import javax.inject.Inject
 
-class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, TextWatcher,
+class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
+        ChatView,
+        TextWatcher,
         EmoteAdapter.EmoteListener {
 
     companion object {
@@ -108,9 +110,10 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
         emoteAdapter = EmoteAdapter(this, this)
 
-        val emoteLayoutManager = FlexboxLayoutManager(this)
-        emoteLayoutManager.flexDirection = FlexDirection.ROW
-        emoteLayoutManager.justifyContent = JustifyContent.CENTER
+        val emoteLayoutManager = FlexboxLayoutManager(this).apply {
+            flexDirection = FlexDirection.ROW
+            justifyContent = JustifyContent.CENTER
+        }
 
         emoteList.layoutManager = emoteLayoutManager
         emoteList.adapter = emoteAdapter
@@ -146,7 +149,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     override fun createPresenter(): ChatPresenter {
         val steamId = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
         return ChatPresenter(
-                this,
+                applicationContext,
                 chatMessageDao,
                 steamFriendDao,
                 emoticonDao,

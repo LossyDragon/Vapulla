@@ -28,6 +28,7 @@ object Utils {
             "images/avatars/"
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
+    const val PROFILE_URL = "https://steamcommunity.com/profiles/"
 
     fun isLessThanN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
     fun isAtLeastN() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N

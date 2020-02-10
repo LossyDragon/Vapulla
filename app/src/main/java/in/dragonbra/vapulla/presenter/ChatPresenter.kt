@@ -102,8 +102,7 @@ class ChatPresenter(context: Context,
 
     override fun onPostCreate() {
         chatData = LivePagedListBuilder(
-                chatMessageDao.findLivePaged(steamId.convertToUInt64()),
-                50).build()
+                chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50).build()
         // chatData.observe(view as ChatActivity, chatObserver)
         ifViewAttached { chatData.observe(it as ChatActivity, chatObserver) }
 
@@ -166,7 +165,6 @@ class ChatPresenter(context: Context,
         updateHandler.postDelayed({ updateFriend() }, UPDATE_INTERVAL)
     }
 
-    // TODO getMessageHistory
     private fun getMessageHistory() {
         runOnBackgroundThread {
             steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)

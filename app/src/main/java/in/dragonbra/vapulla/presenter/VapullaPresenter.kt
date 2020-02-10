@@ -43,8 +43,7 @@ abstract class VapullaPresenter<V : MvpView>(
         }
     }
 
-    open fun onPostCreate() {
-    }
+    open fun onPostCreate() {}
 
     @CallSuper
     open fun onStart() {
@@ -56,7 +55,9 @@ abstract class VapullaPresenter<V : MvpView>(
     }
 
     open fun onResume() {}
+
     open fun onPause() {}
+
     @CallSuper
     open fun onStop() {
         context.unbindService(connection)
@@ -65,12 +66,14 @@ abstract class VapullaPresenter<V : MvpView>(
         bound = false
     }
 
-    open fun onDestroy() {
-    }
+    open fun onDestroy() {}
 
     open fun onServiceConnected(name: ComponentName, service: IBinder) {}
+
     open fun onServiceDisconnected(name: ComponentName) {}
+
     open fun onConnected() {}
+
     open fun onDisconnected() {}
 
     fun subscribe(sub: Closeable?) {

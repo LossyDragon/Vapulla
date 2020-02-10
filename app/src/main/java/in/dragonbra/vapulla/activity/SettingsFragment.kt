@@ -4,20 +4,30 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.anim.VectorAnimCompat
 import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import android.annotation.SuppressLint
 import android.content.*
+import android.graphics.drawable.Animatable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
-import androidx.appcompat.app.AlertDialog
+import android.widget.ImageView
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
+import androidx.vectordrawable.graphics.drawable.Animatable2Compat
+import com.afollestad.materialdialogs.LayoutMode
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.bottomsheets.BottomSheet
+import com.afollestad.materialdialogs.callbacks.onDismiss
+import com.afollestad.materialdialogs.customview.customView
+import com.afollestad.materialdialogs.customview.getCustomView
 import com.afollestad.materialdialogs.input.input
 import java.io.Closeable
 import java.util.*
@@ -29,6 +39,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private val subs: MutableList<Closeable?> = LinkedList()
 
     private lateinit var prefs: SharedPreferences
+
+    private var counter = 0
 
     private val connection: ServiceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName) {
@@ -110,19 +122,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
         changeUserPreference?.summary =
                 getString(R.string.prefSummaryChangeUser, accountManager.username)
         changeUserPreference?.click {
-            val builder = AlertDialog.Builder(context!!)
-
-            builder.setMessage(getString(R.string.dialogMessageChangeUser))
-                    .setTitle(getString(R.string.dialogTitleChangeUser))
-                    .setPositiveButton(R.string.dialogYes) { _, _ ->
-                        runOnBackgroundThread {
-                            runOnBackgroundThread { steamService.disconnect() }
-                            clearData()
-                        }
+            MaterialDialog(context!!).show {
+                title(R.string.dialogTitleChangeUser)
+                message(R.string.dialogMessageChangeUser)
+                positiveButton(R.string.dialogYes) {
+                    runOnBackgroundThread {
+                        runOnBackgroundThread { steamService.disconnect() }
+                        clearData()
                     }
-                    .setNegativeButton(R.string.dialogNo, null)
-
-            builder.create().show()
+                }
+                negativeButton(R.string.dialogNo)
+            }
             true
         }
 
@@ -153,6 +163,47 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // region About
         val prefVersion: Preference? = findPreference("pref_version")
         prefVersion?.summary = BuildConfig.VERSION_NAME
+        prefVersion?.click {
+            counter++
+
+            if (counter == 5) {
+                val dialog = MaterialDialog(context!!, BottomSheet(LayoutMode.WRAP_CONTENT))
+                        .customView(R.layout.view_easteregg, scrollable = false)
+
+                val customView = dialog.getCustomView()
+                val handler = Handler()
+                customView.findViewById<ImageView>(R.id.vapullaLogoMiddle).drawable as Animatable
+                val d = customView.findViewById<ImageView>(
+                        R.id.vapullaLogoMiddle).drawable as Animatable
+                val d2 = customView.findViewById<ImageView>(
+                        R.id.vapullaLogoBottom).drawable as Animatable
+                VectorAnimCompat.registerAnimationCallback(
+                        d,
+                        object : Animatable2Compat.AnimationCallback() {
+                            override fun onAnimationEnd(drawable: Drawable) {
+                                d.start()
+                                handler.postDelayed({
+                                    d2.stop()
+                                    d2.start()
+                                }, 300)
+                            }
+                        })
+                d.start()
+                handler.postDelayed({ d2.start() }, 300)
+                dialog.onDismiss {
+                    handler.removeCallbacksAndMessages(null)
+                    VectorAnimCompat.clearAnimationCallbacks(d)
+                    VectorAnimCompat.clearAnimationCallbacks(d2)
+                    d.stop()
+                    d2.stop()
+                }
+                dialog.show()
+
+                counter = 0
+            }
+
+            true
+        }
 
         val prefRateApp: Preference? = findPreference("pref_rate_app")
         prefRateApp?.click {

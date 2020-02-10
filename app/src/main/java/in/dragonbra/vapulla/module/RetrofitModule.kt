@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.module
 
 import `in`.dragonbra.vapulla.retrofit.Imgur
+import `in`.dragonbra.vapulla.retrofit.SteamApi
 import `in`.dragonbra.vapulla.retrofit.StoreFront
 import dagger.Module
 import dagger.Provides
@@ -12,6 +13,7 @@ import javax.inject.Singleton
 class RetrofitModule {
 
     companion object {
+        const val BASE_STEAM_API_URL = "https://api.steampowered.com/"
         const val BASE_STEAM_STORE_URL = "http://store.steampowered.com/api/"
         const val BASE_IMGUR_URL = "https://api.imgur.com/"
     }
@@ -25,6 +27,17 @@ class RetrofitModule {
                 .build()
 
         return retrofit.create(StoreFront::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSteamApi(): SteamApi {
+        val retrofit = Retrofit.Builder()
+                .baseUrl(BASE_STEAM_API_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+
+        return retrofit.create(SteamApi::class.java)
     }
 
     @Provides

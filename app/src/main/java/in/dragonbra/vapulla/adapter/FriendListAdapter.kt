@@ -268,6 +268,11 @@ class FriendListAdapter(val context: Context,
                         v.friendLayout.click {
                             listener?.onItemSelected(friend)
                         }
+
+                        v.friendLayout.longClick {
+                            listener?.onLongItemSelected(friend)
+                            true
+                        }
                     }
                 }
 
@@ -321,6 +326,7 @@ class FriendListAdapter(val context: Context,
 
     interface OnItemSelectedListener {
         fun onItemSelected(friend: FriendListItem)
+        fun onLongItemSelected(friend: FriendListItem)
         fun onRequestAccept(friend: FriendListItem)
         fun onRequestIgnore(friend: FriendListItem)
         fun onRequestBlock(friend: FriendListItem)

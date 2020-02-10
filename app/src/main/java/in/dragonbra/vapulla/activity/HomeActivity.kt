@@ -30,8 +30,7 @@ import kotlinx.android.synthetic.main.activity_home.*
 import kotlinx.android.synthetic.main.home_toolbar.*
 import javax.inject.Inject
 
-class HomeActivity : VapullaBaseActivity<HomeView,
-        HomePresenter>(),
+class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
         HomeView,
         FriendListAdapter.OnItemSelectedListener,
         SearchView.OnQueryTextListener,
@@ -159,6 +158,12 @@ class HomeActivity : VapullaBaseActivity<HomeView,
     override fun onItemSelected(friend: FriendListItem) {
         startActivity(Intent(this, ChatActivity::class.java).also {
             it.putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
+        })
+    }
+
+    override fun onLongItemSelected(friend: FriendListItem) {
+        startActivity(Intent(this, ProfileActivity::class.java).also {
+            it.putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
         })
     }
 
