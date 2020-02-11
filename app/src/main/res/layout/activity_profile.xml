@@ -92,7 +92,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Level"
+                            android:text="@string/textLevel"
                             android:textColor="@color/textPrimary"
                             android:textSize="20sp" />
 
@@ -126,7 +126,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Games"
+                            android:text="@string/textGames"
                             android:textColor="@color/textPrimary"
                             android:textSize="20sp" />
 
@@ -167,7 +167,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorAccent"
-                android:text="Chat"
+                android:text="@string/buttonChat"
                 android:textColor="?colorOnBackground" />
 
             <com.google.android.material.button.MaterialButton
@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:backgroundTint="@color/colorAccent"
-                android:text="View Profile"
+                android:text="@string/buttonViewAccount"
                 android:textColor="?colorOnBackground" />
 
             <com.google.android.material.button.MaterialButton
@@ -185,7 +185,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:backgroundTint="@color/colorAccent"
-                android:text="View Games"
+                android:text="@string/buttonViewGames"
                 android:textColor="?colorOnBackground" />
 
             <com.google.android.material.button.MaterialButton
@@ -194,7 +194,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
                 android:backgroundTint="@color/colorAccent"
-                android:text="Manage"
+                android:text="@string/buttonManage"
                 android:textColor="?colorOnBackground" />
 
         </LinearLayout>

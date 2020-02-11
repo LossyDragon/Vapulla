@@ -109,6 +109,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
 
         menu.findItem(R.id.search).setOnActionExpandListener(this)
         searchView.setOnQueryTextListener(this)
+        searchView.queryHint = getString(R.string.friendsListSearchViewHint)
 
         return true
     }

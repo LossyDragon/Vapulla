@@ -6,7 +6,7 @@
     <color name="colorAccentDark">#455a64</color>
     <color name="textPrimary">#ffffff</color>
     <color name="textSecondary">#bebebe</color>
-    <color name="textLink">#ffffff</color>
+    <!--<color name="textLink">#ffffff</color>-->
     <color name="textError">#EF5350</color>
     <color name="colorTyping">#546E7A</color>
 

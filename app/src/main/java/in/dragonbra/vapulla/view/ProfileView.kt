@@ -15,4 +15,8 @@ interface ProfileView : MvpView {
     fun showManageDialog(steamId: SteamID)
     fun updateBadgeLevel(level: String?)
     fun updateGameCount(pair: Pair<Int?, MutableList<Games>?>)
+    fun showAliasesDialog(nicknames: List<String>)
+    fun showBlockFriendDialog(name: String?)
+    fun showRemoveFriendDialog(name: String?)
+    fun showSetNicknameDialog(nickname: String?)
 }

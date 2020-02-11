@@ -2,23 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/setNickname"
-        android:title="@string/menuSetNickname"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/viewAliases"
-        android:title="@string/menuViewAliases"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/viewAccount"
-        android:title="@string/menuViewAccount"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/removeFriend"
-        android:title="@string/menuRemoveFriend"
-        app:showAsAction="never" />
-    <item
-        android:id="@+id/blockFriend"
-        android:title="@string/menuBlock"
+        android:id="@+id/menuViewProfile"
+        android:title="@string/menuViewProfile"
         app:showAsAction="never" />
 </menu>

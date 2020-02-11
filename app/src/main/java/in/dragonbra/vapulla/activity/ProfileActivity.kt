@@ -21,8 +21,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.view.MenuItem
-import android.view.View
+import android.widget.PopupMenu
 import androidx.core.app.NavUtils
+import com.afollestad.materialdialogs.LayoutMode
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.bottomsheets.BottomSheet
+import com.afollestad.materialdialogs.input.input
+import com.afollestad.materialdialogs.list.listItems
 import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.activity_profile.*
 import javax.inject.Inject
@@ -127,12 +132,16 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
 
             val flags = EPersonaStateFlag.from(friend.stateFlags)
             when {
-                flags.contains(EPersonaStateFlag.ClientTypeMobile) ->
+                flags.contains(EPersonaStateFlag.ClientTypeMobile) -> {
                     profile_status_indicator.setImageResource(R.drawable.ic_cellphone)
-                flags.contains(EPersonaStateFlag.ClientTypeWeb) ->
+                    profile_status_indicator.show()
+                }
+                flags.contains(EPersonaStateFlag.ClientTypeWeb) -> {
                     profile_status_indicator.setImageResource(R.drawable.ic_web)
+                    profile_status_indicator.show()
+                }
                 else ->
-                    profile_status_indicator.visibility = View.GONE
+                    profile_status_indicator.hide()
             }
 
             presenter.getLevel()
@@ -168,7 +177,20 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
     }
 
     override fun showManageDialog(steamId: SteamID) {
-        TODO("not implemented")
+        PopupMenu(this, profile_button_manage).apply {
+            menuInflater.inflate(R.menu.menu_profile, this.menu)
+            setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.setNickname -> presenter.menuSetNickname()
+                    R.id.viewAliases -> presenter.menuViewAliases()
+                    R.id.removeFriend -> presenter.menuRemoveFriend()
+                    R.id.blockFriend -> presenter.menuBlockFriend()
+                    else -> return@setOnMenuItemClickListener false
+                }
+                true
+            }
+            show()
+        }
     }
 
     override fun updateBadgeLevel(level: String?) {
@@ -184,6 +206,49 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
             profile_games_loading.hide()
             profile_games_count.text = if (pair.first == null) "N/A" else pair.first.toString()
             profile_games_count.show()
+        }
+    }
+
+    override fun showAliasesDialog(nicknames: List<String>) {
+        runOnUiThread {
+            MaterialDialog(this).show {
+                title(R.string.dialogTitleAliases)
+                listItems(items = nicknames)
+                positiveButton(R.string.dialogClose)
+            }
+        }
+    }
+
+    override fun showBlockFriendDialog(name: String?) {
+        MaterialDialog(this).show {
+            title(text = getString(R.string.dialogMessageBlockFriend, name))
+            message(text = getString(R.string.dialogTitleBlockFriend, name))
+            positiveButton(R.string.dialogYes) {
+                presenter.menuConfirmBlockFriend()
+            }
+            negativeButton(R.string.dialogNo)
+        }
+    }
+
+    override fun showRemoveFriendDialog(name: String?) {
+        MaterialDialog(this).show {
+            title(text = getString(R.string.dialogTitleRemoveFriend, name))
+            message(text = getString(R.string.dialogMessageRemoveFriend, name))
+            positiveButton(R.string.dialogYes) {
+                presenter.menuConfirmRemoveFriend()
+            }
+            negativeButton(R.string.dialogNo)
+        }
+    }
+
+    override fun showSetNicknameDialog(nickname: String?) {
+        MaterialDialog(this, BottomSheet(LayoutMode.WRAP_CONTENT)).show {
+            title(R.string.dialogTitleNickname)
+            input(hint = nickname, waitForPositiveButton = true) { _, text ->
+                presenter.menuConfirmSetNickName(text.toString())
+            }
+            positiveButton(R.string.dialogSet)
+            negativeButton(R.string.dialogCancel)
         }
     }
 }

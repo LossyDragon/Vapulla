@@ -1,6 +1,9 @@
 package `in`.dragonbra.vapulla.presenter
 
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
+import `in`.dragonbra.javasteam.types.JobID
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.activity.ProfileActivity
 import `in`.dragonbra.vapulla.adapter.FriendListItem
@@ -31,6 +34,8 @@ class ProfilePresenter(context: Context,
     @Inject
     lateinit var steamApi: SteamApi
 
+    private var aliasJobId: JobID? = null
+
     private val friendObserver = Observer<FriendListItem> { friend ->
         ifViewAttached { v ->
             friend?.let {
@@ -49,6 +54,8 @@ class ProfilePresenter(context: Context,
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         info("Bound to Steam service")
+        subscribe(steamService?.subscribe<AliasHistoryCallback> { onAliasHistory(it) })
+
         steamService?.isActivityRunning = true
     }
 
@@ -96,6 +103,28 @@ class ProfilePresenter(context: Context,
         friendData.removeObserver(friendObserver)
     }
 
+    fun menuSetNickname() {
+        ifViewAttached { it.showSetNicknameDialog(friendData.value?.nickname) }
+    }
+
+    fun menuViewAliases() {
+        runOnBackgroundThread {
+            aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
+        }
+    }
+
+    fun menuRemoveFriend() {
+        ifViewAttached {
+            it.showRemoveFriendDialog(friendData.value?.name)
+        }
+    }
+
+    fun menuBlockFriend() {
+        ifViewAttached {
+            it.showBlockFriendDialog(friendData.value?.name)
+        }
+    }
+
     fun buttonViewChat() {
         ifViewAttached {
             it.viewChat(steamId.convertToUInt64())
@@ -132,6 +161,41 @@ class ProfilePresenter(context: Context,
         runOnBackgroundThread {
             ifViewAttached {
                 it.updateGameCount(levelManager.getGames(steamId))
+            }
+        }
+    }
+
+    fun menuConfirmSetNickName(nickname: String) {
+        runOnBackgroundThread {
+            steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
+            val friend = steamFriendDao.find(steamId.convertToUInt64())
+
+            if (friend != null) {
+                friend.nickname = nickname
+                steamFriendDao.update(friend)
+            }
+        }
+    }
+
+    fun menuConfirmBlockFriend() {
+        runOnBackgroundThread {
+            steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
+        }
+    }
+
+    fun menuConfirmRemoveFriend() {
+        runOnBackgroundThread {
+            steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
+        }
+    }
+
+    private fun onAliasHistory(callback: AliasHistoryCallback) {
+        if (aliasJobId == callback.jobID) {
+            ifViewAttached { it ->
+                val list = callback.responses[0].names.toMutableList()
+                list.sortByDescending { it.nameSince }
+                val nicknames = list.map { it.name }
+                it.showAliasesDialog(nicknames)
             }
         }
     }

@@ -20,11 +20,9 @@ import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.ChatAdapterDataObserver
 import `in`.dragonbra.vapulla.view.ChatView
-import android.annotation.SuppressLint
 import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -35,11 +33,7 @@ import androidx.core.app.NavUtils
 import androidx.core.content.ContextCompat
 import androidx.paging.PagedList
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.afollestad.materialdialogs.LayoutMode
 import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.bottomsheets.BottomSheet
-import com.afollestad.materialdialogs.input.input
-import com.afollestad.materialdialogs.list.listItems
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.flexbox.FlexDirection
@@ -136,11 +130,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> navigateUp()
-            R.id.setNickname -> presenter.nicknameMenuClicked()
-            R.id.viewAliases -> presenter.viewAliasesMenuClicked()
-            R.id.viewAccount -> presenter.viewAccountMenuClicked()
-            R.id.removeFriend -> presenter.removeFriend()
-            R.id.blockFriend -> presenter.blockFriend()
+            R.id.menuViewProfile -> presenter.viewProfile()
             else -> return super.onOptionsItemSelected(item)
         }
         return true
@@ -241,50 +231,10 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
         }
     }
 
-    override fun showRemoveFriendDialog(name: String) {
-        MaterialDialog(this).show {
-            title(text = getString(R.string.dialogTitleRemoveFriend, name))
-            message(text = getString(R.string.dialogMessageRemoveFriend, name))
-            positiveButton(R.string.dialogYes) { presenter.confirmRemoveFriend() }
-            negativeButton(R.string.dialogNo)
-        }
-    }
-
-    override fun showBlockFriendDialog(name: String) {
-        MaterialDialog(this).show {
-            title(text = getString(R.string.dialogTitleBlockFriend, name))
-            message(text = getString(R.string.dialogMessageBlockFriend, name))
-            positiveButton(R.string.dialogYes) { presenter.confirmBlockFriend() }
-            negativeButton(R.string.dialogNo)
-        }
-    }
-
-    @SuppressLint("InflateParams")
-    override fun showNicknameDialog(nickname: String) {
-        MaterialDialog(this).show {
-            title(R.string.dialogTitleNickname)
-            input(hint = nickname, waitForPositiveButton = true) { _, text ->
-                presenter.setNickname(text.toString())
-            }
-            positiveButton(R.string.dialogSet)
-            negativeButton(R.string.dialogCancel)
-        }
-    }
-
-    override fun browseUrl(url: String) {
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.data = Uri.parse(url)
-        startActivity(intent)
-    }
-
-    override fun showAliases(names: List<String>) {
-        runOnUiThread {
-            MaterialDialog(this, BottomSheet(LayoutMode.WRAP_CONTENT)).show {
-                title(R.string.dialogTitleAliases)
-                listItems(items = names)
-                positiveButton(R.string.dialogClose)
-            }
-        }
+    override fun viewProfile(steamID: Long) {
+        startActivity(Intent(this, ProfileActivity::class.java).also {
+            it.putExtra(ProfileActivity.INTENT_STEAM_ID, steamID)
+        })
     }
 
     override fun showEmotes(list: List<Emoticon>) {

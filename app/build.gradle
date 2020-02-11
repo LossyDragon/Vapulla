@@ -79,6 +79,9 @@ dependencies {
     implementation "com.afollestad.material-dialogs:core:$material_dialogs"
     implementation "com.afollestad.material-dialogs:bottomsheets:$material_dialogs"
     implementation "com.afollestad.material-dialogs:input:$material_dialogs"
+
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.2'
+
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

@@ -3,8 +3,6 @@ package `in`.dragonbra.vapulla.presenter
 import `in`.dragonbra.javasteam.enums.EChatEntryType
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
-import `in`.dragonbra.javasteam.types.JobID
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.activity.ChatActivity
@@ -53,8 +51,6 @@ class ChatPresenter(context: Context,
 
     private var lastTypingMessage = 0L
 
-    private var aliasJobId: JobID? = null
-
     private lateinit var chatData: LiveData<PagedList<ChatMessage>>
 
     private lateinit var friendData: LiveData<FriendListItem>
@@ -92,8 +88,6 @@ class ChatPresenter(context: Context,
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         info("Bound to Steam service")
-
-        subscribe(steamService?.subscribe<AliasHistoryCallback> { onAliasHistory(it) })
 
         steamService?.setChatFriendId(steamId)
         steamService?.isActivityRunning = true
@@ -178,17 +172,6 @@ class ChatPresenter(context: Context,
         }
     }
 
-    private fun onAliasHistory(callback: AliasHistoryCallback) {
-        if (aliasJobId == callback.jobID) {
-            ifViewAttached { chatView ->
-                val list = callback.responses[0].names.toMutableList()
-                list.sortByDescending { it.nameSince }
-                val names = list.map { it.name }
-                chatView.showAliases(names)
-            }
-        }
-    }
-
     fun sendMessage(message: String) {
         if (Strings.isNullOrEmpty(message)) {
             return
@@ -212,51 +195,9 @@ class ChatPresenter(context: Context,
         }
     }
 
-    fun removeFriend() {
-        ifViewAttached { it.showRemoveFriendDialog(friendData.value?.name ?: "") }
-    }
-
-    fun confirmRemoveFriend() {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
-        }
-    }
-
-    fun blockFriend() {
-        ifViewAttached { it.showBlockFriendDialog(friendData.value?.name ?: "") }
-    }
-
-    fun confirmBlockFriend() {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
-        }
-    }
-
-    fun nicknameMenuClicked() {
-        ifViewAttached { it.showNicknameDialog(friendData.value?.nickname ?: "") }
-    }
-
-    fun setNickname(nickname: String) {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
-            val friend = steamFriendsDao.find(steamId.convertToUInt64())
-
-            if (friend != null) {
-                friend.nickname = nickname
-                steamFriendsDao.update(friend)
-            }
-        }
-    }
-
-    fun viewAccountMenuClicked() {
+    fun viewProfile() {
         ifViewAttached {
-            it.browseUrl("http://steamcommunity.com/profiles/${steamId.convertToUInt64()}")
-        }
-    }
-
-    fun viewAliasesMenuClicked() {
-        runOnBackgroundThread {
-            aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
+            it.viewProfile(steamId.convertToUInt64())
         }
     }
 
