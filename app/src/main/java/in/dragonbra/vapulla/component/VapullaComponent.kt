@@ -21,5 +21,6 @@ interface VapullaComponent {
     fun inject(loginActivity: LoginActivity)
     fun inject(chatActivity: ChatActivity)
     fun inject(profileActivity: ProfileActivity)
+    fun inject(gamesActivity: GamesActivity)
     fun inject(settingsActivity: SettingsActivity)
 }

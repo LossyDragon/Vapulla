@@ -35,6 +35,8 @@
     <string name="menuViewAliases">View aliases</string>
     <string name="menuRemoveFriend">Remove friend</string>
     <string name="menuBlock">Block</string>
+    <string name="menuSortNames">Sort by title</string>
+    <string name="menuSortPlaytime">Sort by playtime</string>
 
     <!--endregion-->
 
@@ -48,7 +50,7 @@
     <string name="prefTitleSourceCode">Source code</string>
     <string name="prefTitleLicenses">Licenses</string>
     <string name="prefTitleRateApp">Rate the app</string>
-    <string name="prefTitleSortFriends">Sort friends by</string> <!-- TODO: Implement Sort -->
+    <string name="prefTitleSortFriends">Sort friends by</string>
     <string name="prefTitleFriendsRecents">Show recent chats on top for</string>
 
     <!--endregion-->
@@ -167,6 +169,7 @@
     <!--region Other-->
 
     <string name="friendsListSearchViewHint">Search for a friend…</string>
+    <string name="gamesListSearchViewHint">Search a game…</string>
     <string name="nicknameFormat">%1$s*</string>
     <string name="messageSentSticker">(%1$s)</string>
     <string name="loadingTextFailed">Failed to connect to steam</string>
@@ -176,6 +179,10 @@
     <string name="loadingTextSteamGuardEmail">Enter your steam guard code you get through your email</string>
     <string name="textGames">Games</string>
     <string name="textLevel">Level</string>
+    <string name="textGamesTitle">\'s games</string>
+    <string name="textNoNames">No Games Found</string>
+    <string name="textPlayedRecent">%.1f hrs past two weeks</string>
+    <string name="textPlayedForever">%.0f hrs on record</string>
 
     <!--endregion-->
 

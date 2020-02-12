@@ -22,13 +22,17 @@ object Utils {
     private val STICKER_PATTERN: Pattern = Pattern.compile("/sticker ([a-zA-Z0-9]+)")
 
     private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
+
+    const val STORE_PAGE_URL = "http://store.steampowered.com/app/%d/"
+    const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
+    const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
+    const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+    const val GAME_LOGO_URL = "http://media.steampowered.com/steamcommunity/public/" +
+            "images/apps/%d/%s.jpg"
     private const val DEFAULT_AVATAR = "http://cdn.akamai.steamstatic.com/steamcommunity/public/" +
             "images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
     private const val AVATAR_URL = "http://cdn.akamai.steamstatic.com/steamcommunity/public/" +
             "images/avatars/"
-    const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
-    const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
-    const val PROFILE_URL = "https://steamcommunity.com/profiles/"
 
     fun isLessThanN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
     fun isAtLeastN() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N

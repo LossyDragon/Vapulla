@@ -181,10 +181,11 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/profile_button_games"
+                style="@style/MaterialButtonStates"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="15dp"
-                android:backgroundTint="@color/colorAccent"
+                android:enabled="false"
                 android:text="@string/buttonViewGames"
                 android:textColor="?colorOnBackground" />
 

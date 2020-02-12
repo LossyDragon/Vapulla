@@ -11,6 +11,7 @@ import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.retrofit.SteamApi
+import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.info
@@ -35,6 +36,8 @@ class ProfilePresenter(context: Context,
     lateinit var steamApi: SteamApi
 
     private var aliasJobId: JobID? = null
+
+    private var gamesList: ArrayList<Games>? = null
 
     private val friendObserver = Observer<FriendListItem> { friend ->
         ifViewAttached { v ->
@@ -103,6 +106,14 @@ class ProfilePresenter(context: Context,
         friendData.removeObserver(friendObserver)
     }
 
+    fun setGamesList(list: ArrayList<Games>) {
+        gamesList = list
+    }
+
+    fun clearGamesList() {
+        gamesList = null
+    }
+
     fun menuSetNickname() {
         ifViewAttached { it.showSetNicknameDialog(friendData.value?.nickname) }
     }
@@ -139,7 +150,7 @@ class ProfilePresenter(context: Context,
 
     fun buttonViewGames() {
         ifViewAttached {
-            it.viewGames("${Utils.PROFILE_URL}${steamId.convertToUInt64()}/games/?tab=all")
+            it.viewGames(gamesList, friendData.value?.name!!)
         }
     }
 

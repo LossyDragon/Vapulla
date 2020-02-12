@@ -215,10 +215,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
     }
 
     /* Menu Search stuff */
-    override fun onQueryTextSubmit(query: String?): Boolean {
-        // Nothing
-        return true
-    }
+    override fun onQueryTextSubmit(query: String?): Boolean = true
 
     override fun onQueryTextChange(newText: String?): Boolean {
         presenter.search(newText!!)

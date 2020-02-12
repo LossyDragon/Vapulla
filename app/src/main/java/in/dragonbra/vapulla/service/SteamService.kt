@@ -68,6 +68,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.text.format.DateUtils
 import androidx.core.app.*
+import androidx.core.graphics.drawable.IconCompat
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import org.spongycastle.util.encoders.Hex
@@ -201,7 +202,7 @@ class SteamService : Service(), VapullaLogger {
             add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
             add(callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList))
             add(callbackMgr.subscribe(FriendMsgHistoryCallback::class.java, onFriendMsgHistory))
-            add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
+            // add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
             add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
             add(callbackMgr.subscribe(
                     OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
@@ -237,7 +238,7 @@ class SteamService : Service(), VapullaLogger {
             when (intent.getStringExtra(EXTRA_ACTION)) {
                 "reply" -> {
                     val message = intent.getStringExtra(EXTRA_MESSAGE)!!
-
+                    // TODO: Make reply intents proper with messaging style
                     runOnBackgroundThread {
                         val emotes = db.emoticonDao().find()
                         val emoteSet = emotes.map { it.name }.toSet()
@@ -365,17 +366,6 @@ class SteamService : Service(), VapullaLogger {
         val backoff = messages.isNotEmpty() &&
                 currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
-        val steamUser = Person.Builder().setName(friend.name ?: "").build()
-
-        val newMessage = NotificationCompat.MessagingStyle.Message(message, currentTs, steamUser)
-        messages.add(newMessage)
-
-        val style = NotificationCompat.MessagingStyle(steamUser)
-
-        messages.forEach {
-            style.addMessage(it)
-        }
-
         var bitmap: Bitmap? = null
 
         try {
@@ -386,6 +376,21 @@ class SteamService : Service(), VapullaLogger {
                     .submit()
                     .get(5, TimeUnit.SECONDS)
         } catch (ignored: Exception) {
+        }
+
+        val steamUser = Person
+                .Builder()
+                .setName(friend.name ?: "")
+                .setIcon(IconCompat.createWithBitmap(bitmap))
+                .build()
+
+        val newMessage = NotificationCompat.MessagingStyle.Message(message, currentTs, steamUser)
+        messages.add(newMessage)
+
+        val style = NotificationCompat.MessagingStyle(steamUser)
+
+        messages.forEach {
+            style.addMessage(it)
         }
 
         val replyPendingIntent = PendingIntent.getBroadcast(
@@ -542,8 +547,7 @@ class SteamService : Service(), VapullaLogger {
 
         val emoteMessage = Utils.findEmotes(trimmed.replace('\u02D0', ':'), emoteSet)
 
-        // TODO remove SteamFriends sendChatMessage()
-        getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
+        // getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
         getHandler<VapullaHandler>()?.sendMessage(id, message)
 
         db.chatMessageDao().insert(ChatMessage(
@@ -781,27 +785,6 @@ class SteamService : Service(), VapullaLogger {
         }
     }
 
-    private val onFriendMsg: Consumer<FriendMsgCallback> = Consumer {
-        when (it.entryType) {
-            EChatEntryType.ChatMsg -> {
-                db.chatMessageDao().insert(ChatMessage(
-                        it.message,
-                        System.currentTimeMillis(),
-                        it.sender.convertToUInt64(),
-                        false,
-                        chatFriendId != it.sender.convertToUInt64(),
-                        false
-                ))
-
-                if (it.sender.convertToUInt64() != chatFriendId) {
-                    postMessageNotification(it.sender, it.message)
-                }
-            }
-            else -> {
-            }
-        }
-    }
-
     private val onNicknameList: Consumer<NicknameListCallback> = Consumer {
         db.steamFriendDao().clearNicknames()
 
@@ -888,11 +871,7 @@ class SteamService : Service(), VapullaLogger {
                 }
             }
 
-            // Handle incoming stickers for now
-            if (it.entryType == EChatEntryType.ChatMsg &&
-                    it.message.contains("limit=\"0\"][/sticker]") &&
-                    it.message.isNotEmpty()) {
-
+            if (it.entryType == EChatEntryType.ChatMsg && it.message.isNotEmpty()) {
                 db.chatMessageDao().insert(ChatMessage(
                         it.message,
                         System.currentTimeMillis(),

@@ -92,7 +92,20 @@ class HomePresenter(context: Context,
         }
     }
 
+    // TODO:
+    //  sometimes onPersonaState() still gets out of sync,
+    //  usually when the app is in the background or the phone is idling for a long time
+    //  Swipe refresh works, but we need to
+    //  assume everyone else is Offline
+    //  --> However: last_log_off and last_log_on will get messed up
+    //  --> Possibly call for an "ENTIRE" friends list to fix these values.
     fun refreshFriendsList() {
+        // First we need to assume everyone is offline.
+        runOnBackgroundThread {
+            steamFriendDao.clearOnlineState()
+        }
+
+        // Then call for an updated friends list, but it only returns anyone who is not Offline.
         runOnBackgroundThread { steamService?.getHandler<VapullaHandler>()?.getFriendsList() }
     }
 

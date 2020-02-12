@@ -50,7 +50,7 @@ class FriendListAdapter(val context: Context,
         const val ITEM_TYPE_FRIEND_RECENT = 5
     }
 
-    var friendList: MutableList<Any> = LinkedList()
+    private var friendList: MutableList<Any> = LinkedList()
 
     var listener: OnItemSelectedListener? = null
 
@@ -60,6 +60,9 @@ class FriendListAdapter(val context: Context,
 
     private var recentsTimeout =
             prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
+
+    private var sortPrefs =
+            prefs.getString("pref_friends_list_sort", "Status")!!
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutRes = when (viewType) {
@@ -112,6 +115,8 @@ class FriendListAdapter(val context: Context,
     fun swap(list: List<FriendListItem>, updateTime: Long) {
         this.updateTime = updateTime
         recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
+        // TODO: Implement Sort
+        sortPrefs = prefs.getString("pref_friends_list_sort", "Status")!!
 
         var currentViewType = -1
         val newList: MutableList<Any> = LinkedList(list)

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="88dp"
+    android:minHeight="72dp">
+
+    <ImageView
+        android:id="@+id/games_image"
+        android:layout_width="100dp"
+        android:layout_height="56dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        tools:ignore="ContentDescription"
+        tools:src="@drawable/vapulla" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="56dp"
+        android:layout_toEndOf="@id/games_image"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/games_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="16sp"
+            tools:text="Game title" />
+
+        <TextView
+            android:id="@+id/games_hours_forever"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="14sp"
+            tools:text="@string/textPlayedForever" />
+
+        <TextView
+            android:id="@+id/games_hours_recent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:text="@string/textPlayedRecent"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/games_more_button"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:tint="#fff"
+        app:srcCompat="@drawable/ic_dots_vertical"
+        tools:ignore="ContentDescription" />
+
+</RelativeLayout>

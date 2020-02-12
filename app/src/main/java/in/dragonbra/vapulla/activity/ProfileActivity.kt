@@ -6,9 +6,7 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
-import `in`.dragonbra.vapulla.extension.click
-import `in`.dragonbra.vapulla.extension.hide
-import `in`.dragonbra.vapulla.extension.show
+import `in`.dragonbra.vapulla.extension.*
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.presenter.ProfilePresenter
@@ -64,6 +62,11 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
         profile_button_manage.click { presenter.buttonViewManage() }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.clearGamesList()
+    }
+
     override fun createPresenter(): ProfilePresenter {
         val steamId = SteamID(intent.getLongExtra(ChatActivity.INTENT_STEAM_ID, 0L))
 
@@ -77,13 +80,18 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> navigateUp()
+        return when (item.itemId) {
+            android.R.id.home -> {
+                navigateUp()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
-        return super.onOptionsItemSelected(item)
     }
 
     override fun closeApp() {
+        presenter.clearGamesList()
+
         runOnUiThread {
             val intent = Intent(Intent.ACTION_MAIN)
             intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -168,12 +176,13 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
                 })
     }
 
-    override fun viewGames(url: String) {
-        // TODO make own activity?
-        startActivity(
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse(url)
-                })
+    override fun viewGames(list: ArrayList<Games>?, name: String) {
+        val intent = Intent(this, GamesActivity::class.java)
+        val bundle = Bundle()
+        bundle.putParcelableArrayList(GamesActivity.INTENT_GAMES, list)
+        bundle.putString("name", name)
+        intent.putExtras(bundle)
+        startActivity(intent)
     }
 
     override fun showManageDialog(steamId: SteamID) {
@@ -201,12 +210,21 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
         }
     }
 
-    override fun updateGameCount(pair: Pair<Int?, MutableList<Games>?>) {
+    override fun updateGameCount(pair: Pair<Int?, ArrayList<Games>>) {
         Handler(mainLooper).post {
             profile_games_loading.hide()
             profile_games_count.text = if (pair.first == null) "N/A" else pair.first.toString()
             profile_games_count.show()
+
+            if (pair.first == 0) {
+                profile_button_games.disable()
+                profile_button_games.text = getString(R.string.textNoNames)
+            } else {
+                profile_button_games.enable()
+            }
         }
+
+        presenter.setGamesList(pair.second)
     }
 
     override fun showAliasesDialog(nicknames: List<String>) {

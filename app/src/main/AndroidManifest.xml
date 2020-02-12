@@ -44,11 +44,20 @@
         <activity
             android:name=".activity.ProfileActivity"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme.Settings"
-            android:parentActivityName=".activity.HomeActivity">
+            android:parentActivityName=".activity.HomeActivity"
+            android:theme="@style/AppTheme.Settings">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activity.HomeActivity" />
+        </activity>
+        <activity
+            android:name=".activity.GamesActivity"
+            android:launchMode="singleTop"
+            android:parentActivityName=".activity.ProfileActivity"
+            android:theme="@style/AppTheme.Settings">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.ProfileActivity" />
         </activity>
 
         <service

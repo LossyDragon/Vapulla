@@ -7,13 +7,13 @@ import `in`.dragonbra.vapulla.retrofit.response.Games
 
 class ProfileManager(private val steamApi: SteamApi) {
 
-    fun getGames(steamId: SteamID): Pair<Int?, MutableList<Games>?> {
+    fun getGames(steamId: SteamID): Pair<Int?, ArrayList<Games>> {
         val args = java.util.HashMap<String, String>()
         args["key"] = BuildConfig.STEAM_API_KEY
         args["steamid"] = steamId.convertToUInt64().toString()
         args["include_played_free_games"] = "1"
 
-        var pair: Pair<Int?, MutableList<Games>?> = Pair(0, mutableListOf())
+        var pair: Pair<Int?, ArrayList<Games>> = Pair(0, arrayListOf())
 
         val call = steamApi.getGamesOwned(args)
         val response = call.execute()
@@ -26,7 +26,7 @@ class ProfileManager(private val steamApi: SteamApi) {
                 )
             }
         } else {
-            pair = Pair(null, null)
+            pair = Pair(null, arrayListOf())
         }
 
         return pair

@@ -1,9 +1,13 @@
 package `in`.dragonbra.vapulla.retrofit.response
 
+import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
+
+@Parcelize
 data class Games(
-        val appid: String,
+        val appid: Int,
         val name: String,
-        val playtime_2weeks: Long,
-        val playtime_forever: String,
-        val img_logo_url: String
-)
+        val playtime_2weeks: Int?,
+        val playtime_forever: Int,
+        val img_logo_url: String?
+) : Parcelable

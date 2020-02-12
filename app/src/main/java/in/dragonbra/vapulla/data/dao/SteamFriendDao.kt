@@ -52,4 +52,7 @@ interface SteamFriendDao {
 
     @Query("DELETE FROM steam_friend")
     fun delete()
+
+    @Query("UPDATE steam_friend SET state = 0")
+    fun clearOnlineState()
 }
