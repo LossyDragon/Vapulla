@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.list_games.view.*
@@ -30,7 +31,7 @@ class GamesAdapter(val context: Context) :
 
     var listener: OnItemSelectedListener? = null
 
-    private var gamesList: List<Games> = listOf()
+    private var gamesList: MutableList<Games> = mutableListOf()
 
     override fun getItemCount(): Int = gamesList.size
 
@@ -45,6 +46,47 @@ class GamesAdapter(val context: Context) :
         gamesList[position].let {
             holder.bind(it)
         }
+    }
+
+    fun setList(list: MutableList<Games>, sort: Int) {
+        if (sort == SORT_ALPHABETICAL) {
+            debug("setList() -> l1, l2 = A-Z sort")
+            list.sortWith(Comparator { l1, l2 ->
+                l1.name.compareTo(l2.name)
+            })
+        } else if (sort == SORT_PLAYTIME) {
+            debug("setList() -> l2, l1 = 9-0 sort.")
+            list.sortWith(Comparator { l2, l1 ->
+                l1.playtime_forever.compareTo(l2.playtime_forever)
+            })
+        }
+
+        val diffResult = DiffUtil.calculateDiff(GamesDiffCallback(gamesList, list))
+        gamesList.clear()
+        gamesList.addAll(list)
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun formatTime(time: Int): Double {
+        var value: Double
+        DecimalFormat("#.#").run {
+            roundingMode = RoundingMode.CEILING
+            value = time.div(60f).toDouble()
+        }
+
+        return value
+    }
+
+    private fun formatGameBanner(imageUrl: String?, appId: Int): String? {
+        return if (imageUrl.isNullOrEmpty()) {
+            null
+        } else {
+            String.format(Utils.GAME_LOGO_URL, appId, imageUrl)
+        }
+    }
+
+    interface OnItemSelectedListener {
+        fun onMoreItemSelected(game: Games)
     }
 
     inner class ViewHolder(val v: View) : RecyclerView.ViewHolder(v) {
@@ -76,43 +118,18 @@ class GamesAdapter(val context: Context) :
         }
     }
 
-    fun setList(list: MutableList<Games>, sort: Int) {
-        if (sort == SORT_ALPHABETICAL) {
-            debug("setList() -> l1, l2 = A-Z sort")
-            list.sortWith(Comparator { l1, l2 ->
-                l1.name.compareTo(l2.name)
-            })
-        } else if (sort == SORT_PLAYTIME) {
-            debug("setList() -> l2, l1 = 9-0 sort.")
-            list.sortWith(Comparator { l2, l1 ->
-                l1.playtime_forever.compareTo(l2.playtime_forever)
-            })
-        }
+    inner class GamesDiffCallback(
+            private val oldList: List<Games>,
+            private val newList: List<Games>
+    ) : DiffUtil.Callback() {
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                oldList[oldItemPosition] == newList[newItemPosition]
 
-        gamesList = list
+        override fun getOldListSize(): Int = oldList.size
 
-        notifyDataSetChanged()
-    }
+        override fun getNewListSize(): Int = newList.size
 
-    private fun formatTime(time: Int): Double {
-        var value: Double
-        DecimalFormat("#.#").run {
-            roundingMode = RoundingMode.CEILING
-            value = time.div(60f).toDouble()
-        }
-
-        return value
-    }
-
-    private fun formatGameBanner(imageUrl: String?, appId: Int): String? {
-        return if (imageUrl.isNullOrEmpty()) {
-            null
-        } else {
-            String.format(Utils.GAME_LOGO_URL, appId, imageUrl)
-        }
-    }
-
-    interface OnItemSelectedListener {
-        fun onMoreItemSelected(game: Games)
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                areItemsTheSame(oldItemPosition, newItemPosition)
     }
 }

@@ -15,8 +15,8 @@ import com.bumptech.glide.request.RequestOptions
 import java.util.regex.Pattern
 
 object Utils {
-    val avatarOptions = RequestOptions()
-            .transform(CircleTransform())
+
+    val avatarOptions = RequestOptions().transform(CircleTransform())
 
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
     private val STICKER_PATTERN: Pattern = Pattern.compile("/sticker ([a-zA-Z0-9]+)")

@@ -112,7 +112,6 @@ class GamesActivity : VapullaBaseActivity<GamesView, GamesPresenter>(),
 
     override fun updateGames(list: MutableList<Games>, direction: Int) {
         gamesAdapter.setList(list, direction)
-        println("AAA")
     }
 
     override fun onMoreItemSelected(game: Games) {

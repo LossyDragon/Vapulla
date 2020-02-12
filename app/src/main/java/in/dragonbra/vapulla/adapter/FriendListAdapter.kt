@@ -62,7 +62,7 @@ class FriendListAdapter(val context: Context,
             prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
 
     private var sortPrefs =
-            prefs.getString("pref_friends_list_sort", "Status")!!
+            prefs.getString("pref_friends_list_sort", "1")!!
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutRes = when (viewType) {
@@ -112,26 +112,52 @@ class FriendListAdapter(val context: Context,
 
     override fun getAdapterData(): MutableList<*> = friendList
 
-    fun swap(list: List<FriendListItem>, updateTime: Long) {
+    fun swap(list: MutableList<FriendListItem>, updateTime: Long) {
         this.updateTime = updateTime
-        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
-        // TODO: Implement Sort
-        sortPrefs = prefs.getString("pref_friends_list_sort", "Status")!!
 
+        recentsTimeout =
+                prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
+
+        sortPrefs =
+                prefs.getString("pref_friends_list_sort", "1")!!
+
+        var newList: MutableList<Any> = mutableListOf()
         var currentViewType = -1
-        val newList: MutableList<Any> = LinkedList(list)
 
-        if (newList.isNotEmpty()) {
-            for (i in (list.size - 1) downTo 0) {
-                val type = getItemType(newList[i])
-                if (currentViewType == -1) {
-                    currentViewType = type
-                } else if (type != currentViewType) {
-                    newList.add(i + 1, TextHeader(getHeader(currentViewType)))
-                    currentViewType = type
+        if (list.isNotEmpty()) {
+            if (sortPrefs == "1") {
+                // Sort normally by status
+                newList = list.toMutableList()
+                for (i in (list.size - 1) downTo 0) {
+                    val type = getItemType(newList[i])
+                    if (currentViewType == -1) {
+                        currentViewType = type
+                    } else if (type != currentViewType) {
+                        newList.add(i + 1, TextHeader(getHeader(currentViewType)))
+                        currentViewType = type
+                    }
+                }
+                newList.add(0, TextHeader(getHeader(currentViewType)))
+            } else {
+                // Sort by name
+                list.sortWith(Comparator { l1, l2 ->
+                    (l1).name!!.compareTo((l2).name!!)
+                })
+
+                // TODO: Handle items that are not A-Z0-9
+                // TODO: Handle friend request 1st, then recent messages 2nd.
+                var char = ' '
+                list.forEach { friendListItem ->
+                    val firstLetter = friendListItem.name!!.first()
+                    if (firstLetter != char) {
+                        char = firstLetter
+                        newList.add(TextHeader(char.toUpperCase().toString()))
+                        newList.add(friendListItem)
+                    } else {
+                        newList.add(friendListItem)
+                    }
                 }
             }
-            newList.add(0, TextHeader(getHeader(currentViewType)))
         }
 
         val result = DiffUtil.calculateDiff(FriendDiffUtil(newList))
@@ -153,7 +179,6 @@ class FriendListAdapter(val context: Context,
 
                 Glide.with(context)
                         .load(Utils.getAvatarUrl(friend.avatar))
-                        // .transition(DrawableTransitionOptions.withCrossFade())
                         .apply(Utils.avatarOptions)
                         .into(v.findViewById(R.id.avatar))
 
@@ -315,7 +340,8 @@ class FriendListAdapter(val context: Context,
 
             return newItem is FriendListItem &&
                     oldItem is FriendListItem &&
-                    newItem.id == oldItem.id ||
+                    newItem.id == oldItem.id &&
+                    newItem.name == oldItem.name ||
                     newItem is TextHeader &&
                     oldItem is TextHeader &&
                     newItem.title == oldItem.title

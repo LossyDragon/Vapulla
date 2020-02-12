@@ -17,6 +17,7 @@ import android.util.Log
 import androidx.preference.PreferenceManager
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
+// TODO: Check out https://bumptech.github.io/glide/int/recyclerview.html
 class VapullaApplication : Application() {
 
     lateinit var graph: VapullaComponent

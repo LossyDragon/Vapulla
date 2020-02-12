@@ -26,7 +26,7 @@
             android:title="@string/prefTitleFriendsRecents" />
 
         <ListPreference
-            android:defaultValue="Status"
+            android:defaultValue="1"
             android:entries="@array/prefEntriesSortFriends"
             android:entryValues="@array/prefValuesSortFriends"
             android:key="pref_friends_list_sort"

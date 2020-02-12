@@ -85,6 +85,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
     override fun onResume() {
         super.onResume()
         updateList()
+        presenter.refreshFriendsList()
     }
 
     override fun onPause() {
@@ -140,7 +141,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
     }
 
     override fun showFriends(list: List<FriendListItem>, updateTime: Long) {
-        friendListAdapter.swap(list, updateTime)
+        friendListAdapter.swap(list.toMutableList(), updateTime)
     }
 
     override fun showAccount(account: AccountManager) {
