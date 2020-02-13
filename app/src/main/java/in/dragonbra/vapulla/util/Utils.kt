@@ -53,19 +53,16 @@ object Utils {
             if (state == EPersonaState.Offline ||
                     gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
                 when (state) {
-                    EPersonaState.Online ->
-                        ContextCompat.getColor(context, R.color.statusOnline)
-                    EPersonaState.Busy ->
-                        ContextCompat.getColor(context, R.color.statusBusy)
-                    EPersonaState.Away, EPersonaState.Snooze ->
-                        ContextCompat.getColor(context, R.color.statusAway)
+                    EPersonaState.Online -> getColor(context, R.color.statusOnline)
+                    EPersonaState.Busy -> getColor(context, R.color.statusBusy)
+                    EPersonaState.Away,
+                    EPersonaState.Snooze -> getColor(context, R.color.statusAway)
                     EPersonaState.LookingToTrade,
-                    EPersonaState.LookingToPlay ->
-                        ContextCompat.getColor(context, R.color.statusLookingTo)
-                    else -> ContextCompat.getColor(context, R.color.statusOffline)
+                    EPersonaState.LookingToPlay -> getColor(context, R.color.statusLookingTo)
+                    else -> getColor(context, R.color.statusOffline)
                 }
             } else {
-                ContextCompat.getColor(context, R.color.statusInGame)
+                getColor(context, R.color.statusInGame)
             }
 
     fun getStatusText(context: Context,
@@ -75,7 +72,7 @@ object Utils {
                       lastLogOff: Long
     ): String =
             if (state == EPersonaState.Offline ||
-                    gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
+                    gameAppId == 0 && gameName.isNullOrEmpty()) {
                 when (state) {
                     EPersonaState.Online -> context.getString(R.string.statusOnline)
                     EPersonaState.Busy -> context.getString(R.string.statusBusy)
@@ -137,5 +134,9 @@ object Utils {
         } else {
             return message
         }
+    }
+
+    private fun getColor(context: Context, color: Int): Int {
+        return ContextCompat.getColor(context, color)
     }
 }

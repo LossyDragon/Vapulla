@@ -58,11 +58,9 @@ class FriendListAdapter(val context: Context,
 
     private var updateTime = 0L
 
-    private var recentsTimeout =
-            prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
+    private var recentsTimeout: Long = 0L
 
-    private var sortPrefs =
-            prefs.getString("pref_friends_list_sort", "1")!!
+    private lateinit var sortPrefs: String
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val layoutRes = when (viewType) {
@@ -84,30 +82,11 @@ class FriendListAdapter(val context: Context,
     override fun getItemViewType(position: Int): Int {
         val item = friendList[position]
         if (item is FriendListItem) {
-            if (item.relation == EFriendRelationship.RequestRecipient.code()) {
+            if (item.isRequestRecipient()) {
                 return VIEW_TYPE_FRIEND_REQUEST
             }
         }
         return VIEW_TYPE_FRIEND
-    }
-
-    private fun getItemType(item: Any): Int {
-        if (item is FriendListItem) {
-            return if (item.relation == EFriendRelationship.RequestRecipient.code()) {
-                ITEM_TYPE_FRIEND_REQUEST
-            } else if (recentsTimeout == 0L ||
-                    (recentsTimeout > 0L &&
-                            item.lastMessageTime?.let {
-                                it >= updateTime - recentsTimeout
-                            } == true)) {
-                ITEM_TYPE_FRIEND_RECENT
-            } else if (item.isInGame()) {
-                ITEM_TYPE_FRIEND_IN_GAME
-            } else if (item.isOnline()) {
-                ITEM_TYPE_FRIEND_ONLINE
-            } else ITEM_TYPE_FRIEND_OFFLINE
-        }
-        return ITEM_TYPE_HEADER
     }
 
     override fun getAdapterData(): MutableList<*> = friendList
@@ -121,41 +100,51 @@ class FriendListAdapter(val context: Context,
         sortPrefs =
                 prefs.getString("pref_friends_list_sort", "1")!!
 
-        var newList: MutableList<Any> = mutableListOf()
         var currentViewType = -1
+        var newList: MutableList<Any> = mutableListOf()
 
-        if (list.isNotEmpty()) {
-            if (sortPrefs == "1") {
-                // Sort normally by status
-                newList = list.toMutableList()
-                for (i in (list.size - 1) downTo 0) {
-                    val type = getItemType(newList[i])
-                    if (currentViewType == -1) {
-                        currentViewType = type
-                    } else if (type != currentViewType) {
-                        newList.add(i + 1, TextHeader(getHeader(currentViewType)))
-                        currentViewType = type
-                    }
+        if (sortPrefs == "1") {
+            newList = LinkedList(list)
+            for (i in (list.size - 1) downTo 0) {
+                val type = getItemType(newList[i])
+                if (currentViewType == -1) {
+                    currentViewType = type
+                } else if (type != currentViewType) {
+                    newList.add(i + 1, TextHeader(getHeader(currentViewType)))
+                    currentViewType = type
                 }
-                newList.add(0, TextHeader(getHeader(currentViewType)))
-            } else {
-                // Sort by name
-                list.sortWith(Comparator { l1, l2 ->
-                    (l1).name!!.compareTo((l2).name!!)
-                })
+            }
+            newList.add(0, TextHeader(getHeader(currentViewType)))
+        } else {
+            // Yeah, this could be done way better...
+            var char = " "
+            var request = false
+            var recent = false
 
-                // TODO: Handle items that are not A-Z0-9
-                // TODO: Handle friend request 1st, then recent messages 2nd.
-                var char = ' '
-                list.forEach { friendListItem ->
-                    val firstLetter = friendListItem.name!!.first()
-                    if (firstLetter != char) {
-                        char = firstLetter
-                        newList.add(TextHeader(char.toUpperCase().toString()))
-                        newList.add(friendListItem)
-                    } else {
-                        newList.add(friendListItem)
-                    }
+            list.forEach { item ->
+                if (item.isRequestRecipient()) {
+                    if (!request) newList.add(
+                            TextHeader(context.getString(R.string.headerFriendRequest)))
+                    newList.add(item)
+                    request = true
+                    return@forEach
+                }
+
+                if (item.isItemRecentChat(recentsTimeout, updateTime)) {
+                    if (!recent) newList.add(
+                            TextHeader(context.getString(R.string.headerFriendRecent)))
+                    newList.add(item)
+                    recent = true
+                    return@forEach
+                }
+
+                val firstLetter = item.getFirstLetter()
+                if (firstLetter != char) {
+                    char = firstLetter
+                    newList.add(TextHeader(char))
+                    newList.add(item)
+                } else {
+                    newList.add(item)
                 }
             }
         }
@@ -330,6 +319,19 @@ class FriendListAdapter(val context: Context,
             ITEM_TYPE_FRIEND_RECENT -> R.string.headerFriendRecent
             else -> R.string.headerFriendOffline
         })
+    }
+
+    private fun getItemType(item: Any): Int {
+        if (item is FriendListItem) {
+            return when {
+                item.isRequestRecipient() -> ITEM_TYPE_FRIEND_REQUEST
+                item.isItemRecentChat(recentsTimeout, updateTime) -> ITEM_TYPE_FRIEND_RECENT
+                item.isInGame() -> ITEM_TYPE_FRIEND_IN_GAME
+                item.isOnline() -> ITEM_TYPE_FRIEND_ONLINE
+                else -> ITEM_TYPE_FRIEND_OFFLINE
+            }
+        }
+        return ITEM_TYPE_HEADER
     }
 
     inner class FriendDiffUtil(val list: MutableList<Any>) : DiffUtil.Callback() {

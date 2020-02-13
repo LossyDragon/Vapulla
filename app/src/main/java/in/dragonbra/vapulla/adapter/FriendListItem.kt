@@ -1,8 +1,11 @@
 package `in`.dragonbra.vapulla.adapter
 
+import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.util.Strings
 import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
+import java.util.*
+import java.util.regex.Pattern
 
 data class FriendListItem(
         @PrimaryKey var id: Long,
@@ -25,4 +28,21 @@ data class FriendListItem(
     fun isInGame() = gameAppId > 0 || !Strings.isNullOrEmpty(gameName)
 
     fun isOnline() = state?.let { it > 0 } ?: false
+
+    fun isRequestRecipient() = relation == EFriendRelationship.RequestRecipient.code()
+
+    fun isItemRecentChat(recentsTimeout: Long, updateTime: Long): Boolean =
+            recentsTimeout == 0L || (recentsTimeout > 0L && lastMessageTime?.let {
+                it >= updateTime - recentsTimeout
+            } == true)
+
+    // Retrieves the 1st alphanumeric letter in someones name. Then return it as uppercase.
+    fun getFirstLetter(): String {
+        val pattern = Pattern.compile("(\\b[a-zA-Z0-9])").matcher(name!!)
+        return if (pattern.find()) {
+            pattern.toMatchResult().group().toUpperCase(Locale.ROOT)
+        } else {
+            "?"
+        }
+    }
 }

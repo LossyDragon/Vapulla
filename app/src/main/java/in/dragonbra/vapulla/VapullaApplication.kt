@@ -7,7 +7,6 @@ import `in`.dragonbra.vapulla.module.AppModule
 import `in`.dragonbra.vapulla.module.PresenterModule
 import `in`.dragonbra.vapulla.module.StorageModule
 import `in`.dragonbra.vapulla.util.Utils.isGreaterThanO
-import android.annotation.SuppressLint
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
@@ -17,12 +16,10 @@ import android.util.Log
 import androidx.preference.PreferenceManager
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
-// TODO: Check out https://bumptech.github.io/glide/int/recyclerview.html
 class VapullaApplication : Application() {
 
     lateinit var graph: VapullaComponent
 
-    @SuppressLint("NewApi")
     override fun onCreate() {
         super.onCreate()
 

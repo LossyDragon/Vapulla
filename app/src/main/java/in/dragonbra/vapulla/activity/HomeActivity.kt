@@ -182,8 +182,10 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
     }
 
     override fun showBlockFriendDialog(friend: FriendListItem) {
-        if (friend.name.isNullOrBlank())
+        if (friend.name.isNullOrBlank()) {
             warn("showBlockFriendDialog() name is null or blank!")
+            return
+        }
 
         MaterialDialog(this).show {
             title(text = getString(R.string.dialogTitleBlockFriend, friend.name))
