@@ -85,7 +85,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
     override fun onResume() {
         super.onResume()
         updateList()
-        presenter.refreshFriendsList()
+        // presenter.refreshFriendsList()
     }
 
     override fun onPause() {
@@ -232,7 +232,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
 
     override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
         presenter.setSearchStatus(false)
-        presenter.refreshFriendsList()
+        // presenter.refreshFriendsList()
         return true
     }
 }
