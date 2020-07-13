@@ -162,7 +162,8 @@
             android:tint="@android:color/white"
             app:borderWidth="0dp"
             app:fabCustomSize="48dp"
-            app:fabSize="mini" />
+            app:fabSize="mini"
+            android:contentDescription="@string/desc_send_button" />
 
     </LinearLayout>
 

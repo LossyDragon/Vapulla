@@ -10,6 +10,7 @@ import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.*
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
@@ -42,6 +43,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private var counter = 0
 
+    private val args: Bundle
+        get() = requireArguments()
+
+    private val ctx: Context
+        get() = requireContext()
+
+    private val act: Activity
+        get() = requireActivity()
+
     private val connection: ServiceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName) {
         }
@@ -63,7 +73,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(bundle: Bundle?, rootKey: String?) {
         if (arguments != null) {
-            setPreferencesFromResource(R.xml.pref_general, arguments!!.getString("rootKey"))
+            setPreferencesFromResource(R.xml.pref_general, args.getString("rootKey"))
         } else {
             setPreferencesFromResource(R.xml.pref_general, rootKey)
         }
@@ -122,7 +132,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         changeUserPreference?.summary =
                 getString(R.string.prefSummaryChangeUser, accountManager.username)
         changeUserPreference?.click {
-            MaterialDialog(context!!).show {
+            MaterialDialog(ctx).show {
                 title(R.string.dialogTitleChangeUser)
                 message(R.string.dialogMessageChangeUser)
                 positiveButton(R.string.dialogYes) {
@@ -139,7 +149,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val changeProfileName: Preference? = findPreference("pref_change_profile_name")
         changeProfileName?.summary = accountManager.nickname
         changeProfileName?.click {
-            MaterialDialog(context!!).show {
+            MaterialDialog(ctx).show {
                 title(R.string.dialogTitleNickname)
                 input(
                         hint = accountManager.nickname,
@@ -167,7 +177,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             counter++
 
             if (counter == 5) {
-                val dialog = MaterialDialog(context!!, BottomSheet(LayoutMode.WRAP_CONTENT))
+                val dialog = MaterialDialog(ctx, BottomSheet(LayoutMode.WRAP_CONTENT))
                         .customView(R.layout.view_easteregg, scrollable = false)
 
                 val customView = dialog.getCustomView()
@@ -208,9 +218,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val prefRateApp: Preference? = findPreference("pref_rate_app")
         prefRateApp?.click {
             try {
-                browse("market://details?id=${activity!!.packageName}")
+                browse("market://details?id=${act.packageName}")
             } catch (e: ActivityNotFoundException) {
-                browse("https://play.google.com/store/apps/details?id=${activity!!.packageName}")
+                browse("https://play.google.com/store/apps/details?id=${act.packageName}")
             }
             true
         }

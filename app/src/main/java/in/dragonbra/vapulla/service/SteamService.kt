@@ -309,7 +309,7 @@ class SteamService : Service(), VapullaLogger {
                         pendingIntent
                 )
 
-        if (isAtLeastN()) {
+        if (isAtLeastN) {
             builder.priority = NotificationManager.IMPORTANCE_LOW
         } else {
             @Suppress("DEPRECATION")

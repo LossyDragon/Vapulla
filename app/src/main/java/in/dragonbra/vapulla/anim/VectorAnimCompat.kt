@@ -14,7 +14,7 @@ object VectorAnimCompat {
             drawable: Animatable,
             callback: Animatable2Compat.AnimationCallback
     ) {
-        if (isLessThanN()) {
+        if (isLessThanN) {
             val d = drawable as? AnimatedVectorDrawableCompat
             d?.registerAnimationCallback(callback)
         } else {
@@ -32,7 +32,7 @@ object VectorAnimCompat {
     }
 
     fun clearAnimationCallbacks(drawable: Animatable) {
-        if (isLessThanN()) {
+        if (isLessThanN) {
             (drawable as? AnimatedVectorDrawableCompat)?.clearAnimationCallbacks()
         } else {
             (drawable as? AnimatedVectorDrawable)?.clearAnimationCallbacks()

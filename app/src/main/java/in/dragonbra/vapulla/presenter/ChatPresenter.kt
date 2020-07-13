@@ -225,7 +225,7 @@ class ChatPresenter(context: Context,
             it.showUploadDialog()
         }
         runOnBackgroundThread {
-            val bitmap = if (Utils.isGreaterThanP()) {
+            val bitmap = if (Utils.isGreaterThanP) {
                 val source = ImageDecoder.createSource(context.contentResolver, image)
                 ImageDecoder.decodeBitmap(source)
             } else {

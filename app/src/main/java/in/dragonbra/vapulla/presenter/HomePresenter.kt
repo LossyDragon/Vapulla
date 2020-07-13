@@ -21,8 +21,8 @@ import androidx.lifecycle.Observer
 
 class HomePresenter(context: Context,
                     private val steamFriendDao: SteamFriendDao,
-                    private val account: AccountManager) :
-        VapullaPresenter<HomeView>(context), AccountManager.AccountManagerListener {
+                    private val account: AccountManager
+) : VapullaPresenter<HomeView>(context), AccountManager.AccountManagerListener {
 
     private lateinit var friendsData: LiveData<List<FriendListItem>>
 

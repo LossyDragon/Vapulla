@@ -29,7 +29,7 @@ class VapullaApplication : Application() {
             Log.d(clazz.simpleName, message, throwable)
         }
 
-        if (isGreaterThanO()) {
+        if (isGreaterThanO) {
             val notificationManager =
                     getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val serviceChannel = NotificationChannel(

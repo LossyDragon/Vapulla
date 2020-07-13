@@ -27,69 +27,79 @@ object Utils {
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     const val PROFILE_URL = "https://steamcommunity.com/profiles/"
-    const val GAME_LOGO_URL = "http://media.steampowered.com/steamcommunity/public/" +
-            "images/apps/%d/%s.jpg"
-    private const val DEFAULT_AVATAR = "http://cdn.akamai.steamstatic.com/steamcommunity/public/" +
-            "images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-    private const val AVATAR_URL = "http://cdn.akamai.steamstatic.com/steamcommunity/public/" +
-            "images/avatars/"
+    const val GAME_LOGO_URL =
+            "http://media.steampowered.com/steamcommunity/public/images/apps/%d/%s.jpg"
+    private const val DEFAULT_AVATAR =
+            "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/fe/" +
+                    "fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    private const val AVATAR_URL =
+            "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/"
 
-    fun isLessThanN() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
-    fun isAtLeastN() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
-    fun isGreaterThanO() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-    fun isGreaterThanP() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+    val isLessThanN
+        get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
+    val isAtLeastN
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+    val isGreaterThanO
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+    val isGreaterThanP
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
-    fun getAvatarUrl(avatar: String?) =
-            if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == ALL_ZEROS) {
-                DEFAULT_AVATAR
-            } else {
-                "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
+    fun getAvatarUrl(avatar: String?): String {
+        return if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == ALL_ZEROS) {
+            DEFAULT_AVATAR
+        } else {
+            "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
+        }
+    }
+
+    fun getStatusColor(
+            context: Context,
+            state: EPersonaState?,
+            gameAppId: Int, gameName: String?
+    ): Int {
+        return if (state == EPersonaState.Offline ||
+                gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
+            when (state) {
+                EPersonaState.Online -> getColor(context, R.color.statusOnline)
+                EPersonaState.Busy -> getColor(context, R.color.statusBusy)
+                EPersonaState.Away,
+                EPersonaState.Snooze -> getColor(context, R.color.statusAway)
+                EPersonaState.LookingToTrade,
+                EPersonaState.LookingToPlay -> getColor(context, R.color.statusLookingTo)
+                else -> getColor(context, R.color.statusOffline)
             }
+        } else {
+            getColor(context, R.color.statusInGame)
+        }
+    }
 
-    fun getStatusColor(context: Context,
-                       state: EPersonaState?,
-                       gameAppId: Int, gameName: String?
-    ) =
-            if (state == EPersonaState.Offline ||
-                    gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
-                when (state) {
-                    EPersonaState.Online -> getColor(context, R.color.statusOnline)
-                    EPersonaState.Busy -> getColor(context, R.color.statusBusy)
-                    EPersonaState.Away,
-                    EPersonaState.Snooze -> getColor(context, R.color.statusAway)
-                    EPersonaState.LookingToTrade,
-                    EPersonaState.LookingToPlay -> getColor(context, R.color.statusLookingTo)
-                    else -> getColor(context, R.color.statusOffline)
-                }
-            } else {
-                getColor(context, R.color.statusInGame)
+    fun getStatusText(
+            context: Context,
+            state: EPersonaState?,
+            gameAppId: Int,
+            gameName: String?,
+            lastLogOff: Long
+    ): String {
+        return if (state == EPersonaState.Offline ||
+                gameAppId == 0 && gameName.isNullOrEmpty()) {
+            when (state) {
+                EPersonaState.Online -> context.getString(R.string.statusOnline)
+                EPersonaState.Busy -> context.getString(R.string.statusBusy)
+                EPersonaState.Away -> context.getString(R.string.statusAway)
+                EPersonaState.Snooze -> context.getString(R.string.statusSnooze)
+                EPersonaState.LookingToTrade -> context.getString(R.string.statusLookingTrade)
+                EPersonaState.LookingToPlay -> context.getString(R.string.statusLookingPlay)
+                else -> context.getString(R.string.statusOffline,
+                        DateUtils.getRelativeTimeSpanString(
+                                lastLogOff,
+                                System.currentTimeMillis(),
+                                DateUtils.MINUTE_IN_MILLIS)
+                )
             }
-
-    fun getStatusText(context: Context,
-                      state: EPersonaState?,
-                      gameAppId: Int,
-                      gameName: String?,
-                      lastLogOff: Long
-    ): String =
-            if (state == EPersonaState.Offline ||
-                    gameAppId == 0 && gameName.isNullOrEmpty()) {
-                when (state) {
-                    EPersonaState.Online -> context.getString(R.string.statusOnline)
-                    EPersonaState.Busy -> context.getString(R.string.statusBusy)
-                    EPersonaState.Away -> context.getString(R.string.statusAway)
-                    EPersonaState.Snooze -> context.getString(R.string.statusSnooze)
-                    EPersonaState.LookingToTrade -> context.getString(R.string.statusLookingTrade)
-                    EPersonaState.LookingToPlay -> context.getString(R.string.statusLookingPlay)
-                    else -> context.getString(R.string.statusOffline,
-                            DateUtils.getRelativeTimeSpanString(
-                                    lastLogOff,
-                                    System.currentTimeMillis(),
-                                    DateUtils.MINUTE_IN_MILLIS)
-                    )
-                }
-            } else {
-                context.getString(R.string.statusPlaying, gameName ?: "")
-            }
+        } else {
+            context.getString(R.string.statusPlaying, gameName ?: "")
+        }
+    }
 
     fun hideKeyboardFrom(context: Context, view: View) {
         val imm = context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager

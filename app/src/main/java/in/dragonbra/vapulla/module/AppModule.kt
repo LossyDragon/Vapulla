@@ -43,5 +43,6 @@ class AppModule(val context: Context) {
 
     @Provides
     @Singleton
-    fun provideLevelManager(steamApi: SteamApi) = ProfileManager(steamApi)
+    fun provideLevelManager(steamApi: SteamApi) =
+            ProfileManager(steamApi)
 }

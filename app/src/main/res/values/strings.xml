@@ -183,6 +183,7 @@
     <string name="textNoNames">No Games Found</string>
     <string name="textPlayedRecent">%.1f hrs past two weeks</string>
     <string name="textPlayedForever">%.0f hrs on record</string>
+    <string name="desc_send_button">Send Button</string>
 
     <!--endregion-->
 
