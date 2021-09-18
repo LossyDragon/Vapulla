@@ -16,8 +16,7 @@ class PresenterModule {
     @Singleton
     fun provideHomePresenter(
         context: Context,
-        steamFriendDao:
-            SteamFriendDao,
+        steamFriendDao: SteamFriendDao,
         account: AccountManager
     ) = HomePresenter(context, steamFriendDao, account)
 

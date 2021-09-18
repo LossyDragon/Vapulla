@@ -42,7 +42,7 @@ data class FriendListItem(
     fun getFirstLetter(): String {
         val pattern = Pattern.compile("(\\b[a-zA-Z0-9])").matcher(name!!)
         return if (pattern.find()) {
-            pattern.toMatchResult().group().toUpperCase(Locale.ROOT)
+            pattern.toMatchResult().group().uppercase(Locale.ROOT)
         } else {
             "?"
         }

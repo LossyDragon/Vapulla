@@ -12,7 +12,7 @@ import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.retrofit.SteamApi
 import `in`.dragonbra.vapulla.retrofit.response.Games
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.view.ProfileView
@@ -70,9 +70,11 @@ class ProfilePresenter(
 
         friendData.value?.let {
             if (it.gameAppId > 0) {
-                runOnBackgroundThread {
-                    schemaManager.touch(it.gameAppId)
-                }
+                scope.executeAsyncTask(
+                    doInBackground = {
+                        schemaManager.touch(it.gameAppId)
+                    }
+                )
             }
         }
 
@@ -120,9 +122,11 @@ class ProfilePresenter(
     }
 
     fun menuViewAliases() {
-        runOnBackgroundThread {
-            aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
+            }
+        )
     }
 
     fun menuRemoveFriend() {
@@ -162,43 +166,53 @@ class ProfilePresenter(
     }
 
     fun getLevel() {
-        runOnBackgroundThread {
-            ifViewAttached {
-                it.updateBadgeLevel(levelManager.getLevel(steamId))
+        scope.executeAsyncTask(
+            doInBackground = {
+                ifViewAttached {
+                    it.updateBadgeLevel(levelManager.getLevel(steamId))
+                }
             }
-        }
+        )
     }
 
     fun getGameCount() {
-        runOnBackgroundThread {
-            ifViewAttached {
-                it.updateGameCount(levelManager.getGames(steamId))
+        scope.executeAsyncTask(
+            doInBackground = {
+                ifViewAttached {
+                    it.updateGameCount(levelManager.getGames(steamId))
+                }
             }
-        }
+        )
     }
 
     fun menuConfirmSetNickName(nickname: String) {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
-            val friend = steamFriendDao.find(steamId.convertToUInt64())
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
+                val friend = steamFriendDao.find(steamId.convertToUInt64())
 
-            if (friend != null) {
-                friend.nickname = nickname
-                steamFriendDao.update(friend)
+                if (friend != null) {
+                    friend.nickname = nickname
+                    steamFriendDao.update(friend)
+                }
             }
-        }
+        )
     }
 
     fun menuConfirmBlockFriend() {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
+            }
+        )
     }
 
     fun menuConfirmRemoveFriend() {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
+            }
+        )
     }
 
     private fun onAliasHistory(callback: AliasHistoryCallback) {

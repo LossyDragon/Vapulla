@@ -16,7 +16,7 @@ import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.retrofit.ImageRequestBody
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.steam.VapullaHandler
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.view.ChatView
@@ -27,12 +27,13 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.provider.MediaStore
 import android.text.format.DateUtils
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
-import androidx.paging.LivePagedListBuilder
-import androidx.paging.PagedList
+import androidx.paging.*
+import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayOutputStream
 
 class ChatPresenter(
@@ -52,7 +53,7 @@ class ChatPresenter(
 
     private var lastTypingMessage = 0L
 
-    private lateinit var chatData: LiveData<PagedList<ChatMessage>>
+    private lateinit var chatData: LiveData<PagingData<ChatMessage>>
 
     private lateinit var friendData: LiveData<FriendListItem>
 
@@ -60,9 +61,9 @@ class ChatPresenter(
 
     private var emoteSet: Set<String> = setOf()
 
-    private val updateHandler: Handler = Handler()
+    private val updateHandler: Handler = Handler(Looper.getMainLooper())
 
-    private val chatObserver = Observer<PagedList<ChatMessage>> { list ->
+    private val chatObserver = Observer<PagingData<ChatMessage>> { list ->
         ifViewAttached { it.showChat(list) }
     }
 
@@ -96,9 +97,13 @@ class ChatPresenter(
     }
 
     override fun onPostCreate() {
-        chatData = LivePagedListBuilder(
-            chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50
-        ).build()
+        chatData = Pager(
+            PagingConfig(50),
+            null,
+            chatMessageDao.findLivePaged(steamId.convertToUInt64())
+                .asPagingSourceFactory(Dispatchers.IO)
+        ).liveData
+
         // chatData.observe(view as ChatActivity, chatObserver)
         ifViewAttached { chatData.observe(it as ChatActivity, chatObserver) }
 
@@ -108,9 +113,11 @@ class ChatPresenter(
 
         friendData.value?.let {
             if (it.gameAppId > 0) {
-                runOnBackgroundThread {
-                    schemaManager.touch(it.gameAppId)
-                }
+                scope.executeAsyncTask(
+                    doInBackground = {
+                        schemaManager.touch(it.gameAppId)
+                    }
+                )
             }
         }
 
@@ -119,7 +126,7 @@ class ChatPresenter(
         ifViewAttached { emoticonData.observe(it as ChatActivity, emoteObserver) }
 
         ifViewAttached {
-            it.showChat(chatData.value)
+            it.showChat(chatData.value ?: PagingData.empty())
             it.updateFriendData(friendData.value)
             it.showEmotes(emoticonData.value ?: emptyList())
         }
@@ -136,9 +143,11 @@ class ChatPresenter(
 
         updateFriend()
 
-        runOnBackgroundThread {
-            chatMessageDao.markRead(steamId.convertToUInt64())
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                chatMessageDao.markRead(steamId.convertToUInt64())
+            }
+        )
     }
 
     override fun onPause() {
@@ -162,10 +171,12 @@ class ChatPresenter(
     }
 
     private fun getMessageHistory() {
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
-            steamService?.getMessageHistory(steamId)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
+                steamService?.getMessageHistory(steamId)
+            }
+        )
     }
 
     override fun onDisconnected() {
@@ -180,20 +191,24 @@ class ChatPresenter(
         }
         lastTypingMessage = 0L
 
-        runOnBackgroundThread {
-            steamService?.sendMessage(steamId, message, emoteSet)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.sendMessage(steamId, message, emoteSet)
+            }
+        )
     }
 
     fun typing() {
         if (lastTypingMessage < System.currentTimeMillis() - TYPING_INTERVAL) {
             lastTypingMessage = System.currentTimeMillis()
 
-            runOnBackgroundThread {
-                steamService
-                    ?.getHandler<SteamFriends>()
-                    ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
-            }
+            scope.executeAsyncTask(
+                doInBackground = {
+                    steamService
+                        ?.getHandler<SteamFriends>()
+                        ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
+                }
+            )
         }
     }
 
@@ -204,9 +219,11 @@ class ChatPresenter(
     }
 
     fun requestEmotes() {
-        runOnBackgroundThread {
-            steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
+            }
+        )
     }
 
     fun imageButtonClicked() {
@@ -226,40 +243,43 @@ class ChatPresenter(
         ifViewAttached {
             it.showUploadDialog()
         }
-        runOnBackgroundThread {
-            val bitmap = if (Utils.isGreaterThanP) {
-                val source = ImageDecoder.createSource(context.contentResolver, image)
-                ImageDecoder.decodeBitmap(source)
-            } else {
-                @Suppress("DEPRECATION")
-                MediaStore.Images.Media.getBitmap(context.contentResolver, image)
-            }
 
-            val baos = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
-            bitmap.recycle()
-            val body = ImageRequestBody(baos.toByteArray()) { total, progress ->
-                ifViewAttached { it.imageUploadProgress(total, progress) }
-            }
-
-            val call = imgurAuthService.postImage(body)
-
-            val response = call.execute()
-
-            if (response.isSuccessful) {
-                ifViewAttached {
-                    val responseBody = response.body()
-
-                    if (responseBody != null) {
-                        sendMessage(responseBody.data.link)
-                        it.imageUploadSuccess()
-                    } else {
-                        it.imageUploadFail()
-                    }
+        scope.executeAsyncTask(
+            doInBackground = {
+                val bitmap = if (Utils.isGreaterThanP) {
+                    val source = ImageDecoder.createSource(context.contentResolver, image)
+                    ImageDecoder.decodeBitmap(source)
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, image)
                 }
-            } else {
-                ifViewAttached { it.imageUploadFail() }
+
+                val baos = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
+                bitmap.recycle()
+                val body = ImageRequestBody(baos.toByteArray()) { total, progress ->
+                    ifViewAttached { it.imageUploadProgress(total, progress) }
+                }
+
+                val call = imgurAuthService.postImage(body)
+
+                val response = call.execute()
+
+                if (response.isSuccessful) {
+                    ifViewAttached {
+                        val responseBody = response.body()
+
+                        if (responseBody != null) {
+                            sendMessage(responseBody.data.link)
+                            it.imageUploadSuccess()
+                        } else {
+                            it.imageUploadFail()
+                        }
+                    }
+                } else {
+                    ifViewAttached { it.imageUploadFail() }
+                }
             }
-        }
+        )
     }
 }

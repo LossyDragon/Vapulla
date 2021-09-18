@@ -11,11 +11,11 @@ class ChatAdapterDataObserver(
 ) : RecyclerView.AdapterDataObserver() {
 
     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-        if (adapter.currentList == null || adapter.currentList!!.isEmpty()) {
+        if (adapter.itemCount == 0) {
             return
         }
 
-        val fromLocal = adapter.currentList?.get(0)?.fromLocal ?: false
+        val fromLocal = adapter.peek(0)?.fromLocal ?: false
         val findVisiblePosition = layoutManager.findFirstVisibleItemPosition()
 
         if (fromLocal || findVisiblePosition == -1 ||

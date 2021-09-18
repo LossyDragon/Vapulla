@@ -9,7 +9,7 @@ import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import org.spongycastle.util.encoders.Hex
 import java.util.*
 
-class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : VapullaLogger {
+class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
     private val map: MutableMap<SteamID, PersonaState> = hashMapOf()
 
     private val mapLock: Any = Any()

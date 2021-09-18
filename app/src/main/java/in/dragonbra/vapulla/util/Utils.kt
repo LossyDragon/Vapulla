@@ -35,6 +35,8 @@ object Utils {
     private const val AVATAR_URL =
         "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/"
 
+    val isGreaterThanM
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
     val isLessThanN
         get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
     val isAtLeastN

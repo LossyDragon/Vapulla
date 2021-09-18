@@ -2,7 +2,6 @@ package `in`.dragonbra.vapulla.activity
 
 import `in`.dragonbra.vapulla.VapullaApplication
 import `in`.dragonbra.vapulla.presenter.VapullaPresenter
-import `in`.dragonbra.vapulla.util.VapullaLogger
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,9 +12,7 @@ import com.hannesdorfmann.mosby3.mvp.MvpActivity
 import com.hannesdorfmann.mosby3.mvp.MvpPresenter
 import com.hannesdorfmann.mosby3.mvp.MvpView
 
-abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> :
-    MvpActivity<V, P>(),
-    VapullaLogger {
+abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> : MvpActivity<V, P>() {
 
     companion object {
         const val STOP_INTENT = "in.dragonbra.vapulla.SERVICE_STOP"

@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla.presenter
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.service.SteamService
-import `in`.dragonbra.vapulla.util.VapullaLogger
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -12,12 +11,15 @@ import android.os.IBinder
 import androidx.annotation.CallSuper
 import com.hannesdorfmann.mosby3.mvp.MvpBasePresenter
 import com.hannesdorfmann.mosby3.mvp.MvpView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import java.io.Closeable
 import java.util.*
 
-abstract class VapullaPresenter<V : MvpView>(
-    val context: Context
-) : MvpBasePresenter<V>(), VapullaLogger {
+abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePresenter<V>() {
+
+    protected val scope = CoroutineScope(Dispatchers.Default + Job())
 
     protected var bound = false
 

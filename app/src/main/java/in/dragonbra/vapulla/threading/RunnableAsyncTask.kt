@@ -1,11 +1,16 @@
 package `in`.dragonbra.vapulla.threading
 
-import android.os.AsyncTask
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-fun runOnBackgroundThread(r: () -> Unit) {
-    RunnableAsyncTask(r).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
-}
-
-class RunnableAsyncTask(val r: () -> Unit) : AsyncTask<Unit, Unit, Unit>() {
-    override fun doInBackground(vararg params: Unit?) = r()
+fun <R> CoroutineScope.executeAsyncTask(
+    onPreExecute: (() -> Unit?)? = null,
+    doInBackground: () -> R,
+    onPostExecute: ((R) -> Unit?)? = null
+) = launch {
+    onPreExecute?.invoke()
+    val result = withContext(Dispatchers.IO) { doInBackground() }
+    onPostExecute?.invoke(result)
 }

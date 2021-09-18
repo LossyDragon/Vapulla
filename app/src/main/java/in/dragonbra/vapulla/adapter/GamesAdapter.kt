@@ -5,7 +5,6 @@ import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.extension.show
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.VapullaLogger
 import `in`.dragonbra.vapulla.util.debug
 import android.content.Context
 import android.view.LayoutInflater
@@ -20,9 +19,7 @@ import kotlinx.android.synthetic.main.list_games.view.*
 import java.math.RoundingMode
 import java.text.DecimalFormat
 
-class GamesAdapter(val context: Context) :
-    RecyclerView.Adapter<GamesAdapter.ViewHolder>(),
-    VapullaLogger {
+class GamesAdapter(val context: Context) : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
 
     companion object {
         const val SORT_ALPHABETICAL = 0
@@ -52,18 +49,14 @@ class GamesAdapter(val context: Context) :
     fun setList(list: MutableList<Games>, sort: Int) {
         if (sort == SORT_ALPHABETICAL) {
             debug("setList() -> l1, l2 = A-Z sort")
-            list.sortWith(
-                Comparator { l1, l2 ->
-                    l1.name.compareTo(l2.name)
-                }
-            )
+            list.sortWith { l1, l2 ->
+                l1.name.compareTo(l2.name)
+            }
         } else if (sort == SORT_PLAYTIME) {
             debug("setList() -> l2, l1 = 9-0 sort.")
-            list.sortWith(
-                Comparator { l2, l1 ->
-                    l1.playtime_forever.compareTo(l2.playtime_forever)
-                }
-            )
+            list.sortWith { l2, l1 ->
+                l1.playtime_forever.compareTo(l2.playtime_forever)
+            }
         }
 
         val diffResult = DiffUtil.calculateDiff(GamesDiffCallback(gamesList, list))

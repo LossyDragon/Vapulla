@@ -16,6 +16,7 @@ import `in`.dragonbra.vapulla.view.HomeView
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.text.format.DateUtils
 import android.view.Menu
 import android.view.MenuItem
@@ -53,7 +54,7 @@ class HomeActivity :
 
     private lateinit var friendListAdapter: FriendListAdapter
 
-    private val updateHandler: Handler = Handler()
+    private val updateHandler: Handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         vapulla().graph.inject(this)

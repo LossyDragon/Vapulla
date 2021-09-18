@@ -14,6 +14,7 @@ import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.transition.Transition
 import androidx.transition.TransitionManager
@@ -43,7 +44,7 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        handler = Handler()
+        handler = Handler(Looper.getMainLooper())
 
         loadingText.setFactory(TextSwitcher.factory(this))
 
@@ -81,14 +82,14 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             TransitionManager.beginDelayedTransition(rootLayout, AutoParallelTransition())
             constraintSet.applyTo(rootLayout)
 
-            val faceAnim = getDrawable(R.drawable.animated_vapulla_from_face)
+            val faceAnim = getCompatDrawable(R.drawable.animated_vapulla_from_face)
             vapullaLogoBottom.setImageDrawable(faceAnim)
 
             VectorAnimCompat.registerAnimationCallback(
                 faceAnim as Animatable,
                 object : Animatable2Compat.AnimationCallback() {
                     override fun onAnimationEnd(drawable: Drawable) {
-                        vapullaLogoTop.setImageDrawable(getDrawable(R.drawable.vapulla_top))
+                        vapullaLogoTop.setImageDrawable(getCompatDrawable(R.drawable.vapulla_top))
                         vapullaLogoBottom.show()
                         vapullaLogoMiddle.show()
                         startLoadingAnimation()
@@ -195,7 +196,7 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             vapullaLogoBottom.invisible()
             vapullaLogoMiddle.invisible()
 
-            val faceAnim = getDrawable(R.drawable.animated_vapulla_to_face)
+            val faceAnim = getCompatDrawable(R.drawable.animated_vapulla_to_face)
             vapullaLogoTop.setImageDrawable(faceAnim)
             (faceAnim as Animatable).start()
 

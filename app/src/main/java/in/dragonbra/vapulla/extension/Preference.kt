@@ -1,3 +1,5 @@
+@file:Suppress("UsePropertyAccessSyntax")
+
 package `in`.dragonbra.vapulla.extension
 
 import androidx.preference.Preference

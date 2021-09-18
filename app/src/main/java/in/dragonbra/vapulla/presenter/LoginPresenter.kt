@@ -9,7 +9,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.extension.getErrorMessage
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.SteamService
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.util.warn
 import `in`.dragonbra.vapulla.view.LoginView
@@ -65,9 +65,11 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
             return
         }
 
-        runOnBackgroundThread {
-            steamService?.logOn(logOnDetails)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.logOn(logOnDetails)
+            }
+        )
 
         ifViewAttached {
             it.showLoading(context.getString(R.string.loadingTextLoggingIn))
@@ -110,9 +112,11 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
         }
 
         expectSteamGuard = false
-        runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
-        }
+        scope.executeAsyncTask(
+            doInBackground = {
+                steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
+            }
+        )
 
         ifViewAttached {
             account.username = logOnDetails.username

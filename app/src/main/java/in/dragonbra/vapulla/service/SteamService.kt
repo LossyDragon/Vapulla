@@ -51,7 +51,7 @@ import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
 import `in`.dragonbra.vapulla.steam.callback.ServiceServiceMethodCallback
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.*
 import `in`.dragonbra.vapulla.util.Utils.avatarOptions
 import `in`.dragonbra.vapulla.util.Utils.isAtLeastN
@@ -71,6 +71,9 @@ import androidx.core.app.*
 import androidx.core.graphics.drawable.IconCompat
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import org.spongycastle.util.encoders.Hex
 import java.io.Closeable
 import java.io.File
@@ -79,7 +82,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
 
-class SteamService : Service(), VapullaLogger {
+class SteamService : Service() {
 
     companion object {
         private const val ONGOING_NOTIFICATION_ID = 100
@@ -95,6 +98,12 @@ class SteamService : Service(), VapullaLogger {
          * Time to back off when we receive a new message to prevent spam
          */
         private const val NEW_MESSAGE_BACKOFF = DateUtils.MINUTE_IN_MILLIS
+
+        private val flagUpdateCurrent =
+            if (Utils.isGreaterThanM)
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            else
+                PendingIntent.FLAG_UPDATE_CURRENT
 
         const val EXTRA_ACTION = "action"
         const val EXTRA_MESSAGE = "message"
@@ -123,6 +132,8 @@ class SteamService : Service(), VapullaLogger {
     private lateinit var handler: Handler
 
     private lateinit var prefs: SharedPreferences
+
+    private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     @Inject
     lateinit var db: VapullaDatabase
@@ -226,7 +237,7 @@ class SteamService : Service(), VapullaLogger {
         prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
 
-    override fun onBind(intent: Intent): IBinder? {
+    override fun onBind(intent: Intent): IBinder {
         info("onBind")
         return binder
     }
@@ -245,11 +256,13 @@ class SteamService : Service(), VapullaLogger {
                 "reply" -> {
                     val message = intent.getStringExtra(EXTRA_MESSAGE)!!
                     // TODO: Make reply intents proper with messaging style
-                    runOnBackgroundThread {
-                        val emotes = db.emoticonDao().find()
-                        val emoteSet = emotes.map { it.name }.toSet()
-                        sendMessage(id, message, emoteSet)
-                    }
+                    scope.executeAsyncTask(
+                        doInBackground = {
+                            val emotes = db.emoticonDao().find()
+                            val emoteSet = emotes.map { it.name }.toSet()
+                            sendMessage(id, message, emoteSet)
+                        }
+                    )
 
                     notificationManager.cancel(id.convertToUInt64().toInt())
                 }
@@ -258,21 +271,27 @@ class SteamService : Service(), VapullaLogger {
                     stopSelf()
                 }
                 "accept_request" -> {
-                    runOnBackgroundThread {
-                        getHandler<SteamFriends>()?.addFriend(id)
-                    }
+                    scope.executeAsyncTask(
+                        doInBackground = {
+                            getHandler<SteamFriends>()?.addFriend(id)
+                        }
+                    )
                     notificationManager.cancel(id.convertToUInt64().toInt())
                 }
                 "ignore_request" -> {
-                    runOnBackgroundThread {
-                        getHandler<SteamFriends>()?.removeFriend(id)
-                    }
+                    scope.executeAsyncTask(
+                        doInBackground = {
+                            getHandler<SteamFriends>()?.removeFriend(id)
+                        }
+                    )
                     notificationManager.cancel(id.convertToUInt64().toInt())
                 }
                 "block_request" -> {
-                    runOnBackgroundThread {
-                        getHandler<SteamFriends>()?.ignoreFriend(id)
-                    }
+                    scope.executeAsyncTask(
+                        doInBackground = {
+                            getHandler<SteamFriends>()?.ignoreFriend(id)
+                        }
+                    )
                     notificationManager.cancel(id.convertToUInt64().toInt())
                 }
             }
@@ -291,7 +310,12 @@ class SteamService : Service(), VapullaLogger {
 
     private fun setNotification(text: String) {
         val logOutIntent = Intent(this, LogOutReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, logOutIntent, 0)
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            0,
+            logOutIntent,
+            if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
+        )
 
         val builder = NotificationCompat.Builder(this, "vapulla-service")
             .setDefaults(0)
@@ -303,7 +327,7 @@ class SteamService : Service(), VapullaLogger {
                     this,
                     0,
                     Intent(this, HomeActivity::class.java),
-                    0
+                    if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
                 )
             )
             .setSmallIcon(R.drawable.ic_vapulla)
@@ -403,7 +427,7 @@ class SteamService : Service(), VapullaLogger {
             applicationContext,
             friendId.convertToUInt64().toInt(),
             getMessageReplyIntent(friendId.convertToUInt64()),
-            PendingIntent.FLAG_UPDATE_CURRENT
+            flagUpdateCurrent
         )
 
         val replyAction = NotificationCompat.Action.Builder(
@@ -464,7 +488,7 @@ class SteamService : Service(), VapullaLogger {
             Intent(this, AcceptRequestReceiver::class.java).apply {
                 putExtra(AcceptRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
             },
-            PendingIntent.FLAG_UPDATE_CURRENT
+            flagUpdateCurrent
         )
 
         val ignorePendingIntent = PendingIntent.getBroadcast(
@@ -473,7 +497,7 @@ class SteamService : Service(), VapullaLogger {
             Intent(this, IgnoreRequestReceiver::class.java).apply {
                 putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
             },
-            PendingIntent.FLAG_UPDATE_CURRENT
+            flagUpdateCurrent
         )
 
         val blockPendingIntent = PendingIntent.getBroadcast(
@@ -482,7 +506,7 @@ class SteamService : Service(), VapullaLogger {
             Intent(this, BlockRequestReceiver::class.java).apply {
                 putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
             },
-            PendingIntent.FLAG_UPDATE_CURRENT
+            flagUpdateCurrent
         )
 
         val notification = NotificationCompat.Builder(this, "vapulla-friend-request")
@@ -497,7 +521,8 @@ class SteamService : Service(), VapullaLogger {
                 PendingIntent.getActivity(
                     this,
                     0,
-                    Intent(this, HomeActivity::class.java), 0
+                    Intent(this, HomeActivity::class.java),
+                    if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
                 )
             )
             .addAction(
@@ -774,14 +799,9 @@ class SteamService : Service(), VapullaLogger {
 
             val unconfirmedMessages =
                 db.chatMessageDao().find(it.message, friendId, fromLocal, false)
-                    .sortedWith(
-                        kotlin.Comparator { o1, o2 ->
-                            (
-                                abs(timestamp - o1.timestamp) -
-                                    abs(timestamp - o2.timestamp)
-                                ).toInt()
-                        }
-                    )
+                    .sortedWith { o1, o2 ->
+                        (abs(timestamp - o1.timestamp) - abs(timestamp - o2.timestamp)).toInt()
+                    }
 
             if (unconfirmedMessages.isNotEmpty()) {
                 unconfirmedMessages[0].timestamp = timestamp

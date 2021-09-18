@@ -21,7 +21,7 @@ data class ChatMessage(
     }
 
     @Ignore
-    val formattedTs = DATE_FORMAT.format(Date(timestamp)).toUpperCase(Locale.ROOT)
+    val formattedTs = DATE_FORMAT.format(Date(timestamp)).uppercase(Locale.ROOT)
 
     @Ignore
     constructor(

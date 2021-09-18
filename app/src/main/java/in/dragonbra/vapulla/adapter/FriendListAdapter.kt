@@ -8,7 +8,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.chat.PaperPlane
 import `in`.dragonbra.vapulla.extension.*
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.OfflineStatusUpdater
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.TextHeader
@@ -29,6 +29,9 @@ import com.bumptech.glide.Glide
 import com.mikhaellopez.circularimageview.CircularImageView
 import kotlinx.android.synthetic.main.list_friend.view.*
 import kotlinx.android.synthetic.main.list_friend_request.view.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import java.text.DateFormat
 import java.util.*
 
@@ -50,6 +53,8 @@ class FriendListAdapter(
         const val ITEM_TYPE_FRIEND_IN_GAME = 4
         const val ITEM_TYPE_FRIEND_RECENT = 5
     }
+
+    private val scope = CoroutineScope(Dispatchers.IO + Job())
 
     private var friendList: MutableList<Any> = LinkedList()
 
@@ -203,9 +208,11 @@ class FriendListAdapter(
                     else -> {
                         showFriend()
                         if (friend.gameAppId > 0) {
-                            runOnBackgroundThread {
-                                schemaManager.touch(friend.gameAppId)
-                            }
+                            scope.executeAsyncTask(
+                                doInBackground = {
+                                    schemaManager.touch(friend.gameAppId)
+                                }
+                            )
                         }
 
                         if (Strings.isNullOrEmpty(friend.nickname)) {

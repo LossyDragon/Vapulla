@@ -29,9 +29,11 @@ import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.core.app.NavUtils
 import androidx.core.content.ContextCompat
-import androidx.paging.PagedList
+import androidx.lifecycle.lifecycleScope
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
@@ -41,6 +43,7 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_chat.*
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class ChatActivity :
@@ -51,8 +54,6 @@ class ChatActivity :
 
     companion object {
         const val INTENT_STEAM_ID = "steam_id"
-
-        const val REQUEST_IMAGE_GET = 100
     }
 
     @Inject
@@ -78,6 +79,12 @@ class ChatActivity :
     private lateinit var chatAdapter: ChatAdapter
 
     private lateinit var emoteAdapter: EmoteAdapter
+
+    private var resultLauncher = registerForActivityResult(StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            presenter.sendImage(result.data?.data!!)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         vapulla().graph.inject(this)
@@ -162,8 +169,10 @@ class ChatActivity :
         }
     }
 
-    override fun showChat(list: PagedList<ChatMessage>?) {
-        chatAdapter.submitList(list)
+    override fun showChat(list: PagingData<ChatMessage>) {
+        lifecycleScope.launch {
+            chatAdapter.submitData(list)
+        }
     }
 
     override fun updateFriendData(friend: FriendListItem?) {
@@ -271,15 +280,8 @@ class ChatActivity :
     override fun showPhotoSelector() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"
-        if (intent.resolveActivity(packageManager) != null) {
-            startActivityForResult(intent, REQUEST_IMAGE_GET)
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_IMAGE_GET && resultCode == RESULT_OK) {
-            presenter.sendImage(data?.data!!)
+        if (packageManager.resolveActivity(intent, 0) != null) {
+            resultLauncher.launch(intent)
         }
     }
 

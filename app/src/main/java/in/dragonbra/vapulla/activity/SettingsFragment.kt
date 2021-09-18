@@ -8,7 +8,7 @@ import `in`.dragonbra.vapulla.anim.VectorAnimCompat
 import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.service.SteamService
-import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.*
@@ -18,7 +18,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.widget.ImageView
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
@@ -121,7 +123,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    @SuppressLint("InflateParams")
+    @SuppressLint("InflateParams", "CheckResult")
     private fun setupPreferences() {
         val accountManager = (activity as SettingsActivity).accountManager
 
@@ -137,10 +139,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 title(R.string.dialogTitleChangeUser)
                 message(R.string.dialogMessageChangeUser)
                 positiveButton(R.string.dialogYes) {
-                    runOnBackgroundThread {
-                        runOnBackgroundThread { steamService.disconnect() }
-                        clearData()
-                    }
+                    lifecycleScope.executeAsyncTask(
+                        doInBackground = { steamService.disconnect() },
+                        onPostExecute = { clearData() }
+                    )
                 }
                 negativeButton(R.string.dialogNo)
             }
@@ -160,9 +162,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     if (text.isEmpty()) {
                         return@input
                     }
-                    runOnBackgroundThread {
-                        steamService.getHandler<SteamFriends>()?.setPersonaName(text.toString())
-                    }
+                    lifecycleScope.executeAsyncTask(
+                        doInBackground = {
+                            steamService.getHandler<SteamFriends>()?.setPersonaName(text.toString())
+                        }
+                    )
                     changeProfileName.summary = text
                 }
                 positiveButton(R.string.dialogSet)
@@ -182,7 +186,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .customView(R.layout.view_easteregg, scrollable = false)
 
                 val customView = dialog.getCustomView()
-                val handler = Handler()
+                val handler = Handler(Looper.getMainLooper())
                 customView.findViewById<ImageView>(R.id.vapullaLogoMiddle).drawable as Animatable
                 val d = customView.findViewById<ImageView>(
                     R.id.vapullaLogoMiddle

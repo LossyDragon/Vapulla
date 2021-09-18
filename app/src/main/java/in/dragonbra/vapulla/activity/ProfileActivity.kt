@@ -13,6 +13,7 @@ import `in`.dragonbra.vapulla.presenter.ProfilePresenter
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.view.ProfileView
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Typeface
 import android.net.Uri
@@ -230,6 +231,7 @@ class ProfileActivity :
         presenter.setGamesList(pair.second)
     }
 
+    @SuppressLint("CheckResult")
     override fun showAliasesDialog(nicknames: List<String>) {
         runOnUiThread {
             MaterialDialog(this).show {
@@ -262,6 +264,7 @@ class ProfileActivity :
         }
     }
 
+    @SuppressLint("CheckResult")
     override fun showSetNicknameDialog(nickname: String?) {
         MaterialDialog(this, BottomSheet(LayoutMode.WRAP_CONTENT)).show {
             title(R.string.dialogTitleNickname)

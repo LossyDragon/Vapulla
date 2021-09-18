@@ -20,9 +20,9 @@ class EmoteTarget(
     sizeDp: Float,
     private val targets: MutableList<Any>?
 ) : CustomTarget<Bitmap>(
-        Utils.convertDpToPixel(sizeDp, context).roundToInt(),
-        Utils.convertDpToPixel(sizeDp, context).roundToInt()
-    ) {
+    Utils.convertDpToPixel(sizeDp, context).roundToInt(),
+    Utils.convertDpToPixel(sizeDp, context).roundToInt()
+) {
 
     @Volatile
     private var cancelled = false
