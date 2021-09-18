@@ -19,9 +19,10 @@ import android.os.IBinder
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 
-class HomePresenter(context: Context,
-                    private val steamFriendDao: SteamFriendDao,
-                    private val account: AccountManager
+class HomePresenter(
+    context: Context,
+    private val steamFriendDao: SteamFriendDao,
+    private val account: AccountManager
 ) : VapullaPresenter<HomeView>(context), AccountManager.AccountManagerListener {
 
     private lateinit var friendsData: LiveData<List<FriendListItem>>
@@ -50,8 +51,11 @@ class HomePresenter(context: Context,
 
         ifViewAttached {
             val updateTime = System.currentTimeMillis()
-            it.showFriends(friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
-                    ?: emptyList(), updateTime)
+            it.showFriends(
+                friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
+                    ?: emptyList(),
+                updateTime
+            )
         }
     }
 
@@ -86,8 +90,11 @@ class HomePresenter(context: Context,
         if (!isSearching) {
             val updateTime = System.currentTimeMillis()
             ifViewAttached {
-                it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
-                        ?: listOf(), updateTime)
+                it.showFriends(
+                    list?.sortedWith(FriendsComparator(context, updateTime))
+                        ?: listOf(),
+                    updateTime
+                )
             }
         }
     }
@@ -155,8 +162,8 @@ class HomePresenter(context: Context,
             if (Strings.isNullOrEmpty(trimmedQuery)) {
                 ifViewAttached {
                     it.showFriends(
-                            list.sortedWith(FriendsComparator(context, updateTime)),
-                            updateTime
+                        list.sortedWith(FriendsComparator(context, updateTime)),
+                        updateTime
                     )
                 }
                 return@let
@@ -164,7 +171,7 @@ class HomePresenter(context: Context,
 
             val filtered = list.filter {
                 it.name?.contains(trimmedQuery, true) == true ||
-                        it.nickname?.contains(trimmedQuery, true) == true
+                    it.nickname?.contains(trimmedQuery, true) == true
             }.sortedWith(FriendsComparator(context, updateTime))
 
             ifViewAttached { it.showFriends(filtered, updateTime) }

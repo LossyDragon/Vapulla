@@ -82,9 +82,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onStart() {
         super.onStart()
         activity?.bindService(
-                Intent(context, SteamService::class.java),
-                connection,
-                Context.BIND_AUTO_CREATE
+            Intent(context, SteamService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
         )
     }
 
@@ -100,8 +100,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val pref: Preference = findPreference("pref_imgur")!!
         if (prefs.contains(ImgurAuthService.KEY_IMGUR_USERNAME)) {
             pref.title = getString(R.string.prefTitleImgurLinked)
-            pref.summary = getString(R.string.prefSummaryImgurLinked,
-                    imgurAuthService.getUsername()
+            pref.summary = getString(
+                R.string.prefSummaryImgurLinked,
+                imgurAuthService.getUsername()
             )
 
             pref.setOnPreferenceClickListener {
@@ -130,7 +131,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val changeUserPreference: Preference? = findPreference("pref_change_user")
         changeUserPreference?.summary =
-                getString(R.string.prefSummaryChangeUser, accountManager.username)
+            getString(R.string.prefSummaryChangeUser, accountManager.username)
         changeUserPreference?.click {
             MaterialDialog(ctx).show {
                 title(R.string.dialogTitleChangeUser)
@@ -152,9 +153,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
             MaterialDialog(ctx).show {
                 title(R.string.dialogTitleNickname)
                 input(
-                        hint = accountManager.nickname,
-                        waitForPositiveButton = true,
-                        allowEmpty = false
+                    hint = accountManager.nickname,
+                    waitForPositiveButton = true,
+                    allowEmpty = false
                 ) { _, text ->
                     if (text.isEmpty()) {
                         return@input
@@ -178,26 +179,29 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             if (counter == 5) {
                 val dialog = MaterialDialog(ctx, BottomSheet(LayoutMode.WRAP_CONTENT))
-                        .customView(R.layout.view_easteregg, scrollable = false)
+                    .customView(R.layout.view_easteregg, scrollable = false)
 
                 val customView = dialog.getCustomView()
                 val handler = Handler()
                 customView.findViewById<ImageView>(R.id.vapullaLogoMiddle).drawable as Animatable
                 val d = customView.findViewById<ImageView>(
-                        R.id.vapullaLogoMiddle).drawable as Animatable
+                    R.id.vapullaLogoMiddle
+                ).drawable as Animatable
                 val d2 = customView.findViewById<ImageView>(
-                        R.id.vapullaLogoBottom).drawable as Animatable
+                    R.id.vapullaLogoBottom
+                ).drawable as Animatable
                 VectorAnimCompat.registerAnimationCallback(
-                        d,
-                        object : Animatable2Compat.AnimationCallback() {
-                            override fun onAnimationEnd(drawable: Drawable) {
-                                d.start()
-                                handler.postDelayed({
-                                    d2.stop()
-                                    d2.start()
-                                }, 300)
-                            }
-                        })
+                    d,
+                    object : Animatable2Compat.AnimationCallback() {
+                        override fun onAnimationEnd(drawable: Drawable) {
+                            d.start()
+                            handler.postDelayed({
+                                d2.stop()
+                                d2.start()
+                            }, 300)
+                        }
+                    }
+                )
                 d.start()
                 handler.postDelayed({ d2.start() }, 300)
                 dialog.onDismiss {
@@ -262,8 +266,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun browse(url: String) {
-        startActivity(Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(url)
-        })
+        startActivity(
+            Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse(url)
+            }
+        )
     }
 }

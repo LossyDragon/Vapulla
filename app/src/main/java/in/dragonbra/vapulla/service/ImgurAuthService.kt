@@ -38,13 +38,13 @@ class ImgurAuthService(context: Context, private val imgur: Imgur) {
         state = BigInteger(130, random).toString()
 
         val url = HttpUrl.Builder()
-                .scheme("https")
-                .host("api.imgur.com")
-                .addPathSegments("oauth2/authorize")
-                .addQueryParameter("client_id", BuildConfig.IMGUR_CLIENT_ID)
-                .addQueryParameter("state", state)
-                .addQueryParameter("response_type", "token")
-                .build()
+            .scheme("https")
+            .host("api.imgur.com")
+            .addPathSegments("oauth2/authorize")
+            .addQueryParameter("client_id", BuildConfig.IMGUR_CLIENT_ID)
+            .addQueryParameter("state", state)
+            .addQueryParameter("response_type", "token")
+            .build()
 
         return url.toString()
     }
@@ -97,12 +97,12 @@ class ImgurAuthService(context: Context, private val imgur: Imgur) {
         }
 
         prefs.edit()
-                .putString(KEY_IMGUR_ACCESS_TOKEN, accessToken)
-                .putString(KEY_IMGUR_REFRESH_TOKEN, refreshToken)
-                .putString(KEY_IMGUR_USERNAME, accountUsername)
-                .putString(KEY_IMGUR_ACCOUNT_ID, accountId)
-                .putLong(KEY_IMGUR_LAST_UPDATE, System.currentTimeMillis())
-                .apply()
+            .putString(KEY_IMGUR_ACCESS_TOKEN, accessToken)
+            .putString(KEY_IMGUR_REFRESH_TOKEN, refreshToken)
+            .putString(KEY_IMGUR_USERNAME, accountUsername)
+            .putString(KEY_IMGUR_ACCOUNT_ID, accountId)
+            .putLong(KEY_IMGUR_LAST_UPDATE, System.currentTimeMillis())
+            .apply()
 
         return true
     }
@@ -111,21 +111,21 @@ class ImgurAuthService(context: Context, private val imgur: Imgur) {
 
     fun clear() {
         prefs.edit()
-                .remove(KEY_IMGUR_ACCESS_TOKEN)
-                .remove(KEY_IMGUR_REFRESH_TOKEN)
-                .remove(KEY_IMGUR_USERNAME)
-                .remove(KEY_IMGUR_ACCOUNT_ID)
-                .remove(KEY_IMGUR_LAST_UPDATE)
-                .apply()
+            .remove(KEY_IMGUR_ACCESS_TOKEN)
+            .remove(KEY_IMGUR_REFRESH_TOKEN)
+            .remove(KEY_IMGUR_USERNAME)
+            .remove(KEY_IMGUR_ACCOUNT_ID)
+            .remove(KEY_IMGUR_LAST_UPDATE)
+            .apply()
     }
 
     fun refreshTokenIfNeeded() {
         if (prefs.getLong(KEY_IMGUR_LAST_UPDATE, 0L) < System.currentTimeMillis() - 1728000000L) {
             val call = imgur.refreshToken(
-                    prefs.getString(KEY_IMGUR_REFRESH_TOKEN, null)!!,
-                    BuildConfig.IMGUR_CLIENT_ID,
-                    BuildConfig.IMGUR_CLIENT_SECRET,
-                    "refresh_token"
+                prefs.getString(KEY_IMGUR_REFRESH_TOKEN, null)!!,
+                BuildConfig.IMGUR_CLIENT_ID,
+                BuildConfig.IMGUR_CLIENT_SECRET,
+                "refresh_token"
             )
 
             call.enqueue(object : Callback<ImgurToken> {
@@ -137,9 +137,9 @@ class ImgurAuthService(context: Context, private val imgur: Imgur) {
 
                     token?.let {
                         prefs.edit()
-                                .putString(KEY_IMGUR_ACCESS_TOKEN, it.access_token)
-                                .putLong(KEY_IMGUR_LAST_UPDATE, System.currentTimeMillis())
-                                .apply()
+                            .putString(KEY_IMGUR_ACCESS_TOKEN, it.access_token)
+                            .putLong(KEY_IMGUR_LAST_UPDATE, System.currentTimeMillis())
+                            .apply()
                     }
                 }
             })
@@ -149,5 +149,5 @@ class ImgurAuthService(context: Context, private val imgur: Imgur) {
     fun authorized(): Boolean = prefs.contains(KEY_IMGUR_ACCESS_TOKEN)
 
     fun postImage(body: RequestBody) =
-            imgur.postImage(body, "Bearer ${prefs.getString(KEY_IMGUR_ACCESS_TOKEN, "")}")
+        imgur.postImage(body, "Bearer ${prefs.getString(KEY_IMGUR_ACCESS_TOKEN, "")}")
 }

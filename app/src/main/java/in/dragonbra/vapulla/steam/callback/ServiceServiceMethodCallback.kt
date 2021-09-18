@@ -12,16 +12,18 @@ class ServiceServiceMethodCallback() : CallbackMsg() {
 
     var messageHistory: Array<CFriendMessages_GetRecentMessages_Response.FriendMessage>? = null
 
-    constructor(msg: CFriendMessages_SendMessage_Response.Builder,
-                targetJobName: String
+    constructor(
+        msg: CFriendMessages_SendMessage_Response.Builder,
+        targetJobName: String
     ) : this() {
         jobName = targetJobName
         modifiedMessage = msg.modifiedMessage
         timestamp = msg.serverTimestamp
     }
 
-    constructor(msg: CFriendMessages_GetRecentMessages_Response.Builder,
-                targetJobName: String
+    constructor(
+        msg: CFriendMessages_GetRecentMessages_Response.Builder,
+        targetJobName: String
     ) : this() {
         jobName = targetJobName
         messageHistory = msg.messagesList.toTypedArray()

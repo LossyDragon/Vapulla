@@ -23,11 +23,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import javax.inject.Inject
 
-class ProfilePresenter(context: Context,
-                       private val steamId: SteamID,
-                       private val steamFriendDao: SteamFriendDao,
-                       private val schemaManager: GameSchemaManager,
-                       private val levelManager: ProfileManager
+class ProfilePresenter(
+    context: Context,
+    private val steamId: SteamID,
+    private val steamFriendDao: SteamFriendDao,
+    private val schemaManager: GameSchemaManager,
+    private val levelManager: ProfileManager
 ) : VapullaPresenter<ProfileView>(context) {
 
     private lateinit var friendData: LiveData<FriendListItem>
@@ -163,7 +164,7 @@ class ProfilePresenter(context: Context,
     fun getLevel() {
         runOnBackgroundThread {
             ifViewAttached {
-                    it.updateBadgeLevel(levelManager.getLevel(steamId))
+                it.updateBadgeLevel(levelManager.getLevel(steamId))
             }
         }
     }

@@ -5,8 +5,9 @@ import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.view.GamesView
 import android.content.Context
 
-class GamesPresenter(context: Context,
-                     private val list: MutableList<Games>
+class GamesPresenter(
+    context: Context,
+    private val list: MutableList<Games>
 ) : VapullaPresenter<GamesView>(context) {
 
     private var sort = 0

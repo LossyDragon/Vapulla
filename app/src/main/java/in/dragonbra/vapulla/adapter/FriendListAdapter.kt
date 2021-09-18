@@ -32,10 +32,11 @@ import kotlinx.android.synthetic.main.list_friend_request.view.*
 import java.text.DateFormat
 import java.util.*
 
-class FriendListAdapter(val context: Context,
-                        val schemaManager: GameSchemaManager,
-                        val paperPlane: PaperPlane,
-                        val offlineStatusUpdater: OfflineStatusUpdater
+class FriendListAdapter(
+    val context: Context,
+    val schemaManager: GameSchemaManager,
+    val paperPlane: PaperPlane,
+    val offlineStatusUpdater: OfflineStatusUpdater
 ) : RecyclerView.Adapter<FriendListAdapter.ViewHolder>(), StickyHeaderHandler {
 
     companion object {
@@ -95,10 +96,10 @@ class FriendListAdapter(val context: Context,
         this.updateTime = updateTime
 
         recentsTimeout =
-                prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
+            prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
 
         sortPrefs =
-                prefs.getString("pref_friends_list_sort", "1")!!
+            prefs.getString("pref_friends_list_sort", "1")!!
 
         var currentViewType = -1
         var newList: MutableList<Any> = mutableListOf()
@@ -124,7 +125,8 @@ class FriendListAdapter(val context: Context,
             list.forEach { item ->
                 if (item.isRequestRecipient()) {
                     if (!request) newList.add(
-                            TextHeader(context.getString(R.string.headerFriendRequest)))
+                        TextHeader(context.getString(R.string.headerFriendRequest))
+                    )
                     newList.add(item)
                     request = true
                     return@forEach
@@ -132,7 +134,8 @@ class FriendListAdapter(val context: Context,
 
                 if (item.isItemRecentChat(recentsTimeout, updateTime)) {
                     if (!recent) newList.add(
-                            TextHeader(context.getString(R.string.headerFriendRecent)))
+                        TextHeader(context.getString(R.string.headerFriendRecent))
+                    )
                     newList.add(item)
                     recent = true
                     return@forEach
@@ -164,12 +167,12 @@ class FriendListAdapter(val context: Context,
 
             (item as? FriendListItem)?.let { friend ->
                 Glide.with(context)
-                        .clear(v.findViewById<ImageView>(R.id.avatar))
+                    .clear(v.findViewById<ImageView>(R.id.avatar))
 
                 Glide.with(context)
-                        .load(Utils.getAvatarUrl(friend.avatar))
-                        .apply(Utils.avatarOptions)
-                        .into(v.findViewById(R.id.avatar))
+                    .load(Utils.getAvatarUrl(friend.avatar))
+                    .apply(Utils.avatarOptions)
+                    .into(v.findViewById(R.id.avatar))
 
                 when (friend.relation) {
                     EFriendRelationship.RequestRecipient.code() -> {
@@ -211,14 +214,17 @@ class FriendListAdapter(val context: Context,
                         } else {
                             v.nickname.show()
                             v.nickname.text =
-                                    context.getString(R.string.nicknameFormat, friend.nickname)
+                                context.getString(R.string.nicknameFormat, friend.nickname)
                         }
 
                         val state = friend.state?.let { EPersonaState.from(it) }
 
-                        if ((friend.lastMessageTime == null ||
-                                        friend.typingTs > friend.lastMessageTime!!) &&
-                                friend.typingTs > System.currentTimeMillis() - 20000L) {
+                        if ((
+                            friend.lastMessageTime == null ||
+                                friend.typingTs > friend.lastMessageTime!!
+                            ) &&
+                            friend.typingTs > System.currentTimeMillis() - 20000L
+                        ) {
                             offlineStatusUpdater.clear(v.status)
                             v.status.text = context.getString(R.string.statusTyping)
                             v.status.setTextColor(getColor(context, R.color.colorAccent))
@@ -226,19 +232,23 @@ class FriendListAdapter(val context: Context,
                         } else {
                             offlineStatusUpdater.schedule(v.status, friend)
                             v.status.text =
-                                    Utils.getStatusText(
-                                            context,
-                                            state,
-                                            friend.gameAppId,
-                                            friend.gameName,
-                                            friend.lastLogOff
-                                    )
+                                Utils.getStatusText(
+                                    context,
+                                    state,
+                                    friend.gameAppId,
+                                    friend.gameName,
+                                    friend.lastLogOff
+                                )
                             v.status.setTextColor(getColor(context, R.color.textSecondary))
                             v.status.normal()
                         }
 
-                        paperPlane.load(v.lastMessage, friend.lastMessage
-                                ?: "", showUrl = false, showStickers = false)
+                        paperPlane.load(
+                            v.lastMessage,
+                            friend.lastMessage
+                                ?: "",
+                            showUrl = false, showStickers = false
+                        )
 
                         val newMessages: Int = friend.newMessageCount ?: 0
                         if (newMessages > 0) {
@@ -255,12 +265,12 @@ class FriendListAdapter(val context: Context,
                         }
 
                         v.findViewById<CircularImageView>(R.id.avatar).borderColor =
-                                Utils.getStatusColor(
-                                        context,
-                                        state,
-                                        friend.gameAppId,
-                                        friend.gameName
-                                )
+                            Utils.getStatusColor(
+                                context,
+                                state,
+                                friend.gameAppId,
+                                friend.gameName
+                            )
 
                         v.mobileIndicator.hide()
                         v.webIndicator.hide()
@@ -273,12 +283,12 @@ class FriendListAdapter(val context: Context,
 
                         friend.lastMessageTime?.let {
                             v.time.text =
-                                    DateUtils.formatSameDayTime(
-                                            it,
-                                            System.currentTimeMillis(),
-                                            DateFormat.SHORT,
-                                            DateFormat.SHORT
-                                    )
+                                DateUtils.formatSameDayTime(
+                                    it,
+                                    System.currentTimeMillis(),
+                                    DateFormat.SHORT,
+                                    DateFormat.SHORT
+                                )
                             v.time.show()
                         } ?: run {
                             v.time.hide()
@@ -311,14 +321,16 @@ class FriendListAdapter(val context: Context,
     }
 
     private fun getHeader(viewType: Int): String {
-        return context.getString(when (viewType) {
-            ITEM_TYPE_FRIEND_REQUEST -> R.string.headerFriendRequest
-            ITEM_TYPE_FRIEND_OFFLINE -> R.string.headerFriendOffline
-            ITEM_TYPE_FRIEND_ONLINE -> R.string.headerFriendOnline
-            ITEM_TYPE_FRIEND_IN_GAME -> R.string.headerFriendInGame
-            ITEM_TYPE_FRIEND_RECENT -> R.string.headerFriendRecent
-            else -> R.string.headerFriendOffline
-        })
+        return context.getString(
+            when (viewType) {
+                ITEM_TYPE_FRIEND_REQUEST -> R.string.headerFriendRequest
+                ITEM_TYPE_FRIEND_OFFLINE -> R.string.headerFriendOffline
+                ITEM_TYPE_FRIEND_ONLINE -> R.string.headerFriendOnline
+                ITEM_TYPE_FRIEND_IN_GAME -> R.string.headerFriendInGame
+                ITEM_TYPE_FRIEND_RECENT -> R.string.headerFriendRecent
+                else -> R.string.headerFriendOffline
+            }
+        )
     }
 
     private fun getItemType(item: Any): Int {
@@ -341,12 +353,12 @@ class FriendListAdapter(val context: Context,
             val oldItem = friendList[oldItemPosition]
 
             return newItem is FriendListItem &&
-                    oldItem is FriendListItem &&
-                    newItem.id == oldItem.id &&
-                    newItem.name == oldItem.name ||
-                    newItem is TextHeader &&
-                    oldItem is TextHeader &&
-                    newItem.title == oldItem.title
+                oldItem is FriendListItem &&
+                newItem.id == oldItem.id &&
+                newItem.name == oldItem.name ||
+                newItem is TextHeader &&
+                oldItem is TextHeader &&
+                newItem.title == oldItem.title
         }
 
         override fun getOldListSize() = friendList.size
@@ -354,7 +366,7 @@ class FriendListAdapter(val context: Context,
         override fun getNewListSize() = list.size
 
         override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
-                list[newItemPosition] == friendList[oldItemPosition]
+            list[newItemPosition] == friendList[oldItemPosition]
     }
 
     interface OnItemSelectedListener {

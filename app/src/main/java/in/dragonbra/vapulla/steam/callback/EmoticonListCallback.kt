@@ -14,8 +14,8 @@ class EmoticonListCallback(private val msg: CMsgClientEmoticonList.Builder) : Ca
 
 data class Emoticon(val name: String, val count: Int, val isSticker: Boolean) {
     constructor(emoticon: CMsgClientEmoticonList.Emoticon) :
-            this(emoticon.name, emoticon.count, false)
+        this(emoticon.name, emoticon.count, false)
 
     constructor(emoticon: CMsgClientEmoticonList.Sticker) :
-            this(emoticon.name, emoticon.count, true)
+        this(emoticon.name, emoticon.count, true)
 }

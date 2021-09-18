@@ -21,12 +21,12 @@ class OfflineStatusUpdater(val context: Context) {
     fun updateAll() {
         views.entries.forEach {
             it.key.text = context.getString(
-                    R.string.statusOffline,
-                    DateUtils.getRelativeTimeSpanString(
-                            it.value,
-                            System.currentTimeMillis(),
-                            DateUtils.MINUTE_IN_MILLIS
-                    )
+                R.string.statusOffline,
+                DateUtils.getRelativeTimeSpanString(
+                    it.value,
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS
+                )
             )
         }
     }

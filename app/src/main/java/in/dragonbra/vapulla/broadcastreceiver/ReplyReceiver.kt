@@ -25,11 +25,11 @@ class ReplyReceiver : BroadcastReceiver() {
         val message = remoteInput.getCharSequence(KEY_TEXT_REPLY)
 
         context.startService(
-                Intent(context, SteamService::class.java).apply {
-                    putExtra(SteamService.EXTRA_ACTION, "reply")
-                    putExtra(SteamService.EXTRA_ID, id)
-                    putExtra(SteamService.EXTRA_MESSAGE, message)
-                }
+            Intent(context, SteamService::class.java).apply {
+                putExtra(SteamService.EXTRA_ACTION, "reply")
+                putExtra(SteamService.EXTRA_ID, id)
+                putExtra(SteamService.EXTRA_MESSAGE, message)
+            }
         )
     }
 }

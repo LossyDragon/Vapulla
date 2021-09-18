@@ -13,7 +13,8 @@ interface SteamFriendDao {
     @Query("SELECT * FROM steam_friend WHERE id = :id")
     fun find(id: Long): SteamFriend?
 
-    @Query("SELECT " +
+    @Query(
+        "SELECT " +
             "  sf.*, " +
             "  max(cm.timestamp) AS last_message_time, " +
             "  ifnull(gs.name, sf.game_name) AS playing_game_name " +
@@ -22,13 +23,15 @@ interface SteamFriendDao {
             "ON sf.id = cm.friend_id " +
             "LEFT JOIN game_schema gs " +
             "ON gs.id = sf.game_app_id " +
-            "WHERE sf.id = :id")
+            "WHERE sf.id = :id"
+    )
     fun findLive(id: Long): LiveData<FriendListItem>
 
     @Update
     fun update(vararg steamFriends: SteamFriend)
 
-    @Query("SELECT " +
+    @Query(
+        "SELECT " +
             "  sf.*, " +
             "  cm.message as last_message, " +
             "  max(cm.timestamp) as last_message_time, " +
@@ -41,7 +44,8 @@ interface SteamFriendDao {
             "ON gs.id = sf.game_app_id " +
             "WHERE sf.relation = 2 " +
             "   OR sf.relation = 3 " +
-            "GROUP BY sf.id")
+            "GROUP BY sf.id"
+    )
     fun getLive(): LiveData<List<FriendListItem>>
 
     @Query("UPDATE steam_friend SET nickname = NULL")

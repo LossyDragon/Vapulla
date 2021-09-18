@@ -12,12 +12,13 @@ import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class StickerTarget(val context: Context,
-                    val view: TextView,
-                    private val span: Spannable,
-                    val start: Int,
-                    private val end: Int,
-                    private val targets: MutableList<Any>?
+class StickerTarget(
+    val context: Context,
+    val view: TextView,
+    private val span: Spannable,
+    val start: Int,
+    private val end: Int,
+    private val targets: MutableList<Any>?
 ) : CustomTarget<File>() {
 
     @Volatile
@@ -38,10 +39,11 @@ class StickerTarget(val context: Context,
             resource.setVisible(true, true)
             view.requestLayout()
             Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(
-                            {
-                                view.postInvalidate()
-                            }, 0, 100, TimeUnit.MILLISECONDS)
+                .scheduleAtFixedRate(
+                    {
+                        view.postInvalidate()
+                    }, 0, 100, TimeUnit.MILLISECONDS
+                )
 
             targets?.remove(this)
         }

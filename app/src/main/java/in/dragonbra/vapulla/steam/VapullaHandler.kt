@@ -33,7 +33,7 @@ class VapullaHandler : ClientMsgHandler() {
     // Send this on onLoggedOn to enable 'new unified' steam features.
     fun setClientUIMode() {
         val request = ClientMsgProtobuf<SteammessagesClientserver2.CMsgClientUIMode.Builder>(
-                SteammessagesClientserver2.CMsgClientUIMode::class.java, EMsg.ClientCurrentUIMode
+            SteammessagesClientserver2.CMsgClientUIMode::class.java, EMsg.ClientCurrentUIMode
         ).apply {
             body.chatMode = 2
         }
@@ -42,7 +42,7 @@ class VapullaHandler : ClientMsgHandler() {
 
     fun sendMessage(steamID: SteamID, message: String) {
         val request = ClientMsgProtobuf<CFriendMessages_SendMessage_Request.Builder>(
-                CFriendMessages_SendMessage_Request::class.java, EMsg.ServiceMethodCallFromClient
+            CFriendMessages_SendMessage_Request::class.java, EMsg.ServiceMethodCallFromClient
         ).apply {
             // We MUST send the job name
             protoHeader.targetJobName = "FriendMessages.SendMessage#1"
@@ -61,8 +61,8 @@ class VapullaHandler : ClientMsgHandler() {
     // steamID1 = yourself, steamID2 = friend
     fun getRecentMessages(steamID1: Long, steamID2: SteamID) {
         val request = ClientMsgProtobuf<CFriendMessages_GetRecentMessages_Request.Builder>(
-                CFriendMessages_GetRecentMessages_Request::class.java,
-                EMsg.ServiceMethodCallFromClient
+            CFriendMessages_GetRecentMessages_Request::class.java,
+            EMsg.ServiceMethodCallFromClient
         ).apply {
             // We MUST send the job name
             protoHeader.targetJobName = "FriendMessages.GetRecentMessages#1"
@@ -84,8 +84,8 @@ class VapullaHandler : ClientMsgHandler() {
     // Manually get an updated list of your friends.
     fun getFriendsList() {
         val request = ClientMsgProtobuf<CChat_RequestFriendPersonaStates_Request.Builder>(
-                CChat_RequestFriendPersonaStates_Request::class.java,
-                EMsg.ServiceMethodCallFromClient
+            CChat_RequestFriendPersonaStates_Request::class.java,
+            EMsg.ServiceMethodCallFromClient
         )
         request.protoHeader.targetJobName = "Chat.RequestFriendPersonaStates#1"
 
@@ -94,21 +94,24 @@ class VapullaHandler : ClientMsgHandler() {
 
     fun getEmoticonList() {
         val request = ClientMsgProtobuf<CMsgClientGetEmoticonList.Builder>(
-                CMsgClientGetEmoticonList::class.java, EMsg.ClientGetEmoticonList)
+            CMsgClientGetEmoticonList::class.java, EMsg.ClientGetEmoticonList
+        )
 
         client.send(request)
     }
 
     private fun handleEmoticonList(packetMsg: IPacketMsg) {
         val msg = ClientMsgProtobuf<CMsgClientEmoticonList.Builder>(
-                CMsgClientEmoticonList::class.java, packetMsg)
+            CMsgClientEmoticonList::class.java, packetMsg
+        )
 
         client.postCallback(EmoticonListCallback(msg.body))
     }
 
     private fun handleServiceMethod(packetMsg: IPacketMsg) {
         val msg = ClientMsgProtobuf<CFriendMessages_IncomingMessage_Notification.Builder>(
-                CFriendMessages_IncomingMessage_Notification::class.java, packetMsg)
+            CFriendMessages_IncomingMessage_Notification::class.java, packetMsg
+        )
 
         client.postCallback(ServiceMethodCallback(msg.body, msg.header.proto.targetJobName))
     }
@@ -118,18 +121,20 @@ class VapullaHandler : ClientMsgHandler() {
         serviceServiceMethodResponseSwitch = if (serviceServiceMethodResponseSwitch) {
             // Message response
             val msg = ClientMsgProtobuf<CFriendMessages_SendMessage_Response.Builder>(
-                    CFriendMessages_SendMessage_Response::class.java, packetMsg)
+                CFriendMessages_SendMessage_Response::class.java, packetMsg
+            )
             client.postCallback(
-                    ServiceServiceMethodCallback(msg.body, msg.header.proto.targetJobName)
+                ServiceServiceMethodCallback(msg.body, msg.header.proto.targetJobName)
             )
 
             false
         } else {
             // Message history response
             val msg = ClientMsgProtobuf<CFriendMessages_GetRecentMessages_Response.Builder>(
-                    CFriendMessages_GetRecentMessages_Response::class.java, packetMsg)
+                CFriendMessages_GetRecentMessages_Response::class.java, packetMsg
+            )
             client.postCallback(
-                    ServiceServiceMethodCallback(msg.body, msg.header.proto.targetJobName)
+                ServiceServiceMethodCallback(msg.body, msg.header.proto.targetJobName)
             )
 
             false

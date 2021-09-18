@@ -43,10 +43,11 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_chat.*
 import javax.inject.Inject
 
-class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
-        ChatView,
-        TextWatcher,
-        EmoteAdapter.EmoteListener {
+class ChatActivity :
+    VapullaBaseActivity<ChatView, ChatPresenter>(),
+    ChatView,
+    TextWatcher,
+    EmoteAdapter.EmoteListener {
 
     companion object {
         const val INTENT_STEAM_ID = "steam_id"
@@ -96,11 +97,13 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
         chatList.layoutManager = layoutManager
         chatList.adapter = chatAdapter
 
-        chatAdapter.registerAdapterDataObserver(ChatAdapterDataObserver(
+        chatAdapter.registerAdapterDataObserver(
+            ChatAdapterDataObserver(
                 chatAdapter,
                 layoutManager,
                 chatList
-        ))
+            )
+        )
 
         emoteAdapter = EmoteAdapter(this, this)
 
@@ -139,13 +142,13 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
     override fun createPresenter(): ChatPresenter {
         val steamId = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
         return ChatPresenter(
-                applicationContext,
-                chatMessageDao,
-                steamFriendDao,
-                emoticonDao,
-                imgurAuthService,
-                schemaManager,
-                steamId
+            applicationContext,
+            chatMessageDao,
+            steamFriendDao,
+            emoticonDao,
+            imgurAuthService,
+            schemaManager,
+            steamId
         )
     }
 
@@ -179,35 +182,38 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
                 friendUsername.text = friend.name
             }
 
-            if ((friend.lastMessageTime == null ||
-                            friend.typingTs > friend.lastMessageTime!!) &&
-                    friend.typingTs > System.currentTimeMillis() - 15000L) {
+            if ((
+                friend.lastMessageTime == null ||
+                    friend.typingTs > friend.lastMessageTime!!
+                ) &&
+                friend.typingTs > System.currentTimeMillis() - 15000L
+            ) {
 
                 friendStatus.text = getString(R.string.statusTyping)
                 friendStatus.setTextColor(
-                        ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
+                    ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
                 )
                 friendStatus.bold()
             } else {
                 friendStatus.text =
-                        Utils.getStatusText(
-                                this@ChatActivity,
-                                state, friend.gameAppId,
-                                friend.gameName,
-                                friend.lastLogOff
-                        )
+                    Utils.getStatusText(
+                        this@ChatActivity,
+                        state, friend.gameAppId,
+                        friend.gameName,
+                        friend.lastLogOff
+                    )
 
                 friendStatus.setTextColor(
-                        ContextCompat.getColor(this@ChatActivity, R.color.colorTyping)
+                    ContextCompat.getColor(this@ChatActivity, R.color.colorTyping)
                 )
                 friendStatus.normal()
             }
 
             Glide.with(this@ChatActivity)
-                    .load(Utils.getAvatarUrl(friend.avatar))
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .apply(Utils.avatarOptions)
-                    .into(friendAvatar)
+                .load(Utils.getAvatarUrl(friend.avatar))
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .apply(Utils.avatarOptions)
+                .into(friendAvatar)
         }
     }
 
@@ -232,9 +238,11 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
     }
 
     override fun viewProfile(steamID: Long) {
-        startActivity(Intent(this, ProfileActivity::class.java).also {
-            it.putExtra(ProfileActivity.INTENT_STEAM_ID, steamID)
-        })
+        startActivity(
+            Intent(this, ProfileActivity::class.java).also {
+                it.putExtra(ProfileActivity.INTENT_STEAM_ID, steamID)
+            }
+        )
     }
 
     override fun showEmotes(list: List<Emoticon>) {
@@ -288,9 +296,9 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(),
             imageButton.isClickable = true
             uploadProgressBar.hide()
             Snackbar.make(
-                    rootLayout,
-                    R.string.snackbarImgurUploadFailed,
-                    Snackbar.LENGTH_LONG
+                rootLayout,
+                R.string.snackbarImgurUploadFailed,
+                Snackbar.LENGTH_LONG
             ).show()
         }
     }

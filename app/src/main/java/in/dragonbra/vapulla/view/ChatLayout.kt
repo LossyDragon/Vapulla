@@ -47,46 +47,49 @@ class ChatLayout : RelativeLayout {
 
         val viewPartMainLayoutParams = viewPartMain.layoutParams as LayoutParams
         val viewPartMainWidth =
-                viewPartMain.maxLineWidth().toInt() +
-                        viewPartMainLayoutParams.leftMargin +
-                        viewPartMainLayoutParams.rightMargin
+            viewPartMain.maxLineWidth().toInt() +
+                viewPartMainLayoutParams.leftMargin +
+                viewPartMainLayoutParams.rightMargin
 
         val viewPartMainHeight =
-                viewPartMain.measuredHeight +
-                        viewPartMainLayoutParams.topMargin +
-                        viewPartMainLayoutParams.bottomMargin
+            viewPartMain.measuredHeight +
+                viewPartMainLayoutParams.topMargin +
+                viewPartMainLayoutParams.bottomMargin
 
         val viewPartSlaveLayoutParams = viewPartSlave.layoutParams as LayoutParams
         viewPartSlaveWidth =
-                viewPartSlave.measuredWidth +
-                        viewPartSlaveLayoutParams.leftMargin +
-                        viewPartSlaveLayoutParams.rightMargin
+            viewPartSlave.measuredWidth +
+            viewPartSlaveLayoutParams.leftMargin +
+            viewPartSlaveLayoutParams.rightMargin
 
         viewPartSlaveHeight =
-                viewPartSlave.measuredHeight +
-                        viewPartSlaveLayoutParams.topMargin +
-                        viewPartSlaveLayoutParams.bottomMargin
+            viewPartSlave.measuredHeight +
+            viewPartSlaveLayoutParams.topMargin +
+            viewPartSlaveLayoutParams.bottomMargin
 
         val viewPartMainLineCount = viewPartMain.lineCount
         val viewPartMainLastLineWidth =
-                if (viewPartMainLineCount > 0)
-                    viewPartMain.layout.getLineWidth(viewPartMainLineCount - 1)
-                else
-                    0.0f
+            if (viewPartMainLineCount > 0)
+                viewPartMain.layout.getLineWidth(viewPartMainLineCount - 1)
+            else
+                0.0f
 
         widthSize = paddingLeft + paddingRight
         var heightSize = paddingTop + paddingBottom + viewPartMainHeight
 
         if (viewPartMainLineCount > 1 &&
-                viewPartMainLastLineWidth + viewPartSlaveWidth <
-                viewPartMain.measuredWidth) {
+            viewPartMainLastLineWidth + viewPartSlaveWidth <
+            viewPartMain.measuredWidth
+        ) {
             widthSize += viewPartMainWidth
         } else if (viewPartMainLineCount > 1 &&
-                viewPartMainLastLineWidth + viewPartSlaveWidth >= availableWidth) {
+            viewPartMainLastLineWidth + viewPartSlaveWidth >= availableWidth
+        ) {
             widthSize += viewPartMainWidth
             heightSize += +viewPartSlaveHeight
         } else if (viewPartMainLineCount == 1 &&
-                viewPartMainWidth + viewPartSlaveWidth >= availableWidth) {
+            viewPartMainWidth + viewPartSlaveWidth >= availableWidth
+        ) {
             widthSize += viewPartMain.measuredWidth
             heightSize += +viewPartSlaveHeight
         } else {
@@ -95,8 +98,8 @@ class ChatLayout : RelativeLayout {
 
         setMeasuredDimension(widthSize, heightSize)
         super.onMeasure(
-                MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY)
+            MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY)
         )
     }
 
@@ -104,15 +107,17 @@ class ChatLayout : RelativeLayout {
         super.onLayout(changed, left, top, right, bottom)
 
         viewPartMain.layout(
-                paddingLeft,
-                paddingTop,
-                viewPartMain.width + paddingLeft,
-                viewPartMain.height + paddingTop)
+            paddingLeft,
+            paddingTop,
+            viewPartMain.width + paddingLeft,
+            viewPartMain.height + paddingTop
+        )
 
         viewPartSlave.layout(
-                right - left - viewPartSlaveWidth - paddingRight,
-                bottom - top - paddingBottom - viewPartSlaveHeight,
-                right - left - paddingRight,
-                bottom - top - paddingBottom)
+            right - left - viewPartSlaveWidth - paddingRight,
+            bottom - top - paddingBottom - viewPartSlaveHeight,
+            right - left - paddingRight,
+            bottom - top - paddingBottom
+        )
     }
 }

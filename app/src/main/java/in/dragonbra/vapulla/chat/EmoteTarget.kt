@@ -11,17 +11,18 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import kotlin.math.roundToInt
 
-class EmoteTarget(val context: Context,
-                  val view: TextView,
-                  private val span: Spannable,
-                  val start: Int,
-                  val end: Int,
-                  sizeDp: Float,
-                  private val targets: MutableList<Any>?) :
-        CustomTarget<Bitmap>(
-                Utils.convertDpToPixel(sizeDp, context).roundToInt(),
-                Utils.convertDpToPixel(sizeDp, context).roundToInt()
-        ) {
+class EmoteTarget(
+    val context: Context,
+    val view: TextView,
+    private val span: Spannable,
+    val start: Int,
+    val end: Int,
+    sizeDp: Float,
+    private val targets: MutableList<Any>?
+) : CustomTarget<Bitmap>(
+        Utils.convertDpToPixel(sizeDp, context).roundToInt(),
+        Utils.convertDpToPixel(sizeDp, context).roundToInt()
+    ) {
 
     @Volatile
     private var cancelled = false

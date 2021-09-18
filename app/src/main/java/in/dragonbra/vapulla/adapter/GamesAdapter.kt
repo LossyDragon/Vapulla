@@ -21,8 +21,8 @@ import java.math.RoundingMode
 import java.text.DecimalFormat
 
 class GamesAdapter(val context: Context) :
-        RecyclerView.Adapter<GamesAdapter.ViewHolder>(),
-        VapullaLogger {
+    RecyclerView.Adapter<GamesAdapter.ViewHolder>(),
+    VapullaLogger {
 
     companion object {
         const val SORT_ALPHABETICAL = 0
@@ -36,7 +36,8 @@ class GamesAdapter(val context: Context) :
     override fun getItemCount(): Int = gamesList.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(LayoutInflater
+        return ViewHolder(
+            LayoutInflater
                 .from(parent.context)
                 .inflate(R.layout.list_games, parent, false)
         )
@@ -51,14 +52,18 @@ class GamesAdapter(val context: Context) :
     fun setList(list: MutableList<Games>, sort: Int) {
         if (sort == SORT_ALPHABETICAL) {
             debug("setList() -> l1, l2 = A-Z sort")
-            list.sortWith(Comparator { l1, l2 ->
-                l1.name.compareTo(l2.name)
-            })
+            list.sortWith(
+                Comparator { l1, l2 ->
+                    l1.name.compareTo(l2.name)
+                }
+            )
         } else if (sort == SORT_PLAYTIME) {
             debug("setList() -> l2, l1 = 9-0 sort.")
-            list.sortWith(Comparator { l2, l1 ->
-                l1.playtime_forever.compareTo(l2.playtime_forever)
-            })
+            list.sortWith(
+                Comparator { l2, l1 ->
+                    l1.playtime_forever.compareTo(l2.playtime_forever)
+                }
+            )
         }
 
         val diffResult = DiffUtil.calculateDiff(GamesDiffCallback(gamesList, list))
@@ -93,21 +98,23 @@ class GamesAdapter(val context: Context) :
         fun bind(item: Games) {
 
             Glide.with(context)
-                    .clear(v.findViewById<ImageView>(R.id.games_image))
+                .clear(v.findViewById<ImageView>(R.id.games_image))
 
             Glide.with(context)
-                    .load(formatGameBanner(item.img_logo_url!!, item.appid))
-                    .into(v.findViewById(R.id.games_image))
+                .load(formatGameBanner(item.img_logo_url!!, item.appid))
+                .into(v.findViewById(R.id.games_image))
 
             v.findViewById<TextView>(R.id.games_title).text = item.name
 
             v.games_hours_forever.text = context.getString(
-                    R.string.textPlayedForever, formatTime(item.playtime_forever))
+                R.string.textPlayedForever, formatTime(item.playtime_forever)
+            )
 
             if (item.playtime_2weeks != null) {
                 v.findViewById<TextView>(R.id.games_hours_recent).apply {
                     text = context.getString(
-                            R.string.textPlayedRecent, formatTime(item.playtime_2weeks))
+                        R.string.textPlayedRecent, formatTime(item.playtime_2weeks)
+                    )
                     show()
                 }
             }
@@ -119,17 +126,17 @@ class GamesAdapter(val context: Context) :
     }
 
     inner class GamesDiffCallback(
-            private val oldList: List<Games>,
-            private val newList: List<Games>
+        private val oldList: List<Games>,
+        private val newList: List<Games>
     ) : DiffUtil.Callback() {
         override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
-                oldList[oldItemPosition] == newList[newItemPosition]
+            oldList[oldItemPosition] == newList[newItemPosition]
 
         override fun getOldListSize(): Int = oldList.size
 
         override fun getNewListSize(): Int = newList.size
 
         override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
-                areItemsTheSame(oldItemPosition, newItemPosition)
+            areItemsTheSame(oldItemPosition, newItemPosition)
     }
 }

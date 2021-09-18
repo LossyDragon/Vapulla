@@ -30,11 +30,12 @@ import kotlinx.android.synthetic.main.activity_home.*
 import kotlinx.android.synthetic.main.home_toolbar.*
 import javax.inject.Inject
 
-class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
-        HomeView,
-        FriendListAdapter.OnItemSelectedListener,
-        SearchView.OnQueryTextListener,
-        MenuItem.OnActionExpandListener {
+class HomeActivity :
+    VapullaBaseActivity<HomeView, HomePresenter>(),
+    HomeView,
+    FriendListAdapter.OnItemSelectedListener,
+    SearchView.OnQueryTextListener,
+    MenuItem.OnActionExpandListener {
 
     companion object {
         const val UPDATE_INTERVAL = DateUtils.MINUTE_IN_MILLIS
@@ -62,7 +63,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
         paperPlane = PaperPlane(this, 14.0f)
         offlineStatusUpdater = OfflineStatusUpdater(this)
         friendListAdapter =
-                FriendListAdapter(this, gameSchemaManager, paperPlane, offlineStatusUpdater)
+            FriendListAdapter(this, gameSchemaManager, paperPlane, offlineStatusUpdater)
         friendListAdapter.listener = this
 
         val layoutManager = StickyLayoutManager(this, friendListAdapter)
@@ -150,23 +151,27 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(),
             localStatus.text = account.state.toString()
 
             Glide.with(this@HomeActivity)
-                    .load(Utils.getAvatarUrl(account.avatarHash))
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .apply(Utils.avatarOptions)
-                    .into(localAvatar)
+                .load(Utils.getAvatarUrl(account.avatarHash))
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .apply(Utils.avatarOptions)
+                .into(localAvatar)
         }
     }
 
     override fun onItemSelected(friend: FriendListItem) {
-        startActivity(Intent(this, ChatActivity::class.java).also {
-            it.putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
-        })
+        startActivity(
+            Intent(this, ChatActivity::class.java).also {
+                it.putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
+            }
+        )
     }
 
     override fun onLongItemSelected(friend: FriendListItem) {
-        startActivity(Intent(this, ProfileActivity::class.java).also {
-            it.putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
-        })
+        startActivity(
+            Intent(this, ProfileActivity::class.java).also {
+                it.putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
+            }
+        )
     }
 
     override fun onRequestAccept(friend: FriendListItem) {

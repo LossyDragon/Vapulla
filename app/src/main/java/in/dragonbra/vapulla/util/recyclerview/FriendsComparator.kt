@@ -5,8 +5,8 @@ import android.content.Context
 import androidx.preference.PreferenceManager
 
 class FriendsComparator(
-        context: Context,
-        private val updateTime: Long
+    context: Context,
+    private val updateTime: Long
 ) : Comparator<FriendListItem> {
 
     private val recentsTimeout: Long
@@ -27,21 +27,22 @@ class FriendsComparator(
         }
 
         val (isRecent1, isRecent2) =
-                when {
-                    recentsTimeout > 0 -> {
-                        Pair(o1.lastMessageTime?.let { it >= updateTime - recentsTimeout } ==
-                                true,
-                                o2.lastMessageTime?.let { it >= updateTime - recentsTimeout } ==
-                                        true
-                        )
-                    }
-                    recentsTimeout == 0L -> {
-                        Pair(o1.lastMessageTime != null, o2.lastMessageTime != null)
-                    }
-                    else -> {
-                        Pair(first = false, second = false)
-                    }
+            when {
+                recentsTimeout > 0 -> {
+                    Pair(
+                        o1.lastMessageTime?.let { it >= updateTime - recentsTimeout } ==
+                            true,
+                        o2.lastMessageTime?.let { it >= updateTime - recentsTimeout } ==
+                            true
+                    )
                 }
+                recentsTimeout == 0L -> {
+                    Pair(o1.lastMessageTime != null, o2.lastMessageTime != null)
+                }
+                else -> {
+                    Pair(first = false, second = false)
+                }
+            }
 
         if (isRecent1 && isRecent2) {
             return (o2.lastMessageTime!! - o1.lastMessageTime!!).toInt()
@@ -66,13 +67,13 @@ class FriendsComparator(
 }
 
 private fun compareNames(s1: String?, s2: String?): Int =
-        if (s1 != null && s2 != null) s1.compareTo(s2, true)
-        else if (s1 != null) 1
-        else if (s2 != null) -1
-        else 0
+    if (s1 != null && s2 != null) s1.compareTo(s2, true)
+    else if (s1 != null) 1
+    else if (s2 != null) -1
+    else 0
 
 private fun compareSortedNames(o1: FriendListItem, o2: FriendListItem): Int =
-        o1.getFirstLetter().compareTo(o2.getFirstLetter())
+    o1.getFirstLetter().compareTo(o2.getFirstLetter())
 
 private fun compareStatuses(o1: FriendListItem, o2: FriendListItem): Int {
     val inGame1 = o1.isInGame()

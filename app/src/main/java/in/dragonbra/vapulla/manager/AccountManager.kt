@@ -76,13 +76,13 @@ class AccountManager(private val context: Context) {
 
     fun clear() {
         editor.remove(KEY_LOGIN_KEY)
-                .remove(KEY_UNIQUE_ID)
-                .remove(KEY_USERNAME)
-                .remove(KEY_STEAM_ID)
-                .remove(KEY_AVATAR_HASH)
-                .remove(KEY_NICKNAME)
-                .remove(KEY_STATE)
-                .apply()
+            .remove(KEY_UNIQUE_ID)
+            .remove(KEY_USERNAME)
+            .remove(KEY_STEAM_ID)
+            .remove(KEY_AVATAR_HASH)
+            .remove(KEY_NICKNAME)
+            .remove(KEY_STATE)
+            .apply()
     }
 
     fun hasLoginKey() = prefs.contains(KEY_LOGIN_KEY)

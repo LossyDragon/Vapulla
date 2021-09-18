@@ -6,12 +6,12 @@ import android.content.Context
 import android.util.Log
 
 fun Context.getErrorMessage(result: EResult, extendedResult: EResult? = null): String =
-        when (result) {
-            EResult.NoConnection -> getString(R.string.errorMessageLostConnection)
-            EResult.InvalidPassword -> getString(R.string.errorMessageInvalidPassword)
-            EResult.TwoFactorCodeMismatch -> getString(R.string.errorMessageTwoFactorCodeMismatch)
-            EResult.InvalidLoginAuthCode -> getString(R.string.errorMessageInvalidLoginAuthCode)
-            else -> result.toString()
-        }.also {
-            Log.w(this::class.java.simpleName, "getErrorMessage(): $extendedResult")
-        }
+    when (result) {
+        EResult.NoConnection -> getString(R.string.errorMessageLostConnection)
+        EResult.InvalidPassword -> getString(R.string.errorMessageInvalidPassword)
+        EResult.TwoFactorCodeMismatch -> getString(R.string.errorMessageTwoFactorCodeMismatch)
+        EResult.InvalidLoginAuthCode -> getString(R.string.errorMessageInvalidLoginAuthCode)
+        else -> result.toString()
+    }.also {
+        Log.w(this::class.java.simpleName, "getErrorMessage(): $extendedResult")
+    }

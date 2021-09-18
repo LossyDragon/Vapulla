@@ -22,9 +22,9 @@ class RetrofitModule {
     @Singleton
     fun provideStoreFront(): StoreFront {
         val retrofit = Retrofit.Builder()
-                .baseUrl(BASE_STEAM_STORE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            .baseUrl(BASE_STEAM_STORE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
         return retrofit.create(StoreFront::class.java)
     }
@@ -33,9 +33,9 @@ class RetrofitModule {
     @Singleton
     fun provideSteamApi(): SteamApi {
         val retrofit = Retrofit.Builder()
-                .baseUrl(BASE_STEAM_API_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            .baseUrl(BASE_STEAM_API_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
         return retrofit.create(SteamApi::class.java)
     }
@@ -44,9 +44,9 @@ class RetrofitModule {
     @Singleton
     fun provideImgur(): Imgur {
         val retrofit = Retrofit.Builder()
-                .baseUrl(BASE_IMGUR_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
+            .baseUrl(BASE_IMGUR_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
         return retrofit.create(Imgur::class.java)
     }

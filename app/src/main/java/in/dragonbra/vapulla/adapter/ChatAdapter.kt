@@ -21,9 +21,10 @@ import kotlinx.android.synthetic.main.list_chat_sent.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ChatAdapter(val context: Context,
-                  val paperPlane: PaperPlane,
-                  val clipboard: ClipboardManager
+class ChatAdapter(
+    val context: Context,
+    val paperPlane: PaperPlane,
+    val clipboard: ClipboardManager
 ) : PagedListAdapter<ChatMessage, ChatAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     companion object {
@@ -34,9 +35,9 @@ class ChatAdapter(val context: Context,
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ChatMessage>() {
             override fun areItemsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
                 return oldItem.message == newItem.message &&
-                        oldItem.timestamp == newItem.timestamp &&
-                        oldItem.fromLocal == newItem.fromLocal &&
-                        oldItem.friendId == newItem.friendId
+                    oldItem.timestamp == newItem.timestamp &&
+                    oldItem.fromLocal == newItem.fromLocal &&
+                    oldItem.friendId == newItem.friendId
             }
 
             override fun areContentsTheSame(oldItem: ChatMessage, newItem: ChatMessage): Boolean {
@@ -58,7 +59,7 @@ class ChatAdapter(val context: Context,
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val message = getItem(position)
         val showDate = position == (itemCount - 1) ||
-                message?.formattedTs != getItem(position + 1)?.formattedTs
+            message?.formattedTs != getItem(position + 1)?.formattedTs
         if (message != null) {
             holder.bind(message, showDate)
         } else {

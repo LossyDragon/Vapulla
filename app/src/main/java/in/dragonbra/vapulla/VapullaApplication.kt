@@ -31,11 +31,11 @@ class VapullaApplication : Application() {
 
         if (isGreaterThanO) {
             val notificationManager =
-                    getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val serviceChannel = NotificationChannel(
-                    "vapulla-service",
-                    "Vapulla service",
-                    NotificationManager.IMPORTANCE_LOW
+                "vapulla-service",
+                "Vapulla service",
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 enableVibration(false)
                 importance = NotificationManager.IMPORTANCE_LOW
@@ -45,9 +45,9 @@ class VapullaApplication : Application() {
             notificationManager.createNotificationChannel(serviceChannel)
 
             val friendRequestChannel = NotificationChannel(
-                    "vapulla-friend-request",
-                    "Friend request",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                "vapulla-friend-request",
+                "Friend request",
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 importance = NotificationManager.IMPORTANCE_DEFAULT
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
@@ -57,9 +57,9 @@ class VapullaApplication : Application() {
             notificationManager.createNotificationChannel(friendRequestChannel)
 
             val messageChannel = NotificationChannel(
-                    "vapulla-message",
-                    "New messages",
-                    NotificationManager.IMPORTANCE_HIGH
+                "vapulla-message",
+                "New messages",
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 lockscreenVisibility = Notification.VISIBILITY_PRIVATE
                 lightColor = 0xffffffff.toInt()
@@ -69,10 +69,10 @@ class VapullaApplication : Application() {
         }
 
         graph = DaggerVapullaComponent.builder()
-                .appModule(AppModule(this))
-                .storageModule(StorageModule())
-                .presenterModule(PresenterModule())
-                .build()
+            .appModule(AppModule(this))
+            .storageModule(StorageModule())
+            .presenterModule(PresenterModule())
+            .build()
 
         PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
     }

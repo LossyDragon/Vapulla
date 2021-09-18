@@ -6,8 +6,8 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 import `in`.dragonbra.javasteam.types.SteamID
 
 class ServiceMethodCallback(
-        msg: CFriendMessages_IncomingMessage_NotificationOrBuilder,
-        targetJobName: String
+    msg: CFriendMessages_IncomingMessage_NotificationOrBuilder,
+    targetJobName: String
 ) : CallbackMsg() {
     val steamID: SteamID = SteamID(msg.steamidFriend)
     val message: String = msg.message

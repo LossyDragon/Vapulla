@@ -46,9 +46,9 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.activity_settings, SettingsFragment())
-                .commit()
+            .beginTransaction()
+            .replace(R.id.activity_settings, SettingsFragment())
+            .commit()
 
         val uri = intent.data
 
@@ -57,20 +57,20 @@ class SettingsActivity : AppCompatActivity() {
 
             if (success) {
                 val fragment: SettingsFragment = supportFragmentManager
-                        .findFragmentById(R.id.activity_settings) as SettingsFragment
+                    .findFragmentById(R.id.activity_settings) as SettingsFragment
 
                 fragment.updateImgurPref()
 
                 Snackbar.make(
-                        activity_settings,
-                        getString(R.string.snackbarImgurLinked),
-                        Snackbar.LENGTH_SHORT
+                    activity_settings,
+                    getString(R.string.snackbarImgurLinked),
+                    Snackbar.LENGTH_SHORT
                 ).show()
             } else {
                 Snackbar.make(
-                        activity_settings,
-                        getString(R.string.snackbarImgurLinkFailed),
-                        Snackbar.LENGTH_SHORT
+                    activity_settings,
+                    getString(R.string.snackbarImgurLinkFailed),
+                    Snackbar.LENGTH_SHORT
                 ).show()
             }
         }
@@ -103,10 +103,12 @@ class SettingsActivity : AppCompatActivity() {
 
             // Trigger the listener immediately with the preference's
             // current value.
-            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                    PreferenceManager
-                            .getDefaultSharedPreferences(preference?.context)
-                            .getString(preference?.key, ""))
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(
+                preference,
+                PreferenceManager
+                    .getDefaultSharedPreferences(preference?.context)
+                    .getString(preference?.key, "")
+            )
         }
 
         /**
@@ -114,22 +116,22 @@ class SettingsActivity : AppCompatActivity() {
          * to reflect its new value.
          */
         private val sBindPreferenceSummaryToValueListener =
-                Preference.OnPreferenceChangeListener { preference, value ->
-                    val stringValue = value.toString()
+            Preference.OnPreferenceChangeListener { preference, value ->
+                val stringValue = value.toString()
 
-                    if (preference is ListPreference) {
-                        // For list preferences, look up the correct display value in
-                        // the preference's 'entries' list.
-                        val index = preference.findIndexOfValue(stringValue)
+                if (preference is ListPreference) {
+                    // For list preferences, look up the correct display value in
+                    // the preference's 'entries' list.
+                    val index = preference.findIndexOfValue(stringValue)
 
-                        // Set the summary to reflect the new value.
-                        preference.setSummary(if (index >= 0) preference.entries[index] else null)
-                    } else {
-                        // For all other preferences, set the summary to the value's
-                        // simple string representation.
-                        preference.summary = stringValue
-                    }
-                    true
+                    // Set the summary to reflect the new value.
+                    preference.setSummary(if (index >= 0) preference.entries[index] else null)
+                } else {
+                    // For all other preferences, set the summary to the value's
+                    // simple string representation.
+                    preference.summary = stringValue
                 }
+                true
+            }
     }
 }

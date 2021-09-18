@@ -85,7 +85,8 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
     private fun onLoggedOn(callback: LoggedOnCallback) {
         if (callback.result != EResult.OK) {
             if (callback.result == EResult.AccountLogonDenied ||
-                    callback.result == EResult.AccountLoginDeniedNeedTwoFactor) {
+                callback.result == EResult.AccountLoginDeniedNeedTwoFactor
+            ) {
                 is2Fa = callback.result == EResult.AccountLoginDeniedNeedTwoFactor
                 expectSteamGuard = true
                 ifViewAttached {
@@ -97,7 +98,8 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
                 val errorMessage = context.getErrorMessage(callback.result, callback.extendedResult)
                 if (callback.result == EResult.TwoFactorCodeMismatch ||
-                        callback.result == EResult.InvalidLoginAuthCode) {
+                    callback.result == EResult.InvalidLoginAuthCode
+                ) {
                     ifViewAttached { it.showSteamGuard(false, errorMessage) }
                 } else {
                     ifViewAttached { it.showLoginForm(errorMessage) }

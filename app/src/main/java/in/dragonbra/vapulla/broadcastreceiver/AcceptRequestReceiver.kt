@@ -17,10 +17,10 @@ class AcceptRequestReceiver : BroadcastReceiver() {
         }
 
         context.startService(
-                Intent(context, SteamService::class.java).apply {
-                    putExtra(SteamService.EXTRA_ID, intent.getLongExtra(EXTRA_ID, 9L))
-                    putExtra(SteamService.EXTRA_ACTION, "accept_request")
-                }
+            Intent(context, SteamService::class.java).apply {
+                putExtra(SteamService.EXTRA_ID, intent.getLongExtra(EXTRA_ID, 9L))
+                putExtra(SteamService.EXTRA_ACTION, "accept_request")
+            }
         )
     }
 }

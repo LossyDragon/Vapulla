@@ -11,8 +11,10 @@ import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-@Database(entities = [SteamFriend::class, ChatMessage::class, GameSchema::class, Emoticon::class],
-        version = 1, exportSchema = true)
+@Database(
+    entities = [SteamFriend::class, ChatMessage::class, GameSchema::class, Emoticon::class],
+    version = 1, exportSchema = true
+)
 abstract class VapullaDatabase : RoomDatabase() {
     companion object {
         const val DATABASE_NAME = "vapulla.db"

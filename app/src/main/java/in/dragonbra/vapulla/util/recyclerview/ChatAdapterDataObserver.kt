@@ -4,9 +4,10 @@ import `in`.dragonbra.vapulla.adapter.ChatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-class ChatAdapterDataObserver(private val adapter: ChatAdapter,
-                              private val layoutManager: LinearLayoutManager,
-                              private val recyclerView: RecyclerView
+class ChatAdapterDataObserver(
+    private val adapter: ChatAdapter,
+    private val layoutManager: LinearLayoutManager,
+    private val recyclerView: RecyclerView
 ) : RecyclerView.AdapterDataObserver() {
 
     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
@@ -18,7 +19,8 @@ class ChatAdapterDataObserver(private val adapter: ChatAdapter,
         val findVisiblePosition = layoutManager.findFirstVisibleItemPosition()
 
         if (fromLocal || findVisiblePosition == -1 ||
-                positionStart == 0 && findVisiblePosition == 0) {
+            positionStart == 0 && findVisiblePosition == 0
+        ) {
             recyclerView.scrollToPosition(positionStart)
         }
     }

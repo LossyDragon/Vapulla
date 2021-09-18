@@ -7,8 +7,9 @@ import okhttp3.RequestBody
 import okio.BufferedSink
 import java.io.ByteArrayInputStream
 
-class ImageRequestBody(private val content: ByteArray,
-                       private val callback: ((Int, Int) -> Unit)? = null
+class ImageRequestBody(
+    private val content: ByteArray,
+    private val callback: ((Int, Int) -> Unit)? = null
 ) : RequestBody() {
 
     companion object {

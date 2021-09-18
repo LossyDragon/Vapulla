@@ -17,11 +17,12 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.activity_games.*
 
-class GamesActivity : VapullaBaseActivity<GamesView, GamesPresenter>(),
-        GamesView,
-        GamesAdapter.OnItemSelectedListener,
-        SearchView.OnQueryTextListener,
-        MenuItem.OnActionExpandListener {
+class GamesActivity :
+    VapullaBaseActivity<GamesView, GamesPresenter>(),
+    GamesView,
+    GamesAdapter.OnItemSelectedListener,
+    SearchView.OnQueryTextListener,
+    MenuItem.OnActionExpandListener {
 
     companion object {
         const val INTENT_GAMES = "intent_games"
@@ -117,9 +118,10 @@ class GamesActivity : VapullaBaseActivity<GamesView, GamesPresenter>(),
     override fun onMoreItemSelected(game: Games) {
         val url = String.format(Utils.STORE_PAGE_URL, game.appid)
         startActivity(
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse(url)
-                })
+            Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse(url)
+            }
+        )
     }
 
     override fun onQueryTextSubmit(query: String?): Boolean = true

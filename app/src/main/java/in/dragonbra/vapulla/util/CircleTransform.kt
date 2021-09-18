@@ -7,10 +7,11 @@ import java.security.MessageDigest
 
 class CircleTransform : BitmapTransformation() {
 
-    override fun transform(pool: BitmapPool,
-                           toTransform: Bitmap,
-                           outWidth: Int,
-                           outHeight: Int
+    override fun transform(
+        pool: BitmapPool,
+        toTransform: Bitmap,
+        outWidth: Int,
+        outHeight: Int
     ): Bitmap? {
         return circleCrop(pool, toTransform)
     }

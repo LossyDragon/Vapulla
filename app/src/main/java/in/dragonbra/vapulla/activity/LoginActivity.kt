@@ -85,16 +85,17 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             vapullaLogoBottom.setImageDrawable(faceAnim)
 
             VectorAnimCompat.registerAnimationCallback(
-                    faceAnim as Animatable,
-                    object : Animatable2Compat.AnimationCallback() {
-                        override fun onAnimationEnd(drawable: Drawable) {
-                            vapullaLogoTop.setImageDrawable(getDrawable(R.drawable.vapulla_top))
-                            vapullaLogoBottom.show()
-                            vapullaLogoMiddle.show()
-                            startLoadingAnimation()
-                            presenter.retry()
-                        }
-                    })
+                faceAnim as Animatable,
+                object : Animatable2Compat.AnimationCallback() {
+                    override fun onAnimationEnd(drawable: Drawable) {
+                        vapullaLogoTop.setImageDrawable(getDrawable(R.drawable.vapulla_top))
+                        vapullaLogoBottom.show()
+                        vapullaLogoMiddle.show()
+                        startLoadingAnimation()
+                        presenter.retry()
+                    }
+                }
+            )
 
             faceAnim.start()
         }
@@ -152,14 +153,14 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             }
 
             loadingText.setText(
-                    if (is2Fa)
-                        getString(R.string.loadingTextSteamGuardMobile)
-                    else
-                        getString(R.string.loadingTextSteamGuardEmail)
+                if (is2Fa)
+                    getString(R.string.loadingTextSteamGuardMobile)
+                else
+                    getString(R.string.loadingTextSteamGuardEmail)
             )
 
             val layout = errorMessage?.let { R.layout.activity_login_frame_steamguard_error }
-                    ?: run { R.layout.activity_login_frame_steamguard }
+                ?: run { R.layout.activity_login_frame_steamguard }
 
             val constraintSet = ConstraintSet()
             constraintSet.clone(this, layout)
@@ -178,7 +179,7 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             }
 
             val layout = errorMessage?.let { R.layout.activity_login_frame_form_error }
-                    ?: run { R.layout.activity_login_frame_form }
+                ?: run { R.layout.activity_login_frame_form }
 
             val constraintSet = ConstraintSet()
             constraintSet.clone(this, layout)
@@ -232,16 +233,17 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
         val d2 = vapullaLogoBottom.drawable as Animatable
 
         VectorAnimCompat.registerAnimationCallback(
-                d,
-                object : Animatable2Compat.AnimationCallback() {
-                    override fun onAnimationEnd(drawable: Drawable) {
-                        d.start()
-                        handler.postDelayed({
-                            d2.stop()
-                            d2.start()
-                        }, 300)
-                    }
-                })
+            d,
+            object : Animatable2Compat.AnimationCallback() {
+                override fun onAnimationEnd(drawable: Drawable) {
+                    d.start()
+                    handler.postDelayed({
+                        d2.stop()
+                        d2.start()
+                    }, 300)
+                }
+            }
+        )
         d.start()
         handler.postDelayed({ d2.start() }, 300)
     }

@@ -24,25 +24,25 @@ class AppModule(val context: Context) {
     @Provides
     @Singleton
     fun provideNotificationManager(context: Context) =
-            NotificationManagerCompat.from(context)
+        NotificationManagerCompat.from(context)
 
     @Provides
     @Singleton
     fun provideClipboardManager(context: Context) =
-            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     @Provides
     @Singleton
     fun provideGameSchemaManager(gameSchemaDao: GameSchemaDao, storeFront: StoreFront) =
-            GameSchemaManager(gameSchemaDao, storeFront)
+        GameSchemaManager(gameSchemaDao, storeFront)
 
     @Provides
     @Singleton
     fun provideImgurAuthService(imgur: Imgur) =
-            ImgurAuthService(context, imgur)
+        ImgurAuthService(context, imgur)
 
     @Provides
     @Singleton
     fun provideLevelManager(steamApi: SteamApi) =
-            ProfileManager(steamApi)
+        ProfileManager(steamApi)
 }

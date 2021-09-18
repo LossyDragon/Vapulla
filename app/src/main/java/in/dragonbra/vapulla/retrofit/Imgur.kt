@@ -9,13 +9,17 @@ import retrofit2.http.*
 interface Imgur {
 
     @POST("oauth2/token")
-    fun refreshToken(@Query("refresh_token") refreshToken: String,
-                     @Query("client_id") clientId: String,
-                     @Query("client_secret") clientSecret: String,
-                     @Query("grant_type") grantType: String): Call<ImgurToken>
+    fun refreshToken(
+        @Query("refresh_token") refreshToken: String,
+        @Query("client_id") clientId: String,
+        @Query("client_secret") clientSecret: String,
+        @Query("grant_type") grantType: String
+    ): Call<ImgurToken>
 
     @Multipart
     @POST("3/image")
-    fun postImage(@Part("image") body: RequestBody,
-                  @Header("Authorization") auth: String): Call<ImgurUploadResult>
+    fun postImage(
+        @Part("image") body: RequestBody,
+        @Header("Authorization") auth: String
+    ): Call<ImgurUploadResult>
 }

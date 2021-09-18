@@ -57,8 +57,10 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : VapullaLogger {
                 val friend = steamFriendDao.find(id.convertToUInt64())
 
                 if (friend != null &&
-                        (state.state != EPersonaState.Offline ||
-                                state.lastLogOff.time > friend.lastLogOff)
+                    (
+                        state.state != EPersonaState.Offline ||
+                            state.lastLogOff.time > friend.lastLogOff
+                        )
                 ) {
                     val avatarHash = Hex.toHexString(state.avatarHash)
 

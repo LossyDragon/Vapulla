@@ -112,7 +112,7 @@ class SteamService : Service(), VapullaLogger {
     private val subscriptions: MutableSet<Closeable?> = mutableSetOf()
 
     private val newMessages: MutableMap<SteamID,
-            MutableList<NotificationCompat.MessagingStyle.Message>> = mutableMapOf()
+        MutableList<NotificationCompat.MessagingStyle.Message>> = mutableMapOf()
 
     val disconnectedSubs: MutableSet<(DisconnectedCallback) -> Unit> = mutableSetOf()
 
@@ -204,18 +204,24 @@ class SteamService : Service(), VapullaLogger {
             add(callbackMgr.subscribe(FriendMsgHistoryCallback::class.java, onFriendMsgHistory))
             // add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
             add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
-            add(callbackMgr.subscribe(
-                    OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
+            add(
+                callbackMgr.subscribe(
+                    OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification
+                )
+            )
             add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
             add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
             add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethod))
-            add(callbackMgr.subscribe(
-                    ServiceServiceMethodCallback::class.java, onServiceMethodResponse))
+            add(
+                callbackMgr.subscribe(
+                    ServiceServiceMethodCallback::class.java, onServiceMethodResponse
+                )
+            )
         }
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
-                .setLabel("Reply")
-                .build()
+            .setLabel("Reply")
+            .build()
 
         prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
@@ -288,26 +294,26 @@ class SteamService : Service(), VapullaLogger {
         val pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, logOutIntent, 0)
 
         val builder = NotificationCompat.Builder(this, "vapulla-service")
-                .setDefaults(0)
-                .setShowWhen(false)
-                .setContentTitle("Vapulla")
-                .setContentText(text)
-                .setContentIntent(
-                        PendingIntent.getActivity(
-                                this,
-                                0,
-                                Intent(this, HomeActivity::class.java),
-                                0
-                        )
+            .setDefaults(0)
+            .setShowWhen(false)
+            .setContentTitle("Vapulla")
+            .setContentText(text)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, HomeActivity::class.java),
+                    0
                 )
-                .setSmallIcon(R.drawable.ic_vapulla)
-                .setVibrate(longArrayOf(-1L))
-                .setSound(null)
-                .addAction(
-                        R.drawable.ic_exit_to_app,
-                        getString(R.string.notificationActionLogOut),
-                        pendingIntent
-                )
+            )
+            .setSmallIcon(R.drawable.ic_vapulla)
+            .setVibrate(longArrayOf(-1L))
+            .setSound(null)
+            .addAction(
+                R.drawable.ic_exit_to_app,
+                getString(R.string.notificationActionLogOut),
+                pendingIntent
+            )
 
         if (isAtLeastN) {
             builder.priority = NotificationManager.IMPORTANCE_LOW
@@ -354,35 +360,35 @@ class SteamService : Service(), VapullaLogger {
         val friend = db.steamFriendDao().find(friendId.convertToUInt64()) ?: return
 
         val messages: MutableList<NotificationCompat.MessagingStyle.Message> =
-                if (!newMessages.containsKey(friendId)) {
-                    val list = LinkedList<NotificationCompat.MessagingStyle.Message>()
-                    newMessages[friendId] = list
-                    list
-                } else {
-                    newMessages[friendId]!!
-                }
+            if (!newMessages.containsKey(friendId)) {
+                val list = LinkedList<NotificationCompat.MessagingStyle.Message>()
+                newMessages[friendId] = list
+                list
+            } else {
+                newMessages[friendId]!!
+            }
 
         val currentTs = System.currentTimeMillis()
         val backoff = messages.isNotEmpty() &&
-                currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
+            currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
         var bitmap: Bitmap? = null
 
         try {
             bitmap = Glide.with(applicationContext)
-                    .asBitmap()
-                    .load(Utils.getAvatarUrl(friend.avatar))
-                    .apply(avatarOptions)
-                    .submit()
-                    .get(5, TimeUnit.SECONDS)
+                .asBitmap()
+                .load(Utils.getAvatarUrl(friend.avatar))
+                .apply(avatarOptions)
+                .submit()
+                .get(5, TimeUnit.SECONDS)
         } catch (ignored: Exception) {
         }
 
         val steamUser = Person
-                .Builder()
-                .setName(friend.name ?: "")
-                .setIcon(IconCompat.createWithBitmap(bitmap))
-                .build()
+            .Builder()
+            .setName(friend.name ?: "")
+            .setIcon(IconCompat.createWithBitmap(bitmap))
+            .build()
 
         val newMessage = NotificationCompat.MessagingStyle.Message(message, currentTs, steamUser)
         messages.add(newMessage)
@@ -394,39 +400,39 @@ class SteamService : Service(), VapullaLogger {
         }
 
         val replyPendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                friendId.convertToUInt64().toInt(),
-                getMessageReplyIntent(friendId.convertToUInt64()),
-                PendingIntent.FLAG_UPDATE_CURRENT
+            applicationContext,
+            friendId.convertToUInt64().toInt(),
+            getMessageReplyIntent(friendId.convertToUInt64()),
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val replyAction = NotificationCompat.Action.Builder(
-                R.drawable.ic_send,
-                getString(R.string.notificationActionReply),
-                replyPendingIntent
+            R.drawable.ic_send,
+            getString(R.string.notificationActionReply),
+            replyPendingIntent
         ).addRemoteInput(remoteInput).build()
 
         val intent = Intent(this, ChatActivity::class.java).apply {
             putExtra(ChatActivity.INTENT_STEAM_ID, friendId.convertToUInt64())
         }
         val pendingIntent = TaskStackBuilder.create(this)
-                .addNextIntentWithParentStack(intent)
-                .getPendingIntent(
-                        friendId.convertToUInt64().toInt(),
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                )
+            .addNextIntentWithParentStack(intent)
+            .getPendingIntent(
+                friendId.convertToUInt64().toInt(),
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
 
         val notification = NotificationCompat.Builder(this, "vapulla-message")
-                .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
-                .setStyle(style)
-                .setSmallIcon(R.drawable.ic_message)
-                .setLargeIcon(bitmap)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOnlyAlertOnce(backoff)
-                .addAction(replyAction)
-                .build()
+            .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
+            .setStyle(style)
+            .setSmallIcon(R.drawable.ic_message)
+            .setLargeIcon(bitmap)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOnlyAlertOnce(backoff)
+            .addAction(replyAction)
+            .build()
 
         notificationManager.notify(friendId.convertToUInt64().toInt(), notification)
 
@@ -444,79 +450,80 @@ class SteamService : Service(), VapullaLogger {
 
         try {
             bitmap = Glide.with(applicationContext)
-                    .asBitmap()
-                    .load(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
-                    .apply(avatarOptions)
-                    .submit()
-                    .get(5, TimeUnit.SECONDS)
+                .asBitmap()
+                .load(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
+                .apply(avatarOptions)
+                .submit()
+                .get(5, TimeUnit.SECONDS)
         } catch (ignored: Exception) {
         }
 
         val acceptPendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                state.friendID.convertToUInt64().toInt(),
-                Intent(this, AcceptRequestReceiver::class.java).apply {
-                    putExtra(AcceptRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT
+            applicationContext,
+            state.friendID.convertToUInt64().toInt(),
+            Intent(this, AcceptRequestReceiver::class.java).apply {
+                putExtra(AcceptRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val ignorePendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                state.friendID.convertToUInt64().toInt(),
-                Intent(this, IgnoreRequestReceiver::class.java).apply {
-                    putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT
+            applicationContext,
+            state.friendID.convertToUInt64().toInt(),
+            Intent(this, IgnoreRequestReceiver::class.java).apply {
+                putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val blockPendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                state.friendID.convertToUInt64().toInt(),
-                Intent(this, BlockRequestReceiver::class.java).apply {
-                    putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT
+            applicationContext,
+            state.friendID.convertToUInt64().toInt(),
+            Intent(this, BlockRequestReceiver::class.java).apply {
+                putExtra(IgnoreRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val notification = NotificationCompat.Builder(this, "vapulla-friend-request")
-                .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
-                .setSmallIcon(R.drawable.ic_add_friend)
-                .setLargeIcon(bitmap)
-                .setContentText(getString(R.string.notificationMessageFriendRequest, state.name))
-                .setContentTitle(getString(R.string.notificationTitleFriendRequest))
-                .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(
-                        PendingIntent.getActivity(
-                                this,
-                                0,
-                                Intent(this, HomeActivity::class.java), 0)
+            .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
+            .setSmallIcon(R.drawable.ic_add_friend)
+            .setLargeIcon(bitmap)
+            .setContentText(getString(R.string.notificationMessageFriendRequest, state.name))
+            .setContentTitle(getString(R.string.notificationTitleFriendRequest))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, HomeActivity::class.java), 0
                 )
-                .addAction(
-                        R.drawable.ic_check,
-                        getString(R.string.notificationActionAccept),
-                        acceptPendingIntent
-                )
-                .addAction(
-                        R.drawable.ic_close,
-                        getString(R.string.notificationActionIgnore),
-                        ignorePendingIntent
-                )
-                .addAction(
-                        R.drawable.ic_block,
-                        getString(R.string.notificationActionBlock),
-                        blockPendingIntent
-                )
-                .build()
+            )
+            .addAction(
+                R.drawable.ic_check,
+                getString(R.string.notificationActionAccept),
+                acceptPendingIntent
+            )
+            .addAction(
+                R.drawable.ic_close,
+                getString(R.string.notificationActionIgnore),
+                ignorePendingIntent
+            )
+            .addAction(
+                R.drawable.ic_block,
+                getString(R.string.notificationActionBlock),
+                blockPendingIntent
+            )
+            .build()
 
         notificationManager.notify(state.friendID.convertToUInt64().toInt(), notification)
     }
 
     private fun getMessageReplyIntent(id: Long): Intent =
-            Intent(this, ReplyReceiver::class.java).apply {
-                putExtra(ReplyReceiver.EXTRA_ID, id)
-            }
+        Intent(this, ReplyReceiver::class.java).apply {
+            putExtra(ReplyReceiver.EXTRA_ID, id)
+        }
 
     private fun clearMessageNotifications(id: SteamID) {
         newMessages[id]?.clear()
@@ -550,31 +557,33 @@ class SteamService : Service(), VapullaLogger {
         // getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
         getHandler<VapullaHandler>()?.sendMessage(id, message)
 
-        db.chatMessageDao().insert(ChatMessage(
+        db.chatMessageDao().insert(
+            ChatMessage(
                 message = emoteMessage,
                 timestamp = System.currentTimeMillis(),
                 friendId = id.convertToUInt64(),
                 fromLocal = true,
                 unread = false,
                 timestampConfirmed = false
-        ))
+            )
+        )
 
         clearMessageNotifications(id)
     }
 
     inline fun <reified T : ICallbackMsg>
-            subscribe(noinline callbackFunc: (T) -> Unit): Closeable? =
+    subscribe(noinline callbackFunc: (T) -> Unit): Closeable? =
 
-            when (T::class) {
-                DisconnectedCallback::class -> {
-                    @Suppress("UNCHECKED_CAST")
-                    disconnectedSubs.add(callbackFunc as (DisconnectedCallback) -> Unit)
-                    Closeable {
-                        disconnectedSubs.remove(callbackFunc)
-                    }
+        when (T::class) {
+            DisconnectedCallback::class -> {
+                @Suppress("UNCHECKED_CAST")
+                disconnectedSubs.add(callbackFunc as (DisconnectedCallback) -> Unit)
+                Closeable {
+                    disconnectedSubs.remove(callbackFunc)
                 }
-                else -> callbackMgr.subscribe(T::class.java) { callbackFunc(it) }
             }
+            else -> callbackMgr.subscribe(T::class.java) { callbackFunc(it) }
+        }
 
     private val steamThread: Runnable = Runnable {
         info("Connecting to steam...")
@@ -593,7 +602,7 @@ class SteamService : Service(), VapullaLogger {
     }
 
     inline fun <reified T : ClientMsgHandler> getHandler(): T? =
-            this.steamClient.getHandler(T::class.java)
+        this.steamClient.getHandler(T::class.java)
 
     //region Callback handlers
 
@@ -691,7 +700,8 @@ class SteamService : Service(), VapullaLogger {
                 return@forEach
             }
 
-            info("${state.state} - " +
+            info(
+                "${state.state} - " +
                     "${state.name} - " +
                     "${state.lastLogOff.time} - " +
                     "${state.lastLogOn.time}"
@@ -722,14 +732,16 @@ class SteamService : Service(), VapullaLogger {
 
             if (friend == null) {
                 if (currentFriend.relationship == EFriendRelationship.Friend ||
-                        currentFriend.relationship == EFriendRelationship.RequestRecipient) {
+                    currentFriend.relationship == EFriendRelationship.RequestRecipient
+                ) {
                     friend = SteamFriend(currentFriend.steamID.convertToUInt64())
                     friend.relation = currentFriend.relationship.code()
                     friendsToAdd.add(friend)
                 }
             } else {
                 if (currentFriend.relationship == EFriendRelationship.Friend ||
-                        currentFriend.relationship == EFriendRelationship.RequestRecipient) {
+                    currentFriend.relationship == EFriendRelationship.RequestRecipient
+                ) {
                     friend.relation = currentFriend.relationship.code()
                     friendsToUpdate.add(friend)
                 } else {
@@ -753,19 +765,23 @@ class SteamService : Service(), VapullaLogger {
             val friendId = cb.steamID.convertToUInt64()
             val timestamp = it.timestamp.time
             val confirmedMessage =
-                    db.chatMessageDao()
-                            .find(it.message, timestamp, friendId, fromLocal, true)
+                db.chatMessageDao()
+                    .find(it.message, timestamp, friendId, fromLocal, true)
 
             if (confirmedMessage != null) {
                 return@forEach
             }
 
             val unconfirmedMessages =
-                    db.chatMessageDao().find(it.message, friendId, fromLocal, false)
-                            .sortedWith(kotlin.Comparator { o1, o2 ->
-                                (abs(timestamp - o1.timestamp) -
-                                        abs(timestamp - o2.timestamp)).toInt()
-                            })
+                db.chatMessageDao().find(it.message, friendId, fromLocal, false)
+                    .sortedWith(
+                        kotlin.Comparator { o1, o2 ->
+                            (
+                                abs(timestamp - o1.timestamp) -
+                                    abs(timestamp - o2.timestamp)
+                                ).toInt()
+                        }
+                    )
 
             if (unconfirmedMessages.isNotEmpty()) {
                 unconfirmedMessages[0].timestamp = timestamp
@@ -773,14 +789,16 @@ class SteamService : Service(), VapullaLogger {
 
                 db.chatMessageDao().update(unconfirmedMessages[0])
             } else {
-                db.chatMessageDao().insert(ChatMessage(
+                db.chatMessageDao().insert(
+                    ChatMessage(
                         message = it.message,
                         timestamp = timestamp,
                         friendId = friendId,
                         fromLocal = fromLocal,
                         unread = it.isUnread,
                         timestampConfirmed = true
-                ))
+                    )
+                )
             }
         }
     }
@@ -799,11 +817,11 @@ class SteamService : Service(), VapullaLogger {
     }
 
     private val onOfflineMessageNotification:
-            Consumer<OfflineMessageNotificationCallback> = Consumer {
-        if (it.messageCount > 0) {
-            getHandler<SteamFriends>()?.requestOfflineMessages()
+        Consumer<OfflineMessageNotificationCallback> = Consumer {
+            if (it.messageCount > 0) {
+                getHandler<SteamFriends>()?.requestOfflineMessages()
+            }
         }
-    }
 
     private val onEmoticonList: Consumer<EmoticonListCallback> = Consumer { emoticon ->
         debug("onEmoticonList")
@@ -823,14 +841,16 @@ class SteamService : Service(), VapullaLogger {
     private val onFriendMsgEcho: Consumer<FriendMsgEchoCallback> = Consumer {
         lastEcho = System.currentTimeMillis()
 
-        db.chatMessageDao().insert(ChatMessage(
+        db.chatMessageDao().insert(
+            ChatMessage(
                 message = it.message,
                 timestamp = System.currentTimeMillis(),
                 friendId = it.sender.convertToUInt64(),
                 fromLocal = true,
                 unread = false,
                 timestampConfirmed = false
-        ))
+            )
+        )
         db.chatMessageDao().markRead(it.sender.convertToUInt64())
 
         clearMessageNotifications(it.sender)
@@ -872,14 +892,16 @@ class SteamService : Service(), VapullaLogger {
             }
 
             if (it.entryType == EChatEntryType.ChatMsg && it.message.isNotEmpty()) {
-                db.chatMessageDao().insert(ChatMessage(
+                db.chatMessageDao().insert(
+                    ChatMessage(
                         it.message,
                         System.currentTimeMillis(),
                         it.steamID.convertToUInt64(),
                         false,
                         chatFriendId != it.steamID.convertToUInt64(),
                         false
-                ))
+                    )
+                )
 
                 if (it.steamID.convertToUInt64() != chatFriendId) {
                     postMessageNotification(it.steamID, it.message)

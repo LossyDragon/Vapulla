@@ -30,8 +30,9 @@ import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.activity_profile.*
 import javax.inject.Inject
 
-class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
-        ProfileView {
+class ProfileActivity :
+    VapullaBaseActivity<ProfileView, ProfilePresenter>(),
+    ProfileView {
 
     companion object {
         const val INTENT_STEAM_ID = "steam_id"
@@ -71,11 +72,11 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
         val steamId = SteamID(intent.getLongExtra(ChatActivity.INTENT_STEAM_ID, 0L))
 
         return ProfilePresenter(
-                applicationContext,
-                steamId,
-                steamFriendDao,
-                schemaManager,
-                levelManager
+            applicationContext,
+            steamId,
+            steamFriendDao,
+            schemaManager,
+            levelManager
         )
     }
 
@@ -123,20 +124,20 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
             }
 
             profile_status.text =
-                    Utils.getStatusText(
-                            this,
-                            state, friend.gameAppId,
-                            friend.gameName,
-                            friend.lastLogOff
-                    )
+                Utils.getStatusText(
+                    this,
+                    state, friend.gameAppId,
+                    friend.gameName,
+                    friend.lastLogOff
+                )
 
             profile_icon.borderColor =
-                    Utils.getStatusColor(
-                            this,
-                            state,
-                            friend.gameAppId,
-                            friend.gameName
-                    )
+                Utils.getStatusColor(
+                    this,
+                    state,
+                    friend.gameAppId,
+                    friend.gameName
+                )
 
             val flags = EPersonaStateFlag.from(friend.stateFlags)
             when {
@@ -156,24 +157,26 @@ class ProfileActivity : VapullaBaseActivity<ProfileView, ProfilePresenter>(),
             presenter.getGameCount()
 
             Glide.with(this)
-                    .load(Utils.getAvatarUrl(friend.avatar))
-                    .apply(Utils.avatarOptions)
-                    .into(profile_icon)
+                .load(Utils.getAvatarUrl(friend.avatar))
+                .apply(Utils.avatarOptions)
+                .into(profile_icon)
         }
     }
 
     override fun viewChat(steamId: Long) {
         startActivity(
-                Intent(this, ChatActivity::class.java).apply {
-                    putExtra(ChatActivity.INTENT_STEAM_ID, steamId)
-                })
+            Intent(this, ChatActivity::class.java).apply {
+                putExtra(ChatActivity.INTENT_STEAM_ID, steamId)
+            }
+        )
     }
 
     override fun viewProfile(url: String) {
         startActivity(
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse(url)
-                })
+            Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse(url)
+            }
+        )
     }
 
     override fun viewGames(list: ArrayList<Games>?, name: String) {

@@ -10,11 +10,14 @@ import dagger.Component
 import javax.inject.Singleton
 
 @Singleton
-@Component(modules = [
-    AppModule::class,
-    PresenterModule::class,
-    StorageModule::class,
-    RetrofitModule::class])
+@Component(
+    modules = [
+        AppModule::class,
+        PresenterModule::class,
+        StorageModule::class,
+        RetrofitModule::class
+    ]
+)
 interface VapullaComponent {
     fun inject(steamService: SteamService)
     fun inject(homeActivity: HomeActivity)

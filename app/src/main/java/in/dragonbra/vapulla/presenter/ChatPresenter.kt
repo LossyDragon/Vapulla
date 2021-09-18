@@ -35,13 +35,14 @@ import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import java.io.ByteArrayOutputStream
 
-class ChatPresenter(context: Context,
-                    private val chatMessageDao: ChatMessageDao,
-                    private val steamFriendsDao: SteamFriendDao,
-                    private val emoticonDao: EmoticonDao,
-                    private val imgurAuthService: ImgurAuthService,
-                    private val schemaManager: GameSchemaManager,
-                    private val steamId: SteamID
+class ChatPresenter(
+    context: Context,
+    private val chatMessageDao: ChatMessageDao,
+    private val steamFriendsDao: SteamFriendDao,
+    private val emoticonDao: EmoticonDao,
+    private val imgurAuthService: ImgurAuthService,
+    private val schemaManager: GameSchemaManager,
+    private val steamId: SteamID
 ) : VapullaPresenter<ChatView>(context) {
 
     companion object {
@@ -96,7 +97,8 @@ class ChatPresenter(context: Context,
 
     override fun onPostCreate() {
         chatData = LivePagedListBuilder(
-                chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50).build()
+            chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50
+        ).build()
         // chatData.observe(view as ChatActivity, chatObserver)
         ifViewAttached { chatData.observe(it as ChatActivity, chatObserver) }
 
@@ -189,8 +191,8 @@ class ChatPresenter(context: Context,
 
             runOnBackgroundThread {
                 steamService
-                        ?.getHandler<SteamFriends>()
-                        ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
+                    ?.getHandler<SteamFriends>()
+                    ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
             }
         }
     }

@@ -21,8 +21,8 @@ class ProfileManager(private val steamApi: SteamApi) {
         if (response.isSuccessful) {
             if (response.body() != null) {
                 pair = Pair(
-                        response.body()!!.gamesResponse!!.gameCount,
-                        response.body()!!.gamesResponse!!.games
+                    response.body()!!.gamesResponse!!.gameCount,
+                    response.body()!!.gamesResponse!!.games
                 )
             }
         } else {

@@ -16,7 +16,7 @@ import java.io.Closeable
 import java.util.*
 
 abstract class VapullaPresenter<V : MvpView>(
-        val context: Context
+    val context: Context
 ) : MvpBasePresenter<V>(), VapullaLogger {
 
     protected var bound = false
@@ -48,9 +48,9 @@ abstract class VapullaPresenter<V : MvpView>(
     @CallSuper
     open fun onStart() {
         context.bindService(
-                Intent(context, SteamService::class.java),
-                connection,
-                Context.BIND_AUTO_CREATE
+            Intent(context, SteamService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
         )
     }
 
