@@ -15,8 +15,10 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.app.NavUtils
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_games.*
 
+@AndroidEntryPoint
 class GamesActivity :
     VapullaBaseActivity<GamesView, GamesPresenter>(),
     GamesView,
@@ -33,7 +35,6 @@ class GamesActivity :
     private lateinit var items: MutableList<Games>
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_games)

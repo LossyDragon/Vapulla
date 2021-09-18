@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
 apply plugin: "org.jlleitschuh.gradle.ktlint"
@@ -58,8 +59,11 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation files('libs/javasteam-1.0.0-SNAPSHOT.jar')
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
+    // Android Support Libs
     implementation "androidx.annotation:annotation:1.2.0"
     implementation "androidx.appcompat:appcompat:1.3.1"
     implementation "androidx.constraintlayout:constraintlayout:2.1.0"
@@ -71,42 +75,47 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:1.2.1"
     implementation "androidx.room:room-runtime:$room_version"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+    implementation "com.google.android.material:material:1.4.0"
+    kapt "androidx.room:room-compiler:$room_version"
+
+    // Material Dialogs
     implementation "com.afollestad.material-dialogs:bottomsheets:$material_dialogs"
     implementation "com.afollestad.material-dialogs:core:$material_dialogs"
     implementation "com.afollestad.material-dialogs:input:$material_dialogs"
+
+    // Google Dagger/Hilt
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
+
+    // Others
     implementation "com.brandongogetap:stickyheaders:0.6.2"
     implementation "com.github.bumptech.glide:glide:$glide_version"
     implementation "com.github.penfeizhou.android.animation:apng:$apng_version"
     implementation "com.google.android.flexbox:flexbox:3.0.0"
-    implementation "com.google.android.material:material:1.4.0"
-    implementation "com.google.dagger:dagger:$dagger_version"
-    implementation "com.google.firebase:firebase-analytics:19.0.1"
-    implementation "com.google.firebase:firebase-crashlytics:18.2.1"
     implementation "com.hannesdorfmann.mosby3:mvp:3.1.1"
-    implementation "com.madgag.spongycastle:prov:1.58.0.0"
     implementation "com.mikhaellopez:circularimageview:4.3.0"
     implementation "com.squareup.okhttp3:okhttp:4.9.1"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit_verson"
     implementation "com.squareup.retrofit2:retrofit:$retrofit_verson"
-
-    kapt "androidx.room:room-compiler:$room_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
-    kapt "com.google.dagger:dagger-compiler:$dagger_version"
+
+    // Crash logging
+    implementation "com.google.firebase:firebase-analytics:19.0.1"
+    implementation "com.google.firebase:firebase-crashlytics:18.2.1"
 
     // Java-Steam
     // implementation('in.dragonbra:javasteam:1.0.0-SNAPSHOT') { changing = true }
-    implementation files('libs/javasteam-1.0.0-SNAPSHOT.jar')
+    implementation "com.madgag.spongycastle:prov:1.58.0.0"
+    api "com.google.protobuf:protobuf-java:3.17.3" // For protobuf builders
+    api "org.apache.commons:commons-lang3:3.12.0"
 
+    // Memory Leak testing
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
+    // Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-
-    // Need this to talk to protobufs (i.e. ...Builder)
-    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.17.3'
-    api group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
-
 }
 
 // Run: gradlew ktlintCheck

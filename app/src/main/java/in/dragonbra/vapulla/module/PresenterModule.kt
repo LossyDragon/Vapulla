@@ -7,10 +7,13 @@ import `in`.dragonbra.vapulla.presenter.LoginPresenter
 import android.content.Context
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+@InstallIn(SingletonComponent::class)
 @Module
-class PresenterModule {
+object PresenterModule {
 
     @Provides
     @Singleton

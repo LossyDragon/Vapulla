@@ -71,6 +71,7 @@ import androidx.core.app.*
 import androidx.core.graphics.drawable.IconCompat
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -82,6 +83,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
 
+@AndroidEntryPoint
 class SteamService : Service() {
 
     companion object {
@@ -174,7 +176,6 @@ class SteamService : Service() {
     private var lastEcho = 0L
 
     override fun onCreate() {
-        vapulla().graph.inject(this)
         super.onCreate()
 
         info("onCreate")

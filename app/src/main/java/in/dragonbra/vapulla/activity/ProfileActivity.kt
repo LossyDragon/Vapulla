@@ -28,9 +28,11 @@ import com.afollestad.materialdialogs.bottomsheets.BottomSheet
 import com.afollestad.materialdialogs.input.input
 import com.afollestad.materialdialogs.list.listItems
 import com.bumptech.glide.Glide
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_profile.*
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class ProfileActivity :
     VapullaBaseActivity<ProfileView, ProfilePresenter>(),
     ProfileView {
@@ -49,7 +51,6 @@ class ProfileActivity :
     lateinit var levelManager: ProfileManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_profile)

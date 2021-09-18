@@ -1,7 +1,6 @@
 package `in`.dragonbra.vapulla.activity
 
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.VapullaApplication
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.ImgurAuthService
@@ -13,6 +12,7 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_settings.*
 import javax.inject.Inject
 
@@ -26,6 +26,7 @@ import javax.inject.Inject
  * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
  * for more information on developing a Settings UI.
  */
+@AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
 
     @Inject
@@ -39,7 +40,6 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        (application as VapullaApplication).graph.inject(this)
 
         setContentView(R.layout.activity_settings)
 

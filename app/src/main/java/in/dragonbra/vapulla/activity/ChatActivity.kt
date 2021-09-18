@@ -42,10 +42,12 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_chat.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class ChatActivity :
     VapullaBaseActivity<ChatView, ChatPresenter>(),
     ChatView,
@@ -87,7 +89,6 @@ class ChatActivity :
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_chat)

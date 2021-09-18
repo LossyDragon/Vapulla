@@ -27,10 +27,12 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.brandongogetap.stickyheaders.StickyLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_home.*
 import kotlinx.android.synthetic.main.home_toolbar.*
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class HomeActivity :
     VapullaBaseActivity<HomeView, HomePresenter>(),
     HomeView,
@@ -57,7 +59,6 @@ class HomeActivity :
     private val updateHandler: Handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 

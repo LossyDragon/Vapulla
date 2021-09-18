@@ -6,7 +6,7 @@ buildscript {
     ext.android_support_version = '27.1.1'
     ext.androidx_preference = '1.1.1'
     ext.apng_version = '2.12.0'
-    ext.dagger_version = '2.38.1'
+    ext.hilt_version = '2.38.1'
     ext.glide_version = '4.12.0'
     ext.ktlint_version = '10.2.0'
     ext.material_dialogs = '3.3.0'
@@ -21,11 +21,12 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:7.0.2'
+        classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.3.10'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.7.1'
-
         classpath "org.jlleitschuh.gradle:ktlint-gradle:$ktlint_version"
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.7.1'
+        classpath 'com.google.gms:google-services:4.3.10'
+
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }

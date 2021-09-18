@@ -1,11 +1,6 @@
 package `in`.dragonbra.vapulla
 
 import `in`.dragonbra.javasteam.util.log.LogManager
-import `in`.dragonbra.vapulla.component.DaggerVapullaComponent
-import `in`.dragonbra.vapulla.component.VapullaComponent
-import `in`.dragonbra.vapulla.module.AppModule
-import `in`.dragonbra.vapulla.module.PresenterModule
-import `in`.dragonbra.vapulla.module.StorageModule
 import `in`.dragonbra.vapulla.util.Utils.isGreaterThanO
 import android.app.Application
 import android.app.Notification
@@ -15,10 +10,10 @@ import android.content.Context
 import android.util.Log
 import androidx.preference.PreferenceManager
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class VapullaApplication : Application() {
-
-    lateinit var graph: VapullaComponent
 
     override fun onCreate() {
         super.onCreate()
@@ -67,12 +62,6 @@ class VapullaApplication : Application() {
 
             notificationManager.createNotificationChannel(messageChannel)
         }
-
-        graph = DaggerVapullaComponent.builder()
-            .appModule(AppModule(this))
-            .storageModule(StorageModule())
-            .presenterModule(PresenterModule())
-            .build()
 
         PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
     }

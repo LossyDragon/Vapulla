@@ -12,14 +12,18 @@ import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+@InstallIn(SingletonComponent::class)
 @Module
-class AppModule(val context: Context) {
+object AppModule {
 
     @Provides
     @Singleton
-    fun provideContext() = context
+    fun provideContext(@ApplicationContext context: Context) = context
 
     @Provides
     @Singleton
@@ -38,7 +42,7 @@ class AppModule(val context: Context) {
 
     @Provides
     @Singleton
-    fun provideImgurAuthService(imgur: Imgur) =
+    fun provideImgurAuthService(context: Context, imgur: Imgur) =
         ImgurAuthService(context, imgur)
 
     @Provides

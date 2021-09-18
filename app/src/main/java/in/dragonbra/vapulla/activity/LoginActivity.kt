@@ -19,6 +19,7 @@ import androidx.constraintlayout.widget.ConstraintSet
 import androidx.transition.Transition
 import androidx.transition.TransitionManager
 import androidx.vectordrawable.graphics.drawable.Animatable2Compat
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.login_button.*
 import kotlinx.android.synthetic.main.login_error_text.*
@@ -32,6 +33,7 @@ import kotlinx.android.synthetic.main.login_steam_guard_cancel.*
 import kotlinx.android.synthetic.main.login_username.*
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginView {
 
     @Inject
@@ -40,7 +42,6 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
     lateinit var handler: Handler
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
