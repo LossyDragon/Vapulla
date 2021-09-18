@@ -2,16 +2,22 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+apply plugin: "org.jlleitschuh.gradle.ktlint"
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion '29.0.3'
+    compileSdkVersion 31
+
     defaultConfig {
         applicationId "in.dragonbra.vapulla"
+
         minSdkVersion 21
-        targetSdkVersion 29
+        targetSdkVersion 31
+
         versionCode 4
         versionName "0.3.0"
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
 
@@ -29,8 +35,9 @@ android {
 
         buildConfigField("String", "IMGUR_CLIENT_ID", "\"$vapullaImgurClientId\"")
         buildConfigField("String", "IMGUR_CLIENT_SECRET", "\"$vapullaImgurClientSecret\"")
-        buildConfigField("String", "STEAM_API_KEY", "$Steam_ApiKey")
+        buildConfigField("String", "STEAM_API_KEY", "$steamApiKey")
     }
+
     buildTypes {
         release {
             minifyEnabled true
@@ -38,66 +45,74 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11
     }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation('in.dragonbra:javasteam:1.0.0-SNAPSHOT') { changing = true }
-    //implementation files('libs/javasteam-1.0.0-SNAPSHOT.jar')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.2.0"
-    implementation "androidx.paging:paging-runtime-ktx:2.1.2"
+
+    implementation "androidx.annotation:annotation:1.2.0"
+    implementation "androidx.appcompat:appcompat:1.3.1"
+    implementation "androidx.core:core-ktx:1.6.0"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.3.1"
+    implementation "androidx.paging:paging-runtime-ktx:3.0.1"
+    implementation "androidx.preference:preference-ktx:$androidx_preference"
+    implementation "androidx.recyclerview:recyclerview:1.2.1"
     implementation "androidx.room:room-runtime:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.annotation:annotation:1.1.0"
-    implementation "androidx.appcompat:appcompat:1.1.0"
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation "com.google.android.material:material:1.3.0-alpha01"
-    implementation "androidx.recyclerview:recyclerview:1.2.0-alpha04"
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-beta8'
-    implementation "androidx.core:core-ktx:1.3.0"
-    implementation 'com.brandongogetap:stickyheaders:0.6.1'
+    implementation "com.afollestad.material-dialogs:bottomsheets:$material_dialogs"
+    implementation "com.afollestad.material-dialogs:core:$material_dialogs"
+    implementation "com.afollestad.material-dialogs:input:$material_dialogs"
     implementation "com.github.bumptech.glide:glide:$glide_version"
-    kapt "com.github.bumptech.glide:compiler:$glide_version"
-    implementation 'com.mikhaellopez:circularimageview:4.2.0'
     implementation "com.github.penfeizhou.android.animation:apng:$apng_version"
+    implementation "com.google.android.material:material:1.5.0-alpha03"
     implementation "com.google.dagger:dagger:$dagger_version"
-    kapt "com.google.dagger:dagger-compiler:$dagger_version"
-    implementation 'com.google.android:flexbox:2.0.1'
-    implementation 'com.google.firebase:firebase-analytics:17.4.4'
-    implementation 'com.google.firebase:firebase-crashlytics:17.1.1'
+    implementation "com.squareup.retrofit2:converter-gson:$retrofit_verson"
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_verson"
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'com.brandongogetap:stickyheaders:0.6.2'
+    implementation 'com.google.android.flexbox:flexbox:3.0.0'
+    implementation 'com.google.firebase:firebase-analytics:19.0.1'
+    implementation 'com.google.firebase:firebase-crashlytics:18.2.1'
     implementation 'com.hannesdorfmann.mosby3:mvp:3.1.1'
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
-    implementation 'com.squareup.okhttp3:okhttp:4.7.2'
-    implementation "com.squareup.retrofit2:retrofit:$retrofit_verson"
-    implementation "com.squareup.retrofit2:converter-gson:$retrofit_verson"
-    implementation "androidx.preference:preference-ktx:$androidx_preference"
-    implementation "com.afollestad.material-dialogs:core:$material_dialogs"
-    implementation "com.afollestad.material-dialogs:bottomsheets:$material_dialogs"
-    implementation "com.afollestad.material-dialogs:input:$material_dialogs"
+    implementation 'com.mikhaellopez:circularimageview:4.3.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
 
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.2'
+    kapt "androidx.room:room-compiler:$room_version"
+    kapt "com.github.bumptech.glide:compiler:$glide_version"
+    kapt "com.google.dagger:dagger-compiler:$dagger_version"
 
-    testImplementation 'junit:junit:4.13'
+    // Java-Steam
+    // implementation('in.dragonbra:javasteam:1.0.0-SNAPSHOT') { changing = true }
+    implementation files('libs/javasteam-1.0.0-SNAPSHOT.jar')
+
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
+
+    testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
     // Need this to talk to protobufs (i.e. ...Builder)
-    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
+    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.17.3'
+    api group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+
 }
 
-apply plugin: 'com.google.gms.google-services'
-apply plugin: 'com.google.firebase.crashlytics'
-apply plugin: "org.jlleitschuh.gradle.ktlint"
-
 // Run: gradlew ktlintCheck
+// Run: gradlew ktlintFormat
 ktlint {
     android = true
     outputToConsole = true
-    // Ignore: lexicographic ordering, wildcard imports, and indentation warnings
-    disabledRules = ["import-ordering", "no-wildcard-imports", "parameter-list-wrapping"]
+    // Ignore: lexicographic ordering, wildcard imports
+    disabledRules = ["import-ordering", "no-wildcard-imports"]
 }
