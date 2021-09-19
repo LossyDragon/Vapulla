@@ -112,6 +112,11 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
         binding.steamGuardLayout.steamGuardInput.bindLayout()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        stopLoadingAnimation()
+    }
+
     override fun createPresenter(): LoginPresenter = loginPresenter
 
     override fun showLoading(text: String) {
