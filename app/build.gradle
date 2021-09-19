@@ -19,7 +19,7 @@ android {
         versionCode 4
         versionName "0.3.0"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        // testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
 
         kapt {
@@ -50,6 +50,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
+    }
+
+    configurations {
+        debugImplementation.exclude group: "junit", module: "junit"
     }
 
     kotlinOptions {
@@ -113,9 +117,9 @@ dependencies {
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 
     // Testing
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    // testImplementation 'junit:junit:4.13.2'
+    // androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    // androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
 
 // Run: gradlew ktlintCheck
