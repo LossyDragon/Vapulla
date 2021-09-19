@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.activity
 
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.GamesAdapter
+import `in`.dragonbra.vapulla.databinding.ActivityGamesBinding
 import `in`.dragonbra.vapulla.presenter.GamesPresenter
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
@@ -16,7 +17,6 @@ import androidx.core.app.NavUtils
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.activity_games.*
 
 @AndroidEntryPoint
 class GamesActivity :
@@ -34,10 +34,15 @@ class GamesActivity :
 
     private lateinit var items: MutableList<Games>
 
+    private lateinit var binding: ActivityGamesBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_games)
+        binding = ActivityGamesBinding.inflate(layoutInflater)
+
+        val view = binding.root
+        setContentView(view)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -45,11 +50,11 @@ class GamesActivity :
         gamesAdapter.listener = this
 
         val layoutManager = LinearLayoutManager(this)
-        val divider = DividerItemDecoration(gamesList.context, layoutManager.orientation)
+        val divider = DividerItemDecoration(binding.gamesList.context, layoutManager.orientation)
 
-        gamesList.layoutManager = layoutManager
-        gamesList.adapter = gamesAdapter
-        gamesList.addItemDecoration(divider)
+        binding.gamesList.layoutManager = layoutManager
+        binding.gamesList.adapter = gamesAdapter
+        binding.gamesList.addItemDecoration(divider)
     }
 
     override fun onResume() {

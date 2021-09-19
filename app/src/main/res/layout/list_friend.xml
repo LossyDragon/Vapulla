@@ -74,26 +74,25 @@
 
         </RelativeLayout>
 
-
         <ImageView
             android:id="@+id/mobileIndicator"
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:src="@drawable/ic_cellphone"
-            android:tint="@color/textSecondary"
             app:layout_constraintStart_toEndOf="@id/status"
             app:layout_constraintTop_toTopOf="@id/status"
-            tools:ignore="ContentDescription" />
+            tools:ignore="ContentDescription"
+            app:tint="@color/textSecondary" />
 
         <ImageView
             android:id="@+id/webIndicator"
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:src="@drawable/ic_web"
-            android:tint="@color/textSecondary"
             app:layout_constraintStart_toEndOf="@id/status"
             app:layout_constraintTop_toTopOf="@id/status"
-            tools:ignore="ContentDescription" />
+            tools:ignore="ContentDescription"
+            app:tint="@color/textSecondary" />
 
         <TextView
             android:id="@+id/status"

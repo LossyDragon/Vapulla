@@ -6,6 +6,8 @@ import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.chat.PaperPlane
+import `in`.dragonbra.vapulla.databinding.ListFriendBinding
+import `in`.dragonbra.vapulla.databinding.ListFriendRequestBinding
 import `in`.dragonbra.vapulla.extension.*
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
@@ -15,11 +17,11 @@ import `in`.dragonbra.vapulla.util.recyclerview.TextHeader
 import android.content.Context
 import android.text.format.DateUtils
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.PopupMenu
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat.getColor
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
@@ -27,8 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.brandongogetap.stickyheaders.exposed.StickyHeaderHandler
 import com.bumptech.glide.Glide
 import com.mikhaellopez.circularimageview.CircularImageView
-import kotlinx.android.synthetic.main.list_friend.view.*
-import kotlinx.android.synthetic.main.list_friend_request.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,12 +69,19 @@ class FriendListAdapter(
     private lateinit var sortPrefs: String
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val layoutRes = when (viewType) {
-            VIEW_TYPE_FRIEND_REQUEST -> R.layout.list_friend_request
-            else -> R.layout.list_friend
+        val inflater = LayoutInflater.from(parent.context)
+        return when (viewType) {
+            VIEW_TYPE_FRIEND_REQUEST -> {
+                val binding = ListFriendRequestBinding.inflate(inflater, parent, false)
+                ViewHolder(binding)
+            }
+            VIEW_TYPE_FRIEND -> {
+                val binding = ListFriendBinding.inflate(inflater, parent, false)
+                ViewHolder(binding)
+            }
+            else ->
+                throw Exception("Friend Adapter view type was not of Request or Friend: $viewType")
         }
-        val v = LayoutInflater.from(parent.context).inflate(layoutRes, parent, false)
-        return ViewHolder(v)
     }
 
     override fun getItemCount(): Int = friendList.size
@@ -162,26 +169,58 @@ class FriendListAdapter(
         result.dispatchUpdatesTo(this)
     }
 
-    inner class ViewHolder(private val v: View) : RecyclerView.ViewHolder(v) {
+    inner class ViewHolder : RecyclerView.ViewHolder {
+        private var avatar: CircularImageView
+        private var friendLayout: ConstraintLayout? = null
+        private var header: TextView? = null
+        private var lastMessage: TextView? = null
+        private var mobileIndicator: ImageView? = null
+        private var moreButton: ImageView? = null
+        private var newMessageCount: TextView? = null
+        private var nickname: TextView? = null
+        private var status: TextView? = null
+        private var time: TextView? = null
+        private var username: TextView? = null
+        private var webIndicator: ImageView? = null
+
+        constructor(binding: ListFriendRequestBinding) : super(binding.root) {
+            avatar = binding.avatar
+            moreButton = binding.moreButton
+        }
+
+        constructor(binding: ListFriendBinding) : super(binding.root) {
+            avatar = binding.avatar
+            friendLayout = binding.friendLayout
+            header = binding.header
+            mobileIndicator = binding.mobileIndicator
+            newMessageCount = binding.newMessageCount
+            nickname = binding.nickname
+            status = binding.status
+            time = binding.time
+            lastMessage= binding.lastMessage
+            username = binding.username
+            webIndicator = binding.webIndicator
+        }
+
         fun bind(item: Any) {
 
             (item as? TextHeader)?.let {
-                v.header.text = it.title
+                header?.text = it.title
                 showHeader()
             }
 
             (item as? FriendListItem)?.let { friend ->
                 Glide.with(context)
-                    .clear(v.findViewById<ImageView>(R.id.avatar))
+                    .clear(avatar)
 
                 Glide.with(context)
                     .load(Utils.getAvatarUrl(friend.avatar))
                     .apply(Utils.avatarOptions)
-                    .into(v.findViewById(R.id.avatar))
+                    .into(avatar)
 
                 when (friend.relation) {
                     EFriendRelationship.RequestRecipient.code() -> {
-                        v.moreButton.click {
+                        moreButton?.click {
 
                             val popup = PopupMenu(context, it)
                             popup.menuInflater.inflate(R.menu.menu_friend_request, popup.menu)
@@ -216,12 +255,12 @@ class FriendListAdapter(
                         }
 
                         if (Strings.isNullOrEmpty(friend.nickname)) {
-                            v.nickname.hide()
-                            v.nickname.text = null
+                            nickname?.hide()
+                            nickname?.text = null
                         } else {
-                            v.nickname.show()
-                            v.nickname.text =
-                                context.getString(R.string.nicknameFormat, friend.nickname)
+                            val nick = context.getString(R.string.nicknameFormat, friend.nickname)
+                            nickname?.show()
+                            nickname?.text = nick
                         }
 
                         val state = friend.state?.let { EPersonaState.from(it) }
@@ -232,13 +271,13 @@ class FriendListAdapter(
                             ) &&
                             friend.typingTs > System.currentTimeMillis() - 20000L
                         ) {
-                            offlineStatusUpdater.clear(v.status)
-                            v.status.text = context.getString(R.string.statusTyping)
-                            v.status.setTextColor(getColor(context, R.color.colorAccent))
-                            v.status.bold()
+                            offlineStatusUpdater.clear(status)
+                            status?.text = context.getString(R.string.statusTyping)
+                            status?.setTextColor(getColor(context, R.color.colorAccent))
+                            status?.bold()
                         } else {
-                            offlineStatusUpdater.schedule(v.status, friend)
-                            v.status.text =
+                            offlineStatusUpdater.schedule(status, friend)
+                            status?.text =
                                 Utils.getStatusText(
                                     context,
                                     state,
@@ -246,32 +285,31 @@ class FriendListAdapter(
                                     friend.gameName,
                                     friend.lastLogOff
                                 )
-                            v.status.setTextColor(getColor(context, R.color.textSecondary))
-                            v.status.normal()
+                            status?.setTextColor(getColor(context, R.color.textSecondary))
+                            status?.normal()
                         }
 
                         paperPlane.load(
-                            v.lastMessage,
-                            friend.lastMessage
-                                ?: "",
+                            view = lastMessage!!,
+                            message = friend.lastMessage ?: "",
                             showUrl = false, showStickers = false
                         )
 
                         val newMessages: Int = friend.newMessageCount ?: 0
                         if (newMessages > 0) {
-                            v.lastMessage.setTextColor(getColor(context, R.color.textPrimary))
-                            v.lastMessage.bold()
-                            v.newMessageCount.text = newMessages.toString()
-                            v.newMessageCount.show()
-                            v.findViewById<TextView>(R.id.username).bold()
+                            lastMessage?.setTextColor(getColor(context, R.color.textPrimary))
+                            lastMessage?.bold()
+                            newMessageCount?.text = newMessages.toString()
+                            newMessageCount?.show()
+                            username?.bold()
                         } else {
-                            v.lastMessage.setTextColor(getColor(context, R.color.textSecondary))
-                            v.lastMessage.normal()
-                            v.newMessageCount.hide()
-                            v.findViewById<TextView>(R.id.username).normal()
+                            lastMessage?.setTextColor(getColor(context, R.color.textSecondary))
+                            lastMessage?.normal()
+                            newMessageCount?.hide()
+                            username?.normal()
                         }
 
-                        v.findViewById<CircularImageView>(R.id.avatar).borderColor =
+                        avatar.borderColor =
                             Utils.getStatusColor(
                                 context,
                                 state,
@@ -279,51 +317,51 @@ class FriendListAdapter(
                                 friend.gameName
                             )
 
-                        v.mobileIndicator.hide()
-                        v.webIndicator.hide()
+                        mobileIndicator?.hide()
+                        webIndicator?.hide()
                         val flags = EPersonaStateFlag.from(friend.stateFlags)
                         if (flags.contains(EPersonaStateFlag.ClientTypeMobile)) {
-                            v.mobileIndicator.show()
+                            mobileIndicator?.show()
                         } else if (flags.contains(EPersonaStateFlag.ClientTypeWeb)) {
-                            v.webIndicator.show()
+                            webIndicator?.show()
                         }
 
                         friend.lastMessageTime?.let {
-                            v.time.text =
+                            time?.text =
                                 DateUtils.formatSameDayTime(
                                     it,
                                     System.currentTimeMillis(),
                                     DateFormat.SHORT,
                                     DateFormat.SHORT
                                 )
-                            v.time.show()
+                            time?.show()
                         } ?: run {
-                            v.time.hide()
+                            time?.hide()
                         }
 
-                        v.friendLayout.click {
+                        friendLayout?.click {
                             listener?.onItemSelected(friend)
                         }
 
-                        v.friendLayout.longClick {
+                        friendLayout?.longClick {
                             listener?.onLongItemSelected(friend)
                             true
                         }
                     }
                 }
 
-                v.findViewById<TextView>(R.id.username).text = friend.name
+                username?.text = friend.name
             }
         }
 
         private fun showHeader() {
-            v.header.show()
-            v.friendLayout.hide()
+            header?.show()
+            friendLayout?.hide()
         }
 
         private fun showFriend() {
-            v.header.hide()
-            v.friendLayout.show()
+            header?.hide()
+            friendLayout?.show()
         }
     }
 

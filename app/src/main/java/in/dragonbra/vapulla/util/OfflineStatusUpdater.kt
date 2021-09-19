@@ -10,9 +10,9 @@ import android.widget.TextView
 class OfflineStatusUpdater(val context: Context) {
     private val views: MutableMap<TextView, Long> = HashMap()
 
-    fun schedule(view: TextView, friend: FriendListItem) {
+    fun schedule(view: TextView?, friend: FriendListItem) {
         if (friend.state == null || friend.state == EPersonaState.Offline.code()) {
-            views[view] = friend.lastLogOff
+            views[view!!] = friend.lastLogOff
         } else {
             views.remove(view)
         }
@@ -35,7 +35,7 @@ class OfflineStatusUpdater(val context: Context) {
         views.clear()
     }
 
-    fun clear(view: TextView) {
+    fun clear(view: TextView?) {
         views.remove(view)
     }
 }

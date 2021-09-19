@@ -1,14 +1,13 @@
 package `in`.dragonbra.vapulla.adapter
 
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.Emoticon
+import `in`.dragonbra.vapulla.databinding.ListEmoteBinding
 import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
 import `in`.dragonbra.vapulla.util.Utils.STICKER_URL
 import android.content.Context
 import android.os.Handler
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -19,7 +18,6 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.github.penfeizhou.animation.apng.APNGDrawable
-import kotlinx.android.synthetic.main.list_emote.view.*
 import java.io.File
 
 class EmoteAdapter(
@@ -30,8 +28,9 @@ class EmoteAdapter(
     var emoteList: List<Emoticon> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.list_emote, parent, false)
-        return ViewHolder(v)
+        val inflater = LayoutInflater.from(parent.context)
+        val binding = ListEmoteBinding.inflate(inflater, parent, false)
+        return ViewHolder(binding)
     }
 
     override fun getItemCount(): Int = emoteList.size
@@ -56,7 +55,7 @@ class EmoteAdapter(
         result.dispatchUpdatesTo(this)
     }
 
-    inner class ViewHolder(val v: View) : RecyclerView.ViewHolder(v) {
+    inner class ViewHolder(val v: ListEmoteBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(emote: Emoticon) {
             v.emote.click { listener?.onEmoteSelected(emote) }
 
@@ -67,7 +66,7 @@ class EmoteAdapter(
         }
     }
 
-    private fun loadSticker(emoticon: Emoticon, v: View) {
+    private fun loadSticker(emoticon: Emoticon, v: ListEmoteBinding) {
         // APNGDrawable's glide extension didn't seem to work. It loaded but no animation.
         // This was found on through issue #40
         Glide.with(context)
@@ -89,7 +88,7 @@ class EmoteAdapter(
                     isFirstResource: Boolean
                 ): Boolean {
                     // Only the original thread that created a view hierarchy...
-                    Handler(v.context.mainLooper).post {
+                    Handler(v.root.context.mainLooper).post {
                         v.emote.setImageDrawable(APNGDrawable.fromFile(resource!!.absolutePath))
                     }
                     return true
@@ -98,7 +97,7 @@ class EmoteAdapter(
             .submit()
     }
 
-    private fun loadEmote(emoticon: Emoticon, v: View) {
+    private fun loadEmote(emoticon: Emoticon, v: ListEmoteBinding) {
         Glide.with(context)
             .load("$EMOTE_URL${emoticon.name}")
             .transition(DrawableTransitionOptions.withCrossFade())

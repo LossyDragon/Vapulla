@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.activity
 
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.VapullaDatabase
+import `in`.dragonbra.vapulla.databinding.ActivitySettingsBinding
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.ImgurAuthService
 import android.os.Bundle
@@ -13,7 +14,6 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.activity_settings.*
 import javax.inject.Inject
 
 /**
@@ -38,10 +38,15 @@ class SettingsActivity : AppCompatActivity() {
     @Inject
     lateinit var db: VapullaDatabase
 
+    private lateinit var binding: ActivitySettingsBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_settings)
+        binding = ActivitySettingsBinding.inflate(layoutInflater)
+
+        val view = binding.root
+        setContentView(view)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -62,13 +67,13 @@ class SettingsActivity : AppCompatActivity() {
                 fragment.updateImgurPref()
 
                 Snackbar.make(
-                    activity_settings,
+                    binding.activitySettings,
                     getString(R.string.snackbarImgurLinked),
                     Snackbar.LENGTH_SHORT
                 ).show()
             } else {
                 Snackbar.make(
-                    activity_settings,
+                    binding.activitySettings,
                     getString(R.string.snackbarImgurLinkFailed),
                     Snackbar.LENGTH_SHORT
                 ).show()

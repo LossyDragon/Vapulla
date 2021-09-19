@@ -5,6 +5,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListAdapter
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.chat.PaperPlane
+import `in`.dragonbra.vapulla.databinding.ActivityHomeBinding
 import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
@@ -28,8 +29,6 @@ import com.brandongogetap.stickyheaders.StickyLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.activity_home.*
-import kotlinx.android.synthetic.main.home_toolbar.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -58,9 +57,15 @@ class HomeActivity :
 
     private val updateHandler: Handler = Handler(Looper.getMainLooper())
 
+    private lateinit var binding: ActivityHomeBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_home)
+
+        binding = ActivityHomeBinding.inflate(layoutInflater)
+
+        val view = binding.root
+        setContentView(view)
 
         paperPlane = PaperPlane(this, 14.0f)
         offlineStatusUpdater = OfflineStatusUpdater(this)
@@ -71,17 +76,17 @@ class HomeActivity :
         val layoutManager = StickyLayoutManager(this, friendListAdapter)
         layoutManager.elevateHeaders(true)
 
-        friendList.layoutManager = layoutManager
-        friendList.adapter = friendListAdapter
+        binding.friendList.layoutManager = layoutManager
+        binding.friendList.adapter = friendListAdapter
 
-        setSupportActionBar(home_toolbar)
+        setSupportActionBar(binding.homeToolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        statusButton.click(this::openStatusMenu)
+        binding.toolbar.statusButton.click(this::openStatusMenu)
 
-        friendsListSwipe.setOnRefreshListener {
+        binding.friendsListSwipe.setOnRefreshListener {
             presenter.refreshFriendsList()
-            friendsListSwipe.isRefreshing = false
+            binding.friendsListSwipe.isRefreshing = false
         }
     }
 
@@ -149,14 +154,14 @@ class HomeActivity :
 
     override fun showAccount(account: AccountManager) {
         runOnUiThread {
-            localUsername.text = account.nickname
-            localStatus.text = account.state.toString()
+            binding.toolbar.localUsername.text = account.nickname
+            binding.toolbar.localStatus.text = account.state.toString()
 
             Glide.with(this@HomeActivity)
                 .load(Utils.getAvatarUrl(account.avatarHash))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .apply(Utils.avatarOptions)
-                .into(localAvatar)
+                .into(binding.toolbar.localAvatar)
         }
     }
 

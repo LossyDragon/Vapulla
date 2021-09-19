@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.adapter
 
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.databinding.ListGamesBinding
 import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.extension.show
 import `in`.dragonbra.vapulla.retrofit.response.Games
@@ -8,14 +9,10 @@ import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.debug
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import kotlinx.android.synthetic.main.list_games.view.*
 import java.math.RoundingMode
 import java.text.DecimalFormat
 
@@ -33,11 +30,9 @@ class GamesAdapter(val context: Context) : RecyclerView.Adapter<GamesAdapter.Vie
     override fun getItemCount(): Int = gamesList.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(
-            LayoutInflater
-                .from(parent.context)
-                .inflate(R.layout.list_games, parent, false)
-        )
+        val inflater = LayoutInflater.from(parent.context)
+        val binding = ListGamesBinding.inflate(inflater, parent, false)
+        return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -87,32 +82,29 @@ class GamesAdapter(val context: Context) : RecyclerView.Adapter<GamesAdapter.Vie
         fun onMoreItemSelected(game: Games)
     }
 
-    inner class ViewHolder(val v: View) : RecyclerView.ViewHolder(v) {
+    inner class ViewHolder(val v: ListGamesBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(item: Games) {
 
             Glide.with(context)
-                .clear(v.findViewById<ImageView>(R.id.games_image))
+                .clear(v.gamesImage)
 
             Glide.with(context)
                 .load(formatGameBanner(item.img_logo_url!!, item.appid))
-                .into(v.findViewById(R.id.games_image))
+                .into(v.gamesImage)
 
-            v.findViewById<TextView>(R.id.games_title).text = item.name
+            v.gamesTitle.text = item.name
 
-            v.games_hours_forever.text = context.getString(
+            v.gamesHoursForever.text = context.getString(
                 R.string.textPlayedForever, formatTime(item.playtime_forever)
             )
 
             if (item.playtime_2weeks != null) {
-                v.findViewById<TextView>(R.id.games_hours_recent).apply {
-                    text = context.getString(
-                        R.string.textPlayedRecent, formatTime(item.playtime_2weeks)
-                    )
-                    show()
-                }
+                val time = formatTime(item.playtime_2weeks)
+                v.gamesHoursRecent.text = context.getString(R.string.textPlayedRecent, time)
+                v.gamesHoursRecent.show()
             }
 
-            v.findViewById<ImageView>(R.id.games_more_button).click {
+            v.gamesMoreButton.click {
                 listener?.onMoreItemSelected(item)
             }
         }

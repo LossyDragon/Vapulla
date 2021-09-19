@@ -11,6 +11,6 @@ class ServiceMethodCallback(
 ) : CallbackMsg() {
     val steamID: SteamID = SteamID(msg.steamidFriend)
     val message: String = msg.message
-    val entryType: EChatEntryType = EChatEntryType.from(msg.chatEntryType)
+    val entryType: EChatEntryType? = EChatEntryType.from(msg.chatEntryType)
     val jobName: String = targetJobName // Header -> Proto -> getTargetJobName()
 }

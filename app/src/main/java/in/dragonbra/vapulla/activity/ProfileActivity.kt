@@ -6,6 +6,7 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
+import `in`.dragonbra.vapulla.databinding.ActivityProfileBinding
 import `in`.dragonbra.vapulla.extension.*
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
@@ -29,7 +30,6 @@ import com.afollestad.materialdialogs.input.input
 import com.afollestad.materialdialogs.list.listItems
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.activity_profile.*
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -50,19 +50,24 @@ class ProfileActivity :
     @Inject
     lateinit var levelManager: ProfileManager
 
+    private lateinit var binding: ActivityProfileBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_profile)
+        binding = ActivityProfileBinding.inflate(layoutInflater)
+
+        val view = binding.root
+        setContentView(view)
 
         supportActionBar?.setDisplayShowTitleEnabled(false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // Button setup
-        profile_button_chat.click { presenter.buttonViewChat() }
-        profile_button_profile.click { presenter.buttonViewProfile() }
-        profile_button_games.click { presenter.buttonViewGames() }
-        profile_button_manage.click { presenter.buttonViewManage() }
+        binding.profileButtonChat.click { presenter.buttonViewChat() }
+        binding.profileButtonProfile.click { presenter.buttonViewProfile() }
+        binding.profileButtonGames.click { presenter.buttonViewGames() }
+        binding.profileButtonManage.click { presenter.buttonViewManage() }
     }
 
     override fun onDestroy() {
@@ -118,14 +123,14 @@ class ProfileActivity :
 
             if (!friend.nickname.isNullOrEmpty()) {
                 // Has nickname
-                profile_name.setTypeface(null, Typeface.ITALIC)
-                profile_name.text = getString(R.string.nicknameFormat, friend.nickname)
+                binding.profileName.setTypeface(null, Typeface.ITALIC)
+                binding.profileName.text = getString(R.string.nicknameFormat, friend.nickname)
             } else {
                 // No nickname
-                profile_name.text = friend.name
+                binding.profileName.text = friend.name
             }
 
-            profile_status.text =
+            binding.profileStatus.text =
                 Utils.getStatusText(
                     this,
                     state, friend.gameAppId,
@@ -133,7 +138,7 @@ class ProfileActivity :
                     friend.lastLogOff
                 )
 
-            profile_icon.borderColor =
+            binding.profileIcon.borderColor =
                 Utils.getStatusColor(
                     this,
                     state,
@@ -144,15 +149,15 @@ class ProfileActivity :
             val flags = EPersonaStateFlag.from(friend.stateFlags)
             when {
                 flags.contains(EPersonaStateFlag.ClientTypeMobile) -> {
-                    profile_status_indicator.setImageResource(R.drawable.ic_cellphone)
-                    profile_status_indicator.show()
+                    binding.profileStatusIndicator.setImageResource(R.drawable.ic_cellphone)
+                    binding.profileStatusIndicator.show()
                 }
                 flags.contains(EPersonaStateFlag.ClientTypeWeb) -> {
-                    profile_status_indicator.setImageResource(R.drawable.ic_web)
-                    profile_status_indicator.show()
+                    binding.profileStatusIndicator.setImageResource(R.drawable.ic_web)
+                    binding.profileStatusIndicator.show()
                 }
                 else ->
-                    profile_status_indicator.hide()
+                    binding.profileStatusIndicator.hide()
             }
 
             presenter.getLevel()
@@ -161,7 +166,7 @@ class ProfileActivity :
             Glide.with(this)
                 .load(Utils.getAvatarUrl(friend.avatar))
                 .apply(Utils.avatarOptions)
-                .into(profile_icon)
+                .into(binding.profileIcon)
         }
     }
 
@@ -191,7 +196,7 @@ class ProfileActivity :
     }
 
     override fun showManageDialog(steamId: SteamID) {
-        PopupMenu(this, profile_button_manage).apply {
+        PopupMenu(this, binding.profileButtonManage).apply {
             menuInflater.inflate(R.menu.menu_profile, this.menu)
             setOnMenuItemClickListener {
                 when (it.itemId) {
@@ -209,23 +214,24 @@ class ProfileActivity :
 
     override fun updateBadgeLevel(level: String?) {
         Handler(mainLooper).post {
-            profile_level_loading.hide()
-            profile_level_count.text = level ?: "N/A"
-            profile_level_count.show()
+            binding.profileLevelLoading.hide()
+            binding.profileLevelCount.text = level ?: "N/A"
+            binding.profileLevelCount.show()
         }
     }
 
     override fun updateGameCount(pair: Pair<Int?, ArrayList<Games>>) {
         Handler(mainLooper).post {
-            profile_games_loading.hide()
-            profile_games_count.text = if (pair.first == null) "N/A" else pair.first.toString()
-            profile_games_count.show()
+            val countText = if (pair.first == null) "N/A" else pair.first.toString()
+            binding.profileGamesLoading.hide()
+            binding.profileGamesCount.text = countText
+            binding.profileGamesCount.show()
 
             if (pair.first == 0) {
-                profile_button_games.disable()
-                profile_button_games.text = getString(R.string.textNoNames)
+                binding.profileButtonGames.disable()
+                binding.profileButtonGames.text = getString(R.string.textNoNames)
             } else {
-                profile_button_games.enable()
+                binding.profileButtonGames.enable()
             }
         }
 

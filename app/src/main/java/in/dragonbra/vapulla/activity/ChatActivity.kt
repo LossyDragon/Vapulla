@@ -13,6 +13,7 @@ import `in`.dragonbra.vapulla.data.dao.EmoticonDao
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
+import `in`.dragonbra.vapulla.databinding.ActivityChatBinding
 import `in`.dragonbra.vapulla.extension.*
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.presenter.ChatPresenter
@@ -43,7 +44,6 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.activity_chat.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -82,6 +82,8 @@ class ChatActivity :
 
     private lateinit var emoteAdapter: EmoteAdapter
 
+    private lateinit var binding: ActivityChatBinding
+
     private var resultLauncher = registerForActivityResult(StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             presenter.sendImage(result.data?.data!!)
@@ -91,9 +93,12 @@ class ChatActivity :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_chat)
+        binding = ActivityChatBinding.inflate(layoutInflater)
 
-        setSupportActionBar(chat_toolbar)
+        val view = binding.root
+        setContentView(view)
+
+        setSupportActionBar(binding.chatToolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -102,14 +107,14 @@ class ChatActivity :
 
         val layoutManager = LinearLayoutManager(this)
         layoutManager.reverseLayout = true
-        chatList.layoutManager = layoutManager
-        chatList.adapter = chatAdapter
+        binding.chatList.layoutManager = layoutManager
+        binding.chatList.adapter = chatAdapter
 
         chatAdapter.registerAdapterDataObserver(
             ChatAdapterDataObserver(
                 chatAdapter,
                 layoutManager,
-                chatList
+                binding.chatList
             )
         )
 
@@ -120,12 +125,12 @@ class ChatActivity :
             justifyContent = JustifyContent.CENTER
         }
 
-        emoteList.layoutManager = emoteLayoutManager
-        emoteList.adapter = emoteAdapter
+        binding.emoteList.layoutManager = emoteLayoutManager
+        binding.emoteList.adapter = emoteAdapter
 
-        messageBox.addTextChangedListener(this)
-        messageBox.requestFocus()
-        messageBox.setOnClickListener { emoteList.hide() }
+        binding.messageBox.addTextChangedListener(this)
+        binding.messageBox.requestFocus()
+        binding.messageBox.setOnClickListener { binding.emoteList.hide() }
     }
 
     override fun onDestroy() {
@@ -185,11 +190,11 @@ class ChatActivity :
 
             if (!friend.nickname.isNullOrEmpty()) {
                 // Has nickname
-                friendUsername.setTypeface(null, Typeface.ITALIC)
-                friendUsername.text = getString(R.string.nicknameFormat, friend.nickname)
+                binding.friendUsername.setTypeface(null, Typeface.ITALIC)
+                binding.friendUsername.text = getString(R.string.nicknameFormat, friend.nickname)
             } else {
                 // No nickname
-                friendUsername.text = friend.name
+                binding.friendUsername.text = friend.name
             }
 
             if ((
@@ -199,13 +204,13 @@ class ChatActivity :
                 friend.typingTs > System.currentTimeMillis() - 15000L
             ) {
 
-                friendStatus.text = getString(R.string.statusTyping)
-                friendStatus.setTextColor(
+                binding.friendStatus.text = getString(R.string.statusTyping)
+                binding.friendStatus.setTextColor(
                     ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
                 )
-                friendStatus.bold()
+                binding.friendStatus.bold()
             } else {
-                friendStatus.text =
+                binding.friendStatus.text =
                     Utils.getStatusText(
                         this@ChatActivity,
                         state, friend.gameAppId,
@@ -213,22 +218,22 @@ class ChatActivity :
                         friend.lastLogOff
                     )
 
-                friendStatus.setTextColor(
+                binding.friendStatus.setTextColor(
                     ContextCompat.getColor(this@ChatActivity, R.color.colorTyping)
                 )
-                friendStatus.normal()
+                binding.friendStatus.normal()
             }
 
             Glide.with(this@ChatActivity)
                 .load(Utils.getAvatarUrl(friend.avatar))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .apply(Utils.avatarOptions)
-                .into(friendAvatar)
+                .into(binding.friendAvatar)
         }
     }
 
     override fun navigateUp() {
-        Utils.hideKeyboardFrom(this, messageBox)
+        Utils.hideKeyboardFrom(this, binding.messageBox)
         NavUtils.navigateUpFromSameTask(this)
     }
 
@@ -241,9 +246,9 @@ class ChatActivity :
 
     override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
         if (s.isEmpty()) {
-            imageButton.show()
+            binding.imageButton.show()
         } else {
-            imageButton.hide()
+            binding.imageButton.hide()
         }
     }
 
@@ -263,7 +268,7 @@ class ChatActivity :
         if (emoticon.isSticker) {
             presenter.sendMessage("/sticker ${emoticon.name}")
         } else {
-            messageBox.text.insert(messageBox.selectionStart, ":${emoticon.name}:")
+            binding.messageBox.text.insert(binding.messageBox.selectionStart, ":${emoticon.name}:")
         }
     }
 
@@ -288,18 +293,18 @@ class ChatActivity :
 
     override fun showUploadDialog() {
         runOnUiThread {
-            imageButton.isClickable = false
-            uploadProgressBar.show()
-            uploadProgressBar.isIndeterminate = true
+            binding.imageButton.isClickable = false
+            binding.uploadProgressBar.show()
+            binding.uploadProgressBar.isIndeterminate = true
         }
     }
 
     override fun imageUploadFail() {
         runOnUiThread {
-            imageButton.isClickable = true
-            uploadProgressBar.hide()
+            binding.imageButton.isClickable = true
+            binding.uploadProgressBar.hide()
             Snackbar.make(
-                rootLayout,
+                binding.rootLayout,
                 R.string.snackbarImgurUploadFailed,
                 Snackbar.LENGTH_LONG
             ).show()
@@ -308,33 +313,33 @@ class ChatActivity :
 
     override fun imageUploadSuccess() {
         runOnUiThread {
-            imageButton.isClickable = true
-            uploadProgressBar.hide()
+            binding.imageButton.isClickable = true
+            binding.uploadProgressBar.hide()
         }
     }
 
     override fun imageUploadProgress(total: Int, progress: Int) {
-        uploadProgressBar.max = total
-        uploadProgressBar.progress = progress
-        uploadProgressBar.isIndeterminate = false
+        binding.uploadProgressBar.max = total
+        binding.uploadProgressBar.progress = progress
+        binding.uploadProgressBar.isIndeterminate = false
     }
 
     @Suppress("UNUSED_PARAMETER")
     fun sendMessage(v: View) {
-        val message = messageBox.text.toString()
+        val message = binding.messageBox.text.toString()
 
         if (!Strings.isNullOrEmpty(message)) {
-            messageBox.setText("")
+            binding.messageBox.setText("")
             presenter.sendMessage(message)
         }
     }
 
     @Suppress("UNUSED_PARAMETER")
     fun toggleEmote(v: View) {
-        emoteList.toggleVisibility()
+        binding.emoteList.toggleVisibility()
 
-        if (emoteList.isVisible()) {
-            Utils.hideKeyboardFrom(this, messageBoxLayout)
+        if (binding.emoteList.isVisible()) {
+            Utils.hideKeyboardFrom(this, binding.messageBoxLayout)
             presenter.requestEmotes()
         }
     }

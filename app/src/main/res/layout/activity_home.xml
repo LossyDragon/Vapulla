@@ -20,7 +20,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <include layout="@layout/home_toolbar" />
+            <include
+                android:id="@+id/toolbar"
+                layout="@layout/home_toolbar" />
 
         </androidx.appcompat.widget.Toolbar>
 
