@@ -40,9 +40,7 @@ class StickerTarget(
             view.requestLayout()
             Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(
-                    {
-                        view.postInvalidate()
-                    }, 0, 100, TimeUnit.MILLISECONDS
+                    { view.postInvalidate() }, 0, 100, TimeUnit.MILLISECONDS
                 )
 
             targets?.remove(this)

@@ -2,7 +2,6 @@ package `in`.dragonbra.vapulla.activity
 
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.ChatAdapter
 import `in`.dragonbra.vapulla.adapter.EmoteAdapter
@@ -29,11 +28,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.core.app.NavUtils
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
@@ -44,7 +41,6 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -131,6 +127,28 @@ class ChatActivity :
         binding.messageBox.addTextChangedListener(this)
         binding.messageBox.requestFocus()
         binding.messageBox.setOnClickListener { binding.emoteList.hide() }
+
+        binding.sendButton.click {
+            val message = binding.messageBox.text.toString()
+
+            if (message.isNotEmpty()) {
+                binding.messageBox.setText("")
+                presenter.sendMessage(message)
+            }
+        }
+
+        binding.emoteButton.click {
+            binding.emoteList.toggleVisibility()
+
+            if (binding.emoteList.isVisible()) {
+                Utils.hideKeyboardFrom(this, binding.messageBoxLayout)
+                presenter.requestEmotes()
+            }
+        }
+
+        binding.imageButton.click {
+            presenter.imageButtonClicked()
+        }
     }
 
     override fun onDestroy() {
@@ -176,9 +194,7 @@ class ChatActivity :
     }
 
     override fun showChat(list: PagingData<ChatMessage>) {
-        lifecycleScope.launch {
-            chatAdapter.submitData(list)
-        }
+        chatAdapter.submitData(lifecycle, list)
     }
 
     override fun updateFriendData(friend: FriendListItem?) {
@@ -322,30 +338,5 @@ class ChatActivity :
         binding.uploadProgressBar.max = total
         binding.uploadProgressBar.progress = progress
         binding.uploadProgressBar.isIndeterminate = false
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    fun sendMessage(v: View) {
-        val message = binding.messageBox.text.toString()
-
-        if (!Strings.isNullOrEmpty(message)) {
-            binding.messageBox.setText("")
-            presenter.sendMessage(message)
-        }
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    fun toggleEmote(v: View) {
-        binding.emoteList.toggleVisibility()
-
-        if (binding.emoteList.isVisible()) {
-            Utils.hideKeyboardFrom(this, binding.messageBoxLayout)
-            presenter.requestEmotes()
-        }
-    }
-
-    @Suppress("UNUSED_PARAMETER")
-    fun sendImage(v: View) {
-        presenter.imageButtonClicked()
     }
 }

@@ -5,6 +5,7 @@ import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.adapter.GamesListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.databinding.ActivityProfileBinding
 import `in`.dragonbra.vapulla.extension.*
@@ -19,7 +20,6 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
 import android.view.MenuItem
 import android.widget.PopupMenu
 import androidx.core.app.NavUtils
@@ -88,25 +88,22 @@ class ProfileActivity :
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                navigateUp()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+        when (item.itemId) {
+            android.R.id.home -> navigateUp()
+            else -> return super.onOptionsItemSelected(item)
         }
+
+        return true
     }
 
     override fun closeApp() {
         presenter.clearGamesList()
 
-        runOnUiThread {
-            val intent = Intent(Intent.ACTION_MAIN)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-            intent.addCategory(Intent.CATEGORY_HOME)
-            startActivity(intent)
-            finish()
-        }
+        val intent = Intent(Intent.ACTION_MAIN)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+        intent.addCategory(Intent.CATEGORY_HOME)
+        startActivity(intent)
+        finish()
     }
 
     override fun navigateUp() {
@@ -118,64 +115,56 @@ class ProfileActivity :
             return
         }
 
-        runOnUiThread {
-            val state = EPersonaState.from(friend.state ?: 0)
+        val state = EPersonaState.from(friend.state ?: 0)
 
-            if (!friend.nickname.isNullOrEmpty()) {
-                // Has nickname
-                binding.profileName.setTypeface(null, Typeface.ITALIC)
-                binding.profileName.text = getString(R.string.nicknameFormat, friend.nickname)
-            } else {
-                // No nickname
-                binding.profileName.text = friend.name
-            }
-
-            binding.profileStatus.text =
-                Utils.getStatusText(
-                    this,
-                    state, friend.gameAppId,
-                    friend.gameName,
-                    friend.lastLogOff
-                )
-
-            binding.profileIcon.borderColor =
-                Utils.getStatusColor(
-                    this,
-                    state,
-                    friend.gameAppId,
-                    friend.gameName
-                )
-
-            val flags = EPersonaStateFlag.from(friend.stateFlags)
-            when {
-                flags.contains(EPersonaStateFlag.ClientTypeMobile) -> {
-                    binding.profileStatusIndicator.setImageResource(R.drawable.ic_cellphone)
-                    binding.profileStatusIndicator.show()
-                }
-                flags.contains(EPersonaStateFlag.ClientTypeWeb) -> {
-                    binding.profileStatusIndicator.setImageResource(R.drawable.ic_web)
-                    binding.profileStatusIndicator.show()
-                }
-                else ->
-                    binding.profileStatusIndicator.hide()
-            }
-
-            presenter.getLevel()
-            presenter.getGameCount()
-
-            Glide.with(this)
-                .load(Utils.getAvatarUrl(friend.avatar))
-                .apply(Utils.avatarOptions)
-                .into(binding.profileIcon)
+        if (!friend.nickname.isNullOrEmpty()) {
+            // Has nickname
+            binding.profileName.setTypeface(null, Typeface.ITALIC)
+            binding.profileName.text = getString(R.string.nicknameFormat, friend.nickname)
+        } else {
+            // No nickname
+            binding.profileName.text = friend.name
         }
+
+        binding.profileStatus.text =
+            Utils.getStatusText(
+                this,
+                state,
+                friend.gameAppId,
+                friend.gameName,
+                friend.lastLogOff
+            )
+
+        binding.profileIcon.borderColor =
+            Utils.getStatusColor(this, state, friend.gameAppId, friend.gameName)
+
+        val flags = EPersonaStateFlag.from(friend.stateFlags)
+        when {
+            flags.contains(EPersonaStateFlag.ClientTypeMobile) -> {
+                binding.profileStatusIndicator.setImageResource(R.drawable.ic_cellphone)
+                binding.profileStatusIndicator.show()
+            }
+            flags.contains(EPersonaStateFlag.ClientTypeWeb) -> {
+                binding.profileStatusIndicator.setImageResource(R.drawable.ic_web)
+                binding.profileStatusIndicator.show()
+            }
+            else -> binding.profileStatusIndicator.hide()
+        }
+
+        presenter.getLevel()
+        presenter.getGameCount()
+
+        Glide.with(this)
+            .load(Utils.getAvatarUrl(friend.avatar))
+            .apply(Utils.avatarOptions)
+            .into(binding.profileIcon)
     }
 
     override fun viewChat(steamId: Long) {
-        startActivity(
-            Intent(this, ChatActivity::class.java).apply {
-                putExtra(ChatActivity.INTENT_STEAM_ID, steamId)
-            }
-        )
+        val intent = Intent(this, ChatActivity::class.java).apply {
+            putExtra(ChatActivity.INTENT_STEAM_ID, steamId)
+        }
+        startActivity(intent)
     }
 
     override fun viewProfile(url: String) {
@@ -186,12 +175,14 @@ class ProfileActivity :
         )
     }
 
-    override fun viewGames(list: ArrayList<Games>?, name: String) {
-        val intent = Intent(this, GamesActivity::class.java)
-        val bundle = Bundle()
-        bundle.putParcelableArrayList(GamesActivity.INTENT_GAMES, list)
-        bundle.putString("name", name)
-        intent.putExtras(bundle)
+    override fun viewGames(gamesList: ArrayList<Games>?, friendName: String) {
+        val bundle = Bundle().apply {
+            putParcelableArrayList(GamesActivity.INTENT_GAMES, gamesList)
+            putString("name", friendName)
+        }
+        val intent = Intent(this, GamesActivity::class.java).apply {
+            putExtras(bundle)
+        }
         startActivity(intent)
     }
 
@@ -213,21 +204,20 @@ class ProfileActivity :
     }
 
     override fun updateBadgeLevel(level: String?) {
-        Handler(mainLooper).post {
+        runOnUiThread {
             binding.profileLevelLoading.hide()
             binding.profileLevelCount.text = level ?: "N/A"
             binding.profileLevelCount.show()
         }
     }
 
-    override fun updateGameCount(pair: Pair<Int?, ArrayList<Games>>) {
-        Handler(mainLooper).post {
-            val countText = if (pair.first == null) "N/A" else pair.first.toString()
+    override fun updateGameCount(items: GamesListItem) {
+        runOnUiThread {
             binding.profileGamesLoading.hide()
-            binding.profileGamesCount.text = countText
+            binding.profileGamesCount.text = items.count.toString()
             binding.profileGamesCount.show()
 
-            if (pair.first == 0) {
+            if (items.count == 0) {
                 binding.profileButtonGames.disable()
                 binding.profileButtonGames.text = getString(R.string.textNoNames)
             } else {
@@ -235,7 +225,7 @@ class ProfileActivity :
             }
         }
 
-        presenter.setGamesList(pair.second)
+        presenter.setGamesList(items.list)
     }
 
     @SuppressLint("CheckResult")
@@ -249,10 +239,10 @@ class ProfileActivity :
         }
     }
 
-    override fun showBlockFriendDialog(name: String?) {
+    override fun showBlockFriendDialog(name: String) {
         MaterialDialog(this).show {
-            title(text = getString(R.string.dialogMessageBlockFriend, name))
-            message(text = getString(R.string.dialogTitleBlockFriend, name))
+            title(text = getString(R.string.dialogTitleBlockFriend, name))
+            message(text = getString(R.string.dialogMessageBlockFriend, name))
             positiveButton(R.string.dialogYes) {
                 presenter.menuConfirmBlockFriend()
             }
@@ -260,7 +250,7 @@ class ProfileActivity :
         }
     }
 
-    override fun showRemoveFriendDialog(name: String?) {
+    override fun showRemoveFriendDialog(name: String) {
         MaterialDialog(this).show {
             title(text = getString(R.string.dialogTitleRemoveFriend, name))
             message(text = getString(R.string.dialogMessageRemoveFriend, name))
@@ -272,7 +262,7 @@ class ProfileActivity :
     }
 
     @SuppressLint("CheckResult")
-    override fun showSetNicknameDialog(nickname: String?) {
+    override fun showSetNicknameDialog(nickname: String) {
         MaterialDialog(this, BottomSheet(LayoutMode.WRAP_CONTENT)).show {
             title(R.string.dialogTitleNickname)
             input(hint = nickname, waitForPositiveButton = true) { _, text ->

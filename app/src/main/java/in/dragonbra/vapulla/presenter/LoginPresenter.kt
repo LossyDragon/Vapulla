@@ -65,11 +65,9 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
             return
         }
 
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.logOn(logOnDetails)
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.logOn(logOnDetails)
+        }
 
         ifViewAttached {
             it.showLoading(context.getString(R.string.loadingTextLoggingIn))
@@ -112,11 +110,9 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
         }
 
         expectSteamGuard = false
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
+        }
 
         ifViewAttached {
             account.username = logOnDetails.username

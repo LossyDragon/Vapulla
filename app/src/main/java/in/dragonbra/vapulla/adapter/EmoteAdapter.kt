@@ -51,7 +51,9 @@ class EmoteAdapter(
             override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
                 list[newItemPosition] == emoteList[oldItemPosition]
         })
+
         emoteList = list
+
         result.dispatchUpdatesTo(this)
     }
 

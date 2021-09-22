@@ -7,7 +7,6 @@ import `in`.dragonbra.vapulla.extension.show
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.debug
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -16,16 +15,16 @@ import com.bumptech.glide.Glide
 import java.math.RoundingMode
 import java.text.DecimalFormat
 
-class GamesAdapter(val context: Context) : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
+class GamesAdapter : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
 
     companion object {
         const val SORT_ALPHABETICAL = 0
         const val SORT_PLAYTIME = 1
     }
 
-    var listener: OnItemSelectedListener? = null
-
     private var gamesList: MutableList<Games> = mutableListOf()
+
+    lateinit var onOverflow: ((game: Games) -> Unit)
 
     override fun getItemCount(): Int = gamesList.size
 
@@ -78,34 +77,31 @@ class GamesAdapter(val context: Context) : RecyclerView.Adapter<GamesAdapter.Vie
         }
     }
 
-    interface OnItemSelectedListener {
-        fun onMoreItemSelected(game: Games)
-    }
-
     inner class ViewHolder(val v: ListGamesBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(item: Games) {
 
-            Glide.with(context)
+            Glide.with(v.root)
                 .clear(v.gamesImage)
 
-            Glide.with(context)
+            Glide.with(v.root)
                 .load(formatGameBanner(item.img_logo_url!!, item.appid))
                 .into(v.gamesImage)
 
             v.gamesTitle.text = item.name
 
-            v.gamesHoursForever.text = context.getString(
+            v.gamesHoursForever.text = v.root.context.getString(
                 R.string.textPlayedForever, formatTime(item.playtime_forever)
             )
 
             if (item.playtime_2weeks != null) {
                 val time = formatTime(item.playtime_2weeks)
-                v.gamesHoursRecent.text = context.getString(R.string.textPlayedRecent, time)
+                val text = v.root.context.getString(R.string.textPlayedRecent, time)
+                v.gamesHoursRecent.text = text
                 v.gamesHoursRecent.show()
             }
 
             v.gamesMoreButton.click {
-                listener?.onMoreItemSelected(item)
+                onOverflow.invoke(item)
             }
         }
     }

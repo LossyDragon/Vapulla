@@ -162,11 +162,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     if (text.isEmpty()) {
                         return@input
                     }
-                    lifecycleScope.executeAsyncTask(
-                        doInBackground = {
-                            steamService.getHandler<SteamFriends>()?.setPersonaName(text.toString())
-                        }
-                    )
+                    lifecycleScope.executeAsyncTask {
+                        steamService.getHandler<SteamFriends>().setPersonaName(text.toString())
+                    }
                     changeProfileName.summary = text
                 }
                 positiveButton(R.string.dialogSet)

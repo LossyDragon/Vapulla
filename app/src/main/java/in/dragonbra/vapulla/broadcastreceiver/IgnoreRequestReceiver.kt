@@ -16,14 +16,12 @@ class IgnoreRequestReceiver : BroadcastReceiver() {
             throw IllegalStateException("missing extra steam id")
         }
 
-        context.startService(
-            Intent(context, SteamService::class.java).apply {
-                putExtra(
-                    SteamService.EXTRA_ID,
-                    intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L)
-                )
-                putExtra(SteamService.EXTRA_ACTION, "ignore_request")
-            }
-        )
+        val ignoreRequest = Intent(context, SteamService::class.java).apply {
+            val id = intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L)
+            putExtra(SteamService.EXTRA_ID, id)
+            putExtra(SteamService.EXTRA_ACTION, "ignore_request")
+        }
+
+        context.startService(ignoreRequest)
     }
 }

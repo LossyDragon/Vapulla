@@ -13,7 +13,8 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [SteamFriend::class, ChatMessage::class, GameSchema::class, Emoticon::class],
-    version = 1, exportSchema = true
+    version = 1,
+    exportSchema = true
 )
 abstract class VapullaDatabase : RoomDatabase() {
     companion object {

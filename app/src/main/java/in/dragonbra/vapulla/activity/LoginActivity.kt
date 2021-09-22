@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.activity
 
-import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.anim.AutoParallelTransition
 import `in`.dragonbra.vapulla.anim.TransitionListener
@@ -46,7 +45,8 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
 
         handler = Handler(Looper.getMainLooper())
 
-        binding.loadingText.loadingText.setFactory(TextSwitcher.factory(this))
+        val textFactory = TextSwitcher.factory(this)
+        binding.loadingText.loadingText.setFactory(textFactory)
 
         binding.loginButton.login.click { login() }
 
@@ -54,8 +54,8 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
             val code = binding.steamGuardLayout.steamGuardInput.text.toString()
 
             if (code.length < 5) {
-                binding.steamGuardLayout.steamGuardLayout.error =
-                    getString(R.string.editTextErrorSteamGuard)
+                val errorText = getString(R.string.editTextErrorSteamGuard)
+                binding.steamGuardLayout.steamGuardLayout.error = errorText
                 return@click
             }
 
@@ -160,12 +160,12 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
                 binding.errorText.errorText.text = errorMessage
             }
 
-            binding.loadingText.loadingText.setText(
-                if (is2Fa)
-                    getString(R.string.loadingTextSteamGuardMobile)
-                else
-                    getString(R.string.loadingTextSteamGuardEmail)
-            )
+            val loadingText = if (is2Fa)
+                getString(R.string.loadingTextSteamGuardMobile)
+            else
+                getString(R.string.loadingTextSteamGuardEmail)
+
+            binding.loadingText.loadingText.setText(loadingText)
 
             val layout = errorMessage?.let { R.layout.activity_login_frame_steamguard_error }
                 ?: run { R.layout.activity_login_frame_steamguard }
@@ -218,15 +218,13 @@ class LoginActivity : VapullaBaseActivity<LoginView, LoginPresenter>(), LoginVie
 
     private fun login() {
         val username = binding.usernameLayout.username.text.toString()
-
-        if (Strings.isNullOrEmpty(username)) {
+        if (username.isEmpty()) {
             binding.usernameLayout.usernameLayout.error = getString(R.string.editTextErrorUsername)
             return
         }
 
         val password = binding.passwordLayout.password.text.toString()
-
-        if (Strings.isNullOrEmpty(password)) {
+        if (password.isEmpty()) {
             binding.passwordLayout.passwordLayout.error = getString(R.string.editTextErrorPassword)
             return
         }

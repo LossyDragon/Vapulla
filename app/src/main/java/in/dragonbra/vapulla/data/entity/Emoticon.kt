@@ -4,4 +4,4 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "emoticon")
-data class Emoticon(@PrimaryKey val name: String, val isSticker: Boolean)
+data class Emoticon(@PrimaryKey val name: String, val isSticker: Boolean, val appId: Int)

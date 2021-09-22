@@ -32,20 +32,20 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:src="@color/statusOffline"
-            tools:src="@drawable/vapulla"
             app:civ_border="true"
             app:civ_border_color="@color/statusOffline"
             app:civ_border_width="2dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/vapulla" />
 
         <RelativeLayout
             android:id="@+id/nameLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
             android:layout_marginStart="88dp"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:gravity="left"
             app:layout_constraintEnd_toStartOf="@id/time"
             app:layout_constraintStart_toStartOf="parent"
@@ -81,8 +81,8 @@
             android:src="@drawable/ic_cellphone"
             app:layout_constraintStart_toEndOf="@id/status"
             app:layout_constraintTop_toTopOf="@id/status"
-            tools:ignore="ContentDescription"
-            app:tint="@color/textSecondary" />
+            app:tint="@color/textSecondary"
+            tools:ignore="ContentDescription" />
 
         <ImageView
             android:id="@+id/webIndicator"
@@ -91,8 +91,8 @@
             android:src="@drawable/ic_web"
             app:layout_constraintStart_toEndOf="@id/status"
             app:layout_constraintTop_toTopOf="@id/status"
-            tools:ignore="ContentDescription"
-            app:tint="@color/textSecondary" />
+            app:tint="@color/textSecondary"
+            tools:ignore="ContentDescription" />
 
         <TextView
             android:id="@+id/status"

@@ -72,8 +72,8 @@
         android:layout_marginTop="20dp"
         android:layout_marginEnd="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:tint="#fff"
         app:srcCompat="@drawable/ic_dots_vertical"
-        tools:ignore="ContentDescription" />
+        tools:ignore="ContentDescription"
+        app:tint="#fff" />
 
 </RelativeLayout>

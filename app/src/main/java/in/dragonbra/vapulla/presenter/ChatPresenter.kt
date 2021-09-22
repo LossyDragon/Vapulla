@@ -113,11 +113,9 @@ class ChatPresenter(
 
         friendData.value?.let {
             if (it.gameAppId > 0) {
-                scope.executeAsyncTask(
-                    doInBackground = {
-                        schemaManager.touch(it.gameAppId)
-                    }
-                )
+                scope.executeAsyncTask {
+                    schemaManager.touch(it.gameAppId)
+                }
             }
         }
 
@@ -143,11 +141,9 @@ class ChatPresenter(
 
         updateFriend()
 
-        scope.executeAsyncTask(
-            doInBackground = {
-                chatMessageDao.markRead(steamId.convertToUInt64())
-            }
-        )
+        scope.executeAsyncTask {
+            chatMessageDao.markRead(steamId.convertToUInt64())
+        }
     }
 
     override fun onPause() {
@@ -171,12 +167,10 @@ class ChatPresenter(
     }
 
     private fun getMessageHistory() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
-                steamService?.getMessageHistory(steamId)
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
+            steamService?.getMessageHistory(steamId)
+        }
     }
 
     override fun onDisconnected() {
@@ -191,24 +185,20 @@ class ChatPresenter(
         }
         lastTypingMessage = 0L
 
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.sendMessage(steamId, message, emoteSet)
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.sendMessage(steamId, message, emoteSet)
+        }
     }
 
     fun typing() {
         if (lastTypingMessage < System.currentTimeMillis() - TYPING_INTERVAL) {
             lastTypingMessage = System.currentTimeMillis()
 
-            scope.executeAsyncTask(
-                doInBackground = {
-                    steamService
-                        ?.getHandler<SteamFriends>()
-                        ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
-                }
-            )
+            scope.executeAsyncTask {
+                steamService
+                    ?.getHandler<SteamFriends>()
+                    ?.sendChatMessage(steamId, EChatEntryType.Typing, "")
+            }
         }
     }
 
@@ -219,11 +209,9 @@ class ChatPresenter(
     }
 
     fun requestEmotes() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
+        }
     }
 
     fun imageButtonClicked() {
@@ -244,42 +232,40 @@ class ChatPresenter(
             it.showUploadDialog()
         }
 
-        scope.executeAsyncTask(
-            doInBackground = {
-                val bitmap = if (Utils.isGreaterThanP) {
-                    val source = ImageDecoder.createSource(context.contentResolver, image)
-                    ImageDecoder.decodeBitmap(source)
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, image)
-                }
-
-                val baos = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
-                bitmap.recycle()
-                val body = ImageRequestBody(baos.toByteArray()) { total, progress ->
-                    ifViewAttached { it.imageUploadProgress(total, progress) }
-                }
-
-                val call = imgurAuthService.postImage(body)
-
-                val response = call.execute()
-
-                if (response.isSuccessful) {
-                    ifViewAttached {
-                        val responseBody = response.body()
-
-                        if (responseBody != null) {
-                            sendMessage(responseBody.data.link)
-                            it.imageUploadSuccess()
-                        } else {
-                            it.imageUploadFail()
-                        }
-                    }
-                } else {
-                    ifViewAttached { it.imageUploadFail() }
-                }
+        scope.executeAsyncTask {
+            val bitmap = if (Utils.isGreaterThanP) {
+                val source = ImageDecoder.createSource(context.contentResolver, image)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaStore.Images.Media.getBitmap(context.contentResolver, image)
             }
-        )
+
+            val baos = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
+            bitmap.recycle()
+            val body = ImageRequestBody(baos.toByteArray()) { total, progress ->
+                ifViewAttached { it.imageUploadProgress(total, progress) }
+            }
+
+            val call = imgurAuthService.postImage(body)
+
+            val response = call.execute()
+
+            if (response.isSuccessful) {
+                ifViewAttached {
+                    val responseBody = response.body()
+
+                    if (responseBody != null) {
+                        sendMessage(responseBody.data.link)
+                        it.imageUploadSuccess()
+                    } else {
+                        it.imageUploadFail()
+                    }
+                }
+            } else {
+                ifViewAttached { it.imageUploadFail() }
+            }
+        }
     }
 }

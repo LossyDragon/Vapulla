@@ -9,7 +9,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
 import androidx.preference.PreferenceManager
-import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -18,7 +17,7 @@ class VapullaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+//        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
 
         LogManager.addListener { clazz, message, throwable ->
             Log.d(clazz.simpleName, message, throwable)

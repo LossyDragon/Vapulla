@@ -8,7 +8,7 @@ import `in`.dragonbra.vapulla.activity.HomeActivity
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.steam.VapullaHandler
+import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
@@ -90,11 +90,8 @@ class HomePresenter(
         if (!isSearching) {
             val updateTime = System.currentTimeMillis()
             ifViewAttached {
-                it.showFriends(
-                    list?.sortedWith(FriendsComparator(context, updateTime))
-                        ?: listOf(),
-                    updateTime
-                )
+                val sorted = list?.sortedWith(FriendsComparator(context, updateTime)) ?: listOf()
+                it.showFriends(sorted, updateTime)
             }
         }
     }
@@ -114,43 +111,35 @@ class HomePresenter(
             },
             onPostExecute = {
                 // Then call for an updated friends list, but it only returns anyone who is not Offline.
-                steamService?.getHandler<VapullaHandler>()?.getFriendsList()
+                steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
             }
         )
     }
 
     fun disconnect() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.disconnect()
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.disconnect()
+        }
     }
 
     fun changeStatus(state: EPersonaState) {
         if (account.state != state) {
-            scope.executeAsyncTask(
-                doInBackground = {
-                    steamService?.getHandler<SteamFriends>()?.setPersonaState(state)
-                }
-            )
+            scope.executeAsyncTask {
+                steamService?.getHandler<SteamFriends>()?.setPersonaState(state)
+            }
         }
     }
 
     fun acceptRequest(friend: FriendListItem) {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id))
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id))
+        }
     }
 
     fun ignoreRequest(friend: FriendListItem) {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id))
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id))
+        }
     }
 
     fun blockRequest(friend: FriendListItem) {
@@ -158,11 +147,9 @@ class HomePresenter(
     }
 
     fun confirmBlockFriend(friend: FriendListItem) {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id))
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id))
+        }
     }
 
     fun setSearchStatus(searching: Boolean) {

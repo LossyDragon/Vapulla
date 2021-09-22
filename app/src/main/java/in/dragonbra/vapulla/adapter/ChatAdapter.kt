@@ -63,14 +63,17 @@ class ChatAdapter(
                 val binding = ListChatSentBinding.inflate(inflater, parent, false)
                 ViewHolder(binding)
             }
-            else -> throw Exception("Chat Adapter view type was not of Received or Sent: $viewType")
+            else ->
+                throw Exception("Chat Adapter view type was not of Received or Sent: $viewType")
         }
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val message = getItem(position)
-        val showDate = position == (itemCount - 1) ||
-            message?.formattedTs != getItem(position + 1)?.formattedTs
+        val showDate =
+            position == (itemCount - 1) ||
+                message?.formattedTs != getItem(position + 1)?.formattedTs
+
         if (message != null) {
             holder.bind(message, showDate)
         } else {

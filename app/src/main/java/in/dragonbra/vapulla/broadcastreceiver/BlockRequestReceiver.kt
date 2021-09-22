@@ -16,14 +16,11 @@ class BlockRequestReceiver : BroadcastReceiver() {
             throw IllegalStateException("missing extra steam id")
         }
 
-        context.startService(
-            Intent(context, SteamService::class.java).apply {
-                putExtra(
-                    SteamService.EXTRA_ID,
-                    intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L)
-                )
-                putExtra(SteamService.EXTRA_ACTION, "block_request")
-            }
-        )
+        val blockRequest = Intent(context, SteamService::class.java).apply {
+            val id = intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L)
+            putExtra(SteamService.EXTRA_ID, id)
+            putExtra(SteamService.EXTRA_ACTION, "block_request")
+        }
+        context.startService(blockRequest)
     }
 }

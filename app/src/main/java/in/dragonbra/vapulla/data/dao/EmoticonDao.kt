@@ -12,7 +12,7 @@ interface EmoticonDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg emoticon: Emoticon)
 
-    @Query("SELECT * FROM emoticon ORDER BY name ASC")
+    @Query("SELECT * FROM emoticon ORDER BY isSticker DESC, appId DESC, name DESC")
     fun getLive(): LiveData<List<Emoticon>>
 
     @Query("SELECT * FROM emoticon ORDER BY name ASC")

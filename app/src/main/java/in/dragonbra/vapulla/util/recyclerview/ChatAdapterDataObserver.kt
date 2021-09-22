@@ -18,8 +18,10 @@ class ChatAdapterDataObserver(
         val fromLocal = adapter.peek(0)?.fromLocal ?: false
         val findVisiblePosition = layoutManager.findFirstVisibleItemPosition()
 
-        if (fromLocal || findVisiblePosition == -1 ||
-            positionStart == 0 && findVisiblePosition == 0
+        if (fromLocal ||
+            findVisiblePosition == -1 ||
+            positionStart == 0 &&
+            findVisiblePosition == 0
         ) {
             recyclerView.scrollToPosition(positionStart)
         }

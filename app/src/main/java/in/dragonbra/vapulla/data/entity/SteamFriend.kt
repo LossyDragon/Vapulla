@@ -6,9 +6,7 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "steam_friend")
-data class
-
-SteamFriend(
+data class SteamFriend(
     @PrimaryKey var id: Long,
     @ColumnInfo(name = "name") var name: String?,
     @ColumnInfo(name = "avatar") var avatar: String?,

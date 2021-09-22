@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "aa767b956bb0c1d7244f17c6dbd3061a",
+    "identityHash": "a91fd38e5b8c4373f3c2e41e3a4178d6",
     "entities": [
       {
         "tableName": "steam_friend",
@@ -189,7 +189,7 @@
       },
       {
         "tableName": "emoticon",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `isSticker` INTEGER NOT NULL, PRIMARY KEY(`name`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `isSticker` INTEGER NOT NULL, `appId` INTEGER NOT NULL, PRIMARY KEY(`name`))",
         "fields": [
           {
             "fieldPath": "name",
@@ -200,6 +200,12 @@
           {
             "fieldPath": "isSticker",
             "columnName": "isSticker",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -217,7 +223,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aa767b956bb0c1d7244f17c6dbd3061a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a91fd38e5b8c4373f3c2e41e3a4178d6')"
     ]
   }
 }

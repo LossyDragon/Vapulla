@@ -7,6 +7,7 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.chat.PaperPlane
 import `in`.dragonbra.vapulla.databinding.ActivityHomeBinding
 import `in`.dragonbra.vapulla.extension.click
+import `in`.dragonbra.vapulla.extension.setOnQueryTextListener
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.presenter.HomePresenter
@@ -36,7 +37,6 @@ class HomeActivity :
     VapullaBaseActivity<HomeView, HomePresenter>(),
     HomeView,
     FriendListAdapter.OnItemSelectedListener,
-    SearchView.OnQueryTextListener,
     MenuItem.OnActionExpandListener {
 
     companion object {
@@ -117,24 +117,28 @@ class HomeActivity :
         val searchView = menu?.findItem(R.id.search)?.actionView as SearchView
 
         menu.findItem(R.id.search).setOnActionExpandListener(this)
-        searchView.setOnQueryTextListener(this)
         searchView.queryHint = getString(R.string.friendsListSearchViewHint)
+        searchView.setOnQueryTextListener(
+            onQueryTextSubmit = {
+                true
+            },
+            onQueryTextChange = {
+                presenter.search(it!!)
+                true
+            }
+        )
 
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.logOut -> {
-                presenter.disconnect()
-                true
-            }
-            R.id.settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+        when (item.itemId) {
+            R.id.logOut -> presenter.disconnect()
+            R.id.settings -> startActivity(Intent(this, SettingsActivity::class.java))
+            else -> return super.onOptionsItemSelected(item)
         }
+
+        return true
     }
 
     override fun closeApp() {
@@ -166,19 +170,17 @@ class HomeActivity :
     }
 
     override fun onItemSelected(friend: FriendListItem) {
-        startActivity(
-            Intent(this, ChatActivity::class.java).also {
-                it.putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
-            }
-        )
+        val intent = Intent(this, ChatActivity::class.java).apply {
+            putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
+        }
+        startActivity(intent)
     }
 
     override fun onLongItemSelected(friend: FriendListItem) {
-        startActivity(
-            Intent(this, ProfileActivity::class.java).also {
-                it.putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
-            }
-        )
+        val intent = Intent(this, ProfileActivity::class.java).apply {
+            putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
+        }
+        startActivity(intent)
     }
 
     override fun onRequestAccept(friend: FriendListItem) {
@@ -227,14 +229,6 @@ class HomeActivity :
             true
         }
         popup.show()
-    }
-
-    /* Menu Search stuff */
-    override fun onQueryTextSubmit(query: String?): Boolean = true
-
-    override fun onQueryTextChange(newText: String?): Boolean {
-        presenter.search(newText!!)
-        return true
     }
 
     override fun onMenuItemActionExpand(item: MenuItem?): Boolean {

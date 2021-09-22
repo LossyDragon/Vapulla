@@ -197,7 +197,7 @@ class FriendListAdapter(
             nickname = binding.nickname
             status = binding.status
             time = binding.time
-            lastMessage= binding.lastMessage
+            lastMessage = binding.lastMessage
             username = binding.username
             webIndicator = binding.webIndicator
         }
@@ -247,11 +247,9 @@ class FriendListAdapter(
                     else -> {
                         showFriend()
                         if (friend.gameAppId > 0) {
-                            scope.executeAsyncTask(
-                                doInBackground = {
-                                    schemaManager.touch(friend.gameAppId)
-                                }
-                            )
+                            scope.executeAsyncTask {
+                                schemaManager.touch(friend.gameAppId)
+                            }
                         }
 
                         if (Strings.isNullOrEmpty(friend.nickname)) {

@@ -16,11 +16,12 @@ class AcceptRequestReceiver : BroadcastReceiver() {
             throw IllegalStateException("missing extra steam id")
         }
 
-        context.startService(
-            Intent(context, SteamService::class.java).apply {
-                putExtra(SteamService.EXTRA_ID, intent.getLongExtra(EXTRA_ID, 9L))
-                putExtra(SteamService.EXTRA_ACTION, "accept_request")
-            }
-        )
+        val requestIntent = Intent(context, SteamService::class.java).apply {
+            val id = intent.getLongExtra(EXTRA_ID, 9L)
+            putExtra(SteamService.EXTRA_ID, id)
+            putExtra(SteamService.EXTRA_ACTION, "accept_request")
+        }
+
+        context.startService(requestIntent)
     }
 }

@@ -8,10 +8,10 @@ import android.content.Intent
 class LogOutReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        context.startService(
-            Intent(context, SteamService::class.java).apply {
-                putExtra(SteamService.EXTRA_ACTION, "stop")
-            }
-        )
+        val logoffRequest = Intent(context, SteamService::class.java).apply {
+            putExtra(SteamService.EXTRA_ACTION, "stop")
+        }
+
+        context.startService(logoffRequest)
     }
 }

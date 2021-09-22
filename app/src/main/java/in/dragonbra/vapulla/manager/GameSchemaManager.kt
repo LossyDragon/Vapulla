@@ -35,6 +35,7 @@ class GameSchemaManager(
                     gameSchemaDao.insert(GameSchema(id, name, System.currentTimeMillis()))
                 }
             }
+
             fetchingIds.remove(id)
         }
     }

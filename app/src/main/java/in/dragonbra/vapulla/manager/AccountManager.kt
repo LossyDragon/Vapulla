@@ -61,16 +61,16 @@ class AccountManager(private val context: Context) {
         get() = EPersonaState.from(prefs.getInt(KEY_STATE, 0))
         set(value) = editor.putInt(KEY_STATE, value.code()).apply()
 
-    var sentrySize: Long
+    val sentrySize: Long
         get() = File(context.filesDir, SENTRY_FILE_NAME).length()
-        set(@Suppress("UNUSED_PARAMETER") value) {}
 
     fun updateSentryFile(callback: UpdateMachineAuthCallback) {
         val sentryFile = File(context.filesDir, SENTRY_FILE_NAME)
         FileOutputStream(sentryFile).use {
+            val byteBuffer = ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite)
             val channel = it.channel
             channel.position(callback.offset.toLong())
-            channel.write(ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite))
+            channel.write(byteBuffer)
         }
     }
 

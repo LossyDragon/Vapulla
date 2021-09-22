@@ -55,25 +55,23 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
                 val state = it.value
 
                 val friend = steamFriendDao.find(id.convertToUInt64())
+                friend?.let {
+                    val isOnline = state.state != EPersonaState.Offline
+                    val isTime = state.lastLogOff.time > friend.lastLogOff
+                    if (isOnline || isTime) {
+                        val avatarHash = Hex.toHexString(state.avatarHash)
 
-                if (friend != null &&
-                    (
-                        state.state != EPersonaState.Offline ||
-                            state.lastLogOff.time > friend.lastLogOff
-                        )
-                ) {
-                    val avatarHash = Hex.toHexString(state.avatarHash)
+                        friend.name = state.name
+                        friend.avatar = avatarHash
+                        friend.state = state.state.code()
+                        friend.gameName = state.gameName
+                        friend.gameAppId = state.gameAppID
+                        friend.lastLogOn = state.lastLogOn.time
+                        friend.lastLogOff = state.lastLogOff.time
+                        friend.stateFlags = EPersonaStateFlag.code(state.stateFlags)
 
-                    friend.name = state.name
-                    friend.avatar = avatarHash
-                    friend.state = state.state.code()
-                    friend.gameName = state.gameName
-                    friend.gameAppId = state.gameAppID
-                    friend.lastLogOn = state.lastLogOn.time
-                    friend.lastLogOff = state.lastLogOff.time
-                    friend.stateFlags = EPersonaStateFlag.code(state.stateFlags)
-
-                    friendsToUpdate.add(friend)
+                        friendsToUpdate.add(friend)
+                    }
                 }
             }
 

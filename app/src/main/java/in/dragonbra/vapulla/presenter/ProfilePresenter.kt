@@ -70,11 +70,9 @@ class ProfilePresenter(
 
         friendData.value?.let {
             if (it.gameAppId > 0) {
-                scope.executeAsyncTask(
-                    doInBackground = {
-                        schemaManager.touch(it.gameAppId)
-                    }
-                )
+                scope.executeAsyncTask {
+                    schemaManager.touch(it.gameAppId)
+                }
             }
         }
 
@@ -118,26 +116,24 @@ class ProfilePresenter(
     }
 
     fun menuSetNickname() {
-        ifViewAttached { it.showSetNicknameDialog(friendData.value?.nickname) }
+        ifViewAttached { it.showSetNicknameDialog(friendData.value!!.name!!) }
     }
 
     fun menuViewAliases() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
-            }
-        )
+        scope.executeAsyncTask {
+            aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
+        }
     }
 
     fun menuRemoveFriend() {
         ifViewAttached {
-            it.showRemoveFriendDialog(friendData.value?.name)
+            it.showRemoveFriendDialog(friendData.value!!.name!!)
         }
     }
 
     fun menuBlockFriend() {
         ifViewAttached {
-            it.showBlockFriendDialog(friendData.value?.name)
+            it.showBlockFriendDialog(friendData.value!!.name!!)
         }
     }
 
@@ -149,7 +145,8 @@ class ProfilePresenter(
 
     fun buttonViewProfile() {
         ifViewAttached {
-            it.viewProfile("${Utils.PROFILE_URL}${steamId.convertToUInt64()}")
+            val profile = Utils.PROFILE_URL + steamId.convertToUInt64()
+            it.viewProfile(profile)
         }
     }
 
@@ -166,53 +163,43 @@ class ProfilePresenter(
     }
 
     fun getLevel() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                ifViewAttached {
-                    it.updateBadgeLevel(levelManager.getLevel(steamId))
-                }
+        scope.executeAsyncTask {
+            ifViewAttached {
+                it.updateBadgeLevel(levelManager.getLevel(steamId))
             }
-        )
+        }
     }
 
     fun getGameCount() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                ifViewAttached {
-                    it.updateGameCount(levelManager.getGames(steamId))
-                }
+        scope.executeAsyncTask {
+            ifViewAttached {
+                it.updateGameCount(levelManager.getGames(steamId))
             }
-        )
+        }
     }
 
     fun menuConfirmSetNickName(nickname: String) {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
-                val friend = steamFriendDao.find(steamId.convertToUInt64())
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
+            val friend = steamFriendDao.find(steamId.convertToUInt64())
 
-                if (friend != null) {
-                    friend.nickname = nickname
-                    steamFriendDao.update(friend)
-                }
+            if (friend != null) {
+                friend.nickname = nickname
+                steamFriendDao.update(friend)
             }
-        )
+        }
     }
 
     fun menuConfirmBlockFriend() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
+        }
     }
 
     fun menuConfirmRemoveFriend() {
-        scope.executeAsyncTask(
-            doInBackground = {
-                steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
-            }
-        )
+        scope.executeAsyncTask {
+            steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
+        }
     }
 
     private fun onAliasHistory(callback: AliasHistoryCallback) {

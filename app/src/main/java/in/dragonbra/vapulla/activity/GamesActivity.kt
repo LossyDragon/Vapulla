@@ -3,6 +3,7 @@ package `in`.dragonbra.vapulla.activity
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.GamesAdapter
 import `in`.dragonbra.vapulla.databinding.ActivityGamesBinding
+import `in`.dragonbra.vapulla.extension.setOnQueryTextListener
 import `in`.dragonbra.vapulla.presenter.GamesPresenter
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
@@ -21,10 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class GamesActivity :
     VapullaBaseActivity<GamesView, GamesPresenter>(),
-    GamesView,
-    GamesAdapter.OnItemSelectedListener,
-    SearchView.OnQueryTextListener,
-    MenuItem.OnActionExpandListener {
+    GamesView {
 
     companion object {
         const val INTENT_GAMES = "intent_games"
@@ -36,6 +34,17 @@ class GamesActivity :
 
     private lateinit var binding: ActivityGamesBinding
 
+    private val menuActions = object : MenuItem.OnActionExpandListener {
+        override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+            return true
+        }
+
+        override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+            presenter.showList()
+            return true
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,8 +55,14 @@ class GamesActivity :
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        gamesAdapter = GamesAdapter(this)
-        gamesAdapter.listener = this
+        gamesAdapter = GamesAdapter()
+        gamesAdapter.onOverflow = {
+            val url = String.format(Utils.STORE_PAGE_URL, it.appid)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse(url)
+            }
+            startActivity(intent)
+        }
 
         val layoutManager = LinearLayoutManager(this)
         val divider = DividerItemDecoration(binding.gamesList.context, layoutManager.orientation)
@@ -78,39 +93,39 @@ class GamesActivity :
 
         val searchView = menu?.findItem(R.id.search)?.actionView as SearchView
 
-        menu.findItem(R.id.search).setOnActionExpandListener(this)
-        searchView.setOnQueryTextListener(this)
+        menu.findItem(R.id.search).setOnActionExpandListener(menuActions)
+        searchView.setOnQueryTextListener(
+            onQueryTextSubmit = {
+                true
+            },
+            onQueryTextChange = {
+                presenter.search(it!!)
+                true
+            },
+        )
         searchView.queryHint = getString(R.string.gamesListSearchViewHint)
 
         return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                navigateUp()
-                true
-            }
-            R.id.menuSortNames -> {
-                presenter.showList(GamesAdapter.SORT_ALPHABETICAL)
-                true
-            }
-            R.id.menuSortPlaytime -> {
-                presenter.showList(GamesAdapter.SORT_PLAYTIME)
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
+        when (item.itemId) {
+            android.R.id.home -> navigateUp()
+            R.id.menuSortNames -> presenter.showList(GamesAdapter.SORT_ALPHABETICAL)
+            R.id.menuSortPlaytime -> presenter.showList(GamesAdapter.SORT_PLAYTIME)
+            else -> return super.onOptionsItemSelected(item)
         }
+
+        return true
     }
 
     override fun closeApp() {
-        runOnUiThread {
-            val intent = Intent(Intent.ACTION_MAIN)
-            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-            intent.addCategory(Intent.CATEGORY_HOME)
-            startActivity(intent)
-            finish()
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+            addCategory(Intent.CATEGORY_HOME)
         }
+        startActivity(intent)
+        finish()
     }
 
     override fun navigateUp() {
@@ -119,28 +134,5 @@ class GamesActivity :
 
     override fun updateGames(list: MutableList<Games>, direction: Int) {
         gamesAdapter.setList(list, direction)
-    }
-
-    override fun onMoreItemSelected(game: Games) {
-        val url = String.format(Utils.STORE_PAGE_URL, game.appid)
-        startActivity(
-            Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse(url)
-            }
-        )
-    }
-
-    override fun onQueryTextSubmit(query: String?): Boolean = true
-
-    override fun onQueryTextChange(newText: String?): Boolean {
-        presenter.search(newText!!)
-        return true
-    }
-
-    override fun onMenuItemActionExpand(item: MenuItem?): Boolean = true
-
-    override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-        presenter.showList()
-        return true
     }
 }
