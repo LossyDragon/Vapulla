@@ -1,5 +1,10 @@
 package `in`.dragonbra.vapulla.adapter
 
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.databinding.ListGamesBinding
 import `in`.dragonbra.vapulla.extension.click
@@ -7,11 +12,6 @@ import `in`.dragonbra.vapulla.extension.show
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.debug
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import java.math.RoundingMode
 import java.text.DecimalFormat
 
@@ -84,7 +84,8 @@ class GamesAdapter : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
                 .clear(v.gamesImage)
 
             Glide.with(v.root)
-                .load(formatGameBanner(item.img_logo_url!!, item.appid))
+                .load(formatGameBanner(item.img_icon_url, item.appid))
+                .error(R.drawable.vapulla)
                 .into(v.gamesImage)
 
             v.gamesTitle.text = item.name

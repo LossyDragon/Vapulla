@@ -1,14 +1,5 @@
 package `in`.dragonbra.vapulla.service
 
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
-import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.activity.ChatActivity
-import `in`.dragonbra.vapulla.activity.HomeActivity
-import `in`.dragonbra.vapulla.broadcastreceiver.*
-import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import `in`.dragonbra.vapulla.util.Utils
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -22,6 +13,17 @@ import androidx.core.app.RemoteInput
 import androidx.core.app.TaskStackBuilder
 import androidx.core.graphics.drawable.IconCompat
 import com.bumptech.glide.Glide
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
+import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.activity.ChatActivity
+import `in`.dragonbra.vapulla.activity.HomeActivity
+import `in`.dragonbra.vapulla.broadcastreceiver.*
+import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
+import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.util.Utils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.spongycastle.util.encoders.Hex
 import java.util.concurrent.TimeUnit
 
@@ -91,7 +93,7 @@ inline fun Context.serviceNotification(
     block(builder)
 }
 
-fun Context.serviceMessageNotification(
+suspend fun Context.serviceMessageNotification(
     friendId: SteamID,
     friend: SteamFriend,
     message: String,
@@ -102,16 +104,13 @@ fun Context.serviceMessageNotification(
     val backoff = messages.isNotEmpty() &&
         currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
-    var bitmap: Bitmap? = null
-
-    try {
-        bitmap = Glide.with(applicationContext)
+    val bitmap: Bitmap = withContext(Dispatchers.IO) {
+        Glide.with(applicationContext)
             .asBitmap()
             .load(Utils.getAvatarUrl(friend.avatar))
             .apply(Utils.avatarOptions)
             .submit()
             .get(5, TimeUnit.SECONDS)
-    } catch (ignored: Exception) {
     }
 
     val iconBitmap = IconCompat.createWithBitmap(bitmap)
@@ -172,17 +171,15 @@ suspend fun Context.serviceRequestNotification(
     state: PersonaState,
     block: (builder: NotificationCompat.Builder) -> Unit
 ) {
-    var bitmap: Bitmap? = null
     val steamId = state.friendID.convertToUInt64().toInt()
 
-    try {
-        bitmap = Glide.with(applicationContext)
+    var bitmap = withContext(Dispatchers.IO) {
+        Glide.with(applicationContext)
             .asBitmap()
             .load(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
             .apply(Utils.avatarOptions)
             .submit()
             .get(5, TimeUnit.SECONDS)
-    } catch (ignored: Exception) {
     }
 
     val acceptReceiver = Intent(this, AcceptRequestReceiver::class.java).apply {

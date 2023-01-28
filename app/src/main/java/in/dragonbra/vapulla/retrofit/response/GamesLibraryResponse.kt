@@ -10,6 +10,7 @@ class GamesLibraryResponse {
 class GamesResponse {
     @SerializedName("game_count")
     var gameCount: Int = 0
+
     @SerializedName("games")
     var games: ArrayList<Games> = arrayListOf()
 }

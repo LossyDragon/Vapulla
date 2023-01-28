@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.HiltAndroidApp
+import `in`.dragonbra.javasteam.util.log.LogListener
 
 @HiltAndroidApp
 class VapullaApplication : Application() {
@@ -19,9 +20,16 @@ class VapullaApplication : Application() {
 
 //        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
 
-        LogManager.addListener { clazz, message, throwable ->
-            Log.d(clazz.simpleName, message, throwable)
-        }
+
+        LogManager.addListener(object : LogListener {
+            override fun onLog(clazz: Class<*>?, message: String?, throwable: Throwable?) {
+                Log.d(clazz?.simpleName, message, throwable)
+            }
+
+            override fun onError(clazz: Class<*>?, message: String?, throwable: Throwable?) {
+                Log.e(clazz?.simpleName, message, throwable)
+            }
+        })
 
         if (isGreaterThanO) {
             val notificationManager =

@@ -231,12 +231,12 @@ class HomeActivity :
         popup.show()
     }
 
-    override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+    override fun onMenuItemActionExpand(item: MenuItem): Boolean {
         presenter.setSearchStatus(true)
         return true
     }
 
-    override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+    override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
         presenter.setSearchStatus(false)
         // presenter.refreshFriendsList()
         return true

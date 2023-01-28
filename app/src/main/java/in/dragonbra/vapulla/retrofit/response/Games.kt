@@ -9,5 +9,5 @@ data class Games(
     val name: String,
     val playtime_2weeks: Int?,
     val playtime_forever: Int,
-    val img_logo_url: String?
+    val img_icon_url: String? // img_logo_url no longer exists in response.
 ) : Parcelable

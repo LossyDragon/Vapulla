@@ -14,6 +14,7 @@ class ProfileManager(
         args["key"] = BuildConfig.STEAM_API_KEY
         args["steamid"] = steamId.convertToUInt64().toString()
         args["include_played_free_games"] = "1"
+        args["include_appinfo"] = "true"
 
         var list = GamesListItem(0, arrayListOf())
 

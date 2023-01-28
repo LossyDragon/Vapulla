@@ -68,7 +68,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         setupPreferences()
     }
@@ -258,11 +258,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         (activity as SettingsActivity).db.emoticonDao().delete()
 
         prefs.edit().clear().apply()
-        PreferenceManager.setDefaultValues(context, R.xml.pref_general, false)
+        PreferenceManager.setDefaultValues(requireContext(), R.xml.pref_general, false)
     }
 
     fun onDisconnected() {
-        val loginIntent = Intent(context, LoginActivity::class.java)
+        val loginIntent = Intent(requireContext(), LoginActivity::class.java)
         loginIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(loginIntent)
     }

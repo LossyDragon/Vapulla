@@ -35,11 +35,11 @@ class GamesActivity :
     private lateinit var binding: ActivityGamesBinding
 
     private val menuActions = object : MenuItem.OnActionExpandListener {
-        override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+        override fun onMenuItemActionExpand(item: MenuItem): Boolean {
             return true
         }
 
-        override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+        override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
             presenter.showList()
             return true
         }

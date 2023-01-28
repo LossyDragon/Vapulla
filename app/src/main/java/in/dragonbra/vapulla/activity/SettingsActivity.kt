@@ -104,15 +104,15 @@ class SettingsActivity : AppCompatActivity() {
          */
         fun bindPreferenceSummaryToValue(preference: Preference?) {
             // Set the listener to watch for value changes.
-            preference?.onPreferenceChangeListener = sBindPreferenceSummaryToValueListener
+            preference!!.onPreferenceChangeListener = sBindPreferenceSummaryToValueListener
 
             // Trigger the listener immediately with the preference's
             // current value.
             sBindPreferenceSummaryToValueListener.onPreferenceChange(
                 preference,
                 PreferenceManager
-                    .getDefaultSharedPreferences(preference?.context)
-                    .getString(preference?.key, "")
+                    .getDefaultSharedPreferences(preference.context)
+                    .getString(preference.key, "")
             )
         }
 
