@@ -1,11 +1,11 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'kotlin-parcelize'
-apply plugin: "org.jlleitschuh.gradle.ktlint"
-//apply plugin: 'com.google.firebase.crashlytics'
-//apply plugin: 'com.google.gms.google-services'
-apply plugin: 'dagger.hilt.android.plugin'
+plugins {
+    id('com.android.application')
+    id('kotlin-android')
+    id('kotlin-kapt')
+    id('kotlin-parcelize')
+    id("org.jlleitschuh.gradle.ktlint") version "11.2.0"
+    id('dagger.hilt.android.plugin')
+}
 
 android {
     compileSdkVersion 33
@@ -20,7 +20,6 @@ android {
         versionCode 4
         versionName "0.3.0"
 
-        // testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
 
         buildConfigField("String", "IMGUR_CLIENT_ID", "\"$vapullaImgurClientId\"")
@@ -67,16 +66,16 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    // implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     // Android Support Libs
     implementation "androidx.annotation:annotation:1.5.0"
-    implementation "androidx.appcompat:appcompat:1.6.0"
+    implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation "androidx.core:core-ktx:1.9.0"
-    implementation "androidx.databinding:databinding-runtime:7.4.0"
+    implementation "androidx.databinding:databinding-runtime:7.4.1"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.5.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
     implementation "androidx.paging:paging-runtime-ktx:3.1.1"
@@ -108,23 +107,14 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofit_verson"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
 
-    // Crash logging
-    // implementation "com.google.firebase:firebase-analytics:19.0.1"
-    // implementation "com.google.firebase:firebase-crashlytics:18.2.1"
-
     // Java-Steam
-    implementation('in.dragonbra:javasteam:1.2.0-SNAPSHOT') { changing = true }
+    implementation('in.dragonbra:javasteam:1.2.0') { changing = true }
     implementation "com.madgag.spongycastle:prov:1.58.0.0"
     api "com.google.protobuf:protobuf-java:3.21.12" // For protobuf builders
     api "org.apache.commons:commons-lang3:3.12.0"
 
     // Memory Leak testing
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.10'
-
-    // Testing
-    // testImplementation 'junit:junit:4.13.2'
-    // androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    // androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }
 
 // Run: gradlew ktlintCheck
