@@ -18,8 +18,9 @@
         android:theme="@style/AppTheme"
         tools:ignore="AllowBackup,UnusedAttribute">
         <activity
-            android:name=".MainActivity"
+            android:name=".compose.screens.login.LoginActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             tools:ignore="LockedOrientationActivity">
             <intent-filter>
