@@ -17,14 +17,42 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Destination(start = true)
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    viewModel: LoginViewModel = hiltViewModel()
+) {
+    LoginScreenContent(
+        username = viewModel.username,
+        password = viewModel.password,
+        steamGuard = viewModel.steamGuard,
+        passwordVisible = viewModel.isPasswordVisible,
+        steamGuardVisible = viewModel.isSteamGuardVisible,
+        onUsername = { viewModel.username = it },
+        onPassword = { viewModel.password = it },
+        onSteamGuard = { viewModel.steamGuard = it },
+        onPasswordVisible = { viewModel.isPasswordVisible = it },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LoginScreenContent(
+    username: String,
+    password: String,
+    steamGuard: String,
+    passwordVisible: Boolean,
+    steamGuardVisible: Boolean,
+    onUsername: (String) -> Unit,
+    onPassword: (String) -> Unit,
+    onSteamGuard: (String) -> Unit,
+    onPasswordVisible: (Boolean) -> Unit,
+) {
     val snackBarHostState = remember { SnackbarHostState() }
 
     Surface {
@@ -44,12 +72,6 @@ fun LoginScreen() {
                     contentDescription = "App Logo"
                 )
 
-                var usernameInput by remember { mutableStateOf("") }
-                var passwordInput by remember { mutableStateOf("") }
-                var steamGuardInput by remember { mutableStateOf("") }
-                var isPasswordVisible by remember { mutableStateOf(false) }
-                var isSteamGuardVisible by remember { mutableStateOf(false) }
-
                 /* Username */
                 OutlinedTextField(
                     modifier = Modifier
@@ -57,8 +79,8 @@ fun LoginScreen() {
                         .padding(horizontal = 24.dp, vertical = 12.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     singleLine = true,
-                    value = usernameInput,
-                    onValueChange = { usernameInput = it },
+                    value = username,
+                    onValueChange = { onUsername(it) },
                     label = { Text(text = stringResource(id = R.string.editTextHintUsername)) },
                 )
 
@@ -69,17 +91,17 @@ fun LoginScreen() {
                         .padding(horizontal = 24.dp, vertical = 12.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     singleLine = true,
-                    value = passwordInput,
-                    onValueChange = { passwordInput = it },
+                    value = password,
+                    onValueChange = { onPassword(it) },
                     label = { Text(text = stringResource(id = R.string.editTextHintPassword)) },
-                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        val trailingIcon = if (isPasswordVisible) {
+                        val trailingIcon = if (passwordVisible) {
                             Icons.Default.Visibility
                         } else {
                             Icons.Default.VisibilityOff
                         }
-                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        IconButton(onClick = { onPasswordVisible(!passwordVisible) }) {
                             Icon(
                                 imageVector = trailingIcon,
                                 contentDescription = "Toggle password visibility"
@@ -89,15 +111,15 @@ fun LoginScreen() {
                 )
 
                 /* SteamGuard */
-                if (isSteamGuardVisible) { // TODO animate visibility?
+                if (steamGuardVisible) { // TODO animate visibility?
                     OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp, vertical = 12.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
-                        value = steamGuardInput,
-                        onValueChange = { steamGuardInput = it },
+                        value = steamGuard,
+                        onValueChange = { onSteamGuard(it) },
                         label = { Text(text = stringResource(id = R.string.editTextHintUsername)) },
                     )
                 }
@@ -120,6 +142,16 @@ fun LoginScreen() {
 @Composable
 private fun Preview_LoginScreen() {
     VapullaTheme {
-        LoginScreen()
+        LoginScreenContent(
+            username = "Username",
+            password = "Password",
+            steamGuard = "123ABC",
+            passwordVisible = true,
+            steamGuardVisible = true,
+            onUsername = {},
+            onPassword = {},
+            onSteamGuard = {},
+            onPasswordVisible = {},
+        )
     }
 }

@@ -17,7 +17,7 @@ android {
         namespace 'in.dragonbra.vapulla'
         applicationId "in.dragonbra.vapulla"
 
-        minSdkVersion 21
+        minSdkVersion 24
         targetSdkVersion 33
 
         versionCode 4
@@ -173,7 +173,7 @@ dependencies {
     // Java-Steam
     implementation('in.dragonbra:javasteam:1.2.0')
     implementation "com.madgag.spongycastle:prov:1.58.0.0"
-    api "com.google.protobuf:protobuf-java:3.21.12" // For protobuf builders
+    api "com.google.protobuf:protobuf-java:3.22.0" // For protobuf builders
     api "org.apache.commons:commons-lang3:3.12.0"
 
     // Memory Leak testing

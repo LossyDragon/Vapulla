@@ -52,8 +52,7 @@ class HomePresenter(
         ifViewAttached {
             val updateTime = System.currentTimeMillis()
             it.showFriends(
-                friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
-                    ?: emptyList(),
+                friendsData.value?.sortedWith(FriendsComparator(context, updateTime)).orEmpty(),
                 updateTime
             )
         }
@@ -90,7 +89,7 @@ class HomePresenter(
         if (!isSearching) {
             val updateTime = System.currentTimeMillis()
             ifViewAttached {
-                val sorted = list?.sortedWith(FriendsComparator(context, updateTime)) ?: listOf()
+                val sorted = list.sortedWith(FriendsComparator(context, updateTime))
                 it.showFriends(sorted, updateTime)
             }
         }

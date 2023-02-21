@@ -29,45 +29,5 @@ class VapullaApplication : Application() {
                 Timber.tag(clazz?.simpleName ?: "Unknown Class").e(throwable, message)
             }
         })
-
-//        if (isGreaterThanO) {
-//            val notificationManager =
-//                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//            val serviceChannel = NotificationChannel(
-//                "vapulla-service",
-//                "Vapulla service",
-//                NotificationManager.IMPORTANCE_LOW
-//            ).apply {
-//                enableVibration(false)
-//                importance = NotificationManager.IMPORTANCE_LOW
-//                enableLights(false)
-//            }
-//
-//            notificationManager.createNotificationChannel(serviceChannel)
-//
-//            val friendRequestChannel = NotificationChannel(
-//                "vapulla-friend-request",
-//                "Friend request",
-//                NotificationManager.IMPORTANCE_DEFAULT
-//            ).apply {
-//                importance = NotificationManager.IMPORTANCE_DEFAULT
-//                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-//                lightColor = 0xffffffff.toInt()
-//            }
-//
-//            notificationManager.createNotificationChannel(friendRequestChannel)
-//
-//            val messageChannel = NotificationChannel(
-//                "vapulla-message",
-//                "New messages",
-//                NotificationManager.IMPORTANCE_HIGH
-//            ).apply {
-//                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-//                lightColor = 0xffffffff.toInt()
-//            }
-//
-//            notificationManager.createNotificationChannel(messageChannel)
-//        }
-
     }
 }

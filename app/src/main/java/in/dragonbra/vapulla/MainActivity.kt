@@ -10,6 +10,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

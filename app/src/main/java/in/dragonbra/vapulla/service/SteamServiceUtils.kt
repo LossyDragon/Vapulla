@@ -71,6 +71,7 @@ inline fun Context.serviceNotification(
         if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
     )
 
+    // Note: DI now
     val builder = NotificationCompat.Builder(this, "vapulla-service")
         .setDefaults(0)
         .setShowWhen(false)
@@ -153,6 +154,7 @@ suspend fun Context.serviceMessageNotification(
             PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+    // Note: DI now
     val notification = NotificationCompat.Builder(this, "vapulla-message")
         .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
         .setStyle(style)
@@ -211,6 +213,7 @@ suspend fun Context.serviceRequestNotification(
         flagUpdateCurrent
     )
 
+    // NOTE: DI now
     val notification = NotificationCompat.Builder(this, "vapulla-friend-request")
         .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
         .setSmallIcon(R.drawable.ic_add_friend)
