@@ -32,6 +32,10 @@ import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.customview.getCustomView
 import com.afollestad.materialdialogs.input.input
+import `in`.dragonbra.vapulla.compose.screens.login.LoginActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.Closeable
 import java.util.*
 
@@ -253,16 +257,21 @@ class SettingsFragment : PreferenceFragmentCompat() {
         (activity as SettingsActivity).accountManager.clear()
         (activity as SettingsActivity).imgurAuthService.clear()
 
-        (activity as SettingsActivity).db.steamFriendDao().delete()
-        (activity as SettingsActivity).db.chatMessageDao().delete()
-        (activity as SettingsActivity).db.emoticonDao().delete()
+        CoroutineScope(Dispatchers.IO).launch {
+            (activity as SettingsActivity).db.steamFriendDao().delete()
+            (activity as SettingsActivity).db.chatMessageDao().delete()
+            (activity as SettingsActivity).db.emoticonDao().delete()
+        }
 
         prefs.edit().clear().apply()
         PreferenceManager.setDefaultValues(requireContext(), R.xml.pref_general, false)
     }
 
     fun onDisconnected() {
-        val loginIntent = Intent(requireContext(), LoginActivity::class.java)
+        val loginIntent = Intent(
+            requireContext(),
+            LoginActivity::class.java
+        )
         loginIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(loginIntent)
     }

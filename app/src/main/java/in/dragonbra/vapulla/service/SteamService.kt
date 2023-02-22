@@ -573,21 +573,6 @@ class SteamService : Service() {
             }
 
             // TODO: this crashes
-            /**
-             * 2021-09-20 17:48:30.349 7673-7737/in.dragonbra.vapulla E/AndroidRuntime: FATAL EXCEPTION: Steam Thread
-             * Process: in.dragonbra.vapulla, PID: 7673
-             * java.lang.NullPointerException
-             * at in.dragonbra.vapulla.service.SteamService.onFriendsList$lambda-23(SteamService.kt:792)
-             * at in.dragonbra.vapulla.service.SteamService.$r8$lambda$RactNm_fxc9C6RyMkcLKKqTYUVs(Unknown Source:0)
-             * at in.dragonbra.vapulla.service.SteamService$$ExternalSyntheticLambda12.accept(Unknown Source:4)
-             * at in.dragonbra.javasteam.steam.steamclient.callbackmgr.Callback.run(Callback.java:54)
-             * at in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager.handle(CallbackManager.java:134)
-             * at in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager.runWaitCallbacks(CallbackManager.java:58)
-             * at in.dragonbra.vapulla.service.SteamService.steamThread$lambda-9(SteamService.kt:631)
-             * at in.dragonbra.vapulla.service.SteamService.$r8$lambda$WfDcfivXAHWsTQ32oSpeN6laJfc(Unknown Source:0)
-             * at in.dragonbra.vapulla.service.SteamService$$ExternalSyntheticLambda9.run(Unknown Source:2)
-             * at java.lang.Thread.run(Thread.java:919)
-             */
             if (inc && friend!!.relation == EFriendRelationship.RequestRecipient.code()) {
                 requestsToNotify.add(currentFriend.steamID)
             }

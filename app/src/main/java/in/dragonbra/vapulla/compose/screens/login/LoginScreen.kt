@@ -1,7 +1,9 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
-import android.content.Intent
-import androidx.activity.ComponentActivity
+import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,38 +13,37 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.autofill.AutofillNode
+import androidx.compose.ui.autofill.AutofillType
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalAutofill
+import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.activity.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel = hiltViewModel()
+    viewModel: LoginViewModel,
+    onStartService: () -> Unit
 ) {
-    val context = LocalContext.current
-    val activity = context as ComponentActivity
-
     LaunchedEffect(Unit) {
         viewModel.loginEvents.collect { event ->
             when (event) {
-                is ValidationEvent.Login -> {
-                    Intent(context, HomeActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }.also { intent ->
-                        context.startActivity(intent)
-                        activity.finish()
-                    }
-                }
+                is ValidationEvent.StartService -> onStartService()
             }
         }
     }
@@ -63,13 +64,19 @@ fun LoginScreen(
             viewModel.onEvent(LoginEvent.PasswordVisibleChanged(it))
         },
         onLogin = {
-
+            viewModel.onEvent(LoginEvent.Login)
         },
+        on2faMessage = {
+            viewModel.onEvent(LoginEvent.ShowLoginForm(it))
+        }
     )
-
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalAnimationGraphicsApi::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
 private fun LoginScreenContent(
     loginState: LoginState,
@@ -78,6 +85,7 @@ private fun LoginScreenContent(
     onSteamGuard: (String) -> Unit,
     onPasswordVisible: (Boolean) -> Unit,
     onLogin: () -> Unit,
+    on2faMessage: (string: String) -> Unit
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
 
@@ -87,43 +95,129 @@ private fun LoginScreenContent(
         ) { pv ->
             Column(
                 modifier = Modifier
+                    .imePadding()
                     .padding(pv)
                     .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 /* Logo */
-                Image(
-                    modifier = Modifier.size(150.dp),
-                    painter = painterResource(id = R.drawable.vapulla),
-                    contentDescription = "App Logo"
+                var atEnd by remember { mutableStateOf(false) }
+                val pumperMiddle =
+                    AnimatedImageVector.animatedVectorResource(R.drawable.animated_vapulla_middle)
+                val pumperBottom =
+                    AnimatedImageVector.animatedVectorResource(R.drawable.animated_vapulla_bottom)
+
+                LaunchedEffect(loginState.isLoading) {
+                    // TODO animation isnt right.
+                    while (loginState.isLoading) {
+                        delay(300)
+                        atEnd = !atEnd
+                        delay(pumperBottom.totalDuration.toLong()) // 2000
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .padding(vertical = 12.dp)
+                ) {
+                    Image(
+                        modifier = Modifier.size(150.dp),
+                        painter = rememberAnimatedVectorPainter(pumperBottom, atEnd),
+                        contentDescription = null
+                    )
+                    Image(
+                        modifier = Modifier.size(150.dp),
+                        painter = rememberAnimatedVectorPainter(pumperMiddle, !atEnd),
+                        contentDescription = null
+                    )
+                    Image(
+                        modifier = Modifier.size(150.dp),
+                        painter = painterResource(id = R.drawable.vapulla_top),
+                        contentDescription = null
+                    )
+                }
+
+                Text(
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    text = loginState.generalMessage ?: "",
+                    color = Color.Red
                 )
+
+                /* Autofill Nodes */
+                val usernameAutofillNode = AutofillNode(
+                    autofillTypes = listOf(AutofillType.Username),
+                    onFill = { onUsername(it) }
+                )
+                val passwordAutofillNode = AutofillNode(
+                    autofillTypes = listOf(AutofillType.Password),
+                    onFill = { onPassword(it) }
+                )
+                val autofill = LocalAutofill.current
+                LocalAutofillTree.current += usernameAutofillNode
+                LocalAutofillTree.current += passwordAutofillNode
 
                 /* Username */
                 OutlinedTextField(
                     modifier = Modifier
+                        .onGloballyPositioned {
+                            usernameAutofillNode.boundingBox = it.boundsInWindow()
+                        }
+                        .onFocusChanged { state ->
+                            autofill?.run {
+                                if (state.isFocused) {
+                                    requestAutofillForNode(usernameAutofillNode)
+                                } else {
+                                    cancelAutofillForNode(usernameAutofillNode)
+                                }
+                            }
+                        }
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                        .padding(horizontal = 24.dp, vertical = 6.dp),
                     isError = !loginState.usernameError.isNullOrEmpty(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     label = { Text(text = stringResource(id = R.string.editTextHintUsername)) },
                     onValueChange = { onUsername(it) },
+                    supportingText = { Text(loginState.usernameError ?: "") },
                     singleLine = true,
-                    value = loginState.username,
+                    value = loginState.username
                 )
 
                 /* Password */
+                val passwordTransformation = if (loginState.isPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                }
+
                 OutlinedTextField(
                     modifier = Modifier
+                        .onGloballyPositioned {
+                            passwordAutofillNode.boundingBox = it.boundsInWindow()
+                        }
+                        .onFocusChanged { state ->
+                            autofill?.run {
+                                if (state.isFocused) {
+                                    requestAutofillForNode(passwordAutofillNode)
+                                } else {
+                                    cancelAutofillForNode(passwordAutofillNode)
+                                }
+                            }
+                        }
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                        .padding(horizontal = 24.dp, vertical = 6.dp),
                     isError = !loginState.passwordError.isNullOrEmpty(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     label = { Text(text = stringResource(id = R.string.editTextHintPassword)) },
                     onValueChange = { onPassword(it) },
                     singleLine = true,
+                    supportingText = { Text(loginState.passwordError ?: "") },
                     value = loginState.password,
-                    visualTransformation = if (loginState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    visualTransformation = passwordTransformation,
                     trailingIcon = {
                         val trailingIcon = if (loginState.isPasswordVisible) {
                             Icons.Default.Visibility
@@ -140,17 +234,28 @@ private fun LoginScreenContent(
                 )
 
                 /* SteamGuard */
-                if (loginState.isSteamGuardVisible) { // TODO animate visibility?
+                if (loginState.expectSteamGuard) { // TODO animate visibility?
+                    val string = if (loginState.is2Fa) {
+                        stringResource(id = R.string.loadingTextSteamGuardMobile)
+                    } else {
+                        stringResource(id = R.string.loadingTextSteamGuardEmail)
+                    }
+
+                    on2faMessage(string) // I don't like this
+
                     OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                            .padding(horizontal = 24.dp, vertical = 6.dp),
                         isError = !loginState.steamGuardError.isNullOrEmpty(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                        label = { Text(text = stringResource(id = R.string.editTextHintUsername)) },
+                        label = {
+                            Text(text = stringResource(id = R.string.editTextHintSteamGuard))
+                        },
                         onValueChange = { onSteamGuard(it) },
+                        supportingText = { Text(loginState.steamGuardError ?: "") },
                         singleLine = true,
-                        value = loginState.steamGuard,
+                        value = loginState.steamGuard
                     )
                 }
 
@@ -170,15 +275,18 @@ private fun LoginScreenContent(
 @Preview
 @Composable
 private fun Preview_LoginScreen() {
+    val string = stringResource(id = R.string.loadingTextSteamGuardMobile)
     val loginState = LoginState(
-        username = "Username",
-        usernameError = "Username Error",
+        generalMessage = string,
+        is2Fa = true,
+        isPasswordVisible = true,
+        expectSteamGuard = true,
         password = "Password",
-        passwordError = "PasswordError",
+        passwordError = "Password Error",
         steamGuard = "1A2B3C",
         steamGuardError = "SteamGuard Error",
-        isPasswordVisible = true,
-        isSteamGuardVisible = true,
+        username = "Username",
+        usernameError = "Username Error"
     )
     VapullaTheme {
         LoginScreenContent(
@@ -188,6 +296,7 @@ private fun Preview_LoginScreen() {
             onSteamGuard = {},
             onPasswordVisible = {},
             onLogin = {},
+            on2faMessage = {}
         )
     }
 }

@@ -22,6 +22,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
             tools:ignore="LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,70 +30,58 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".activity.HomeActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden" />
+        <activity
+            android:name=".activity.ChatActivity"
+            android:launchMode="singleTop"
+            android:parentActivityName=".activity.HomeActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.HomeActivity" />
+        </activity>
+        <activity
+            android:name=".activity.ProfileActivity"
+            android:launchMode="singleTop"
+            android:parentActivityName=".activity.HomeActivity"
+            android:theme="@style/AppTheme.Settings">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.HomeActivity" />
+        </activity>
+        <activity
+            android:name=".activity.GamesActivity"
+            android:launchMode="singleTop"
+            android:parentActivityName=".activity.ProfileActivity"
+            android:theme="@style/AppTheme.Settings">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".activity.ProfileActivity" />
+        </activity>
+        <activity
+            android:name=".activity.SettingsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".activity.HomeActivity"
+            android:theme="@style/AppTheme.Settings">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.dragonbra.vapulla.activity.HomeActivity" />
 
-        <!--        <activity-->
-        <!--            android:name=".activity.LoginActivity"-->
-        <!--            android:exported="true"-->
-        <!--            android:launchMode="singleTop"-->
-        <!--            android:screenOrientation="portrait">-->
-        <!--            <intent-filter>-->
-        <!--                <action android:name="android.intent.action.MAIN" />-->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
 
-        <!--                <category android:name="android.intent.category.LAUNCHER" />-->
-        <!--            </intent-filter>-->
-        <!--        </activity>-->
-        <!--        <activity-->
-        <!--            android:name=".activity.HomeActivity"-->
-        <!--            android:launchMode="singleTop"-->
-        <!--            android:screenOrientation="portrait"-->
-        <!--            android:windowSoftInputMode="stateHidden" />-->
-        <!--        <activity-->
-        <!--            android:name=".activity.ChatActivity"-->
-        <!--            android:launchMode="singleTop"-->
-        <!--            android:parentActivityName=".activity.HomeActivity">-->
-        <!--            <meta-data-->
-        <!--                android:name="android.support.PARENT_ACTIVITY"-->
-        <!--                android:value=".activity.HomeActivity" />-->
-        <!--        </activity>-->
-        <!--        <activity-->
-        <!--            android:name=".activity.ProfileActivity"-->
-        <!--            android:launchMode="singleTop"-->
-        <!--            android:parentActivityName=".activity.HomeActivity"-->
-        <!--            android:theme="@style/AppTheme.Settings">-->
-        <!--            <meta-data-->
-        <!--                android:name="android.support.PARENT_ACTIVITY"-->
-        <!--                android:value=".activity.HomeActivity" />-->
-        <!--        </activity>-->
-        <!--        <activity-->
-        <!--            android:name=".activity.GamesActivity"-->
-        <!--            android:launchMode="singleTop"-->
-        <!--            android:parentActivityName=".activity.ProfileActivity"-->
-        <!--            android:theme="@style/AppTheme.Settings">-->
-        <!--            <meta-data-->
-        <!--                android:name="android.support.PARENT_ACTIVITY"-->
-        <!--                android:value=".activity.ProfileActivity" />-->
-        <!--        </activity>-->
-        <!--        <activity-->
-        <!--            android:name=".activity.SettingsActivity"-->
-        <!--            android:exported="true"-->
-        <!--            android:label="@string/title_activity_settings"-->
-        <!--            android:parentActivityName=".activity.HomeActivity"-->
-        <!--            android:theme="@style/AppTheme.Settings">-->
-        <!--            <meta-data-->
-        <!--                android:name="android.support.PARENT_ACTIVITY"-->
-        <!--                android:value="in.dragonbra.vapulla.activity.HomeActivity" />-->
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
 
-        <!--            <intent-filter>-->
-        <!--                <action android:name="android.intent.action.VIEW" />-->
-
-        <!--                <category android:name="android.intent.category.DEFAULT" />-->
-        <!--                <category android:name="android.intent.category.BROWSABLE" />-->
-
-        <!--                <data-->
-        <!--                    android:host="authorize"-->
-        <!--                    android:scheme="vapulla" />-->
-        <!--            </intent-filter>-->
-        <!--        </activity>-->
+                <data
+                    android:host="authorize"
+                    android:scheme="vapulla" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".service.SteamService"

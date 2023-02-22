@@ -16,7 +16,7 @@ object StorageModule {
 
     @Provides
     @Singleton
-    fun provideAccountManage(context: Context) = AccountManager(context)
+    fun provideAccountManager(context: Context) = AccountManager(context)
 
     @Provides
     @Singleton

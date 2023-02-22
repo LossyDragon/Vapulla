@@ -9,12 +9,9 @@ import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
-data class LoginValidationResult(
-    val isSuccessful: Boolean,
-    val errorMessage: String? = null
-)
-
+// TODO Activity di?
 class ValidateLogin {
     fun validateUsername(username: String): LoginValidationResult {
         return if (username.isBlank()) {
@@ -45,37 +42,73 @@ class ValidateLogin {
     }
 }
 
+data class LoginValidationResult(
+    val isSuccessful: Boolean,
+    val errorMessage: String? = null
+)
+
 sealed class ValidationEvent {
-    object Login : ValidationEvent()
+    object StartService : ValidationEvent()
 }
 
 sealed class LoginEvent {
-    data class UsernameChanged(val username: String) : LoginEvent()
     data class PasswordChanged(val password: String) : LoginEvent()
-    data class SteamGuardChanged(val steamGuard: String) : LoginEvent()
     data class PasswordVisibleChanged(val visibility: Boolean) : LoginEvent()
+    data class SteamGuardChanged(val steamGuard: String) : LoginEvent()
+    data class UsernameChanged(val username: String) : LoginEvent()
+
+    data class ShowLoading(val isLoading: Boolean) : LoginEvent()
+    data class ShowLoginForm(val error: String?) : LoginEvent()
+    data class ShowSteamGuard(
+        val is2fa: Boolean,
+        val expectSteamGuard: Boolean = false,
+        val error: String? = null
+    ) : LoginEvent()
+
     object Login : LoginEvent()
+    object ShowFailedScreen : LoginEvent()
 }
 
 class LoginViewModel(
-    private val loginValidation: ValidateLogin = ValidateLogin(),
+    private val loginValidation: ValidateLogin = ValidateLogin()
 ) : ViewModel() {
+
+    var logOnDetails = LogOnDetails()
+        private set
 
     var loginState by mutableStateOf(LoginState())
 
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
     fun onEvent(event: LoginEvent) {
+        Timber.d("Login Event: $event")
         when (event) {
-            is LoginEvent.UsernameChanged ->
-                loginState = loginState.copy(username = event.username)
+            LoginEvent.Login -> doLogin()
+            LoginEvent.ShowFailedScreen ->
+                loginState = loginState.copy(
+                    generalMessage = "Failed to connect to steam",
+                    isLoading = false
+                )
             is LoginEvent.PasswordChanged ->
-                loginState = loginState.copy(username = event.password)
-            is LoginEvent.SteamGuardChanged ->
-                loginState = loginState.copy(username = event.steamGuard)
+                loginState = loginState.copy(password = event.password)
             is LoginEvent.PasswordVisibleChanged ->
                 loginState = loginState.copy(isPasswordVisible = event.visibility)
-            LoginEvent.Login -> doLogin()
+            is LoginEvent.ShowLoading ->
+                loginState =
+                    loginState.copy(isLoading = event.isLoading, generalMessage = "Loading")
+            is LoginEvent.ShowLoginForm ->
+                loginState = loginState.copy(generalMessage = event.error)
+            is LoginEvent.ShowSteamGuard ->
+                loginState = loginState.copy(
+                    expectSteamGuard = event.expectSteamGuard,
+                    generalMessage = event.error,
+                    is2Fa = event.is2fa,
+                    isLoading = false
+                )
+            is LoginEvent.SteamGuardChanged ->
+                loginState = loginState.copy(steamGuard = event.steamGuard)
+            is LoginEvent.UsernameChanged ->
+                loginState = loginState.copy(username = event.username)
         }
     }
 
@@ -93,15 +126,49 @@ class LoginViewModel(
             return
         }
 
-        // Prep for Steam Client
-        val logonDetails = LogOnDetails().apply {
+        logOnDetails.apply {
             this.username = loginState.username
             this.password = loginState.password
             this.loginKey = null
         }
 
+        if (loginState.expectSteamGuard) {
+            val steamGuard = loginValidation.validateSteamGuard(loginState.steamGuard)
+            if (!steamGuard.isSuccessful) {
+                loginState = loginState.copy(
+                    steamGuardError = steamGuard.errorMessage,
+                    isLoading = false
+                )
+
+                return
+            }
+
+            if (loginState.is2Fa) {
+                logOnDetails.twoFactorCode = loginState.steamGuard
+            } else {
+                logOnDetails.authCode = loginState.steamGuard
+            }
+        }
+
         viewModelScope.launch {
-            loginEventChannel.send(ValidationEvent.Login)
+            val event = ValidationEvent.StartService
+            loginEventChannel.send(event)
         }
     }
+
+//    fun retry() {
+//        if (account.hasLoginKey()) {
+//            logOnDetails.username = account.username
+//            logOnDetails.password = null
+//            logOnDetails.loginKey = account.loginKey
+//            startSteamService()
+//        }
+//    }
+//
+//    fun cancelSteamGuard() {
+//        expectSteamGuard = false
+//        ifViewAttached {
+//            it.showLoginForm()
+//        }
+//    }
 }

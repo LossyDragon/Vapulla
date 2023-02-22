@@ -4,7 +4,7 @@ import android.content.*
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.service.SteamService
@@ -26,26 +26,29 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     private val serviceSubscriptions = LinkedList<Closeable?>()
 
     private var isBound = false
-    private var steamService: SteamService? = null
+    var steamService: SteamService? = null
+        private set
+
     private val connection: ServiceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName) {
-            Timber.d("Unbound from Steam service")
             serviceSubscriptions.run {
                 forEach { it?.close() }
                 clear()
             }
             isBound = false
+            this@VapullaBaseActivity.onServiceDisconnected(name)
         }
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            Timber.d("Bound to Steam service")
             val binder = service as SteamService.SteamBinder
             steamService = binder.getService()
             serviceSubscriptions.run {
                 add(steamService?.subscribe<ConnectedCallback> { onConnected() })
                 add(steamService?.subscribe<DisconnectedCallback> { onDisconnected() })
+                add(steamService?.subscribe<LoggedOnCallback> { onLoggedOn(it) })
             }
             isBound = true
+            this@VapullaBaseActivity.onServiceConnected(name, service)
         }
     }
 
@@ -57,7 +60,11 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        this.unbindService(connection)
+        unbindService(connection)
+        serviceSubscriptions.run {
+            forEach { it?.close() }
+            clear()
+        }
         isBound = false
     }
 
@@ -72,12 +79,21 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         unregisterReceiver(stopReceiver)
     }
 
-    open fun onConnected() {}
+    open fun onConnected(showLoading: () -> Unit = {}, isLoggedIn: () -> Unit = {}) {}
 
     open fun onDisconnected() {}
 
-    fun startSteamService(logOnDetails: LogOnDetails) {
+    open fun onLoginSuccess() {}
+
+    open fun onLoggedOn(callback: LoggedOnCallback) {}
+
+    open fun onServiceConnected(name: ComponentName, service: IBinder) {}
+
+    open fun onServiceDisconnected(name: ComponentName) {}
+
+    fun startSteamService(showLoading: () -> Unit) {
         Timber.d("Starting steam service...")
+
         val intent = Intent(this, SteamService::class.java)
         startService(intent)
 
@@ -85,16 +101,9 @@ abstract class VapullaBaseActivity : ComponentActivity() {
             if (!service.isRunning) {
                 steamService?.connect()
 
-                // TODO show that we're trying to connect to Steam
+                showLoading()
             } else {
-                if (service.isLoggedIn) {
-                    // We're logged in, go to home
-                    Timber.d("Logged into Steam")
-                    return
-                }
-
-                service.logOn(logOnDetails)
-                // TODO show that we're logging in
+                onConnected()
             }
         }
     }

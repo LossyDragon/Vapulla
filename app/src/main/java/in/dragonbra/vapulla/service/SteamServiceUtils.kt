@@ -33,10 +33,11 @@ private var remoteInput: RemoteInput =
         .build()
 
 private val flagUpdateCurrent =
-    if (Utils.isGreaterThanM)
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    else
+    if (Utils.isGreaterThanM) {
+        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    } else {
         PendingIntent.FLAG_UPDATE_CURRENT
+    }
 
 /**
  * Time to back off when we receive a new message to prevent spam
@@ -151,7 +152,7 @@ suspend fun Context.serviceMessageNotification(
         .addNextIntentWithParentStack(intent)
         .getPendingIntent(
             friendId.convertToUInt64().toInt(),
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
     // Note: DI now

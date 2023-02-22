@@ -1,13 +1,7 @@
 package `in`.dragonbra.vapulla
 
 import `in`.dragonbra.javasteam.util.log.LogManager
-import `in`.dragonbra.vapulla.util.Utils.isGreaterThanO
 import android.app.Application
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.util.Log
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.HiltAndroidApp
 import `in`.dragonbra.javasteam.util.log.LogListener
