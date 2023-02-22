@@ -19,9 +19,9 @@ class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
     companion object {
         // val EMOTE_PATTERN: Pattern = Pattern.compile("\\[emoticon]([a-zA-Z0-9]+)\\[/emoticon]")
         val EMOTE_PATTERN: Pattern =
-            Pattern.compile("\\u02D0([a-zA-Z0-9]+)\\u02D0")
+            Pattern.compile("\\u02D0([a-zA-Z\\d]+)\\u02D0")
         val STICKER_PATTERN: Pattern =
-            Pattern.compile("\\[sticker type=\"([a-zA-Z0-9]+)\".limit=\"0\"]\\[/sticker]")
+            Pattern.compile("\\[sticker type=\"([a-zA-Z\\d]+)\".limit=\"0\"]\\[/sticker]")
     }
 
     private val targets: MutableMap<TextView, MutableList<Any>> = HashMap()

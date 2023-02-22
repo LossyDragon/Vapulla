@@ -1,11 +1,13 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.core.app.NotificationManagerCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
@@ -16,6 +18,8 @@ import `in`.dragonbra.vapulla.activity.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.extension.getErrorMessage
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.service.Notifications
+import `in`.dragonbra.vapulla.util.Utils
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -27,6 +31,9 @@ class LoginActivity : VapullaBaseActivity() {
 
     @Inject
     lateinit var accountManager: AccountManager
+
+    @Inject
+    lateinit var notificationManager: NotificationManagerCompat
 
     private val viewModel: LoginViewModel by viewModels()
 
@@ -126,6 +133,13 @@ class LoginActivity : VapullaBaseActivity() {
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         Timber.d("Bound to Steam service")
+
+        // Create our notification channels when the service is bound.
+        if (Utils.isGreaterThanO) {
+            Notifications.createMessagesNotificationChannel(notificationManager)
+            Notifications.createRequestNotificationChannel(notificationManager)
+            Notifications.createServiceNotificationChannel(notificationManager)
+        }
 
         if (accountManager.hasLoginKey()) {
             viewModel.logOnDetails.loginKey = accountManager.loginKey

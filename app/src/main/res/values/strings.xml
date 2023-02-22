@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name_release">Vapulla</string>
-    <string name="app_name_debug">Vapulla Debug</string>
+    <string name="app_name">Vapulla</string>
 
     <!--region Activity titles-->
 

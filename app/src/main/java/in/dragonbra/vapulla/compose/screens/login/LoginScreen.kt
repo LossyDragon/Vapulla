@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.Autofill
 import androidx.compose.ui.autofill.AutofillNode
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.focus.onFocusChanged
@@ -87,7 +88,7 @@ private fun LoginScreenContent(
     onLogin: () -> Unit,
     on2faMessage: (string: String) -> Unit
 ) {
-    val snackBarHostState = remember { SnackbarHostState() }
+    val snackBarHostState = remember { SnackbarHostState() } // TODO Not used
 
     Surface {
         Scaffold(
@@ -274,7 +275,7 @@ private fun LoginScreenContent(
 
 @Preview
 @Composable
-private fun Preview_LoginScreen() {
+private fun Preview_LoginScreenContent() {
     val string = stringResource(id = R.string.loadingTextSteamGuardMobile)
     val loginState = LoginState(
         generalMessage = string,

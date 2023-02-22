@@ -23,13 +23,13 @@ object Utils {
     private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
     private const val STEAM_AVATAR = "steamcommunity/public/images/avatars"
     private const val STEAM_CDN = "https://cdn.akamai.steamstatic.com"
-    private const val STEAM_MEDIA = "http://media.steampowered.com"
+    private const val STEAM_MEDIA = "https://media.steampowered.com"
 
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
     const val GAME_LOGO_URL = "$STEAM_MEDIA/steamcommunity/public/images/apps/%d/%s.jpg"
     const val PROFILE_URL = "https://steamcommunity.com/profiles/"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
-    const val STORE_PAGE_URL = "http://store.steampowered.com/app/%d/"
+    const val STORE_PAGE_URL = "https://store.steampowered.com/app/%d/"
     private const val AVATAR_URL = "$STEAM_CDN/$STEAM_AVATAR/"
     private const val DEFAULT_AVATAR =
         "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"

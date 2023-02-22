@@ -17,11 +17,6 @@ import `in`.dragonbra.vapulla.R
 object NotificationModule {
 
     @ServiceScoped
-    @Provides
-    fun provideNotificationManager(@ApplicationContext context: Context) =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-    @ServiceScoped
     fun provideServiceNotificationBuilder(
         @ApplicationContext context: Context
     ) = NotificationCompat.Builder(context, "vapulla-service")

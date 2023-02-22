@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import android.text.format.DateUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
@@ -62,7 +61,7 @@ inline fun Context.serviceNotification(
         applicationContext,
         0,
         logOutIntent,
-        PendingIntent.FLAG_IMMUTABLE
+        0 or PendingIntent.FLAG_IMMUTABLE
     )
 
     val homeIntent = Intent(this, HomeActivity::class.java)
@@ -70,7 +69,7 @@ inline fun Context.serviceNotification(
         this,
         0,
         homeIntent,
-        PendingIntent.FLAG_IMMUTABLE
+        0 or PendingIntent.FLAG_IMMUTABLE
     )
 
     // Note: DI now
