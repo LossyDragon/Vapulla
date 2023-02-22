@@ -35,7 +35,8 @@ class VapullaHandler : ClientMsgHandler() {
     fun setClientUIMode() {
         // TODO find callback response
         val request = ClientMsgProtobuf<SteammessagesClientserver2.CMsgClientUIMode.Builder>(
-            SteammessagesClientserver2.CMsgClientUIMode::class.java, EMsg.ClientCurrentUIMode
+            SteammessagesClientserver2.CMsgClientUIMode::class.java,
+            EMsg.ClientCurrentUIMode
         ).apply {
             body.chatMode = 2
         }
@@ -44,7 +45,8 @@ class VapullaHandler : ClientMsgHandler() {
 
     fun getEmoticonList() {
         val request = ClientMsgProtobuf<CMsgClientGetEmoticonList.Builder>(
-            CMsgClientGetEmoticonList::class.java, EMsg.ClientGetEmoticonList
+            CMsgClientGetEmoticonList::class.java,
+            EMsg.ClientGetEmoticonList
         )
 
         client.send(request)
@@ -52,7 +54,8 @@ class VapullaHandler : ClientMsgHandler() {
 
     private fun handleEmoticonList(packetMsg: IPacketMsg) {
         val msg = ClientMsgProtobuf<CMsgClientEmoticonList.Builder>(
-            CMsgClientEmoticonList::class.java, packetMsg
+            CMsgClientEmoticonList::class.java,
+            packetMsg
         )
 
         client.postCallback(EmoticonListCallback(msg.body))
@@ -60,7 +63,8 @@ class VapullaHandler : ClientMsgHandler() {
 
     private fun handleServiceMethod(packetMsg: IPacketMsg) {
         val msg = ClientMsgProtobuf<CFriendMessages_IncomingMessage_Notification.Builder>(
-            CFriendMessages_IncomingMessage_Notification::class.java, packetMsg
+            CFriendMessages_IncomingMessage_Notification::class.java,
+            packetMsg
         )
 
         client.postCallback(ServiceMethodCallback(msg.body, msg.header.proto.targetJobName))

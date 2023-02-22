@@ -194,10 +194,25 @@ class SteamService : Service() {
             add(callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn))
             add(callbackMgr.subscribe(LoginKeyCallback::class.java, onNewLoginKey))
             add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
-            add(callbackMgr.subscribe(OfflineMessageNotificationCallback::class.java, onOfflineMessageNotification))
+            add(
+                callbackMgr.subscribe(
+                    OfflineMessageNotificationCallback::class.java,
+                    onOfflineMessageNotification
+                )
+            )
             add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
-            add(callbackMgr.subscribe(RecentMessagesResponseCallback::class.java, onRecentMessagesCallback))
-            add(callbackMgr.subscribe(SendMessageResponseCallback::class.java, onSendMessageCallback))
+            add(
+                callbackMgr.subscribe(
+                    RecentMessagesResponseCallback::class.java,
+                    onRecentMessagesCallback
+                )
+            )
+            add(
+                callbackMgr.subscribe(
+                    SendMessageResponseCallback::class.java,
+                    onSendMessageCallback
+                )
+            )
             add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethodCallback))
             add(callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth))
         }
@@ -293,13 +308,15 @@ class SteamService : Service() {
     }
 
     fun logOn(details: LogOnDetails) {
-        if (isLoggedIn)
+        if (isLoggedIn) {
             return
+        }
 
         details.isShouldRememberPassword = true
 
-        if (account.hasSentryFile())
+        if (account.hasSentryFile()) {
             details.sentryFileHash = account.readSentryFile()
+        }
 
         getHandler<SteamUser>().logOn(details)
     }

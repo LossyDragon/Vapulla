@@ -69,10 +69,11 @@ class ChatLayout : RelativeLayout {
 
         val viewPartMainLineCount = viewPartMain.lineCount
         val viewPartMainLastLineWidth =
-            if (viewPartMainLineCount > 0)
+            if (viewPartMainLineCount > 0) {
                 viewPartMain.layout.getLineWidth(viewPartMainLineCount - 1)
-            else
+            } else {
                 0.0f
+            }
 
         widthSize = paddingLeft + paddingRight
         var heightSize = paddingTop + paddingBottom + viewPartMainHeight

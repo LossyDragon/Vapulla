@@ -16,7 +16,7 @@ fun <R> CoroutineScope.executeAsyncTask(task: () -> R) {
 fun <R> CoroutineScope.executeAsyncTask(
     onPreExecute: (() -> Unit?)? = null,
     onPostExecute: ((R) -> Unit?)? = null,
-    doInBackground: () -> R,
+    doInBackground: () -> R
 ) = launch {
     onPreExecute?.invoke()
     val result = withContext(Dispatchers.IO) { doInBackground() }

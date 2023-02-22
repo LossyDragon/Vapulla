@@ -136,18 +136,22 @@ class FriendListAdapter(
 
             list.forEach { item ->
                 if (item.isRequestRecipient()) {
-                    if (!request) newList.add(
-                        TextHeader(context.getString(R.string.headerFriendRequest))
-                    )
+                    if (!request) {
+                        newList.add(
+                            TextHeader(context.getString(R.string.headerFriendRequest))
+                        )
+                    }
                     newList.add(item)
                     request = true
                     return@forEach
                 }
 
                 if (item.isItemRecentChat(recentsTimeout, updateTime)) {
-                    if (!recent) newList.add(
-                        TextHeader(context.getString(R.string.headerFriendRecent))
-                    )
+                    if (!recent) {
+                        newList.add(
+                            TextHeader(context.getString(R.string.headerFriendRecent))
+                        )
+                    }
                     newList.add(item)
                     recent = true
                     return@forEach
@@ -203,7 +207,6 @@ class FriendListAdapter(
         }
 
         fun bind(item: Any) {
-
             (item as? TextHeader)?.let {
                 header?.text = it.title
                 showHeader()
@@ -221,7 +224,6 @@ class FriendListAdapter(
                 when (friend.relation) {
                     EFriendRelationship.RequestRecipient.code() -> {
                         moreButton?.click {
-
                             val popup = PopupMenu(context, it)
                             popup.menuInflater.inflate(R.menu.menu_friend_request, popup.menu)
                             popup.setOnMenuItemClickListener { item ->
@@ -290,7 +292,8 @@ class FriendListAdapter(
                         paperPlane.load(
                             view = lastMessage!!,
                             message = friend.lastMessage ?: "",
-                            showUrl = false, showStickers = false
+                            showUrl = false,
+                            showStickers = false
                         )
 
                         val newMessages: Int = friend.newMessageCount ?: 0
@@ -391,7 +394,6 @@ class FriendListAdapter(
 
     inner class FriendDiffUtil(val list: MutableList<Any>) : DiffUtil.Callback() {
         override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-
             val newItem = list[newItemPosition]
             val oldItem = friendList[oldItemPosition]
 

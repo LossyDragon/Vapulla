@@ -79,7 +79,6 @@ class GamesAdapter : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
 
     inner class ViewHolder(val v: ListGamesBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(item: Games) {
-
             Glide.with(v.root)
                 .clear(v.gamesImage)
 
@@ -91,7 +90,8 @@ class GamesAdapter : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
             v.gamesTitle.text = item.name
 
             v.gamesHoursForever.text = v.root.context.getString(
-                R.string.textPlayedForever, formatTime(item.playtime_forever)
+                R.string.textPlayedForever,
+                formatTime(item.playtime_forever)
             )
 
             if (item.playtime_2weeks != null) {

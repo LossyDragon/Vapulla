@@ -219,7 +219,6 @@ class ChatActivity :
                 ) &&
                 friend.typingTs > System.currentTimeMillis() - 15000L
             ) {
-
                 binding.friendStatus.text = getString(R.string.statusTyping)
                 binding.friendStatus.setTextColor(
                     ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
@@ -229,7 +228,8 @@ class ChatActivity :
                 binding.friendStatus.text =
                     Utils.getStatusText(
                         this@ChatActivity,
-                        state, friend.gameAppId,
+                        state,
+                        friend.gameAppId,
                         friend.gameName,
                         friend.lastLogOff
                     )

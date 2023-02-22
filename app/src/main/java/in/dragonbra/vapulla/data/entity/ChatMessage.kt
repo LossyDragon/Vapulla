@@ -7,7 +7,9 @@ import java.util.*
 
 @Entity(tableName = "chat_message", indices = [Index("friend_id")])
 data class ChatMessage(
-    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") var id: Long,
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
+    var id: Long,
     @ColumnInfo(name = "message") var message: String,
     @ColumnInfo(name = "timestamp") var timestamp: Long,
     @ColumnInfo(name = "friend_id") var friendId: Long,

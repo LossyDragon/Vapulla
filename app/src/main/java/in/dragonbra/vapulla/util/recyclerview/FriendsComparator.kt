@@ -37,14 +37,17 @@ class FriendsComparator(
                 else -> Pair(first = false, second = false)
             }
 
-        if (isRecent1 && isRecent2) return (o2.lastMessageTime!! - o1.lastMessageTime!!).toInt()
-        else if (isRecent1) return -1
-        else if (isRecent2) return 1
+        if (isRecent1 && isRecent2) {
+            return (o2.lastMessageTime!! - o1.lastMessageTime!!).toInt()
+        } else if (isRecent1) {
+            return -1
+        } else if (isRecent2) return 1
 
         if (sortPrefs == "1") {
             val statusC = compareStatuses(o1, o2)
-            if (statusC != 0)
+            if (statusC != 0) {
                 return statusC
+            }
 
             return compareNames(o1.name, o2.name)
         }
@@ -55,10 +58,15 @@ class FriendsComparator(
 }
 
 private fun compareNames(s1: String?, s2: String?): Int {
-    return if (s1 != null && s2 != null) s1.compareTo(s2, true)
-    else if (s1 != null) 1
-    else if (s2 != null) -1
-    else 0
+    return if (s1 != null && s2 != null) {
+        s1.compareTo(s2, true)
+    } else if (s1 != null) {
+        1
+    } else if (s2 != null) {
+        -1
+    } else {
+        0
+    }
 }
 
 private fun compareSortedNames(o1: FriendListItem, o2: FriendListItem): Int {
@@ -69,15 +77,22 @@ private fun compareStatuses(o1: FriendListItem, o2: FriendListItem): Int {
     val inGame1 = o1.isInGame()
     val inGame2 = o2.isInGame()
 
-    if (inGame1 && inGame2) return 0
-    else if (inGame1) return -1
-    else if (inGame2) return 1
+    if (inGame1 && inGame2) {
+        return 0
+    } else if (inGame1) {
+        return -1
+    } else if (inGame2) return 1
 
     val online1 = o1.isOnline()
     val online2 = o2.isOnline()
 
-    return if (online1 && online2) 0
-    else if (online1) -1
-    else if (online2) 1
-    else 0
+    return if (online1 && online2) {
+        0
+    } else if (online1) {
+        -1
+    } else if (online2) {
+        1
+    } else {
+        0
+    }
 }

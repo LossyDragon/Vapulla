@@ -101,7 +101,7 @@ class GamesActivity :
             onQueryTextChange = {
                 presenter.search(it!!)
                 true
-            },
+            }
         )
         searchView.queryHint = getString(R.string.gamesListSearchViewHint)
 

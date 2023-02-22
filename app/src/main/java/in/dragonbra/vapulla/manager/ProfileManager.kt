@@ -43,8 +43,9 @@ class ProfileManager(
 
         return if (response.isSuccessful) {
             var level = 0
-            if (response.body() != null)
+            if (response.body() != null) {
                 level = response.body()!!.level!!.playerLevel
+            }
 
             level.toString()
         } else {
