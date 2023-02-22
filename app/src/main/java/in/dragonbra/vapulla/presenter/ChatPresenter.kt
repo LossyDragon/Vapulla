@@ -69,7 +69,7 @@ class ChatPresenter(
 
     private val friendObserver = Observer<FriendListItem> { friend ->
         ifViewAttached { v ->
-            friend?.let {
+            friend.let {
                 if (it.relation == EFriendRelationship.Friend.code()) {
                     v.updateFriendData(friend)
                 } else {
@@ -80,8 +80,8 @@ class ChatPresenter(
     }
 
     private val emoteObserver = Observer<List<Emoticon>> { list ->
-        ifViewAttached { it.showEmotes(list ?: emptyList()) }
-        emoteSet = (list ?: emptyList()).map { it.name }.toSet()
+        ifViewAttached { it.showEmotes(list) }
+        emoteSet = list.map { it.name }.toSet()
     }
 
     override fun onServiceDisconnected(name: ComponentName) {

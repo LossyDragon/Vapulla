@@ -16,9 +16,9 @@ import `in`.dragonbra.vapulla.steam.callback.RecentMessagesResponseCallback
 import `in`.dragonbra.vapulla.steam.callback.SendMessageResponseCallback
 import java.util.*
 
-val targetJobRecentMessages = "FriendMessages.GetRecentMessages#1"
-val targetJobSendMessage = "FriendMessages.SendMessage#1"
-val targetJobFriendPersonaStates = "Chat.RequestFriendPersonaStates#1"
+const val targetJobRecentMessages = "FriendMessages.GetRecentMessages#1"
+const val targetJobSendMessage = "FriendMessages.SendMessage#1"
+const val targetJobFriendPersonaStates = "Chat.RequestFriendPersonaStates#1"
 
 class UnifiedChatHandler : ClientMsgHandler() {
 

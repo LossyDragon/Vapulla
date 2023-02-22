@@ -34,16 +34,12 @@ object Utils {
     private const val DEFAULT_AVATAR =
         "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
-    val isGreaterThanM
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-    val isLessThanN
-        get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
-    val isAtLeastN
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
     val isGreaterThanO
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
     val isGreaterThanP
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+    val isAtLeastS
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     fun getAvatarUrl(avatar: String?): String {
         if (avatar.isNullOrEmpty() || avatar == ALL_ZEROS) {

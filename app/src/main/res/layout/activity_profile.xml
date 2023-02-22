@@ -56,14 +56,14 @@
                 android:id="@+id/profile_status_indicator"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:tint="@color/textSecondary"
                 android:visibility="invisible"
                 app:layout_constraintBottom_toBottomOf="@id/profile_status"
                 app:layout_constraintStart_toEndOf="@id/profile_status"
                 app:layout_constraintTop_toTopOf="@id/profile_status"
                 tools:ignore="ContentDescription"
                 tools:src="@drawable/ic_web"
-                tools:visibility="visible" />
+                tools:visibility="visible"
+                app:tint="@color/textSecondary" />
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"

@@ -19,6 +19,9 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import timber.log.Timber
 import javax.inject.Inject
 
+// TODO: Add 'Try Again' option
+// TODO: Add Splash Screen
+
 @AndroidEntryPoint
 class LoginActivity : VapullaBaseActivity() {
 

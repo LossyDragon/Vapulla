@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Build
 import android.text.format.DateUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
@@ -33,7 +34,7 @@ private var remoteInput: RemoteInput =
         .build()
 
 private val flagUpdateCurrent =
-    if (Utils.isGreaterThanM) {
+    if (Utils.isAtLeastS) {
         PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     } else {
         PendingIntent.FLAG_UPDATE_CURRENT
@@ -61,7 +62,7 @@ inline fun Context.serviceNotification(
         applicationContext,
         0,
         logOutIntent,
-        if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
+        PendingIntent.FLAG_IMMUTABLE
     )
 
     val homeIntent = Intent(this, HomeActivity::class.java)
@@ -69,7 +70,7 @@ inline fun Context.serviceNotification(
         this,
         0,
         homeIntent,
-        if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
+        PendingIntent.FLAG_IMMUTABLE
     )
 
     // Note: DI now
@@ -89,8 +90,7 @@ inline fun Context.serviceNotification(
         )
 
     @Suppress("DEPRECATION")
-    builder.priority =
-        if (Utils.isAtLeastN) NotificationManager.IMPORTANCE_LOW else Notification.PRIORITY_LOW
+    builder.priority = NotificationManager.IMPORTANCE_LOW
 
     block(builder)
 }
@@ -176,7 +176,7 @@ suspend fun Context.serviceRequestNotification(
 ) {
     val steamId = state.friendID.convertToUInt64().toInt()
 
-    var bitmap = withContext(Dispatchers.IO) {
+    val bitmap = withContext(Dispatchers.IO) {
         Glide.with(applicationContext)
             .asBitmap()
             .load(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
@@ -228,7 +228,7 @@ suspend fun Context.serviceRequestNotification(
                 this,
                 0,
                 Intent(this, HomeActivity::class.java),
-                if (Utils.isGreaterThanM) PendingIntent.FLAG_IMMUTABLE else 0
+                PendingIntent.FLAG_IMMUTABLE
             )
         )
         .addAction(

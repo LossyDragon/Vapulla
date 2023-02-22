@@ -42,7 +42,7 @@ class ProfilePresenter(
 
     private val friendObserver = Observer<FriendListItem> { friend ->
         ifViewAttached { v ->
-            friend?.let {
+            friend.let {
                 if (it.relation == EFriendRelationship.Friend.code()) {
                     v.updateFriendData(friend)
                 } else {
