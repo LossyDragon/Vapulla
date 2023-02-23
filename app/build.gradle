@@ -108,7 +108,7 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
 
     // Accompanist
-    implementation "com.google.accompanist:accompanist-systemuicontroller:0.24.5-alpha"
+    implementation "com.google.accompanist:accompanist-systemuicontroller:0.29.1-alpha"
 
     // Landscapist image loader
     implementation "com.github.skydoves:landscapist-coil:2.1.3"

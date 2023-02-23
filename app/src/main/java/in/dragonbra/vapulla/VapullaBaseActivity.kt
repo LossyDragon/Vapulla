@@ -25,7 +25,8 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     private val serviceSubscriptions = LinkedList<Closeable?>()
 
-    private var isBound = false
+    var isBound = false
+        private set
     var steamService: SteamService? = null
         private set
 

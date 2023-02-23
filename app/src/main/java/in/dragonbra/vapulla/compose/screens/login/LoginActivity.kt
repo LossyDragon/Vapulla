@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
-import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle

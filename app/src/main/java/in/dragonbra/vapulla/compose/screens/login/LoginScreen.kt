@@ -6,6 +6,7 @@ import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -15,17 +16,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.Autofill
 import androidx.compose.ui.autofill.AutofillNode
 import androidx.compose.ui.autofill.AutofillType
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -89,6 +91,7 @@ private fun LoginScreenContent(
     on2faMessage: (string: String) -> Unit
 ) {
     val snackBarHostState = remember { SnackbarHostState() } // TODO Not used
+    val focusManager = LocalFocusManager.current
 
     Surface {
         Scaffold(
@@ -146,7 +149,7 @@ private fun LoginScreenContent(
                         .fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     text = loginState.generalMessage ?: "",
-                    color = Color.Red
+                    color = MaterialTheme.colorScheme.error
                 )
 
                 /* Autofill Nodes */
@@ -180,7 +183,14 @@ private fun LoginScreenContent(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 6.dp),
                     isError = !loginState.usernameError.isNullOrEmpty(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
                     label = { Text(text = stringResource(id = R.string.editTextHintUsername)) },
                     onValueChange = { onUsername(it) },
                     supportingText = { Text(loginState.usernameError ?: "") },
@@ -194,6 +204,8 @@ private fun LoginScreenContent(
                 } else {
                     PasswordVisualTransformation()
                 }
+
+                val imeAction = if (!loginState.expectSteamGuard) ImeAction.Done else ImeAction.Next
 
                 OutlinedTextField(
                     modifier = Modifier
@@ -212,7 +224,15 @@ private fun LoginScreenContent(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 6.dp),
                     isError = !loginState.passwordError.isNullOrEmpty(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = imeAction
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.clearFocus() },
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
                     label = { Text(text = stringResource(id = R.string.editTextHintPassword)) },
                     onValueChange = { onPassword(it) },
                     singleLine = true,
@@ -249,7 +269,14 @@ private fun LoginScreenContent(
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp, vertical = 6.dp),
                         isError = !loginState.steamGuardError.isNullOrEmpty(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                        keyboardOptions = KeyboardOptions(
+                            autoCorrect = false,
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        ),
                         label = {
                             Text(text = stringResource(id = R.string.editTextHintSteamGuard))
                         },

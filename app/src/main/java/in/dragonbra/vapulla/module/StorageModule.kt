@@ -8,6 +8,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
+import `in`.dragonbra.vapulla.data.repository.SteamFriendRepository
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -30,6 +32,11 @@ object StorageModule {
     @Provides
     @Singleton
     fun provideSteamFriendDao(db: VapullaDatabase) = db.steamFriendDao()
+
+    @Provides
+    @Singleton
+    fun provideSteamFriendRepository(steamFriendDao: SteamFriendDao) =
+        SteamFriendRepository(steamFriendDao)
 
     @Provides
     @Singleton

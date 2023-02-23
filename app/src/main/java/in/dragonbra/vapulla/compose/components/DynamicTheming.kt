@@ -46,6 +46,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.size.Scale
+import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -107,7 +108,7 @@ fun Modifier.verticalGradientScrim(
     val brush = remember(colors, startYPercentage, endYPercentage) {
         // Reverse the gradient if decaying downwards
         Brush.verticalGradient(
-            colors = if (startYPercentage < endYPercentage) colors else colors.reversed(),
+            colors = if (startYPercentage < endYPercentage) colors else colors.reversed()
         )
     }
 
@@ -155,7 +156,7 @@ fun DynamicThemePrimaryColorsFromImage(
             spring(stiffness = Spring.StiffnessLow)
         ).value
     )
-    MaterialTheme(colorScheme = colors, content = content)
+    VapullaTheme(content = content)
 }
 
 /**
@@ -268,4 +269,3 @@ private suspend fun calculateSwatchesInImage(
         }
     } ?: emptyList()
 }
-
