@@ -34,6 +34,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.Shapes
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun HomeScreen(
@@ -45,11 +46,10 @@ fun HomeScreen(
 
     HomeScreenContent(
         state = state,
-        onRefresh = {
-            viewModel.onEvent(HomeEvent.SwipeRefresh(true))
-        },
+        onRefresh = { viewModel.onEvent(HomeEvent.SwipeRefresh(true)) },
         onChatSelected = { onChatSelected(it) },
-        onProfileSelected = { onProfileSelected(it) }
+        onProfileSelected = { onProfileSelected(it) },
+        onGameTouch = { viewModel.gameSchemaManager.touch(it) }
     )
 }
 
@@ -58,6 +58,7 @@ fun HomeScreen(
 private fun HomeScreenContent(
     state: HomeState,
     onRefresh: () -> Unit,
+    onGameTouch: (friendId: Int) -> Unit,
     onChatSelected: (friend: FriendListItem) -> Unit,
     onProfileSelected: (friend: FriendListItem) -> Unit
 ) {
@@ -91,7 +92,7 @@ private fun HomeScreenContent(
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(
                                     imageVector = Icons.Filled.Menu,
-                                    contentDescription = "Toggle Drawerr Menu"
+                                    contentDescription = "Toggle Drawer Menu"
                                 )
                             }
                         },
@@ -106,13 +107,6 @@ private fun HomeScreenContent(
                     )
                 }
             ) { paddingValues ->
-
-                val context = LocalContext.current
-                val dummyList = mutableListOf<String>()
-                repeat(30) {
-                    dummyList.add(context.packageName + context.packageName)
-                }
-
                 val pullRefreshState = rememberPullRefreshState(state.isRefreshing, { onRefresh() })
 
                 Box(
@@ -121,20 +115,29 @@ private fun HomeScreenContent(
                         .padding(paddingValues)
                 ) {
                     val listState = rememberLazyListState()
+                    val friends by state.list.collectAsState()
+
+                    LaunchedEffect(key1 = friends, block = {
+                        Timber.d("UPDATE: ${friends.size}")
+                    })
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         state = listState,
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        items(dummyList) { friend ->
-                            FriendListItem(
-                                avatarUrl = friend,
-                                lastMessage = friend,
-                                name = friend,
-                                newMessageCount = friend,
-                                nickName = friend,
-                                status = friend,
-                                time = friend
+                        items(friends) { friend ->
+                            if (friend.gameAppId > 0) {
+                                onGameTouch(friend.gameAppId)
+                            }
+
+                            FriendItem(
+                                friend = friend,
+                                onClickChat = { onChatSelected(friend) },
+                                onClickProfile = { onProfileSelected(friend) },
+                                onClickAccept = { TODO() },
+                                onClickIgnore = { TODO() },
+                                onClickBlock = { TODO() }
                             )
                         }
                     }
@@ -314,7 +317,8 @@ private fun Preview_HomeScreenContent() {
             state = state,
             onRefresh = {},
             onChatSelected = {},
-            onProfileSelected = {}
+            onProfileSelected = {},
+            onGameTouch = {}
         )
     }
 }

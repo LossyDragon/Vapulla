@@ -17,6 +17,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="AllowBackup,UnusedAttribute">
+
+        <!-- Login -->
         <activity
             android:name=".compose.screens.login.LoginActivity"
             android:exported="true"
@@ -30,11 +32,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Home / Main Screen -->
         <activity
-            android:name=".activity.HomeActivity"
+            android:name=".compose.screens.home.HomeActivity"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="stateHidden" />
+            android:windowSoftInputMode="stateHidden"
+            tools:ignore="LockedOrientationActivity" />
+
+        <!-- Chat -->
         <activity
             android:name=".activity.ChatActivity"
             android:launchMode="singleTop"
@@ -43,6 +50,8 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activity.HomeActivity" />
         </activity>
+
+        <!-- Profile -->
         <activity
             android:name=".activity.ProfileActivity"
             android:launchMode="singleTop"
@@ -52,6 +61,8 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activity.HomeActivity" />
         </activity>
+
+        <!-- Games Library -->
         <activity
             android:name=".activity.GamesActivity"
             android:launchMode="singleTop"
@@ -61,6 +72,8 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activity.ProfileActivity" />
         </activity>
+
+        <!-- Settings -->
         <activity
             android:name=".activity.SettingsActivity"
             android:exported="true"
@@ -83,11 +96,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Steam Service -->
         <service
             android:name=".service.SteamService"
             android:enabled="true"
             android:exported="false" />
 
+        <!-- Receivers -->
         <receiver
             android:name=".broadcastreceiver.ReplyReceiver"
             android:enabled="true"

@@ -6,8 +6,8 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.lifecycle.MutableLiveData
-import `in`.dragonbra.javasteam.enums.EPersonaState
+import androidx.compose.runtime.LaunchedEffect
+import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
@@ -18,17 +18,10 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
 import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
+import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 
-sealed class HomeAction {
-    data class ChangeStatus(val state: EPersonaState) : HomeAction()
-    data class AcceptRequest(val friend: FriendListItem) : HomeAction()
-    data class IgnoreRequest(val friend: FriendListItem) : HomeAction()
-    data class BlockFriend(val friend: FriendListItem) : HomeAction()
-    object Disconnect : HomeAction()
-    object Refresh : HomeAction()
-}
-
+@AndroidEntryPoint
 class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity() {
 
     private val viewModel: HomeViewModel by viewModels()
@@ -37,6 +30,12 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         super.onCreate(savedInstanceState)
         Timber.d("HomeActivity")
         setContent {
+            LaunchedEffect(Unit) {
+                viewModel.uiEvent.collectLatest { event ->
+                    onFriendAction(event)
+                }
+            }
+
             VapullaTheme {
                 HomeScreen(
                     viewModel = viewModel,
@@ -70,11 +69,11 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
 
-        viewModel.homeState.list.observe(this, viewModel.dataObserver)
+        // viewModel.homeState.friendsList.observe(this, viewModel.dataObserver)
 
         val updateTime = System.currentTimeMillis()
         val friends = viewModel.getLive().sortedWith(FriendsComparator(this, updateTime))
-        viewModel.onEvent(HomeEvent.UpdateFriends(MutableLiveData(friends), updateTime))
+        viewModel.onEvent(HomeEvent.UpdateFriends(friends, updateTime))
     }
 
     override fun onResume() {
@@ -100,16 +99,24 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         if (isBound) {
             steamService?.isActivityRunning = false
         }
+
+        viewModel.account.removeListener(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        viewModel.homeState.list.removeObserver(viewModel.dataObserver)
+        viewModel.onDestroy()
     }
 
     override fun unAccountUpdate(account: AccountManager) {
         Timber.w("ACCOUNT UPDATE TODO")
-        // TODO: get Avatar, Name, Status
+        viewModel.onEvent(
+            HomeEvent.UpdateAccount(
+                account.nickname.orEmpty(),
+                account.state.name,
+                account.avatarHash.orEmpty()
+            )
+        )
     }
 
     private fun closeApplication() {
@@ -138,28 +145,35 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         }
     }
 
-    private fun onFriendAction(event: HomeAction) {
-        when (event) {
-            is HomeAction.AcceptRequest -> {
-                val friend = SteamID(event.friend.id)
-                steamService?.getHandler<SteamFriends>()?.addFriend(friend)
-            }
-            is HomeAction.BlockFriend -> {
-                val friend = SteamID(event.friend.id)
-                steamService?.getHandler<SteamFriends>()?.ignoreFriend(friend)
-            }
-            is HomeAction.ChangeStatus -> {
-                steamService?.getHandler<SteamFriends>()?.setPersonaState(event.state)
-            }
-            is HomeAction.IgnoreRequest -> {
-                val friend = SteamID(event.friend.id)
-                steamService?.getHandler<SteamFriends>()?.removeFriend(friend)
-            }
-            HomeAction.Disconnect -> {
-                steamService?.disconnect()
-            }
-            HomeAction.Refresh -> {
-                steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
+    private fun onFriendAction(event: HomeUiEvent) {
+        Runnable {
+            when (event) {
+                is HomeUiEvent.AcceptRequest -> {
+                    val friend = SteamID(event.friend.id)
+                    steamService?.getHandler<SteamFriends>()?.addFriend(friend)
+                }
+
+                is HomeUiEvent.BlockFriend -> {
+                    val friend = SteamID(event.friend.id)
+                    steamService?.getHandler<SteamFriends>()?.ignoreFriend(friend)
+                }
+
+                is HomeUiEvent.ChangeStatus -> {
+                    steamService?.getHandler<SteamFriends>()?.setPersonaState(event.state)
+                }
+
+                is HomeUiEvent.IgnoreRequest -> {
+                    val friend = SteamID(event.friend.id)
+                    steamService?.getHandler<SteamFriends>()?.removeFriend(friend)
+                }
+
+                HomeUiEvent.Disconnect -> {
+                    steamService?.disconnect()
+                }
+
+                HomeUiEvent.Refresh -> {
+                    steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
+                }
             }
         }
     }

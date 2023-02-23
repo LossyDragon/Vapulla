@@ -13,7 +13,7 @@ import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.activity.HomeActivity
+import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.extension.getErrorMessage
 import `in`.dragonbra.vapulla.manager.AccountManager

@@ -10,7 +10,11 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
-val darkColorScheme = darkColorScheme()
+val darkColorScheme = darkColorScheme(
+    primary = colorPrimary,
+    secondary = colorSecondary,
+    error = colorError
+)
 
 @Composable
 fun VapullaTheme(
