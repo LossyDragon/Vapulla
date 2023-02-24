@@ -56,10 +56,8 @@ class LoginActivity : VapullaBaseActivity() {
         viewModel.loginState = viewModel.loginState.copy(expectSteamGuard = false)
     }
 
-    override fun onConnected(
-        showLoading: () -> Unit,
-        isLoggedIn: () -> Unit
-    ) {
+    override fun onConnected(showLoading: () -> Unit, isLoggedIn: () -> Unit) {
+        super.onConnected(showLoading, isLoggedIn)
         steamService?.let { service ->
             if (service.isLoggedIn) {
                 isLoggedIn()
@@ -72,13 +70,20 @@ class LoginActivity : VapullaBaseActivity() {
     }
 
     override fun onDisconnected() {
+        super.onDisconnected()
         Timber.d("onDisconnected")
-        if (!viewModel.loginState.expectSteamGuard && !viewModel.loginState.is2Fa) {
-            viewModel.onEvent(LoginEvent.ShowFailedScreen)
+        with(viewModel) {
+            if (!loginState.expectSteamGuard) {
+                if (accountManager.hasLoginKey()) {
+                    val event = LoginEvent.ShowFailedScreen
+                    viewModel.onEvent(event)
+                }
+            }
         }
     }
 
     override fun onLoggedOn(callback: LoggedOnCallback) {
+        super.onLoggedOn(callback)
         if (callback.result != EResult.OK) {
             val eResult =
                 listOf(EResult.AccountLogonDenied, EResult.AccountLoginDeniedNeedTwoFactor)
@@ -86,26 +91,31 @@ class LoginActivity : VapullaBaseActivity() {
             if (eResult.any { callback.result == it }) {
                 if (callback.result == EResult.AccountLoginDeniedNeedTwoFactor) {
                     val is2Fa = callback.result == EResult.AccountLoginDeniedNeedTwoFactor
-                    viewModel.onEvent(
-                        LoginEvent.ShowSteamGuard(is2fa = is2Fa, expectSteamGuard = true)
-                    )
+                    val event = LoginEvent.ShowSteamGuard(is2fa = is2Fa, expectSteamGuard = true)
+                    viewModel.onEvent(event)
                 }
             } else {
                 Timber.w("Failed to log in ${callback.result} / ${callback.extendedResult}")
-                viewModel.onEvent(
-                    LoginEvent.ShowSteamGuard(is2fa = false, expectSteamGuard = false)
+                val failedEvent = LoginEvent.ShowSteamGuard(is2fa = false, expectSteamGuard = false)
+                viewModel.onEvent(failedEvent)
+
+                // SnackBar this?
+                val errorMessage = getErrorMessage(callback.result, callback.extendedResult)
+                val authEResult = listOf(
+                    EResult.TwoFactorCodeMismatch,
+                    EResult.InvalidLoginAuthCode
                 )
 
-                val errorMessage = getErrorMessage(callback.result, callback.extendedResult)
-                val authEResult =
-                    listOf(EResult.TwoFactorCodeMismatch, EResult.InvalidLoginAuthCode)
-
                 if (authEResult.any { callback.result == it }) {
-                    viewModel.onEvent(
-                        LoginEvent.ShowSteamGuard(is2fa = false, error = errorMessage)
+                    val event = LoginEvent.ShowSteamGuard(
+                        expectSteamGuard = true,
+                        is2fa = false,
+                        error = errorMessage
                     )
+                    viewModel.onEvent(event)
                 } else {
-                    viewModel.onEvent(LoginEvent.ShowLoginForm(errorMessage))
+                    val event = LoginEvent.ShowLoginForm(errorMessage)
+                    viewModel.onEvent(event)
                 }
             }
             steamService?.disconnect()
@@ -122,6 +132,7 @@ class LoginActivity : VapullaBaseActivity() {
     }
 
     override fun onLoginSuccess() {
+        super.onLoginSuccess()
         Intent(this, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }.also {
@@ -131,6 +142,7 @@ class LoginActivity : VapullaBaseActivity() {
     }
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
+        super.onServiceConnected(name, service)
         Timber.d("Bound to Steam service")
 
         // Create our notification channels when the service is bound.
@@ -141,14 +153,17 @@ class LoginActivity : VapullaBaseActivity() {
         }
 
         if (accountManager.hasLoginKey()) {
-            viewModel.logOnDetails.loginKey = accountManager.loginKey
-            viewModel.logOnDetails.password = null
-            viewModel.logOnDetails.username = accountManager.username
+            with(viewModel.logOnDetails) {
+                loginKey = accountManager.loginKey
+                password = null
+                username = accountManager.username
+            }
             startSteamService { viewModel.onEvent(LoginEvent.ShowLoading(true)) }
         }
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
+        super.onServiceDisconnected(name)
         Timber.d("Unbound from Steam service")
     }
 }
