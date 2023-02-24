@@ -13,10 +13,4 @@ interface ChatView : MvpView {
     fun navigateUp()
     fun showEmotes(list: List<Emoticon>)
     fun viewProfile(steamID: Long)
-    fun showImgurDialog()
-    fun showPhotoSelector()
-    fun showUploadDialog()
-    fun imageUploadFail()
-    fun imageUploadSuccess()
-    fun imageUploadProgress(total: Int, progress: Int)
 }

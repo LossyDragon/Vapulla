@@ -17,7 +17,6 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
-import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 
@@ -68,12 +67,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
-
-        // viewModel.homeState.friendsList.observe(this, viewModel.dataObserver)
-
-        val updateTime = System.currentTimeMillis()
-        val friends = viewModel.getLive().sortedWith(FriendsComparator(this, updateTime))
-        viewModel.onEvent(HomeEvent.UpdateFriends(friends, updateTime))
+        viewModel.friendsData.observe(this, viewModel.dataObserver)
     }
 
     override fun onResume() {

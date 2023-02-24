@@ -25,8 +25,6 @@ android {
 
         multiDexEnabled true
 
-        buildConfigField("String", "IMGUR_CLIENT_ID", "\"$vapullaImgurClientId\"")
-        buildConfigField("String", "IMGUR_CLIENT_SECRET", "\"$vapullaImgurClientSecret\"")
         buildConfigField("String", "STEAM_API_KEY", "$steamApiKey")
 
         applicationVariants.all { variant ->
@@ -121,7 +119,7 @@ dependencies {
     // ksp 'io.github.raamcosta.compose-destinations:ksp:1.8.33-beta'
 
     // Android Support Libs
-    implementation "androidx.annotation:annotation:1.5.0"
+    implementation "androidx.annotation:annotation:1.6.0"
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation "androidx.core:core-ktx:1.9.0"

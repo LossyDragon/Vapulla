@@ -1,17 +1,13 @@
 package `in`.dragonbra.vapulla.activity
 
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
-import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
-import `in`.dragonbra.vapulla.BuildConfig
-import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.anim.VectorAnimCompat
-import `in`.dragonbra.vapulla.extension.click
-import `in`.dragonbra.vapulla.service.ImgurAuthService
-import `in`.dragonbra.vapulla.service.SteamService
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.*
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -32,12 +28,20 @@ import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.customview.getCustomView
 import com.afollestad.materialdialogs.input.input
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
+import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
+import `in`.dragonbra.vapulla.BuildConfig
+import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.anim.VectorAnimCompat
 import `in`.dragonbra.vapulla.compose.screens.login.LoginActivity
+import `in`.dragonbra.vapulla.extension.click
+import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.Closeable
-import java.util.*
+import java.util.LinkedList
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -100,40 +104,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         subs.forEach { it?.close() }
     }
 
-    fun updateImgurPref() {
-        val imgurAuthService = (activity as SettingsActivity).imgurAuthService
-
-        val pref: Preference = findPreference("pref_imgur")!!
-        if (prefs.contains(ImgurAuthService.KEY_IMGUR_USERNAME)) {
-            pref.title = getString(R.string.prefTitleImgurLinked)
-            pref.summary = getString(
-                R.string.prefSummaryImgurLinked,
-                imgurAuthService.getUsername()
-            )
-
-            pref.setOnPreferenceClickListener {
-                imgurAuthService.clear()
-                updateImgurPref()
-                true
-            }
-        } else {
-            pref.title = getString(R.string.prefTitleImgur)
-            pref.summary = null
-
-            pref.setOnPreferenceClickListener {
-                browse(imgurAuthService.getAuthUrl())
-                true
-            }
-        }
-    }
-
     @SuppressLint("InflateParams", "CheckResult")
     private fun setupPreferences() {
         val accountManager = (activity as SettingsActivity).accountManager
 
         // addPreferencesFromResource(R.xml.pref_general)
-
-        updateImgurPref()
 
         val changeUserPreference: Preference? = findPreference("pref_change_user")
         changeUserPreference?.summary =
@@ -255,7 +230,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun clearData() {
         (activity as SettingsActivity).accountManager.clear()
-        (activity as SettingsActivity).imgurAuthService.clear()
 
         CoroutineScope(Dispatchers.IO).launch {
             (activity as SettingsActivity).db.steamFriendDao().delete()

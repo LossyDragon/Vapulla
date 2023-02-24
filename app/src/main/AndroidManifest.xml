@@ -45,21 +45,21 @@
         <activity
             android:name=".activity.ChatActivity"
             android:launchMode="singleTop"
-            android:parentActivityName=".activity.HomeActivity">
+            android:parentActivityName=".compose.screens.home.HomeActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".activity.HomeActivity" />
+                android:value=".compose.screens.home.HomeActivity" />
         </activity>
 
         <!-- Profile -->
         <activity
             android:name=".activity.ProfileActivity"
             android:launchMode="singleTop"
-            android:parentActivityName=".activity.HomeActivity"
+            android:parentActivityName=".compose.screens.home.HomeActivity"
             android:theme="@style/AppTheme.Settings">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".activity.HomeActivity" />
+                android:value=".compose.screens.home.HomeActivity" />
         </activity>
 
         <!-- Games Library -->
@@ -78,11 +78,11 @@
             android:name=".activity.SettingsActivity"
             android:exported="true"
             android:label="@string/title_activity_settings"
-            android:parentActivityName=".activity.HomeActivity"
+            android:parentActivityName=".compose.screens.home.HomeActivity"
             android:theme="@style/AppTheme.Settings">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="in.dragonbra.vapulla.activity.HomeActivity" />
+                android:value="in.dragonbra.vapulla.compose.screens.home.HomeActivity" />
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

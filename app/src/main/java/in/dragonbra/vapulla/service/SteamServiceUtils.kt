@@ -17,9 +17,9 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.activity.ChatActivity
-import `in`.dragonbra.vapulla.activity.HomeActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.*
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
+import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +88,6 @@ inline fun Context.serviceNotification(
             pendingIntent
         )
 
-    @Suppress("DEPRECATION")
     builder.priority = NotificationManager.IMPORTANCE_LOW
 
     block(builder)

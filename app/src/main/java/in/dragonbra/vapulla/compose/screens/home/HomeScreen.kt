@@ -1,13 +1,54 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -24,17 +65,20 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
-import `in`.dragonbra.vapulla.compose.components.*
+import `in`.dragonbra.vapulla.compose.components.FriendItem
+import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
+import `in`.dragonbra.vapulla.compose.components.contrastAgainst
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.ExperimentalMaterialApi
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.PullRefreshIndicator
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.pullRefresh
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.rememberPullRefreshState
+import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
+import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
 import `in`.dragonbra.vapulla.compose.ui.theme.Shapes
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Composable
 fun HomeScreen(
@@ -43,40 +87,40 @@ fun HomeScreen(
     onProfileSelected: (friend: FriendListItem) -> Unit
 ) {
     val state by viewModel::homeState
+    val list by viewModel.homeState.list.observeAsState()
 
     HomeScreenContent(
         state = state,
+        list = list ?: listOf(),
         onRefresh = { viewModel.onEvent(HomeEvent.SwipeRefresh(true)) },
         onChatSelected = { onChatSelected(it) },
-        onProfileSelected = { onProfileSelected(it) },
-        onGameTouch = { viewModel.gameSchemaManager.touch(it) }
+        onProfileSelected = { onProfileSelected(it) }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterialApi::class,
+    ExperimentalFoundationApi::class
+)
 @Composable
 private fun HomeScreenContent(
     state: HomeState,
+    list: List<FriendListItem>,
     onRefresh: () -> Unit,
-    onGameTouch: (friendId: Int) -> Unit,
     onChatSelected: (friend: FriendListItem) -> Unit,
     onProfileSelected: (friend: FriendListItem) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val snackBarHostState = remember { SnackbarHostState() } // TODO Not used
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     Surface {
         ModalNavigationDrawer(
             drawerState = drawerState,
-            drawerContent = {
-                HomeScreenDrawer(drawerState)
-            }
+            drawerContent = { HomeScreenDrawer(state, drawerState) }
         ) {
             Scaffold(
-                snackbarHost = { SnackbarHost(snackBarHostState) },
                 topBar = {
-                    // TODO search
                     CenterAlignedTopAppBar(
                         modifier = Modifier
                             .padding(horizontal = 16.dp, vertical = 10.dp)
@@ -97,7 +141,7 @@ private fun HomeScreenContent(
                             }
                         },
                         actions = {
-                            IconButton(onClick = { /* TODO */ }) {
+                            IconButton(onClick = { /* TODO Search */ }) {
                                 Icon(
                                     imageVector = Icons.Filled.Search,
                                     contentDescription = "Search"
@@ -115,23 +159,15 @@ private fun HomeScreenContent(
                         .padding(paddingValues)
                 ) {
                     val listState = rememberLazyListState()
-                    val friends by state.list.collectAsState()
-
-                    LaunchedEffect(key1 = friends, block = {
-                        Timber.d("UPDATE: ${friends.size}")
-                    })
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         state = listState,
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        items(friends) { friend ->
-                            if (friend.gameAppId > 0) {
-                                onGameTouch(friend.gameAppId)
-                            }
-
+                        items(list, key = { it.id }) { friend ->
                             FriendItem(
+                                modifier = Modifier.animateItemPlacement(),
                                 friend = friend,
                                 onClickChat = { onChatSelected(friend) },
                                 onClickProfile = { onProfileSelected(friend) },
@@ -168,13 +204,13 @@ private fun HomeScreenContent(
 
 @Composable
 private fun HomeScreenDrawer(
+    state: HomeState,
     drawerState: DrawerState
 ) {
     val scope = rememberCoroutineScope()
     val items = listOf("Online", "Away", "Invisible")
     val selectedItem = remember { mutableStateOf(items[0]) }
 
-    val avatarUrl = Utils.getAvatarUrl("f166a7f5d9038b4e9414dd77045e5b55002df73f")
     val surfaceColor = MaterialTheme.colorScheme.surface
     val dominantColorState = rememberDominantColorState(
         defaultColor = MaterialTheme.colorScheme.surface,
@@ -183,8 +219,8 @@ private fun HomeScreenDrawer(
         }
     )
 
-    LaunchedEffect(avatarUrl) {
-        dominantColorState.updateColorsFromImageUrl(avatarUrl)
+    LaunchedEffect(state.avatarHash) {
+        dominantColorState.updateColorsFromImageUrl(Utils.getAvatarUrl(state.avatarHash))
     }
 
     ModalDrawerSheet(
@@ -219,7 +255,7 @@ private fun HomeScreenDrawer(
                         modifier = Modifier.size(150.dp),
                         imageRequest = {
                             ImageRequest.Builder(context)
-                                .data(avatarUrl)
+                                .data(Utils.getAvatarUrl(state.avatarHash))
                                 .crossfade(true)
                                 .build()
                         },
@@ -229,7 +265,7 @@ private fun HomeScreenDrawer(
                         )
                     )
 
-                    Text("Some Cool Name")
+                    Text(state.nickname)
                 }
 
                 Spacer(Modifier.height(36.dp))
@@ -315,10 +351,10 @@ private fun Preview_HomeScreenContent() {
     VapullaTheme {
         HomeScreenContent(
             state = state,
+            list = listOf(),
             onRefresh = {},
             onChatSelected = {},
-            onProfileSelected = {},
-            onGameTouch = {}
+            onProfileSelected = {}
         )
     }
 }
@@ -327,7 +363,8 @@ private fun Preview_HomeScreenContent() {
 @Composable
 private fun Preview_HomeScreenDrawer() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
+    val state = HomeState(nickname = "Some Cool Name")
     VapullaTheme {
-        HomeScreenDrawer(drawerState = drawerState)
+        HomeScreenDrawer(state = state, drawerState = drawerState)
     }
 }

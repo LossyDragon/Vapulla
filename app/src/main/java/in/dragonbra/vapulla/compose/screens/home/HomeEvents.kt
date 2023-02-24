@@ -16,8 +16,6 @@ sealed class HomeEvent {
         val list: List<FriendListItem>,
         val updateTime: Long
     ) : HomeEvent()
-
-    object RefreshFriendsList : HomeEvent()
 }
 
 sealed class HomeUiEvent {

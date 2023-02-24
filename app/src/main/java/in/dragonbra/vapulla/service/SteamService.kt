@@ -1,5 +1,18 @@
 package `in`.dragonbra.vapulla.service
 
+import android.app.Service
+import android.content.Intent
+import android.content.SharedPreferences
+import android.os.Binder
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.IBinder
+import android.text.format.DateUtils
+import androidx.annotation.StringRes
+import androidx.core.app.*
+import androidx.core.app.NotificationCompat.MessagingStyle
+import androidx.preference.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EChatEntryType
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EResult
@@ -34,7 +47,6 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.configuration.SteamConfiguration
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
-import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.activity.VapullaBaseActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.*
@@ -51,23 +63,11 @@ import `in`.dragonbra.vapulla.steam.callback.SendMessageResponseCallback
 import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.*
-import android.app.Service
-import android.content.Intent
-import android.content.SharedPreferences
-import android.os.Binder
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.IBinder
-import android.text.format.DateUtils
-import androidx.annotation.StringRes
-import androidx.core.app.*
-import androidx.core.app.NotificationCompat.MessagingStyle
-import androidx.preference.PreferenceManager
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.io.Closeable
 import java.io.File
 import java.util.*
@@ -528,6 +528,7 @@ class SteamService : Service() {
     }
 
     private val onPersonaState: Consumer<PersonaStatesCallback> = Consumer {
+        Timber.d("onPersonaState")
         it.personaStates.forEach { state ->
             if (!state.friendID.isIndividualAccount) {
                 return@forEach
@@ -538,13 +539,13 @@ class SteamService : Service() {
                 return@forEach
             }
 
-            if (BuildConfig.DEBUG) {
-                info(
-                    "${state.name} is ${state.state} " +
-                        "Last logoff: ${Date(state.lastLogOff.time)} - " +
-                        "Last logon: ${Date(state.lastLogOn.time)}"
-                )
-            }
+            // if (BuildConfig.DEBUG) {
+            //     info(
+            //         "${state.name} is ${state.state} " +
+            //             "Last logoff: ${Date(state.lastLogOff.time)} - " +
+            //             "Last logon: ${Date(state.lastLogOn.time)}"
+            //     )
+            // }
 
             stateBuffer.push(state)
 
@@ -663,9 +664,9 @@ class SteamService : Service() {
 
         val emoticons = emoticon.getEmoteList().map {
             if (it.isSticker) {
-                Emoticon(it.name, it.isSticker, it.appId)
+                Emoticon(it.name, true, it.appId)
             } else {
-                Emoticon(it.name.substring(1, it.name.length - 1), it.isSticker, it.appId)
+                Emoticon(it.name.substring(1, it.name.length - 1), false, it.appId)
             }
         }.toTypedArray()
 

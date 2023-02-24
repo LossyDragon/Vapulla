@@ -3,10 +3,8 @@ package `in`.dragonbra.vapulla.module
 import `in`.dragonbra.vapulla.data.dao.GameSchemaDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
-import `in`.dragonbra.vapulla.retrofit.Imgur
 import `in`.dragonbra.vapulla.retrofit.SteamApi
 import `in`.dragonbra.vapulla.retrofit.StoreFront
-import `in`.dragonbra.vapulla.service.ImgurAuthService
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
@@ -45,11 +43,6 @@ object AppModule {
     @Singleton
     fun provideGameSchemaManager(gameSchemaDao: GameSchemaDao, storeFront: StoreFront) =
         GameSchemaManager(gameSchemaDao, storeFront)
-
-    @Provides
-    @Singleton
-    fun provideImgurAuthService(context: Context, imgur: Imgur) =
-        ImgurAuthService(context, imgur)
 
     @Provides
     @Singleton

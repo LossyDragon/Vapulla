@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("KDocUnresolvedReference")
+
 package `in`.dragonbra.vapulla.compose.components.pullrefresh
 
 import androidx.compose.animation.core.animate

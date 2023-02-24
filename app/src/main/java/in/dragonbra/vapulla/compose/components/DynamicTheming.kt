@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("unused")
+
 package `in`.dragonbra.vapulla.compose.components
 
 import android.content.Context
@@ -138,7 +140,7 @@ fun rememberDominantColorState(
 }
 
 /**
- * A composable which allows dynamic theming of the [androidx.compose.material.Colors.primary]
+ * A composable which allows dynamic theming of the [androidx.compose.material3.ColorScheme.primary]
  * color from an image.
  */
 @Composable
@@ -146,6 +148,7 @@ fun DynamicThemePrimaryColorsFromImage(
     dominantColorState: DominantColorState = rememberDominantColorState(),
     content: @Composable () -> Unit
 ) {
+    @Suppress("UNUSED_VARIABLE")
     val colors = MaterialTheme.colorScheme.copy(
         primary = animateColorAsState(
             dominantColorState.color,

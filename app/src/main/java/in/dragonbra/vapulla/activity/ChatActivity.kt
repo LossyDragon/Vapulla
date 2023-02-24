@@ -1,5 +1,23 @@
 package `in`.dragonbra.vapulla.activity
 
+import android.content.ClipboardManager
+import android.content.Intent
+import android.graphics.Typeface
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.Menu
+import android.view.MenuItem
+import androidx.core.app.NavUtils
+import androidx.core.content.ContextCompat
+import androidx.paging.PagingData
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexboxLayoutManager
+import com.google.android.flexbox.JustifyContent
+import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
@@ -13,34 +31,18 @@ import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.databinding.ActivityChatBinding
-import `in`.dragonbra.vapulla.extension.*
+import `in`.dragonbra.vapulla.extension.bold
+import `in`.dragonbra.vapulla.extension.click
+import `in`.dragonbra.vapulla.extension.hide
+import `in`.dragonbra.vapulla.extension.isVisible
+import `in`.dragonbra.vapulla.extension.normal
+import `in`.dragonbra.vapulla.extension.show
+import `in`.dragonbra.vapulla.extension.toggleVisibility
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.presenter.ChatPresenter
-import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.ChatAdapterDataObserver
 import `in`.dragonbra.vapulla.view.ChatView
-import android.content.ClipboardManager
-import android.content.Intent
-import android.graphics.Typeface
-import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.Menu
-import android.view.MenuItem
-import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
-import androidx.core.app.NavUtils
-import androidx.core.content.ContextCompat
-import androidx.paging.PagingData
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.afollestad.materialdialogs.MaterialDialog
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.google.android.flexbox.FlexDirection
-import com.google.android.flexbox.FlexboxLayoutManager
-import com.google.android.flexbox.JustifyContent
-import com.google.android.material.snackbar.Snackbar
-import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -64,9 +66,6 @@ class ChatActivity :
     lateinit var emoticonDao: EmoticonDao
 
     @Inject
-    lateinit var imgurAuthService: ImgurAuthService
-
-    @Inject
     lateinit var schemaManager: GameSchemaManager
 
     @Inject
@@ -79,12 +78,6 @@ class ChatActivity :
     private lateinit var emoteAdapter: EmoteAdapter
 
     private lateinit var binding: ActivityChatBinding
-
-    private var resultLauncher = registerForActivityResult(StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            presenter.sendImage(result.data?.data!!)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,7 +140,6 @@ class ChatActivity :
         }
 
         binding.imageButton.click {
-            presenter.imageButtonClicked()
         }
     }
 
@@ -177,7 +169,6 @@ class ChatActivity :
             chatMessageDao,
             steamFriendDao,
             emoticonDao,
-            imgurAuthService,
             schemaManager,
             steamId
         )
@@ -286,57 +277,5 @@ class ChatActivity :
         } else {
             binding.messageBox.text.insert(binding.messageBox.selectionStart, ":${emoticon.name}:")
         }
-    }
-
-    override fun showImgurDialog() {
-        MaterialDialog(this).show {
-            title(R.string.dialogTitleImgur)
-            message(R.string.dialogMessageImgur)
-            positiveButton(R.string.dialogYes) {
-                Intent(this@ChatActivity, SettingsActivity::class.java)
-            }
-            negativeButton(R.string.dialogCancel)
-        }
-    }
-
-    override fun showPhotoSelector() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.type = "image/*"
-        if (packageManager.resolveActivity(intent, 0) != null) {
-            resultLauncher.launch(intent)
-        }
-    }
-
-    override fun showUploadDialog() {
-        runOnUiThread {
-            binding.imageButton.isClickable = false
-            binding.uploadProgressBar.show()
-            binding.uploadProgressBar.isIndeterminate = true
-        }
-    }
-
-    override fun imageUploadFail() {
-        runOnUiThread {
-            binding.imageButton.isClickable = true
-            binding.uploadProgressBar.hide()
-            Snackbar.make(
-                binding.rootLayout,
-                R.string.snackbarImgurUploadFailed,
-                Snackbar.LENGTH_LONG
-            ).show()
-        }
-    }
-
-    override fun imageUploadSuccess() {
-        runOnUiThread {
-            binding.imageButton.isClickable = true
-            binding.uploadProgressBar.hide()
-        }
-    }
-
-    override fun imageUploadProgress(total: Int, progress: Int) {
-        binding.uploadProgressBar.max = total
-        binding.uploadProgressBar.progress = progress
-        binding.uploadProgressBar.isIndeterminate = false
     }
 }

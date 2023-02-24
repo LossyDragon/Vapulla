@@ -36,8 +36,6 @@ object Utils {
 
     val isGreaterThanO
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-    val isGreaterThanP
-        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
     val isAtLeastS
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 

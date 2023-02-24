@@ -7,8 +7,9 @@ import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
-class SteamFriendRepository(private val steamFriendDao: SteamFriendDao) {
+class SteamFriendRepository(val steamFriendDao: SteamFriendDao) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
@@ -44,6 +45,7 @@ class SteamFriendRepository(private val steamFriendDao: SteamFriendDao) {
     fun getLive() {
         coroutineScope.launch(Dispatchers.IO) {
             val data = steamFriendDao.getLive()
+            Timber.d("AEEE: ${data.value?.size}")
             getLiveFriends.postValue(data.value)
         }
     }

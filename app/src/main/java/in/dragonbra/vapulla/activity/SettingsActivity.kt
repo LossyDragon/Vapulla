@@ -1,10 +1,5 @@
 package `in`.dragonbra.vapulla.activity
 
-import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.data.VapullaDatabase
-import `in`.dragonbra.vapulla.databinding.ActivitySettingsBinding
-import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.service.ImgurAuthService
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
@@ -12,8 +7,11 @@ import androidx.core.app.NavUtils
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceManager
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.data.VapullaDatabase
+import `in`.dragonbra.vapulla.databinding.ActivitySettingsBinding
+import `in`.dragonbra.vapulla.manager.AccountManager
 import javax.inject.Inject
 
 /**
@@ -28,9 +26,6 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
-
-    @Inject
-    lateinit var imgurAuthService: ImgurAuthService
 
     @Inject
     lateinit var accountManager: AccountManager
@@ -54,31 +49,6 @@ class SettingsActivity : AppCompatActivity() {
             .beginTransaction()
             .replace(R.id.activity_settings, SettingsFragment())
             .commit()
-
-        val uri = intent.data
-
-        if (uri != null && uri.host == "authorize") {
-            val success = imgurAuthService.authorize(uri)
-
-            if (success) {
-                val fragment: SettingsFragment = supportFragmentManager
-                    .findFragmentById(R.id.activity_settings) as SettingsFragment
-
-                fragment.updateImgurPref()
-
-                Snackbar.make(
-                    binding.activitySettings,
-                    getString(R.string.snackbarImgurLinked),
-                    Snackbar.LENGTH_SHORT
-                ).show()
-            } else {
-                Snackbar.make(
-                    binding.activitySettings,
-                    getString(R.string.snackbarImgurLinkFailed),
-                    Snackbar.LENGTH_SHORT
-                ).show()
-            }
-        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
