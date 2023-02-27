@@ -10,11 +10,12 @@ class ProfileManager(
 ) {
 
     fun getGames(steamId: SteamID): GamesListItem {
-        val args = java.util.HashMap<String, String>()
-        args["key"] = BuildConfig.STEAM_API_KEY
-        args["steamid"] = steamId.convertToUInt64().toString()
-        args["include_played_free_games"] = "1"
-        args["include_appinfo"] = "true"
+        val args = hashMapOf(
+            "key" to BuildConfig.STEAM_API_KEY,
+            "steamid" to steamId.convertToUInt64().toString(),
+            "include_played_free_games" to "1",
+            "include_appinfo"   to "true",
+        )
 
         var list = GamesListItem(0, arrayListOf())
 
@@ -33,7 +34,7 @@ class ProfileManager(
         return list
     }
 
-    fun getLevel(steamId: SteamID): String? {
+    fun getLevel(steamId: SteamID): Int? {
         val args = HashMap<String, String>()
         args["key"] = BuildConfig.STEAM_API_KEY
         args["steamid"] = steamId.convertToUInt64().toString()
@@ -42,12 +43,10 @@ class ProfileManager(
         val response = call.execute()
 
         return if (response.isSuccessful) {
-            var level = 0
-            if (response.body() != null) {
-                level = response.body()!!.level!!.playerLevel
-            }
+            if (response.body() == null)
+                return 0
 
-            level.toString()
+            response.body()!!.level?.playerLevel ?: 0
         } else {
             null
         }

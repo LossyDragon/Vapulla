@@ -4,10 +4,14 @@ import android.content.*
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
+import `in`.dragonbra.javasteam.handlers.ClientMsgHandler
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.service.SteamService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import timber.log.Timber
 import java.io.Closeable
 import java.util.LinkedList
@@ -17,6 +21,8 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     companion object {
         const val STOP_INTENT = "in.dragonbra.vapulla.SERVICE_STOP"
     }
+
+    protected val scope = CoroutineScope(Dispatchers.Default + Job())
 
     private val stopReceiver = StopReceiver()
 
@@ -107,6 +113,14 @@ abstract class VapullaBaseActivity : ComponentActivity() {
                 onConnected()
             }
         }
+    }
+
+    fun subscribe(sub: Closeable?) {
+        serviceSubscriptions.add(sub)
+    }
+
+    inline fun <reified T : ClientMsgHandler> getHandler(): T? {
+        return steamService?.getHandler()
     }
 
     inner class StopReceiver : BroadcastReceiver() {

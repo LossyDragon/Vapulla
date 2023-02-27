@@ -8,31 +8,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.SharedPreferences
-import android.graphics.drawable.Animatable
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
-import android.widget.ImageView
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
-import androidx.vectordrawable.graphics.drawable.Animatable2Compat
-import com.afollestad.materialdialogs.LayoutMode
 import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.bottomsheets.BottomSheet
-import com.afollestad.materialdialogs.callbacks.onDismiss
-import com.afollestad.materialdialogs.customview.customView
-import com.afollestad.materialdialogs.customview.getCustomView
 import com.afollestad.materialdialogs.input.input
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.anim.VectorAnimCompat
 import `in`.dragonbra.vapulla.compose.screens.login.LoginActivity
 import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.service.SteamService
@@ -155,50 +143,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // region About
         val prefVersion: Preference? = findPreference("pref_version")
         prefVersion?.summary = BuildConfig.VERSION_NAME
-        prefVersion?.click {
-            counter++
-
-            if (counter == 5) {
-                val dialog = MaterialDialog(ctx, BottomSheet(LayoutMode.WRAP_CONTENT))
-                    .customView(R.layout.view_easteregg, scrollable = false)
-
-                val customView = dialog.getCustomView()
-                val handler = Handler(Looper.getMainLooper())
-                customView.findViewById<ImageView>(R.id.vapullaLogoMiddle).drawable as Animatable
-                val d = customView.findViewById<ImageView>(
-                    R.id.vapullaLogoMiddle
-                ).drawable as Animatable
-                val d2 = customView.findViewById<ImageView>(
-                    R.id.vapullaLogoBottom
-                ).drawable as Animatable
-                VectorAnimCompat.registerAnimationCallback(
-                    d,
-                    object : Animatable2Compat.AnimationCallback() {
-                        override fun onAnimationEnd(drawable: Drawable) {
-                            d.start()
-                            handler.postDelayed({
-                                d2.stop()
-                                d2.start()
-                            }, 300)
-                        }
-                    }
-                )
-                d.start()
-                handler.postDelayed({ d2.start() }, 300)
-                dialog.onDismiss {
-                    handler.removeCallbacksAndMessages(null)
-                    VectorAnimCompat.clearAnimationCallbacks(d)
-                    VectorAnimCompat.clearAnimationCallbacks(d2)
-                    d.stop()
-                    d2.stop()
-                }
-                dialog.show()
-
-                counter = 0
-            }
-
-            true
-        }
 
         val prefRateApp: Preference? = findPreference("pref_rate_app")
         prefRateApp?.click {

@@ -19,10 +19,4 @@
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar" />
 
-    <!--<style name="AppTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />-->
-    
-    <style name="MaterialButtonStates" parent="Widget.MaterialComponents.Button.UnelevatedButton">
-        <item name="backgroundTint">@color/button_color_states</item>
-    </style>
-
 </resources>

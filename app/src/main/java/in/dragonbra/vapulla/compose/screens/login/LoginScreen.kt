@@ -39,7 +39,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import kotlinx.coroutines.delay
 import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation

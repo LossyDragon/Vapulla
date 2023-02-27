@@ -123,20 +123,6 @@
             tools:ignore="Autofill" />
 
         <ImageView
-            android:id="@+id/imageButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="bottom"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            app:layout_constraintEnd_toStartOf="@+id/emoteButton"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_image"
-            app:tint="@color/textPrimary"
-            tools:ignore="ContentDescription" />
-
-        <ImageView
             android:id="@+id/emoteButton"
             android:layout_width="30dp"
             android:layout_height="30dp"

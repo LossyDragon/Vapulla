@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.compose.components
+package `in`.dragonbra.vapulla.compose.screens.login
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth

@@ -23,7 +23,7 @@ class LoginViewModel(
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
     fun onEvent(event: LoginEvent) {
-        Timber.d("Login Event: $event")
+        Timber.d("Login Event: ${event.javaClass}")
         when (event) {
             LoginEvent.Login -> doLogin()
             LoginEvent.ShowFailedScreen -> {

@@ -31,8 +31,7 @@ object Utils {
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     const val STORE_PAGE_URL = "https://store.steampowered.com/app/%d/"
     private const val AVATAR_URL = "$STEAM_CDN/$STEAM_AVATAR/"
-    private const val DEFAULT_AVATAR =
-        "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    private const val DEFAULT_AVATAR = "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
     val isGreaterThanO
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O

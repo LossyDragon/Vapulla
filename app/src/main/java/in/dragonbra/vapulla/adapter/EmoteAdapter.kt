@@ -57,7 +57,7 @@ class EmoteAdapter(
         result.dispatchUpdatesTo(this)
     }
 
-    inner class ViewHolder(val v: ListEmoteBinding) : RecyclerView.ViewHolder(v.root) {
+    inner class ViewHolder(private val v: ListEmoteBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(emote: Emoticon) {
             v.emote.click { listener?.onEmoteSelected(emote) }
 

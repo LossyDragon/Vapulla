@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.compose.components
+package `in`.dragonbra.vapulla.compose.screens.home
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -8,16 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.Gamepad
-import androidx.compose.material.icons.filled.Smartphone
-import androidx.compose.material.icons.filled.Web
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
@@ -35,17 +27,12 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
-import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
-import `in`.dragonbra.vapulla.compose.ui.icons.VR
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.friendAwayOrSnooze
-import `in`.dragonbra.vapulla.compose.ui.theme.friendInGame
-import `in`.dragonbra.vapulla.compose.ui.theme.friendInGameAwayOrSnooze
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
+import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
+import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.util.Utils
 import timber.log.Timber
 import java.text.DateFormat
@@ -68,18 +55,6 @@ fun FriendItem(
     }
 
     val haptic = LocalHapticFeedback.current
-
-    // Order is important
-    val color = when {
-        friend.isOffline() -> friendOffline
-        friend.isInGameAwayOrSnooze() -> friendInGameAwayOrSnooze
-        friend.isAwayOrSnooze() -> friendAwayOrSnooze
-        friend.isInGame() -> friendInGame
-        friend.isOnline() -> friendOnline
-        else -> friendOffline
-    }
-    Timber.w("Friend ${friend.name} is $color")
-
     val context = LocalContext.current
     Column(
         modifier = modifier
@@ -91,20 +66,10 @@ fun FriendItem(
                 }
             )
     ) {
-        val colorState by remember(friend.id) { mutableStateOf(color) }
         ListItem(
             headlineText = {
-                val hasNickname = !Strings.isNullOrEmpty(friend.nickname)
-                val name = if (hasNickname) {
-                    // TODO Make * Offline Grey
-                    friend.nickname + "*"
-                } else {
-                    friend.name
-                }
-
                 Text(
-                    text = name ?: "",
-                    color = colorState,
+                    text = friendNameBuilder(friend = friend),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -112,7 +77,6 @@ fun FriendItem(
             supportingText = {
                 val statusText: String
                 val messageText: String?
-                val state = friend.state.let { EPersonaState.from(it) }
 
                 val isTypingFromLastMessage = friend.typingTs > (friend.lastMessageTime ?: 0)
                 val isTyping = friend.typingTs > (System.currentTimeMillis() - 20000L)
@@ -132,7 +96,7 @@ fun FriendItem(
                     } else {
                         val status = Utils.getStatusText(
                             context,
-                            state,
+                            EPersonaState.from(friend.state ?: 0),
                             friend.gameAppId,
                             friend.gameName,
                             friend.lastLogOff
@@ -147,7 +111,7 @@ fun FriendItem(
                 Column {
                     Text(
                         text = statusText,
-                        color = colorState,
+                        color = getStatusColor(friend),
                         fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -176,6 +140,7 @@ fun FriendItem(
                         )
                     }
                 } else {
+                    // TODO hide this if we never chatted with a friend yet
                     // Read Messages, show last time
                     val time = DateUtils.formatSameDayTime(
                         friend.lastMessageTime ?: 0,
@@ -194,7 +159,7 @@ fun FriendItem(
                 Surface(
                     modifier = Modifier.size(58.dp),
                     shape = RectangleShape,
-                    color = colorState
+                    color = getStatusColor(friend)
                 ) {
                     Box {
                         CoilImage(
@@ -212,29 +177,13 @@ fun FriendItem(
                             )
                         )
 
-                        val state = friend.state.let { EPersonaState.from(it) }
-                        val flags = EPersonaStateFlag.from(friend.stateFlags)
-                        val icon = if (state == EPersonaState.Away) {
-                            Icons.Default.Bedtime
-                        } else if (flags.contains(EPersonaStateFlag.ClientTypeVR)) {
-                            Icons.Default.VR
-                        } else if (flags.contains(EPersonaStateFlag.LaunchTypeGamepad)) {
-                            Icons.Default.Gamepad
-                        } else if (flags.contains(EPersonaStateFlag.ClientTypeMobile)) {
-                            Icons.Default.Smartphone
-                        } else if (flags.contains(EPersonaStateFlag.ClientTypeWeb)) {
-                            Icons.Default.Web
-                        } else {
-                            null
-                        }
-
-                        icon?.let {
+                        getStatusIcon(friend)?.let {
                             Icon(
                                 modifier = Modifier
                                     .size(16.dp)
                                     .align(Alignment.BottomEnd),
-                                imageVector = icon,
-                                contentDescription = icon.name
+                                imageVector = it,
+                                contentDescription = it.name
                             )
                         }
                     }
@@ -267,7 +216,7 @@ private fun Preview_FriendListItem() {
                 lastMessageTime = 0,
                 name = personaName,
                 newMessageCount = 50,
-                nickname = null,
+                nickname = personaName,
                 relation = EFriendRelationship.Friend.code(),
                 state = personaState.code(),
                 stateFlags = 512,

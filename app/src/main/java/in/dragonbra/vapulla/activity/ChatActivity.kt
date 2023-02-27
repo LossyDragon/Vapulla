@@ -25,6 +25,7 @@ import `in`.dragonbra.vapulla.adapter.ChatAdapter
 import `in`.dragonbra.vapulla.adapter.EmoteAdapter
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.chat.PaperPlane
+import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.data.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.data.dao.EmoticonDao
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
@@ -36,7 +37,6 @@ import `in`.dragonbra.vapulla.extension.click
 import `in`.dragonbra.vapulla.extension.hide
 import `in`.dragonbra.vapulla.extension.isVisible
 import `in`.dragonbra.vapulla.extension.normal
-import `in`.dragonbra.vapulla.extension.show
 import `in`.dragonbra.vapulla.extension.toggleVisibility
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.presenter.ChatPresenter
@@ -137,9 +137,6 @@ class ChatActivity :
                 Utils.hideKeyboardFrom(this, binding.messageBoxLayout)
                 presenter.requestEmotes()
             }
-        }
-
-        binding.imageButton.click {
         }
     }
 
@@ -252,11 +249,6 @@ class ChatActivity :
     }
 
     override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-        if (s.isEmpty()) {
-            binding.imageButton.show()
-        } else {
-            binding.imageButton.hide()
-        }
     }
 
     override fun viewProfile(steamID: Long) {

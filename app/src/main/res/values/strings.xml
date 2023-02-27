@@ -91,7 +91,7 @@
 
     <string name="dialogYes">Yes</string>
     <string name="dialogNo">No</string>
-    <string name="dialogTitleNickname">Set profile name</string>
+    <string name="dialogTitleNickname">Set %1$s\'s nickname</string>
     <string name="dialogCancel">Cancel</string>
     <string name="dialogSet">Set</string>
     <string name="dialogMessageImgur">Link your Imgur account to send images to your friends.</string>
@@ -100,7 +100,7 @@
     <string name="dialogMessageRemoveFriend">Are you sure you want to remove %1$s from you friends list?</string>
     <string name="dialogClose">Close</string>
     <string name="dialogTitleAliases">Past aliases</string>
-    <string name="dialogTitleBlockFriend">Block all interactions with %1$s</string>
+    <string name="dialogTitleBlockFriend">Block %1$s</string>
     <string name="dialogMessageBlockFriend">Are you sure you want to block %1$s? This will block all kinds of communication with your friend. You can undo this by visiting their profile and unblocking them.</string>
     <string name="dialogTitleChangeUser">Change user</string>
     <string name="dialogMessageChangeUser">This will log you out. You will have to reenter your credentials if you want to log back in.</string>
@@ -184,6 +184,9 @@
     <string name="textPlayedRecent">%.1f hrs past two weeks</string>
     <string name="textPlayedForever">%.0f hrs on record</string>
     <string name="desc_send_button">Send Button</string>
+    <string name="change">Change</string>
+    <string name="nickname">Nickname</string>
+    <string name="title_activity_games">%1$s\'s games</string>
 
     <!--endregion-->
 

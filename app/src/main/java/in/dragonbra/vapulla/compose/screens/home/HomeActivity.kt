@@ -12,11 +12,13 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.activity.ChatActivity
-import `in`.dragonbra.vapulla.activity.ProfileActivity
+import `in`.dragonbra.vapulla.activity.SettingsActivity
 import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
+import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 
@@ -31,6 +33,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         setContent {
             LaunchedEffect(Unit) {
                 viewModel.uiEvent.collectLatest { event ->
+                    Timber.d("FLOWING: ${event.javaClass}")
                     onFriendAction(event)
                 }
             }
@@ -62,48 +65,48 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     override fun onDisconnected() {
         super.onDisconnected()
+        Timber.d("onDisconnected")
         closeApplication()
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
-        viewModel.friendsData.observe(this, viewModel.dataObserver)
+        Timber.d("onPostCreate")
     }
 
     override fun onResume() {
         super.onResume()
+        Timber.d("onResume")
         if (isBound) {
             steamService?.isActivityRunning = true
         }
 
-        with(viewModel.account) {
+        with(viewModel.accountManager) {
             addListener(this@HomeActivity)
             viewModel.onEvent(
-                HomeEvent.UpdateAccount(
-                    avatarHash.orEmpty(),
-                    state.name,
-                    avatarHash.orEmpty()
-                )
+                HomeEvent.UpdateAccount(avatarHash.orEmpty(), state.name, avatarHash.orEmpty())
             )
         }
     }
 
     override fun onPause() {
         super.onPause()
+        Timber.d("onPause")
         if (isBound) {
             steamService?.isActivityRunning = false
         }
 
-        viewModel.account.removeListener(this)
+        viewModel.accountManager.removeListener(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Timber.d("onDestroy")
         viewModel.onDestroy()
     }
 
     override fun unAccountUpdate(account: AccountManager) {
-        Timber.w("ACCOUNT UPDATE TODO")
+        Timber.d("unAccountUpdate")
         viewModel.onEvent(
             HomeEvent.UpdateAccount(
                 account.nickname.orEmpty(),
@@ -114,16 +117,18 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     }
 
     private fun closeApplication() {
+        Timber.d("closeApplication")
         Intent(Intent.ACTION_MAIN).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
             addCategory(Intent.CATEGORY_HOME)
         }.also {
             startActivity(it)
-            finish()
         }
+        finish()
     }
 
     private fun onChatSelected(friend: FriendListItem) {
+        Timber.d("onChatSelected: ${friend.nickname ?: friend.name}")
         Intent(this, ChatActivity::class.java).apply {
             putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
         }.also {
@@ -132,6 +137,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     }
 
     private fun onProfileSelected(friend: FriendListItem) {
+        Timber.d("onProfileSelected: ${friend.nickname ?: friend.name}")
         Intent(this, ProfileActivity::class.java).apply {
             putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
         }.also {
@@ -139,8 +145,15 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         }
     }
 
+    private fun onSettings() {
+        Timber.d("onSettings")
+
+        startActivity(Intent(this, SettingsActivity::class.java))
+    }
+
     private fun onFriendAction(event: HomeUiEvent) {
-        Runnable {
+        Timber.d("onFriendAction ${event.javaClass}")
+        scope.executeAsyncTask {
             when (event) {
                 is HomeUiEvent.AcceptRequest -> {
                     val friend = SteamID(event.friend.id)
@@ -166,7 +179,18 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
                 }
 
                 HomeUiEvent.Refresh -> {
+                    viewModel.clearStates()
                     steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
+                }
+
+                HomeUiEvent.AddFriend -> TODO()
+
+                HomeUiEvent.LogOut -> {
+                    steamService?.disconnect()
+                }
+
+                HomeUiEvent.Settings -> {
+                    onSettings()
                 }
             }
         }

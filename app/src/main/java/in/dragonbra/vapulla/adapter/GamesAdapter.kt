@@ -77,7 +77,7 @@ class GamesAdapter : RecyclerView.Adapter<GamesAdapter.ViewHolder>() {
         }
     }
 
-    inner class ViewHolder(val v: ListGamesBinding) : RecyclerView.ViewHolder(v.root) {
+    inner class ViewHolder(private val v: ListGamesBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(item: Games) {
             Glide.with(v.root)
                 .clear(v.gamesImage)

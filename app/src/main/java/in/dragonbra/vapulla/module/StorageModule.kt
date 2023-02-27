@@ -1,15 +1,13 @@
 package `in`.dragonbra.vapulla.module
 
-import `in`.dragonbra.vapulla.data.VapullaDatabase
-import `in`.dragonbra.vapulla.manager.AccountManager
 import android.content.Context
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
-import `in`.dragonbra.vapulla.data.repository.SteamFriendRepository
+import `in`.dragonbra.vapulla.data.VapullaDatabase
+import `in`.dragonbra.vapulla.manager.AccountManager
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -33,10 +31,10 @@ object StorageModule {
     @Singleton
     fun provideSteamFriendDao(db: VapullaDatabase) = db.steamFriendDao()
 
-    @Provides
-    @Singleton
-    fun provideSteamFriendRepository(steamFriendDao: SteamFriendDao) =
-        SteamFriendRepository(steamFriendDao)
+//    @Provides
+//    @Singleton
+//    fun provideSteamFriendRepository(steamFriendDao: SteamFriendDao) =
+//        SteamFriendRepository(steamFriendDao)
 
     @Provides
     @Singleton

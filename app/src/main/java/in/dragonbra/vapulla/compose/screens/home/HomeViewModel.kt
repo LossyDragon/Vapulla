@@ -5,21 +5,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.chat.PaperPlane
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import `in`.dragonbra.vapulla.data.repository.SteamFriendRepository
+import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
-import `in`.dragonbra.vapulla.util.OfflineStatusUpdater
-import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -27,18 +23,18 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     application: Application,
-    val account: AccountManager,
     private val gameSchemaManager: GameSchemaManager,
     private val paperPlane: PaperPlane,
-    private val steamFriendRepository: SteamFriendRepository
+    val accountManager: AccountManager,
+    private val steamFriendDao: SteamFriendDao
 ) : AndroidViewModel(application) {
 
-    private var offlineStatusUpdater = OfflineStatusUpdater(vmApplication)
     private val prefs = PreferenceManager.getDefaultSharedPreferences(vmApplication)
 
     private val vmApplication: Application
@@ -50,21 +46,18 @@ class HomeViewModel @Inject constructor(
     var homeState by mutableStateOf(HomeState())
         private set
 
-    val friendsData: LiveData<List<FriendListItem>> = steamFriendRepository.steamFriendDao.getLive()
-    val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
-        Timber.d("Observed!!!")
-        if (!homeState.isSearching) {
-            val updateTime = System.currentTimeMillis()
-            swap(list, updateTime)
-        }
+    private lateinit var friendsData: LiveData<List<FriendListItem>>
+    private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
+        Timber.d("Observe: ${list.size}")
+        val updateTime = System.currentTimeMillis()
+        swap(list, updateTime)
     }
 
     fun onEvent(event: HomeEvent) {
-        // Timber.d("Event: $event")
+        Timber.d("Event: ${event.javaClass}")
         when (event) {
             is HomeEvent.SwipeRefresh -> {
                 homeState = homeState.copy(isRefreshing = event.isRefreshing)
-                clearOnlineState()
                 viewModelScope.launch {
                     _uiEvent.emit(HomeUiEvent.Refresh)
                     delay(1000L)
@@ -89,15 +82,34 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             }
+
+            is HomeEvent.StatusChange -> {
+                viewModelScope.launch {
+                    _uiEvent.emit(HomeUiEvent.ChangeStatus(event.status))
+                }
+            }
+
+            HomeEvent.AddFriend -> {
+                viewModelScope.launch {
+                    _uiEvent.emit(HomeUiEvent.AddFriend)
+                }
+            }
+
+            HomeEvent.Logout -> {
+                viewModelScope.launch {
+                    _uiEvent.emit(HomeUiEvent.LogOut)
+                }
+            }
+
+            HomeEvent.Settings -> {
+                viewModelScope.launch {
+                    _uiEvent.emit(HomeUiEvent.Settings)
+                }
+            }
         }
     }
 
     private fun swap(list: List<FriendListItem>, updateTime: Long) {
-        offlineStatusUpdater.updateAll()
-
-        val timeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
-        val sorting = prefs.getString("pref_friends_list_sort", "1")!!
-
         if (list.isEmpty()) {
             return
         }
@@ -110,108 +122,61 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        val newList = if (sorting == "1") {
-            // Sort by Status
-            list.sortedWith(
-                compareBy(
-                    { !it.isRequestRecipient() },
-                    { !it.isItemRecentChat(timeout, updateTime) },
-                    { !it.isInGame() },
-                    { !it.isOnline() },
-                    { it.isAwayOrSnooze() },
-                    {
-                        if (!it.nickname.isNullOrEmpty()) {
-                            it.nickname?.lowercase()
-                        } else {
-                            it.name?.lowercase()
-                        }
-                    }
-                )
-            )
-        } else {
-            // Sort by Name
-            listOf()
-        }
+        val recentTimeout =
+            prefs.getString("pref_friends_list_recents", "604800000")?.toLong() ?: 0L
 
-        homeState = homeState.copy(list = MutableLiveData(newList), updateTime = updateTime)
+        val sortedList = list.sortedWith(compareBy(
+            { it.isRequestRecipient().not() },
+            { it.isItemRecentChat(recentTimeout, updateTime).not() },
+            { it.isInGame().not() },
+            { it.isInGameAwayOrSnooze() },
+            { it.isOnline().not() },
+            { it.isAwayOrSnooze() },
+            { it.isOffline().not() },
+            { it.friendName.lowercase(Locale.getDefault()) }
+        ))
+
+        Timber.d("Friends List Size: ${sortedList.size}")
+        homeState = homeState.copy(friendsList = sortedList, updateTime = updateTime)
     }
 
-    fun search(query: String) {
-        val trimmedQuery = query.trim()
-        homeState.list.let { list ->
-            val updateTime = System.currentTimeMillis()
-            if (Strings.isNullOrEmpty(trimmedQuery)) {
-                val sorted = list.value!!.sortedWith(FriendsComparator(vmApplication, updateTime))
-                onEvent(HomeEvent.UpdateFriends(sorted, updateTime))
+//    fun search(query: String) {
+//        val trimmedQuery = query.trim()
+//        friendsData.let { list ->
+//            val updateTime = System.currentTimeMillis()
+//            if (Strings.isNullOrEmpty(trimmedQuery)) {
+//                val sorted = list.value!!.sortedWith(FriendsComparator(vmApplication, updateTime))
+//                onEvent(HomeEvent.UpdateFriends(sorted, updateTime))
+//
+//                return@let
+//            }
+//
+//            val filteredList = list.value!!.filter {
+//                val nameFiltered = it.name?.contains(trimmedQuery, true) == true
+//                val nickFiltered = it.nickname?.contains(trimmedQuery, true) == true
+//                nameFiltered || nickFiltered
+//            }.sortedWith(FriendsComparator(vmApplication, updateTime))
+//
+//            onEvent(HomeEvent.UpdateFriends(filteredList, updateTime))
+//        }
+//    }
 
-                return@let
-            }
+    fun clearStates() {
+        steamFriendDao.clearOnlineState()
+    }
 
-            val filteredList = list.value!!.filter {
-                val nameFiltered = it.name?.contains(trimmedQuery, true) == true
-                val nickFiltered = it.nickname?.contains(trimmedQuery, true) == true
-                nameFiltered || nickFiltered
-            }.sortedWith(FriendsComparator(vmApplication, updateTime))
+    fun onPostCreate(owner: LifecycleOwner) {
+        Timber.d("onPostCreate")
+        friendsData = steamFriendDao.getLive()
+        friendsData.observe(owner, dataObserver)
 
-            onEvent(HomeEvent.UpdateFriends(filteredList, updateTime))
-        }
+        val updateTime = System.currentTimeMillis()
+        swap(friendsData.value.orEmpty(), updateTime)
     }
 
     fun onDestroy() {
-        Timber.d("on destroy")
+        Timber.d("onDestroy")
         friendsData.removeObserver(dataObserver)
         paperPlane.clearAll()
-        offlineStatusUpdater.clear()
     }
-
-    // region [REGION] Repository Functions
-    private fun insert(vararg steamFriends: SteamFriend) {
-        Timber.d("insert")
-        steamFriendRepository.insert(steamFriends = steamFriends)
-    }
-
-    private fun find(id: Long): SteamFriend? {
-        Timber.d("find")
-        steamFriendRepository.find(id = id)
-        return steamFriendRepository.foundFriend.value
-    }
-
-    private fun findLive(id: Long): FriendListItem? {
-        Timber.d("findLive")
-        steamFriendRepository.findLive(id = id)
-        return steamFriendRepository.findLiveFriends.value
-    }
-
-    private fun update(vararg steamFriends: SteamFriend) {
-        Timber.d("update")
-        steamFriendRepository.update(steamFriends = steamFriends)
-    }
-
-    private fun getLive(): List<FriendListItem> {
-        steamFriendRepository.getLive()
-        val list = steamFriendRepository.getLiveFriends.value ?: listOf()
-        Timber.d("getLive: ${list.size}")
-        return list
-    }
-
-    private fun clearNicknames() {
-        steamFriendRepository.clearNicknames()
-    }
-
-    private fun remove(vararg friends: SteamFriend) {
-        Timber.d("remove")
-        steamFriendRepository.remove(friends = friends)
-    }
-
-    private fun delete() {
-        Timber.d("delete")
-        steamFriendRepository.delete()
-    }
-
-    private fun clearOnlineState() {
-        Timber.d("clearOnlineState")
-        steamFriendRepository.clearOnlineState()
-    }
-
-    // endregion
 }

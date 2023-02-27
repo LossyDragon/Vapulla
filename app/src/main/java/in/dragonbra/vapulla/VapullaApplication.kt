@@ -16,11 +16,11 @@ class VapullaApplication : Application() {
         Timber.plant(Timber.DebugTree())
         LogManager.addListener(object : LogListener {
             override fun onLog(clazz: Class<*>?, message: String?, throwable: Throwable?) {
-                Timber.tag(clazz?.simpleName ?: "Unknown Class").d(throwable, message)
+                Timber.d("${clazz?.simpleName ?: "Unknown Class"} + $message")
             }
 
             override fun onError(clazz: Class<*>?, message: String?, throwable: Throwable?) {
-                Timber.tag(clazz?.simpleName ?: "Unknown Class").e(throwable, message)
+                Timber.d("${clazz?.simpleName ?: "Unknown Class"} + $message")
             }
         })
     }

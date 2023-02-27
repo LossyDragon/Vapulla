@@ -1,9 +1,13 @@
+@file:Suppress("UnusedReceiverParameter", "ObjectPropertyName")
+
 package `in`.dragonbra.vapulla.compose.ui.icons
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.materialPath
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -63,5 +67,5 @@ private var _vR: ImageVector? = null
 @Composable
 @Suppress("UnusedPrivateMember")
 private fun IconVRPreview() {
-    Image(imageVector = Icons.Filled.VR, contentDescription = null)
+    Image(modifier = Modifier.size(64.dp), imageVector = Icons.Filled.VR, contentDescription = null)
 }
