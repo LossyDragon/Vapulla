@@ -125,16 +125,18 @@ class HomeViewModel @Inject constructor(
         val recentTimeout =
             prefs.getString("pref_friends_list_recents", "604800000")?.toLong() ?: 0L
 
-        val sortedList = list.sortedWith(compareBy(
-            { it.isRequestRecipient().not() },
-            { it.isItemRecentChat(recentTimeout, updateTime).not() },
-            { it.isInGame().not() },
-            { it.isInGameAwayOrSnooze() },
-            { it.isOnline().not() },
-            { it.isAwayOrSnooze() },
-            { it.isOffline().not() },
-            { it.friendName.lowercase(Locale.getDefault()) }
-        ))
+        val sortedList = list.sortedWith(
+            compareBy(
+                { it.isRequestRecipient().not() },
+                { it.isItemRecentChat(recentTimeout, updateTime).not() },
+                { it.isInGame().not() },
+                { it.isInGameAwayOrSnooze() },
+                { it.isOnline().not() },
+                { it.isAwayOrSnooze() },
+                { it.isOffline().not() },
+                { it.friendName.lowercase(Locale.getDefault()) }
+            )
+        )
 
         Timber.d("Friends List Size: ${sortedList.size}")
         homeState = homeState.copy(friendsList = sortedList, updateTime = updateTime)

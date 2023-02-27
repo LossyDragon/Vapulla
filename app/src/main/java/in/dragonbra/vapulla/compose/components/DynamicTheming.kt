@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-@file:Suppress("unused")
-
 package `in`.dragonbra.vapulla.compose.components
 
 import android.content.Context
 import androidx.annotation.FloatRange
 import androidx.collection.LruCache
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -48,7 +43,6 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.size.Scale
-import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -140,29 +134,6 @@ fun rememberDominantColorState(
 }
 
 /**
- * A composable which allows dynamic theming of the [androidx.compose.material3.ColorScheme.primary]
- * color from an image.
- */
-@Composable
-fun DynamicThemePrimaryColorsFromImage(
-    dominantColorState: DominantColorState = rememberDominantColorState(),
-    content: @Composable () -> Unit
-) {
-    @Suppress("UNUSED_VARIABLE")
-    val colors = MaterialTheme.colorScheme.copy(
-        primary = animateColorAsState(
-            dominantColorState.color,
-            spring(stiffness = Spring.StiffnessLow)
-        ).value,
-        onPrimary = animateColorAsState(
-            dominantColorState.onColor,
-            spring(stiffness = Spring.StiffnessLow)
-        ).value
-    )
-    VapullaTheme(content = content)
-}
-
-/**
  * A class which stores and caches the result of any calculated dominant colors
  * from images.
  *
@@ -184,8 +155,8 @@ class DominantColorState(
 ) {
     var color by mutableStateOf(defaultColor)
         private set
-    var onColor by mutableStateOf(defaultOnColor)
-        private set
+
+    private var onColor by mutableStateOf(defaultOnColor)
 
     private val cache = when {
         cacheSize > 0 -> LruCache<String, DominantColors>(cacheSize)
@@ -220,14 +191,6 @@ class DominantColorState(
             }
             // Cache the resulting [DominantColors]
             ?.also { result -> cache?.put(url, result) }
-    }
-
-    /**
-     * Reset the color values to [defaultColor].
-     */
-    fun reset() {
-        color = defaultColor
-        onColor = defaultColor
     }
 }
 

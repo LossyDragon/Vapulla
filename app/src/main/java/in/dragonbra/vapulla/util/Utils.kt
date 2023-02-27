@@ -5,11 +5,12 @@ import `in`.dragonbra.vapulla.R
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import android.os.Bundle
+import android.os.Parcelable
 import android.text.format.DateUtils
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import androidx.core.content.ContextCompat.getColor
 import com.bumptech.glide.request.RequestOptions
 import java.util.regex.Pattern
 
@@ -31,12 +32,26 @@ object Utils {
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     const val STORE_PAGE_URL = "https://store.steampowered.com/app/%d/"
     private const val AVATAR_URL = "$STEAM_CDN/$STEAM_AVATAR/"
-    private const val DEFAULT_AVATAR = "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+    private const val DEFAULT_AVATAR =
+        "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
     val isGreaterThanO
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
     val isAtLeastS
         get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val isAtLeastT
+        get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+    @Suppress("SameParameterValue")
+    inline fun <reified T : Parcelable> Bundle.parcelableArrayList(key: String): ArrayList<T>? {
+        return when {
+            isAtLeastT -> getParcelableArrayList(key, T::class.java)
+            else -> {
+                @Suppress("DEPRECATION")
+                getParcelableArrayList(key)
+            }
+        }
+    }
 
     fun getAvatarUrl(avatar: String?): String {
         if (avatar.isNullOrEmpty() || avatar == ALL_ZEROS) {
@@ -44,29 +59,6 @@ object Utils {
         }
 
         return "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
-    }
-
-    fun getStatusColor(
-        context: Context,
-        state: EPersonaState?,
-        gameAppId: Int,
-        gameName: String?
-    ): Int {
-        if (gameAppId != 0 || !gameName.isNullOrEmpty()) {
-            return getColor(context, R.color.statusInGame)
-        }
-
-        val color = when (state) {
-            EPersonaState.Online -> R.color.statusOnline
-            EPersonaState.Busy -> R.color.statusBusy
-            EPersonaState.Away,
-            EPersonaState.Snooze -> R.color.statusAway
-            EPersonaState.LookingToTrade,
-            EPersonaState.LookingToPlay -> R.color.statusLookingTo
-            else -> R.color.statusOffline
-        }
-
-        return getColor(context, color)
     }
 
     fun getStatusText(

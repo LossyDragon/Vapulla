@@ -31,11 +31,6 @@ object StorageModule {
     @Singleton
     fun provideSteamFriendDao(db: VapullaDatabase) = db.steamFriendDao()
 
-//    @Provides
-//    @Singleton
-//    fun provideSteamFriendRepository(steamFriendDao: SteamFriendDao) =
-//        SteamFriendRepository(steamFriendDao)
-
     @Provides
     @Singleton
     fun provideChatMessageDao(db: VapullaDatabase) = db.chatMessageDao()

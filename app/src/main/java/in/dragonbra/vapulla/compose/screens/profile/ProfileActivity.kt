@@ -15,7 +15,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistor
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.activity.ChatActivity
-import `in`.dragonbra.vapulla.activity.GamesActivity
+import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
@@ -55,7 +55,7 @@ class ProfileActivity : VapullaBaseActivity() {
                     viewModel = viewModel,
                     onChatClick = { viewChat(it) },
                     onAccountClick = { viewProfile(it) },
-                    onGamesClick = { games, name -> viewGames(games, name) },
+                    onGamesClick = { games, name -> viewGames(games, name) }
                 )
             }
         }
@@ -133,7 +133,6 @@ class ProfileActivity : VapullaBaseActivity() {
         startActivity(intent)
     }
 
-
     private fun onProfileEvent(event: ProfileUiEvent, steamID: SteamID) {
         scope.executeAsyncTask {
             when (event) {
@@ -149,7 +148,6 @@ class ProfileActivity : VapullaBaseActivity() {
 
                 is ProfileUiEvent.BlockFriend -> {
                     getHandler<SteamFriends>()?.ignoreFriend(steamID)
-
                 }
 
                 is ProfileUiEvent.RemoveFriend -> {

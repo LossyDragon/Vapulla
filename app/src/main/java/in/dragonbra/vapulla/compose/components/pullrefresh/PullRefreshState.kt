@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:Suppress("KDocUnresolvedReference")
+@file:Suppress("KDocUnresolvedReference", "BooleanMethodIsAlwaysInverted")
 
 package `in`.dragonbra.vapulla.compose.components.pullrefresh
 

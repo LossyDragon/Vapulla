@@ -18,12 +18,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -114,7 +116,7 @@ private fun HomeScreenContent(
     onSettings: () -> Unit,
     onLogout: () -> Unit,
     onChatSelected: (friend: FriendListItem) -> Unit,
-    onProfileSelected: (friend: FriendListItem) -> Unit,
+    onProfileSelected: (friend: FriendListItem) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -137,7 +139,14 @@ private fun HomeScreenContent(
                 topBar = {
                     VapullaToolbar(
                         drawerState = drawerState,
-                        onSearch = { TODO() }
+                        actions = {
+                            IconButton(onClick = { TODO() }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Search,
+                                    contentDescription = "Search"
+                                )
+                            }
+                        }
                     )
                 }
             ) { paddingValues ->
@@ -204,7 +213,7 @@ private fun HomeScreenDrawer(
     onStatusChange: (EPersonaState) -> Unit,
     onPersonAdd: () -> Unit,
     onSettings: () -> Unit,
-    onLogout: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
     val dominantColorState = rememberDominantColorState(
@@ -287,7 +296,7 @@ private fun DrawerAccountInfo(state: HomeState) {
 @Composable
 private fun DrawerStatusButtons(
     drawerState: DrawerState,
-    onStatusChange: (EPersonaState) -> Unit,
+    onStatusChange: (EPersonaState) -> Unit
 ) {
     val items = mapOf(
         EPersonaState.Online to friendOnline,
@@ -326,7 +335,7 @@ private fun DrawerStatusButtons(
 private fun DrawerMenuButtons(
     onPersonAdd: () -> Unit,
     onSettings: () -> Unit,
-    onLogout: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val menuButtonColors = NavigationDrawerItemDefaults.colors(
         unselectedContainerColor = Color.Transparent
@@ -380,7 +389,7 @@ private fun Preview_HomeScreenContent() {
                 nickname = null,
                 relation = 0,
                 stateFlags = 0,
-                typingTs = 0L,
+                typingTs = 0L
             )
         )
     }

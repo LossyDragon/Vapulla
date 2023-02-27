@@ -7,6 +7,7 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import org.spongycastle.util.encoders.Hex
+import timber.log.Timber
 import java.util.*
 
 class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
@@ -18,14 +19,14 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
     private var isRunning = false
 
     private val thread: Runnable = Runnable {
-        info("starting persona state buffer thread")
+        Timber.i("starting persona state buffer thread")
         isRunning = true
 
         while (isRunning) {
             Thread.sleep(1000L)
             process()
         }
-        info("stopping persona state buffer thread")
+        Timber.i("stopping persona state buffer thread")
     }
 
     fun push(state: PersonaState) {

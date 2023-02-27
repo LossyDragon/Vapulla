@@ -27,9 +27,9 @@ import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
-import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.view.ChatView
 import kotlinx.coroutines.Dispatchers
+import timber.log.Timber
 
 class ChatPresenter(
     context: Context,
@@ -79,11 +79,11 @@ class ChatPresenter(
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
-        info("Unbound from Steam service")
+        Timber.i("Unbound from Steam service")
     }
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        info("Bound to Steam service")
+        Timber.i("Bound to Steam service")
 
         steamService?.setChatFriendId(steamId)
         steamService?.isActivityRunning = true

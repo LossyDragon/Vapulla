@@ -16,8 +16,9 @@ val colorSecondary = Color(0xFF546E7A)
 val colorError = Color(0xFFEF5350)
 
 fun getStatusColor(friend: FriendListItem?): Color {
-    if(friend == null)
+    if (friend == null) {
         return friendOffline
+    }
 
     return when {
         friend.isOffline() -> friendOffline

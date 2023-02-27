@@ -14,7 +14,7 @@ class ProfileManager(
             "key" to BuildConfig.STEAM_API_KEY,
             "steamid" to steamId.convertToUInt64().toString(),
             "include_played_free_games" to "1",
-            "include_appinfo"   to "true",
+            "include_appinfo" to "true"
         )
 
         var list = GamesListItem(0, arrayListOf())
@@ -43,8 +43,9 @@ class ProfileManager(
         val response = call.execute()
 
         return if (response.isSuccessful) {
-            if (response.body() == null)
+            if (response.body() == null) {
                 return 0
+            }
 
             response.body()!!.level?.playerLevel ?: 0
         } else {

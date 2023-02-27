@@ -11,12 +11,20 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
-import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.input.input
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.BuildConfig
@@ -38,8 +46,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private val subs: MutableList<Closeable?> = LinkedList()
 
     private lateinit var prefs: SharedPreferences
-
-    private var counter = 0
 
     private val args: Bundle
         get() = requireArguments()
@@ -92,6 +98,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         subs.forEach { it?.close() }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("InflateParams", "CheckResult")
     private fun setupPreferences() {
         val accountManager = (activity as SettingsActivity).accountManager
@@ -102,41 +109,58 @@ class SettingsFragment : PreferenceFragmentCompat() {
         changeUserPreference?.summary =
             getString(R.string.prefSummaryChangeUser, accountManager.username)
         changeUserPreference?.click {
-            MaterialDialog(ctx).show {
-                title(R.string.dialogTitleChangeUser)
-                message(R.string.dialogMessageChangeUser)
-                positiveButton(R.string.dialogYes) {
+            val builder = AlertDialog.Builder(ctx).apply {
+                setTitle(R.string.dialogTitleChangeUser)
+                setMessage(R.string.dialogMessageChangeUser)
+                setPositiveButton(R.string.dialogYes) { _, _ ->
                     lifecycleScope.executeAsyncTask(
                         doInBackground = { steamService.disconnect() },
                         onPostExecute = { clearData() }
                     )
                 }
-                negativeButton(R.string.dialogNo)
-            }
+                setNegativeButton(R.string.dialogNo) { _, _ -> }
+            }.create()
+
+            builder.show()
+
             true
         }
 
+        var newName = ""
         val changeProfileName: Preference? = findPreference("pref_change_profile_name")
         changeProfileName?.summary = accountManager.nickname
         changeProfileName?.click {
-            MaterialDialog(ctx).show {
-                title(R.string.dialogTitleNickname)
-                input(
-                    hint = accountManager.nickname,
-                    waitForPositiveButton = true,
-                    allowEmpty = false
-                ) { _, text ->
-                    if (text.isEmpty()) {
-                        return@input
+            val builder = AlertDialog.Builder(ctx).apply {
+                setTitle(R.string.dialogTitleNickname)
+                setView(
+                    ComposeView(ctx).apply {
+                        setContent {
+                            var value by remember { mutableStateOf(accountManager.nickname!!) }
+                            TextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = value,
+                                onValueChange = { text ->
+                                    value = text
+                                    newName = text
+                                }
+                            )
+                        }
+                    }
+                )
+                setPositiveButton(R.string.dialogSet) { _, _ ->
+                    if (newName.isEmpty()) {
+                        return@setPositiveButton
                     }
                     lifecycleScope.executeAsyncTask {
-                        steamService.getHandler<SteamFriends>().setPersonaName(text.toString())
+                        steamService.getHandler<SteamFriends>().setPersonaName(newName)
                     }
-                    changeProfileName.summary = text
+                    changeProfileName.summary = newName
                 }
-                positiveButton(R.string.dialogSet)
-                negativeButton(R.string.dialogCancel)
-            }
+                setNegativeButton(R.string.dialogCancel) { _, _ -> }
+            }.create()
+
+            builder.show()
+
             true
         }
 

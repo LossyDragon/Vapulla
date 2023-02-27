@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.Utils.parcelableArrayList
 
 class GamesActivity : VapullaBaseActivity() {
 
@@ -22,14 +23,14 @@ class GamesActivity : VapullaBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val items: List<Games> = intent.extras?.getParcelableArrayList(INTENT_GAMES)!!
+        val items: List<Games> = intent.extras?.parcelableArrayList(INTENT_GAMES)!!
         val name = intent.extras?.getString("name")!!
         viewModel.setContents(name, items)
 
         setContent {
             GamesScreen(
                 viewModel = viewModel,
-                onItemClick = { gotoGameStore(it) },
+                onItemClick = { gotoGameStore(it) }
             )
         }
     }

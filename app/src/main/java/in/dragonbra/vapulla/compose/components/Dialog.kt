@@ -2,8 +2,8 @@ package `in`.dragonbra.vapulla.compose.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -42,6 +42,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun VapullaEditDialog(
     name: String,
@@ -54,12 +55,33 @@ fun VapullaEditDialog(
         return
     }
 
+    val keyboard = LocalSoftwareKeyboardController.current
+    var newName by remember { mutableStateOf(TextFieldValue(currentName ?: "")) }
+
     Dialog(onDismissRequest = onDismiss) {
-        DialogEditContent(
-            name = name,
-            currentName = currentName,
-            onConfirm = { onConfirm(it) },
-            onDismiss = onDismiss
+        DialogLayout(
+            title = stringResource(id = R.string.dialogTitleNickname, name),
+            content = {
+                OutlinedTextField(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    value = newName,
+                    onValueChange = { newName = it },
+                    singleLine = true,
+                    label = { Text(text = stringResource(id = R.string.nickname)) },
+                    keyboardActions = KeyboardActions(
+                        onDone = { keyboard?.hide() }
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                    )
+                )
+            },
+            positiveText = stringResource(id = R.string.change),
+            onPositive = { onConfirm(newName.text) },
+            negativeText = stringResource(id = R.string.dialogCancel),
+            onNegative = onDismiss
         )
     }
 }
@@ -76,10 +98,22 @@ fun VapullaListDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        DialogListContent(
+        DialogLayout(
             title = title,
-            list = list,
-            onDismiss = onDismiss
+            content = {
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .heightIn(50.dp, 150.dp)
+                        .fillMaxWidth()
+                ) {
+                    items(list) {
+                        Text(text = it.toString())
+                    }
+                }
+            },
+            positiveText = stringResource(id = R.string.dialogClose),
+            onPositive = onDismiss
         )
     }
 }
@@ -97,20 +131,32 @@ fun VapullaMessageDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        DialogMessageContent(
+        DialogLayout(
             title = title,
-            message = message,
-            onConfirm = { onConfirm() },
-            onDismiss = onDismiss
+            content = {
+                Text(
+                    modifier = Modifier.padding(16.dp),
+                    text = message,
+                    textAlign = TextAlign.Start,
+                    style = TextStyle(fontSize = 12.sp)
+                )
+            },
+            positiveText = stringResource(id = R.string.menuBlock),
+            onPositive = onConfirm,
+            negativeText = stringResource(id = R.string.dialogCancel),
+            onNegative = onDismiss
         )
     }
 }
 
 @Composable
-private fun DialogListContent(
+private fun DialogLayout(
     title: String,
-    list: List<Any>,
-    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+    positiveText: String,
+    onPositive: () -> Unit,
+    negativeText: String? = null,
+    onNegative: (() -> Unit)? = null
 ) {
     Surface(
         modifier = Modifier
@@ -129,169 +175,33 @@ private fun DialogListContent(
                 style = TextStyle(fontSize = 20.sp)
             )
 
-            LazyColumn(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxWidth()
-                    .fillMaxHeight(.5f)
-            ) {
-                items(list) {
-                    Text(text = it.toString())
-                }
-            }
+            content()
 
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 36.dp, vertical = 6.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-                onClick = onDismiss
+                onClick = onPositive
             ) {
                 Text(
-                    text = stringResource(id = R.string.dialogClose),
-                    color = Color.White,
-                    style = TextStyle(fontSize = 16.sp)
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
-@Composable
-private fun DialogEditContent(
-    name: String,
-    currentName: String?,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
-        shadowElevation = 4.dp
-    ) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                modifier = Modifier.padding(vertical = 12.dp),
-                text = stringResource(id = R.string.dialogTitleNickname, name),
-                textAlign = TextAlign.Center,
-                style = TextStyle(fontSize = 20.sp)
-            )
-
-            val keyboard = LocalSoftwareKeyboardController.current
-            var newName by remember { mutableStateOf(TextFieldValue(currentName ?: "")) }
-            OutlinedTextField(
-                modifier = Modifier.padding(vertical = 12.dp),
-                value = newName,
-                onValueChange = { newName = it },
-                singleLine = true,
-                label = { Text(text = stringResource(id = R.string.nickname)) },
-                keyboardActions = KeyboardActions(
-                    onDone = { keyboard?.hide() }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    autoCorrect = false,
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Done
-                ),
-            )
-
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 36.dp, vertical = 6.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-                onClick = {
-                    onConfirm(newName.text)
-                    newName = TextFieldValue("")
-                }
-            ) {
-                Text(
-                    text = stringResource(id = R.string.change),
+                    text = positiveText,
                     color = Color.White,
                     style = TextStyle(fontSize = 16.sp)
                 )
             }
 
-            TextButton(
-                modifier = Modifier.padding(vertical = 6.dp),
-                onClick = {
-                    onDismiss()
-                    newName = TextFieldValue("")
+            negativeText?.let {
+                TextButton(
+                    modifier = Modifier.padding(vertical = 6.dp),
+                    onClick = { onNegative?.invoke() }
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.LightGray,
+                        style = TextStyle(fontSize = 14.sp)
+                    )
                 }
-            ) {
-                Text(
-                    text = stringResource(id = R.string.dialogCancel),
-                    color = Color.LightGray,
-                    style = TextStyle(fontSize = 14.sp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DialogMessageContent(
-    title: String,
-    message: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
-        shadowElevation = 4.dp
-    ) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                modifier = Modifier.padding(vertical = 12.dp),
-                text = title,
-                textAlign = TextAlign.Center,
-                style = TextStyle(fontSize = 20.sp)
-            )
-
-            Text(
-                modifier = Modifier.padding(16.dp),
-                text = message,
-                textAlign = TextAlign.Start,
-                style = TextStyle(fontSize = 12.sp)
-            )
-
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 36.dp, vertical = 6.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-                onClick = {
-                    onConfirm()
-                }
-            ) {
-                Text(
-                    text = stringResource(id = R.string.menuBlock),
-                    color = Color.White,
-                    style = TextStyle(fontSize = 16.sp)
-                )
-            }
-
-            TextButton(
-                modifier = Modifier.padding(vertical = 6.dp),
-                onClick = {
-                    onDismiss()
-                }
-            ) {
-                Text(
-                    text = stringResource(id = R.string.dialogCancel),
-                    color = Color.LightGray,
-                    style = TextStyle(fontSize = 14.sp)
-                )
             }
         }
     }
@@ -327,7 +237,6 @@ private fun Preview_DialogEditContent() {
         )
     }
 }
-
 
 @Preview
 @Composable

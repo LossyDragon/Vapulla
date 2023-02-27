@@ -83,7 +83,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onChatClick: (steamID: SteamID) -> Unit,
     onAccountClick: (steamID: SteamID) -> Unit,
-    onGamesClick: (gamesList: ArrayList<Games>, name: String) -> Unit,
+    onGamesClick: (gamesList: ArrayList<Games>, name: String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -154,7 +154,7 @@ fun ProfileScreen(
         onRemove = {
             showRemoveDialog = true
         },
-        onBlock = { showBlockDialog = true },
+        onBlock = { showBlockDialog = true }
     )
 }
 
@@ -167,7 +167,7 @@ private fun ProfileScreenContent(
     onNickName: () -> Unit,
     onAliases: () -> Unit,
     onRemove: () -> Unit,
-    onBlock: () -> Unit,
+    onBlock: () -> Unit
 ) {
     var isManageVisible by rememberSaveable { mutableStateOf(false) }
     val scrollState = rememberScrollState()
@@ -201,9 +201,8 @@ private fun ProfileScreenContent(
                 .verticalScroll(scrollState)
                 .waterfallPadding(),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             ProfileScreenProfileIcon(state = state)
 
             ProfileScreenNameAndStatus(state = state)
@@ -222,7 +221,7 @@ private fun ProfileScreenContent(
                     onNickName = onNickName,
                     onAliases = onAliases,
                     onRemove = onRemove,
-                    onBlock = onBlock,
+                    onBlock = onBlock
                 )
             }
         }
@@ -311,7 +310,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
                     .weight(1f)
                     .height(80.dp),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = stringResource(id = R.string.textLevel),
@@ -325,14 +324,14 @@ private fun ProfileScreenInfo(state: ProfileState) {
                             .size(18.dp)
                             .padding(top = 5.dp),
                         color = colorSecondary,
-                        strokeWidth = 2.dp,
+                        strokeWidth = 2.dp
                     )
                 }
 
                 AnimatedVisibility(
                     visible = !state.isLoading,
                     enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut(),
+                    exit = fadeOut() + scaleOut()
                 ) {
                     Text(
                         text = (state.levelCount ?: 0).toString(),
@@ -348,7 +347,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
                     .width(2.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .height(64.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
             )
 
             Column(
@@ -356,7 +355,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
                     .weight(1f)
                     .height(80.dp),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = stringResource(id = R.string.textGames),
@@ -370,14 +369,14 @@ private fun ProfileScreenInfo(state: ProfileState) {
                             .size(18.dp)
                             .padding(top = 5.dp),
                         color = colorSecondary,
-                        strokeWidth = 2.dp,
+                        strokeWidth = 2.dp
                     )
                 }
 
                 AnimatedVisibility(
                     visible = !state.isLoading,
                     enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut(),
+                    exit = fadeOut() + scaleOut()
                 ) {
                     Text(
                         text = (state.gamesCount ?: 0).toString(),
@@ -396,7 +395,7 @@ private fun ProfileScreenButtons(
     onChatClick: () -> Unit,
     onAccountClick: () -> Unit,
     onGamesClick: () -> Unit,
-    onManageClick: () -> Unit,
+    onManageClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -409,18 +408,17 @@ private fun ProfileScreenButtons(
         Button(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-            onClick = onChatClick,
+            onClick = onChatClick
         ) {
             Text(
                 text = stringResource(id = R.string.buttonChat),
                 color = Color.White
             )
-
         }
         Button(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-            onClick = onAccountClick,
+            onClick = onAccountClick
         ) {
             Text(
                 text = stringResource(id = R.string.buttonViewAccount),
@@ -430,7 +428,7 @@ private fun ProfileScreenButtons(
         Button(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-            onClick = onGamesClick,
+            onClick = onGamesClick
         ) {
             Text(
                 text = stringResource(id = R.string.buttonViewGames),
@@ -440,7 +438,7 @@ private fun ProfileScreenButtons(
         Button(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-            onClick = onManageClick,
+            onClick = onManageClick
         ) {
             Text(
                 text = stringResource(id = R.string.buttonManage),
@@ -455,7 +453,7 @@ private fun ProfileExpandedButtons(
     onNickName: () -> Unit,
     onAliases: () -> Unit,
     onRemove: () -> Unit,
-    onBlock: () -> Unit,
+    onBlock: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -470,7 +468,7 @@ private fun ProfileExpandedButtons(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .weight(1f),
-                onClick = onNickName,
+                onClick = onNickName
             ) {
                 Text(
                     text = stringResource(id = R.string.menuSetNickname),
@@ -482,7 +480,7 @@ private fun ProfileExpandedButtons(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .weight(1f),
-                onClick = onAliases,
+                onClick = onAliases
             ) {
                 Text(
                     text = stringResource(id = R.string.menuViewAliases),
@@ -496,7 +494,7 @@ private fun ProfileExpandedButtons(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .weight(1f),
-                onClick = onRemove,
+                onClick = onRemove
             ) {
                 Text(
                     text = stringResource(id = R.string.menuRemoveFriend),
@@ -508,7 +506,7 @@ private fun ProfileExpandedButtons(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .weight(1f),
-                onClick = onBlock,
+                onClick = onBlock
             ) {
                 Text(
                     text = stringResource(id = R.string.menuBlock),

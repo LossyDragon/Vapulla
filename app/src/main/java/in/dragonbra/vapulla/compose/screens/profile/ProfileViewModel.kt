@@ -28,7 +28,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private var steamFriendDao: SteamFriendDao,
     private var schemaManager: GameSchemaManager,
-    private var levelManager: ProfileManager,
+    private var levelManager: ProfileManager
 ) : ViewModel() {
 
     private val _uiEvent = MutableSharedFlow<ProfileUiEvent>()
@@ -104,8 +104,9 @@ class ProfileViewModel @Inject constructor(
 
     fun setNickname(nickName: String) {
         Timber.d("setNickname")
-        if (_state.value.steamID == null)
+        if (_state.value.steamID == null) {
             return
+        }
 
         viewModelScope.executeAsyncTask {
             emit(ProfileUiEvent.SetNickName(_state.value.steamID!!, nickName))

@@ -53,7 +53,7 @@ android {
     }
 
     buildFeatures {
-        viewBinding true
+        viewBinding true // TODO remove
         compose true
     }
     compileOptions {
@@ -101,7 +101,7 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
-    implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
+    // implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
     implementation "androidx.palette:palette:1.0.0"
     debugImplementation 'androidx.compose.ui:ui-tooling'
 
@@ -119,16 +119,14 @@ dependencies {
     // ksp 'io.github.raamcosta.compose-destinations:ksp:1.8.33-beta'
 
     // Android Support Libs
-    implementation "androidx.annotation:annotation:1.6.0"
     implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4" // TODO remove
     implementation "androidx.core:core-ktx:1.9.0"
-    implementation "androidx.databinding:databinding-runtime:7.4.1"
+    implementation "androidx.databinding:databinding-runtime:7.4.2" // TODO remove
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.5.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
     implementation "androidx.paging:paging-runtime-ktx:3.1.1"
     implementation "androidx.recyclerview:recyclerview:1.2.1"
-    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
     implementation "com.google.android.material:material:1.8.0"
 
     // Preferences
@@ -139,12 +137,6 @@ dependencies {
     def room = "2.5.0"
     implementation "androidx.room:room-runtime:$room"
     kapt "androidx.room:room-compiler:$room"
-
-    // Material Dialogs
-    def material_dialogs = "3.3.0"
-    implementation "com.afollestad.material-dialogs:bottomsheets:$material_dialogs"
-    implementation "com.afollestad.material-dialogs:core:$material_dialogs"
-    implementation "com.afollestad.material-dialogs:input:$material_dialogs"
 
     // Google Dagger/Hilt
     implementation "com.google.dagger:hilt-android:$hilt_version"

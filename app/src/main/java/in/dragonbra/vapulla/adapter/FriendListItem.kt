@@ -1,3 +1,5 @@
+@file:Suppress("BooleanMethodIsAlwaysInverted")
+
 package `in`.dragonbra.vapulla.adapter
 
 import androidx.room.ColumnInfo

@@ -1,3 +1,5 @@
+@file:Suppress("BooleanMethodIsAlwaysInverted")
+
 package `in`.dragonbra.vapulla.manager
 
 import `in`.dragonbra.javasteam.enums.EPersonaState

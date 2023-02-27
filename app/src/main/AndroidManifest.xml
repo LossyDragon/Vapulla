@@ -64,7 +64,7 @@
 
         <!-- Games Library -->
         <activity
-            android:name=".activity.GamesActivity"
+            android:name=".compose.screens.games.GamesActivity"
             android:launchMode="singleTop"
             android:parentActivityName=".compose.screens.profile.ProfileActivity"
             android:theme="@style/AppTheme.Settings">

@@ -16,6 +16,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.compose.components.VapullaToolbar
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.res.stringResource
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -24,7 +29,7 @@ import `in`.dragonbra.vapulla.retrofit.response.Games
 @Composable
 fun GamesScreen(
     viewModel: GamesViewModel,
-    onItemClick: (Int) -> Unit,
+    onItemClick: (Int) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -38,15 +43,28 @@ fun GamesScreen(
 @Composable
 private fun GamesScreenContent(
     state: GamesState,
-    onItemClick: (Int) -> Unit,
+    onItemClick: (Int) -> Unit
 ) {
     Scaffold(
         topBar = {
             VapullaToolbar(
                 toolbarText = stringResource(id = R.string.title_activity_games, state.name),
-                onSearch = { TODO() }
+                actions = {
+                    IconButton(onClick = { TODO() }) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "Search"
+                        )
+                    }
+                    IconButton(onClick = { TODO() }) {
+                        Icon(
+                            imageVector = Icons.Filled.SortByAlpha,
+                            contentDescription = "Search"
+                        )
+                    }
+                }
             )
-        },
+        }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             val listState = rememberLazyListState()
@@ -86,7 +104,7 @@ private fun Preview_GamesScreenContent() {
                 img_icon_url = null,
                 name = "Game Name: $it",
                 playtime_2weeks = (0..4000).random(),
-                playtime_forever = (0..4000).random(),
+                playtime_forever = (0..4000).random()
             )
         )
     }

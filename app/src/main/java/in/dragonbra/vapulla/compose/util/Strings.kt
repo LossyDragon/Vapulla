@@ -1,22 +1,25 @@
 package `in`.dragonbra.vapulla.compose.util
 
+import android.content.Context
 import android.text.format.DateUtils
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import `in`.dragonbra.javasteam.enums.EPersonaState
+import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import timber.log.Timber
 import java.math.RoundingMode
 import java.text.DecimalFormat
 
 private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
 private const val STEAM_CDN = "https://cdn.akamai.steamstatic.com"
 private const val STEAM_AVATAR = "steamcommunity/public/images/avatars"
-private const val AVATAR_URL = "${STEAM_CDN}/${STEAM_AVATAR}/"
+private const val AVATAR_URL = "$STEAM_CDN/$STEAM_AVATAR/"
 private const val DEFAULT_AVATAR =
     "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
@@ -83,4 +86,15 @@ fun friendNameBuilder(friend: FriendListItem?): AnnotatedString {
     builder.append("*")
 
     return builder.toAnnotatedString()
+}
+
+fun Context.getErrorMessage(eResult: EResult, extendedResult: EResult? = null): String {
+    Timber.w("getErrorMessage(): $extendedResult")
+    return when (eResult) {
+        EResult.NoConnection -> getString(R.string.errorMessageLostConnection)
+        EResult.InvalidPassword -> getString(R.string.errorMessageInvalidPassword)
+        EResult.TwoFactorCodeMismatch -> getString(R.string.errorMessageTwoFactorCodeMismatch)
+        EResult.InvalidLoginAuthCode -> getString(R.string.errorMessageInvalidLoginAuthCode)
+        else -> eResult.toString()
+    }
 }

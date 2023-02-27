@@ -13,5 +13,5 @@ data class ProfileState(
 
     val gamesCount: Int? = 0,
     val gamesList: ArrayList<Games> = arrayListOf(),
-    val levelCount: Int? = 0,
+    val levelCount: Int? = 0
 )

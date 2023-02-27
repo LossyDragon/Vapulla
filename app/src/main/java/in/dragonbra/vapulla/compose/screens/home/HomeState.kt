@@ -11,5 +11,5 @@ data class HomeState(
 
     val nickname: String = "",
     val status: String = "",
-    val avatarHash: String = "",
+    val avatarHash: String = ""
 )

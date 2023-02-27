@@ -155,7 +155,7 @@ class SteamService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        info("onCreate")
+        Timber.i("onCreate")
 
         handlerThread.start()
         handler = Handler(handlerThread.looper)
@@ -221,19 +221,19 @@ class SteamService : Service() {
     }
 
     override fun onBind(intent: Intent): IBinder {
-        info("onBind")
+        Timber.i("onBind")
         return binder
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        info("onStartCommand")
+        Timber.i("onStartCommand")
 
         if (isRunning && intent != null && intent.hasExtra(EXTRA_ACTION)) {
             val id = SteamID(intent.getLongExtra(EXTRA_ID, 0L))
             val action = intent.getStringExtra(EXTRA_ACTION)
 
-            info("Received $action action message")
+            Timber.i("Received $action action message")
             val steamId = id.convertToUInt64().toInt()
 
             when (intent.getStringExtra(EXTRA_ACTION)) {
@@ -247,23 +247,27 @@ class SteamService : Service() {
                     }
                     notificationManager.cancel(steamId)
                 }
+
                 "stop" -> {
                     val stopIntent = Intent(VapullaBaseActivity.STOP_INTENT)
                     sendBroadcast(stopIntent)
                     stopSelf()
                 }
+
                 "accept_request" -> {
                     scope.executeAsyncTask {
                         getHandler<SteamFriends>().addFriend(id)
                     }
                     notificationManager.cancel(steamId)
                 }
+
                 "ignore_request" -> {
                     scope.executeAsyncTask {
                         getHandler<SteamFriends>().removeFriend(id)
                     }
                     notificationManager.cancel(steamId)
                 }
+
                 "block_request" -> {
                     scope.executeAsyncTask {
                         getHandler<SteamFriends>().ignoreFriend(id)
@@ -278,7 +282,7 @@ class SteamService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        info("onDestroy")
+        Timber.i("onDestroy")
         disconnect()
         handlerThread.quit()
         val stopIntent = Intent(VapullaBaseActivity.STOP_INTENT)
@@ -389,7 +393,6 @@ class SteamService : Service() {
         val formattedMessage = trimmedMessage.replace('\u02D0', ':')
         val emoteMessage = Utils.findEmotes(formattedMessage, emoteSet)
 
-        // getHandler<SteamFriends>()?.sendChatMessage(id, EChatEntryType.ChatMsg, message)
         getHandler<UnifiedChatHandler>().sendMessage(id, message)
 
         val msg = ChatMessage(
@@ -415,12 +418,13 @@ class SteamService : Service() {
                     disconnectedSubs.remove(callbackFunc)
                 }
             }
+
             else -> callbackMgr.subscribe(T::class.java) { callbackFunc(it) }
         }
     }
 
     private val steamThread: Runnable = Runnable {
-        info("Connecting to steam...")
+        Timber.i("Connecting to steam...")
         isRunning = true
         steamClient.connect()
 
@@ -428,7 +432,7 @@ class SteamService : Service() {
             callbackMgr.runWaitCallbacks(1000)
         }
 
-        info("Steam thread stopped")
+        Timber.i("Steam thread stopped")
     }
 
     inner class SteamBinder : Binder() {
@@ -441,9 +445,9 @@ class SteamService : Service() {
 
     //region Callback handlers
 
-    private val onDisconnected: Consumer<DisconnectedCallback> = Consumer { cb ->
+    private val onDisconnected = Consumer<DisconnectedCallback> { cb ->
         if (expectDisconnect || retryCount >= MAX_RETRY_COUNT) {
-            info("disconnected from steam")
+            Timber.i("disconnected from steam")
             stopForeground(true)
             isRunning = false
             isLoggedIn = false
@@ -451,14 +455,14 @@ class SteamService : Service() {
             stateBuffer.stop()
             disconnectedSubs.forEach { it.invoke(cb) }
         } else {
-            info("failed to connect to steam ${++retryCount} times, trying again...")
+            Timber.i("failed to connect to steam ${++retryCount} times, trying again...")
             handler.postDelayed({ steamClient.connect() }, 1000L)
             setNotification(R.string.notificationLostConnection)
         }
     }
 
-    private val onConnected: Consumer<ConnectedCallback> = Consumer {
-        info("connected to steam")
+    private val onConnected = Consumer<ConnectedCallback> {
+        Timber.i("connected to steam")
         retryCount = 0
         setNotification(R.string.notificationConnected)
 
@@ -477,7 +481,7 @@ class SteamService : Service() {
         }
     }
 
-    private val onLoggedOn: Consumer<LoggedOnCallback> = Consumer {
+    private val onLoggedOn = Consumer<LoggedOnCallback> {
         when (it.result) {
             EResult.OK -> {
                 isLoggedIn = true
@@ -486,25 +490,26 @@ class SteamService : Service() {
                 // Set the client's "UI" mode to receive new callbacks.
                 getHandler<VapullaHandler>().setClientUIMode()
             }
+
             EResult.InvalidPassword -> account.loginKey = null
             else -> Unit /* no-op */
         }
     }
 
-    private val onLoggedOff: Consumer<LoggedOffCallback> = Consumer {
+    private val onLoggedOff = Consumer<LoggedOffCallback> {
         steamClient.disconnect()
     }
 
-    private val onNewLoginKey: Consumer<LoginKeyCallback> = Consumer {
-        info("received login key")
+    private val onNewLoginKey = Consumer<LoginKeyCallback> {
+        Timber.i("received login key")
         account.loginKey = it.loginKey
         account.uniqueId = it.uniqueID
 
         getHandler<SteamUser>().acceptNewLoginKey(it)
     }
 
-    private val onUpdateMachineAuth: Consumer<UpdateMachineAuthCallback> = Consumer {
-        info("received sentry file called ${it.fileName}")
+    private val onUpdateMachineAuth = Consumer<UpdateMachineAuthCallback> {
+        Timber.i("received sentry file called ${it.fileName}")
         account.updateSentryFile(it)
 
         val otp = OTPDetails().apply {
@@ -513,21 +518,21 @@ class SteamService : Service() {
         }
 
         val details = MachineAuthDetails().apply {
-            jobID = it.jobID
-            fileName = it.fileName
             bytesWritten = it.bytesToWrite
+            fileName = it.fileName
             fileSize = account.sentrySize.toInt()
-            offset = it.offset
-            seteResult(EResult.OK)
+            jobID = it.jobID
             lastError = 0
+            offset = it.offset
             oneTimePassword = otp
             sentryFileHash = account.readSentryFile()
+            seteResult(EResult.OK)
         }
 
         getHandler<SteamUser>().sendMachineAuthResponse(details)
     }
 
-    private val onPersonaState: Consumer<PersonaStatesCallback> = Consumer {
+    private val onPersonaState = Consumer<PersonaStatesCallback> {
         Timber.d("onPersonaState")
         it.personaStates.forEach { state ->
             if (!state.friendID.isIndividualAccount) {
@@ -539,14 +544,6 @@ class SteamService : Service() {
                 return@forEach
             }
 
-            // if (BuildConfig.DEBUG) {
-            //     info(
-            //         "${state.name} is ${state.state} " +
-            //             "Last logoff: ${Date(state.lastLogOff.time)} - " +
-            //             "Last logon: ${Date(state.lastLogOn.time)}"
-            //     )
-            // }
-
             stateBuffer.push(state)
 
             if (requestsToNotify.contains(state.friendID)) {
@@ -556,7 +553,7 @@ class SteamService : Service() {
         }
     }
 
-    private val onFriendsList: Consumer<FriendsListCallback> = Consumer {
+    private val onFriendsList = Consumer<FriendsListCallback> {
         val dao = db.steamFriendDao()
         val inc = it.isIncremental
 
@@ -601,17 +598,19 @@ class SteamService : Service() {
         dao.remove(*friendsToRemove.toTypedArray())
     }
 
-    private val onFriendMsgHistory: Consumer<FriendMsgHistoryCallback> = Consumer { cb ->
+    private val onFriendMsgHistory = Consumer<FriendMsgHistoryCallback> { cb ->
         cb.messages.forEach {
             val fromLocal = cb.steamID != it.steamID
             val friendId = cb.steamID.convertToUInt64()
             val timestamp = it.timestamp.time
-            val confirmedMessage =
-                db.chatMessageDao().find(it.message, timestamp, friendId, fromLocal, true)
 
-            if (confirmedMessage != null) {
-                return@forEach
-            }
+            db.chatMessageDao()
+                .find(it.message, timestamp, friendId, fromLocal, true)
+                .also { msg ->
+                    if (msg != null) {
+                        return@forEach
+                    }
+                }
 
             val findMessages = db.chatMessageDao().find(it.message, friendId, fromLocal, false)
             val unconfirmedMessages =
@@ -625,42 +624,42 @@ class SteamService : Service() {
 
                 db.chatMessageDao().update(unconfirmedMessages[0])
             } else {
-                val msg = ChatMessage(
+                ChatMessage(
                     message = it.message,
                     timestamp = timestamp,
                     friendId = friendId,
                     fromLocal = fromLocal,
                     unread = it.isUnread,
                     timestampConfirmed = true
-                )
-                db.chatMessageDao().insert(msg)
+                ).also { msg ->
+                    db.chatMessageDao().insert(msg)
+                }
             }
         }
     }
 
-    private val onNicknameList: Consumer<NicknameListCallback> = Consumer {
+    private val onNicknameList = Consumer<NicknameListCallback> {
         db.steamFriendDao().clearNicknames()
 
         it.nicknames.forEach { playerName ->
             val steamId = playerName.steamID.convertToUInt64()
-            val friend = db.steamFriendDao().find(steamId)
-
-            friend?.let {
+            db.steamFriendDao().find(steamId)?.let { friend ->
                 friend.nickname = playerName.nickname
                 db.steamFriendDao().update(friend)
             }
         }
     }
 
-    private val onOfflineMessageNotification:
-        Consumer<OfflineMessageNotificationCallback> = Consumer {
-            if (it.messageCount > 0) {
-                getHandler<SteamFriends>().requestOfflineMessages()
-            }
+    private val onOfflineMessageNotification = Consumer<OfflineMessageNotificationCallback> {
+        if (it.messageCount <= 0) {
+            return@Consumer
         }
 
-    private val onEmoticonList: Consumer<EmoticonListCallback> = Consumer { emoticon ->
-        debug("onEmoticonList")
+        getHandler<SteamFriends>().requestOfflineMessages()
+    }
+
+    private val onEmoticonList = Consumer<EmoticonListCallback> { emoticon ->
+        Timber.d("onEmoticonList")
 
         val emoticons = emoticon.getEmoteList().map {
             if (it.isSticker) {
@@ -674,7 +673,7 @@ class SteamService : Service() {
         db.emoticonDao().insert(*emoticons)
     }
 
-    private val onFriendMsgEcho: Consumer<FriendMsgEchoCallback> = Consumer {
+    private val onFriendMsgEcho = Consumer<FriendMsgEchoCallback> {
         lastEcho = System.currentTimeMillis()
 
         val msg = ChatMessage(
@@ -691,8 +690,8 @@ class SteamService : Service() {
         clearMessageNotifications(it.sender)
     }
 
-    private val onServiceMethodCallback: Consumer<ServiceMethodCallback> = Consumer {
-        info("onServiceMethodCallback: ${it.jobName}")
+    private val onServiceMethodCallback = Consumer<ServiceMethodCallback> {
+        Timber.i("onServiceMethodCallback: ${it.jobName}")
 
         // Friend is typing
         if (it.entryType == EChatEntryType.Typing) {
@@ -724,18 +723,18 @@ class SteamService : Service() {
     }
 
     // Callback on messages you sent. Trasformed to Unified/BBCode
-    private val onSendMessageCallback: Consumer<SendMessageResponseCallback> = Consumer {
-        info("onSendMessageCallback: ${it.jobName}")
+    private val onSendMessageCallback = Consumer<SendMessageResponseCallback> {
+        Timber.i("onSendMessageCallback: ${it.jobName}")
 
-        info("onSendMessageCallback: ${it.modifiedMessage}")
-        info("onSendMessageCallback: ${it.timestamp}")
+        Timber.i("onSendMessageCallback: ${it.modifiedMessage}")
+        Timber.i("onSendMessageCallback: ${it.timestamp}")
     }
 
     // Callback to receive recent messages on a chat. Unified/BBCode enabled
-    private val onRecentMessagesCallback: Consumer<RecentMessagesResponseCallback> = Consumer {
-        info("onRecentMessagesCallback: ${it.jobName}")
+    private val onRecentMessagesCallback = Consumer<RecentMessagesResponseCallback> {
+        Timber.i("onRecentMessagesCallback: ${it.jobName}")
 
-        info("onRecentMessagesCallback: ${it.messageHistory!!.toList()}")
+        Timber.i("onRecentMessagesCallback: ${it.messageHistory!!.toList()}")
     }
 
 //endregion

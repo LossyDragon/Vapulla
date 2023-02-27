@@ -39,7 +39,7 @@ fun GamesListItem(
     gameName: String,
     hoursTwoWeeks: Int,
     hoursAllTime: Int,
-    onOverflowClick: () -> Unit,
+    onOverflowClick: () -> Unit
 ) {
     val context = LocalContext.current
     val url by remember {
@@ -114,7 +114,7 @@ private fun Preview_GamesListItem() {
             gameName = "Team Fortress 2",
             hoursTwoWeeks = 60,
             hoursAllTime = 4140,
-            onOverflowClick = {},
+            onOverflowClick = {}
         )
     }
 }

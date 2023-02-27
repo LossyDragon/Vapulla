@@ -33,6 +33,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
+import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.util.Utils
 import timber.log.Timber
 import java.text.DateFormat
@@ -94,14 +95,7 @@ fun FriendItem(
 
                         statusText = stringResource(id = R.string.statusOffline, offlineDate)
                     } else {
-                        val status = Utils.getStatusText(
-                            context,
-                            EPersonaState.from(friend.state ?: 0),
-                            friend.gameAppId,
-                            friend.gameName,
-                            friend.lastLogOff
-                        )
-                        statusText = status
+                        statusText = getStatusText(friend)
                     }
                 }
 
