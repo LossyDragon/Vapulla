@@ -109,14 +109,15 @@ fun HomeScreen(
         onSearchClosed = { viewModel.setSearching(false) },
         onSearchOpened = { viewModel.setSearching(true) },
         onSettings = { viewModel.onEvent(HomeEvent.Settings) },
-        onStatusChange = { viewModel.onEvent(HomeEvent.StatusChange(it)) },
+        onStatusChange = { viewModel.onEvent(HomeEvent.StatusChange(it)) }
     )
 }
 
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalMaterialApi::class,
-    ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class
+    ExperimentalFoundationApi::class,
+    ExperimentalComposeUiApi::class
 )
 @Composable
 private fun HomeScreenContent(
@@ -130,7 +131,7 @@ private fun HomeScreenContent(
     onSearchClosed: () -> Unit,
     onSearchOpened: () -> Unit,
     onSettings: () -> Unit,
-    onStatusChange: (EPersonaState) -> Unit,
+    onStatusChange: (EPersonaState) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -442,7 +443,7 @@ private fun Preview_HomeScreenContent() {
             onSearchClosed = {},
             onSearchOpened = {},
             onSettings = {},
-            onStatusChange = {},
+            onStatusChange = {}
         )
     }
 }

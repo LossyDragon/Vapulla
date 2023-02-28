@@ -132,7 +132,7 @@ fun VapullaAppbar(
             AnimatedVisibility(
                 visible = isSearching,
                 enter = slideIn(),
-                exit = slideUp(),
+                exit = slideUp()
             ) {
                 SearchView(
                     backgroundColor = MaterialTheme.colorScheme.surface,
@@ -178,7 +178,7 @@ private fun SearchView(
                 ) {
                     Icon(
                         Icons.Default.ArrowBack,
-                        contentDescription = null,
+                        contentDescription = null
                     )
                 }
             },
@@ -201,7 +201,6 @@ private fun SearchView(
         )
     }
 }
-
 
 @Preview
 @Composable

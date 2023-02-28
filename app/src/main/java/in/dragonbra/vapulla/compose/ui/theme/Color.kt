@@ -17,7 +17,7 @@ val colorSecondary = Color(0xFF546E7A)
 val colorError = Color(0xFFEF5350)
 
 fun getAccountStatusColor(state: EPersonaState): Color {
-    return when(state) {
+    return when (state) {
         EPersonaState.Busy,
         EPersonaState.Away,
         EPersonaState.Snooze -> friendAwayOrSnooze

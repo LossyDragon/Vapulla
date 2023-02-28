@@ -61,7 +61,7 @@ private fun GamesScreenContent(
     onBackPressed: () -> Unit,
     onItemClick: (Int) -> Unit,
     onSearchOpened: () -> Unit,
-    onSearchClosed: () -> Unit,
+    onSearchClosed: () -> Unit
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     Scaffold(
@@ -154,7 +154,7 @@ private fun Preview_GamesScreenContent() {
             onBackPressed = {},
             searchTextState = MutableStateFlow(TextFieldValue("")),
             onSearchOpened = {},
-            onSearchClosed = {},
+            onSearchClosed = {}
         )
     }
 }

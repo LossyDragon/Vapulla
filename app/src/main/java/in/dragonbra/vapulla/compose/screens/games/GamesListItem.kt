@@ -93,7 +93,7 @@ fun GamesListItem(
                 Text(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    text = gameName,
+                    text = gameName
                 )
             },
             supportingText = {
