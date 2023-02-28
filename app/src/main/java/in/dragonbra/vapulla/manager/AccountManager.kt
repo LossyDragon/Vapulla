@@ -119,7 +119,7 @@ class AccountManager(private val context: Context) {
         this.state = state.state
 
         listeners.forEach {
-            it.unAccountUpdate(this@AccountManager)
+            it.onAccountUpdate(this@AccountManager)
         }
     }
 
@@ -128,6 +128,6 @@ class AccountManager(private val context: Context) {
     fun removeListener(l: AccountManagerListener) = listeners.remove(l)
 
     interface AccountManagerListener {
-        fun unAccountUpdate(account: AccountManager)
+        fun onAccountUpdate(account: AccountManager)
     }
 }

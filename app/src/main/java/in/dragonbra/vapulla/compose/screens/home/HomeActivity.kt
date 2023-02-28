@@ -105,15 +105,12 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         viewModel.onDestroy()
     }
 
-    override fun unAccountUpdate(account: AccountManager) {
+    override fun onAccountUpdate(account: AccountManager) {
         Timber.d("unAccountUpdate")
-        viewModel.onEvent(
-            HomeEvent.UpdateAccount(
-                account.nickname.orEmpty(),
-                account.state.name,
-                account.avatarHash.orEmpty()
-            )
-        )
+        val name = account.nickname.orEmpty()
+        val state = account.state
+        val avatarHash = account.avatarHash.orEmpty()
+        viewModel.onEvent(HomeEvent.UpdateAccount(name, state, avatarHash))
     }
 
     private fun closeApplication() {
