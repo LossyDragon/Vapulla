@@ -27,16 +27,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideContext(@ApplicationContext context: Context) = context // TODO needed?
-
-    @Provides
-    @Singleton
-    fun provideNotificationManager(context: Context) =
+    fun provideNotificationManager(@ApplicationContext context: Context) =
         NotificationManagerCompat.from(context)
 
     @Provides
     @Singleton
-    fun provideClipboardManager(context: Context) =
+    fun provideClipboardManager(@ApplicationContext context: Context) =
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     @Provides

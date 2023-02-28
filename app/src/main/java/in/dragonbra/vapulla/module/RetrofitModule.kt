@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 private const val BASE_STEAM_API_URL = "https://api.steampowered.com/"
-private const val BASE_STEAM_STORE_URL = "http://store.steampowered.com/api/"
+private const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/api/"
 
 @InstallIn(SingletonComponent::class)
 @Module

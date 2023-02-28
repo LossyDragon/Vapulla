@@ -5,6 +5,7 @@ import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
@@ -16,11 +17,11 @@ object StorageModule {
 
     @Provides
     @Singleton
-    fun provideAccountManager(context: Context) = AccountManager(context)
+    fun provideAccountManager(@ApplicationContext context: Context) = AccountManager(context)
 
     @Provides
     @Singleton
-    fun provideVapullaDatabase(context: Context) =
+    fun provideVapullaDatabase(@ApplicationContext context: Context) =
         Room.databaseBuilder(
             context,
             VapullaDatabase::class.java,
