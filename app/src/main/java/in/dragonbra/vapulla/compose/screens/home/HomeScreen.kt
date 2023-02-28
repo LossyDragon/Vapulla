@@ -1,6 +1,8 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,11 +47,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -61,7 +67,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
-import `in`.dragonbra.vapulla.compose.components.VapullaToolbar
+import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
 import `in`.dragonbra.vapulla.compose.components.contrastAgainst
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.ExperimentalMaterialApi
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.PullRefreshIndicator
@@ -73,7 +79,9 @@ import `in`.dragonbra.vapulla.compose.ui.theme.Shapes
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
+import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
 import `in`.dragonbra.vapulla.util.Utils
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -83,7 +91,7 @@ fun HomeScreen(
     onChatSelected: (friend: FriendListItem) -> Unit,
     onProfileSelected: (friend: FriendListItem) -> Unit
 ) {
-    val state by viewModel::homeState
+    val state by viewModel.state.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(Unit) {
@@ -92,60 +100,73 @@ fun HomeScreen(
 
     HomeScreenContent(
         state = state,
-        onRefresh = { viewModel.onEvent(HomeEvent.SwipeRefresh(true)) },
-        onStatusChange = { viewModel.onEvent(HomeEvent.StatusChange(it)) },
-        onPersonAdd = { viewModel.onEvent(HomeEvent.AddFriend) },
-        onSettings = { viewModel.onEvent(HomeEvent.Settings) },
-        onLogout = { viewModel.onEvent(HomeEvent.Logout) },
+        searchTextState = viewModel.searchText,
         onChatSelected = { onChatSelected(it) },
-        onProfileSelected = { onProfileSelected(it) }
+        onLogout = { viewModel.onEvent(HomeEvent.Logout) },
+        onPersonAdd = { viewModel.onEvent(HomeEvent.AddFriend) },
+        onProfileSelected = { onProfileSelected(it) },
+        onRefresh = { viewModel.onEvent(HomeEvent.SwipeRefresh(true)) },
+        onSearchClosed = { viewModel.setSearching(false) },
+        onSearchOpened = { viewModel.setSearching(true) },
+        onSettings = { viewModel.onEvent(HomeEvent.Settings) },
+        onStatusChange = { viewModel.onEvent(HomeEvent.StatusChange(it)) },
     )
 }
 
 @OptIn(
     ExperimentalMaterial3Api::class,
     ExperimentalMaterialApi::class,
-    ExperimentalFoundationApi::class
+    ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class
 )
 @Composable
 private fun HomeScreenContent(
     state: HomeState,
-    onRefresh: () -> Unit,
-    onStatusChange: (EPersonaState) -> Unit,
-    onPersonAdd: () -> Unit,
-    onSettings: () -> Unit,
-    onLogout: () -> Unit,
+    searchTextState: MutableStateFlow<TextFieldValue>,
     onChatSelected: (friend: FriendListItem) -> Unit,
-    onProfileSelected: (friend: FriendListItem) -> Unit
+    onLogout: () -> Unit,
+    onPersonAdd: () -> Unit,
+    onProfileSelected: (friend: FriendListItem) -> Unit,
+    onRefresh: () -> Unit,
+    onSearchClosed: () -> Unit,
+    onSearchOpened: () -> Unit,
+    onSettings: () -> Unit,
+    onStatusChange: (EPersonaState) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val keyboard = LocalSoftwareKeyboardController.current
 
     Surface {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
                 HomeScreenDrawer(
-                    state,
-                    drawerState,
-                    { onStatusChange(it) },
-                    onPersonAdd,
-                    onSettings,
-                    onLogout
+                    state = state,
+                    drawerState = drawerState,
+                    onStatusChange = { onStatusChange(it) },
+                    onPersonAdd = onPersonAdd,
+                    onSettings = onSettings,
+                    onLogout = onLogout
                 )
             }
         ) {
             Scaffold(
                 topBar = {
-                    VapullaToolbar(
+                    VapullaAppbar(
                         drawerState = drawerState,
                         actions = {
-                            IconButton(onClick = { TODO() }) {
+                            IconButton(onClick = onSearchOpened) {
                                 Icon(
                                     imageVector = Icons.Filled.Search,
                                     contentDescription = "Search"
                                 )
                             }
+                        },
+                        searchTextState = searchTextState,
+                        isSearching = state.isSearching,
+                        onSearchClose = {
+                            onSearchClosed()
+                            keyboard?.hide()
                         }
                     )
                 }
@@ -168,17 +189,28 @@ private fun HomeScreenContent(
                         state = listState,
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        // TODO: Sticky Header
-                        items(state.friendsList, key = { it.id }) { friend ->
-                            FriendItem(
-                                modifier = Modifier.animateItemPlacement(),
-                                friend = friend,
-                                onClickChat = { onChatSelected(friend) },
-                                onClickProfile = { onProfileSelected(friend) },
-                                onClickAccept = { TODO() },
-                                onClickIgnore = { TODO() },
-                                onClickBlock = { TODO() }
-                            )
+                        if (state.isSearching) {
+                            scope.launch {
+                                listState.animateScrollToItem(0)
+                            }
+                        }
+
+                        state.filteredFriendsList.forEach { (header, friends) ->
+                            stickyHeader(contentType = header) {
+                                StickyHeaderItem(header, friends.size)
+                            }
+
+                            items(friends, key = { it.id }) { friend ->
+                                FriendItem(
+                                    modifier = Modifier.animateItemPlacement(),
+                                    friend = friend,
+                                    onClickChat = { onChatSelected(friend) },
+                                    onClickProfile = { onProfileSelected(friend) },
+                                    onClickAccept = { TODO() },
+                                    onClickIgnore = { TODO() },
+                                    onClickBlock = { TODO() }
+                                )
+                            }
                         }
                     }
 
@@ -190,7 +222,7 @@ private fun HomeScreenContent(
                         enabled = showUpButton,
                         onClicked = {
                             scope.launch {
-                                listState.scrollToItem(0)
+                                listState.animateScrollToItem(0)
                             }
                         }
                     )
@@ -266,6 +298,9 @@ private fun HomeScreenDrawer(
 
 @Composable
 private fun DrawerAccountInfo(state: HomeState) {
+    val borderStroke = BorderStroke(4.dp, getAccountStatusColor(state.status))
+    val cornerShape = RoundedCornerShape(16.dp)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +311,8 @@ private fun DrawerAccountInfo(state: HomeState) {
         CoilImage(
             modifier = Modifier
                 .size(150.dp)
-                .clip(RoundedCornerShape(16.dp)),
+                .border(borderStroke, cornerShape)
+                .clip(cornerShape),
             imageRequest = {
                 ImageRequest.Builder(context)
                     .data(Utils.getAvatarUrl(state.avatarHash))
@@ -396,14 +432,17 @@ private fun Preview_HomeScreenContent() {
 
     VapullaTheme {
         HomeScreenContent(
-            state = HomeState(friendsList = friendsList),
-            onRefresh = {},
-            onStatusChange = {},
-            onPersonAdd = {},
-            onSettings = {},
-            onLogout = {},
+            state = HomeState(friendsList = mapOf("Online" to friendsList)),
+            searchTextState = MutableStateFlow(TextFieldValue("")),
             onChatSelected = {},
-            onProfileSelected = {}
+            onLogout = {},
+            onPersonAdd = {},
+            onProfileSelected = {},
+            onRefresh = {},
+            onSearchClosed = {},
+            onSearchOpened = {},
+            onSettings = {},
+            onStatusChange = {},
         )
     }
 }

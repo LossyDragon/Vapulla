@@ -21,9 +21,13 @@ import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity() {
+
+    @Inject
+    lateinit var accountManager: AccountManager
 
     private val viewModel: HomeViewModel by viewModels()
 
@@ -55,7 +59,10 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
         Timber.d("Bound to Steam service")
-        steamService?.isActivityRunning = true
+        if (isBound) {
+            steamService?.isActivityRunning = true
+            accountManager.addListener(this@HomeActivity)
+        }
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
@@ -69,26 +76,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         closeApplication()
     }
 
-    override fun onPostCreate(savedInstanceState: Bundle?) {
-        super.onPostCreate(savedInstanceState)
-        Timber.d("onPostCreate")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        Timber.d("onResume")
-        if (isBound) {
-            steamService?.isActivityRunning = true
-        }
-
-        with(viewModel.accountManager) {
-            addListener(this@HomeActivity)
-            viewModel.onEvent(
-                HomeEvent.UpdateAccount(avatarHash.orEmpty(), state.name, avatarHash.orEmpty())
-            )
-        }
-    }
-
     override fun onPause() {
         super.onPause()
         Timber.d("onPause")
@@ -96,7 +83,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
             steamService?.isActivityRunning = false
         }
 
-        viewModel.accountManager.removeListener(this)
+        accountManager.removeListener(this)
     }
 
     override fun onDestroy() {
@@ -180,7 +167,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
                     steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
                 }
 
-                HomeUiEvent.AddFriend -> TODO()
+                HomeUiEvent.AddFriend -> TODO("Add Friend")
 
                 HomeUiEvent.LogOut -> {
                     steamService?.disconnect()

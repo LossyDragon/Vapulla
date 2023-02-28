@@ -84,18 +84,20 @@ fun FriendItem(
 
                 if ((isTypingFromLastMessage) && isTyping) {
                     // TODO animate 'Typing' text?
+                    // Check this out for a possible animation idea:
+                    // https://gist.github.com/EugeneTheDev/a27664cb7e7899f964348b05883cbccd#file-dotsloaders-kt-L172
                     statusText = stringResource(id = R.string.statusTyping)
                 } else {
-                    if (friend.state == EPersonaState.Offline.code()) {
+                    statusText = if (friend.state == EPersonaState.Offline.code()) {
                         val offlineDate = DateUtils.getRelativeTimeSpanString(
                             friend.lastLogOff,
                             System.currentTimeMillis(),
                             DateUtils.MINUTE_IN_MILLIS
                         )
 
-                        statusText = stringResource(id = R.string.statusOffline, offlineDate)
+                        stringResource(id = R.string.statusOffline, offlineDate)
                     } else {
-                        statusText = getStatusText(friend)
+                        getStatusText(friend)
                     }
                 }
 

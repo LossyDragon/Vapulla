@@ -156,7 +156,7 @@ class DominantColorState(
     var color by mutableStateOf(defaultColor)
         private set
 
-    private var onColor by mutableStateOf(defaultOnColor)
+    var onColor by mutableStateOf(defaultOnColor)
 
     private val cache = when {
         cacheSize > 0 -> LruCache<String, DominantColors>(cacheSize)

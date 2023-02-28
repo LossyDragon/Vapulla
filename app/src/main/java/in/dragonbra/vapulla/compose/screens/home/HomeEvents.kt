@@ -4,13 +4,14 @@ import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 
 sealed class HomeEvent {
-    data class Search(val isSearching: Boolean) : HomeEvent()
     data class StatusChange(val status: EPersonaState) : HomeEvent()
     data class SwipeRefresh(val isRefreshing: Boolean) : HomeEvent()
-    data class UpdateAccount(val nickname: String, val status: String, val avatarHash: String) :
-        HomeEvent()
+    data class UpdateAccount(
+        val nickname: String,
+        val status: EPersonaState,
+        val avatarHash: String
+    ) : HomeEvent()
 
-    data class UpdateFriends(val list: List<FriendListItem>, val updateTime: Long) : HomeEvent()
     object AddFriend : HomeEvent()
     object Logout : HomeEvent()
     object Settings : HomeEvent()

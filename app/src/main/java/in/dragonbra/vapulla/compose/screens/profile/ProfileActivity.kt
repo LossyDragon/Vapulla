@@ -53,6 +53,7 @@ class ProfileActivity : VapullaBaseActivity() {
             VapullaTheme {
                 ProfileScreen(
                     viewModel = viewModel,
+                    onBackPressed = { finish() },
                     onChatClick = { viewChat(it) },
                     onAccountClick = { viewProfile(it) },
                     onGamesClick = { games, name -> viewGames(games, name) }

@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import `in`.dragonbra.vapulla.VapullaBaseActivity
+import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.parcelableArrayList
@@ -14,8 +15,6 @@ class GamesActivity : VapullaBaseActivity() {
 
     companion object {
         const val INTENT_GAMES = "intent_games"
-        const val SORT_ALPHABETICAL = 0
-        const val SORT_PLAYTIME = 1
     }
 
     private val viewModel: GamesViewModel by viewModels()
@@ -28,10 +27,13 @@ class GamesActivity : VapullaBaseActivity() {
         viewModel.setContents(name, items)
 
         setContent {
-            GamesScreen(
-                viewModel = viewModel,
-                onItemClick = { gotoGameStore(it) }
-            )
+            VapullaTheme {
+                GamesScreen(
+                    viewModel = viewModel,
+                    onBackPressed = { finish() },
+                    onItemClick = { gotoGameStore(it) }
+                )
+            }
         }
     }
 

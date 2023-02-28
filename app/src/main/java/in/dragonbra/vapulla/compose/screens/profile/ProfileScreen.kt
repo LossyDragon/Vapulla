@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,15 +23,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -81,6 +87,7 @@ import `in`.dragonbra.vapulla.retrofit.response.Games
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
+    onBackPressed: () -> Unit,
     onChatClick: (steamID: SteamID) -> Unit,
     onAccountClick: (steamID: SteamID) -> Unit,
     onGamesClick: (gamesList: ArrayList<Games>, name: String) -> Unit
@@ -143,6 +150,7 @@ fun ProfileScreen(
 
     ProfileScreenContent(
         state = state,
+        onBackPressed = onBackPressed,
         onChatClick = { onChatClick(state.steamID!!) },
         onAccountClick = { onAccountClick(state.steamID!!) },
         onGamesClick = { onGamesClick(state.gamesList, state.friend!!.friendName) },
@@ -158,9 +166,11 @@ fun ProfileScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileScreenContent(
     state: ProfileState,
+    onBackPressed: () -> Unit,
     onChatClick: () -> Unit,
     onAccountClick: () -> Unit,
     onGamesClick: () -> Unit,
@@ -195,34 +205,51 @@ private fun ProfileScreenContent(
         color = Color.Transparent,
         shape = Shapes.extraLarge
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .waterfallPadding(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ProfileScreenProfileIcon(state = state)
+        Scaffold(
+            modifier = Modifier.waterfallPadding(),
+            containerColor = Color.Transparent,
+            topBar = {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    IconButton(onClick = onBackPressed) {
+                        Icon(
+                            tint = dominantColorState.onColor,
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Navigate Back"
+                        )
+                    }
+                }
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ProfileScreenProfileIcon(state = state)
 
-            ProfileScreenNameAndStatus(state = state)
+                ProfileScreenNameAndStatus(state = state)
 
-            ProfileScreenInfo(state = state)
+                ProfileScreenInfo(state = state)
 
-            ProfileScreenButtons(
-                onChatClick = onChatClick,
-                onGamesClick = onGamesClick,
-                onAccountClick = onAccountClick,
-                onManageClick = { isManageVisible = !isManageVisible }
-            )
-
-            AnimatedVisibility(visible = isManageVisible) {
-                ProfileExpandedButtons(
-                    onNickName = onNickName,
-                    onAliases = onAliases,
-                    onRemove = onRemove,
-                    onBlock = onBlock
+                ProfileScreenButtons(
+                    color = dominantColorState.onColor,
+                    onChatClick = onChatClick,
+                    onGamesClick = onGamesClick,
+                    onAccountClick = onAccountClick,
+                    onManageClick = { isManageVisible = !isManageVisible }
                 )
+
+                AnimatedVisibility(visible = isManageVisible) {
+                    ProfileExpandedButtons(
+                        onNickName = onNickName,
+                        onAliases = onAliases,
+                        onRemove = onRemove,
+                        onBlock = onBlock
+                    )
+                }
             }
         }
     }
@@ -392,6 +419,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
 
 @Composable
 private fun ProfileScreenButtons(
+    color: Color,
     onChatClick: () -> Unit,
     onAccountClick: () -> Unit,
     onGamesClick: () -> Unit,
@@ -407,7 +435,7 @@ private fun ProfileScreenButtons(
     ) {
         Button(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
+            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
             onClick = onChatClick
         ) {
             Text(
@@ -417,7 +445,7 @@ private fun ProfileScreenButtons(
         }
         Button(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
+            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
             onClick = onAccountClick
         ) {
             Text(
@@ -427,7 +455,7 @@ private fun ProfileScreenButtons(
         }
         Button(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
+            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
             onClick = onGamesClick
         ) {
             Text(
@@ -437,7 +465,7 @@ private fun ProfileScreenButtons(
         }
         Button(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
+            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
             onClick = onManageClick
         ) {
             Text(
@@ -523,7 +551,7 @@ private fun Preview_ProfileScreenContent() {
     val friend = FriendListItem(
         avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
         gameAppId = 100,
-        gameName = "Chimken Eating Simulator",
+        gameName = "Sleeping Simulator",
         id = 0,
         lastLogOff = 0,
         lastLogOn = 0,
@@ -545,6 +573,7 @@ private fun Preview_ProfileScreenContent() {
                 gamesCount = 888,
                 levelCount = 100
             ),
+            onBackPressed = {},
             onChatClick = {},
             onAccountClick = {},
             onGamesClick = {},

@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.compose.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 
 /* Friend Status Colors */
@@ -14,6 +15,17 @@ val friendOnline = Color(0xFF6DCFF6)
 val colorPrimary = Color(0xFF212121)
 val colorSecondary = Color(0xFF546E7A)
 val colorError = Color(0xFFEF5350)
+
+fun getAccountStatusColor(state: EPersonaState): Color {
+    return when(state) {
+        EPersonaState.Busy,
+        EPersonaState.Away,
+        EPersonaState.Snooze -> friendAwayOrSnooze
+
+        EPersonaState.Online -> friendOnline
+        else -> friendOffline
+    }
+}
 
 fun getStatusColor(friend: FriendListItem?): Color {
     if (friend == null) {
