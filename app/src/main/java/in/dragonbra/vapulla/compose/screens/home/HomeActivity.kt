@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 import javax.inject.Inject
 
+// TODO: Make sure the friends list is updated shortly after initting.
+
 @AndroidEntryPoint
 class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity() {
 
