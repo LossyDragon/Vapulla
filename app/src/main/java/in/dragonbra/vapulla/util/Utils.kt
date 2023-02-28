@@ -27,7 +27,8 @@ object Utils {
     private const val STEAM_MEDIA = "https://media.steampowered.com"
 
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
-    const val GAME_LOGO_URL = "$STEAM_MEDIA/steamcommunity/public/images/apps/%d/%s.jpg"
+    const val GAME_LOGO_URL = "$STEAM_CDN/steam/apps/%d/header.jpg"
+
     const val PROFILE_URL = "https://steamcommunity.com/profiles/"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     const val STORE_PAGE_URL = "https://store.steampowered.com/app/%d/"

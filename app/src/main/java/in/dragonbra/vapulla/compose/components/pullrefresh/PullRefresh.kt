@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.Velocity
  * The state will be updated by this modifier.
  * @param enabled If not enabled, all scroll delta and fling velocity will be ignored.
  */
-// TODO(b/244423199): Move pullRefresh into its own material library similar to material-ripple.
 @ExperimentalMaterialApi
 fun Modifier.pullRefresh(
     state: PullRefreshState,
