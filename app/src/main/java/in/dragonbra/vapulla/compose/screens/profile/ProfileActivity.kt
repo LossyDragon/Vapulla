@@ -14,7 +14,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.activity.ChatActivity
+import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.retrofit.response.Games

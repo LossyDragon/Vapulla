@@ -48,7 +48,7 @@ import `in`.dragonbra.javasteam.steam.steamclient.configuration.SteamConfigurati
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.activity.VapullaBaseActivity
+import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.*
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.entity.ChatMessage

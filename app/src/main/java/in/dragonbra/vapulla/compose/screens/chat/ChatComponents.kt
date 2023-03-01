@@ -56,9 +56,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -70,6 +68,8 @@ import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleFriendShape
 import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleMeShape
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
+import `in`.dragonbra.vapulla.data.entity.ChatMessage
+import `in`.dragonbra.vapulla.data.entity.Emoticon
 import java.util.Calendar
 
 enum class EmojiStickerSelector {
@@ -82,6 +82,7 @@ private fun TextFieldValue.addText(newString: String): TextFieldValue {
         this.selection.end,
         newString
     )
+
     val newSelection = TextRange(
         start = newText.length,
         end = newText.length
@@ -93,9 +94,10 @@ private fun TextFieldValue.addText(newString: String): TextFieldValue {
 // Heavily derived from JetChat sample
 @Composable
 fun ChatInputBox(
-    onMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
-    onResetScroll: () -> Unit = {}
+    onMessage: (String) -> Unit,
+    onSticker: (String) -> Unit,
+    onResetScroll: () -> Unit,
 ) {
     var isEmoticonsOpen by rememberSaveable { mutableStateOf(false) }
     val dismissKeyboard = { isEmoticonsOpen = false }
@@ -140,8 +142,14 @@ fun ChatInputBox(
                 currentInputSelector = isEmoticonsOpen
             )
             ChatExpanded(
-                onTextAdded = { textState = textState.addText(it) },
-                currentSelector = isEmoticonsOpen
+                onEmoticonClick = { emote ->
+                    if (emote.isSticker) {
+                        onSticker("/sticker ${emote.name}")
+                    } else {
+                        textState = textState.addText(emote.name)
+                    }
+                },
+                isOpened = isEmoticonsOpen
             )
         }
     }
@@ -282,10 +290,10 @@ private fun InputSelectorButton(
 
 @Composable
 private fun ChatExpanded(
-    currentSelector: Boolean,
-    onTextAdded: (String) -> Unit
+    isOpened: Boolean,
+    onEmoticonClick: (Emoticon) -> Unit
 ) {
-    if (!currentSelector) return
+    if (!isOpened) return
 
     val focusRequester = FocusRequester()
     SideEffect {
@@ -293,13 +301,13 @@ private fun ChatExpanded(
     }
 
     Surface(tonalElevation = 8.dp) {
-        EmojiSelector(onTextAdded, focusRequester)
+        EmojiSelector(onEmoticonClick, focusRequester)
     }
 }
 
 @Composable
 fun EmojiSelector(
-    onTextAdded: (String) -> Unit,
+    onEmoticonClick: (Emoticon) -> Unit,
     focusRequester: FocusRequester
 ) {
     var selected by remember { mutableStateOf(EmojiStickerSelector.RECENT) }
@@ -336,14 +344,14 @@ fun EmojiSelector(
 
         // TODO slide between each view if choosing recent, emoji, or stickers
         Row(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            EmojiTable(onTextAdded)
+            EmojiTable(onEmoticonClick)
         }
     }
 }
 
 @Composable
 fun EmojiTable(
-    onTextAdded: (String) -> Unit
+    onEmoticonClick: (Emoticon) -> Unit
 ) {
     // TODO display emojis
     Text("Hello Gordon!")
@@ -382,17 +390,13 @@ fun ExtendedSelectorInnerButton(
 }
 
 @Composable
-fun ChatMessageItem(
-    isChatMessageUs: Boolean,
-    message: AnnotatedString,
-    messageTime: Long
-) {
+fun ChatMessageItem(modifier: Modifier = Modifier, message: ChatMessage) {
     var bubbleColor = MaterialTheme.colorScheme.primary
     var bubbleShape = ChatBubbleFriendShape
     var bubbleSide: Alignment = Alignment.CenterEnd
     var bubbleTimeSide: Alignment.Horizontal = Alignment.End
 
-    if (isChatMessageUs) {
+    if (message.fromLocal) {
         bubbleColor = MaterialTheme.colorScheme.surfaceVariant
         bubbleShape = ChatBubbleMeShape
         bubbleSide = Alignment.CenterStart
@@ -403,7 +407,7 @@ fun ChatMessageItem(
         // TODO, this should be done in the VM
         derivedStateOf {
             val calendar = Calendar.getInstance()
-            calendar.timeInMillis = messageTime
+            calendar.timeInMillis = message.timestamp
             val formattedTime = DateFormat.format("h:mm a", calendar).toString()
             mutableStateOf(formattedTime)
         }
@@ -412,7 +416,8 @@ fun ChatMessageItem(
     val configuration = LocalConfiguration.current
     val maxWidth = configuration.screenWidthDp
     Box(
-        modifier = Modifier
+        modifier = modifier
+            .waterfallPadding()
             .fillMaxWidth()
             .padding(8.dp),
         contentAlignment = bubbleSide
@@ -431,7 +436,7 @@ fun ChatMessageItem(
                 Text(
                     modifier = Modifier.widthIn(64.dp),
                     color = Color.White,
-                    text = message
+                    text = message.message
                 )
 
                 Text(
@@ -445,8 +450,8 @@ fun ChatMessageItem(
 }
 
 @Composable
-private fun ChatMessageDateHeader(
-    isVisible: Boolean,
+fun ChatMessageDateHeader(
+    isVisible: Boolean = true,
     dateStamp: String
 ) {
     if (!isVisible) {
@@ -487,7 +492,7 @@ fun Preview_ChatInputBox() {
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            ChatInputBox(onMessage = {})
+            ChatInputBox(onMessage = {}, onSticker = {}, onResetScroll = {})
         }
     }
 }
@@ -504,15 +509,25 @@ private fun Preview_ChatMessageItem() {
         Surface {
             Column(Modifier.fillMaxWidth()) {
                 ChatMessageItem(
-                    true,
-                    buildAnnotatedString { append("Hello?") },
-                    1677606163515
+                    message=     ChatMessage(
+                        message = randomMsg,
+                        timestamp = (1_000_000..5_000_000).random().toLong(),
+                        friendId = 1,
+                        fromLocal = false,
+                        unread = false,
+                        timestampConfirmed = false,
+                    )
                 )
                 Spacer(Modifier.height(8.dp))
                 ChatMessageItem(
-                    false,
-                    buildAnnotatedString { append(randomMsg) },
-                    1677610722814
+                    message= ChatMessage(
+                        message = randomMsg,
+                        timestamp = (1_000_000..5_000_000).random().toLong(),
+                        friendId = 1,
+                        fromLocal = true,
+                        unread = false,
+                        timestampConfirmed = false,
+                    )
                 )
             }
         }

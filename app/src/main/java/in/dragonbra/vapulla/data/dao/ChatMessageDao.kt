@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.data.dao
 
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import androidx.paging.DataSource
+import androidx.paging.PagingSource
 import androidx.room.*
 
 @Dao
@@ -37,6 +38,9 @@ interface ChatMessageDao {
 
     @Query("SELECT * FROM chat_message WHERE friend_id = :friendId ORDER BY timestamp DESC")
     fun findLivePaged(friendId: Long): DataSource.Factory<Int, ChatMessage>
+
+    @Query("SELECT * FROM chat_message WHERE friend_id = :friendId ORDER BY timestamp DESC")
+    fun findLivePaged2(friendId: Long): PagingSource<Int, ChatMessage>
 
     @Update
     fun update(vararg messages: ChatMessage)

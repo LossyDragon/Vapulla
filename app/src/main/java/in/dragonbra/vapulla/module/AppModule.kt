@@ -5,7 +5,6 @@ import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.retrofit.SteamApi
 import `in`.dragonbra.vapulla.retrofit.StoreFront
-import android.content.ClipboardManager
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import dagger.Module
@@ -29,11 +28,6 @@ object AppModule {
     @Singleton
     fun provideNotificationManager(@ApplicationContext context: Context) =
         NotificationManagerCompat.from(context)
-
-    @Provides
-    @Singleton
-    fun provideClipboardManager(@ApplicationContext context: Context) =
-        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
     @Provides
     @Singleton

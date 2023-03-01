@@ -10,10 +10,6 @@
             android:key="pref_change_profile_name"
             android:title="@string/prefTitleChangeProfileName" />
 
-        <Preference
-            android:key="pref_imgur"
-            android:title="@string/prefTitleImgur" />
-
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/prefCategoryFriends">

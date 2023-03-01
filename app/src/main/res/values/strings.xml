@@ -16,7 +16,7 @@
     <string name="statusInvisible">Invisible</string>
     <string name="statusSnooze">Snooze</string>
     <string name="statusBusy">Busy</string>
-    <string name="statusPlaying">Playing %1$s</string>
+    <string name="statusPlaying">Playing: %1$s</string>
     <string name="statusLookingTrade">Looking to Trade</string>
     <string name="statusLookingPlay">Looking to Play</string>
     <string name="statusTyping">Typing…</string>
@@ -41,9 +41,6 @@
     <!--endregion-->
 
     <!--region Preference titles-->
-
-    <string name="prefTitleImgur">Link Imgur account</string>
-    <string name="prefTitleImgurLinked">Imgur</string>
     <string name="prefTitleChangeUser">Change user</string>
     <string name="prefTitleChangeProfileName">Profile name</string>
     <string name="prefTitleVersion">Version</string>
@@ -57,7 +54,6 @@
 
     <!--region Preference descriptions-->
 
-    <string name="prefSummaryImgurLinked">Linked %1$s. Tap to unlink.</string>
     <string name="prefSummaryChangeUser">Logged in as %1$s</string>
 
     <!--endregion-->
@@ -70,14 +66,6 @@
     <string name="prefCategoryFriends">Friends</string>
     <string name="prefTitleClearNotifications">Clear notifications</string>
     <string name="prefSummaryClearNotifications">Clear any chat or request notifications once the app is open.</string>
-
-    <!--endregion-->
-
-    <!--region Snackbar messages-->
-
-    <string name="snackbarImgurLinked">Linked Imgur account</string>
-    <string name="snackbarImgurLinkFailed">Failed to link Imgur account</string>
-    <string name="snackbarImgurUploadFailed">Failed to upload image</string>
 
     <!--endregion-->
 
@@ -94,8 +82,6 @@
     <string name="dialogTitleNickname">Set %1$s\'s nickname</string>
     <string name="dialogCancel">Cancel</string>
     <string name="dialogSet">Set</string>
-    <string name="dialogMessageImgur">Link your Imgur account to send images to your friends.</string>
-    <string name="dialogTitleImgur">Sharing images</string>
     <string name="dialogTitleRemoveFriend">Remove %1$s</string>
     <string name="dialogMessageRemoveFriend">Are you sure you want to remove %1$s from you friends list?</string>
     <string name="dialogClose">Close</string>

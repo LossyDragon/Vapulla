@@ -11,9 +11,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.activity.ChatActivity
 import `in`.dragonbra.vapulla.activity.SettingsActivity
 import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager

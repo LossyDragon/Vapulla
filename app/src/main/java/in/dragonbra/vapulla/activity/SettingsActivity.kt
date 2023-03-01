@@ -10,7 +10,6 @@ import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.VapullaDatabase
-import `in`.dragonbra.vapulla.databinding.ActivitySettingsBinding
 import `in`.dragonbra.vapulla.manager.AccountManager
 import javax.inject.Inject
 
@@ -33,15 +32,11 @@ class SettingsActivity : AppCompatActivity() {
     @Inject
     lateinit var db: VapullaDatabase
 
-    private lateinit var binding: ActivitySettingsBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivitySettingsBinding.inflate(layoutInflater)
-
-        val view = binding.root
-        setContentView(view)
+        setContentView(R.layout.activity_settings)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 

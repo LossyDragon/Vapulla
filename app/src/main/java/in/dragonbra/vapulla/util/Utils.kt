@@ -1,16 +1,10 @@
 package `in`.dragonbra.vapulla.util
 
-import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.R
-import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
-import android.text.format.DateUtils
 import android.util.DisplayMetrics
-import android.view.View
-import android.view.inputmethod.InputMethodManager
 import com.bumptech.glide.request.RequestOptions
 import java.util.regex.Pattern
 
@@ -24,7 +18,7 @@ object Utils {
     private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
     private const val STEAM_AVATAR = "steamcommunity/public/images/avatars"
     private const val STEAM_CDN = "https://cdn.akamai.steamstatic.com"
-    private const val STEAM_MEDIA = "https://media.steampowered.com"
+    // private const val STEAM_MEDIA = "https://media.steampowered.com"
 
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
     const val GAME_LOGO_URL = "$STEAM_CDN/steam/apps/%d/header.jpg"
@@ -60,40 +54,6 @@ object Utils {
         }
 
         return "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
-    }
-
-    fun getStatusText(
-        context: Context,
-        state: EPersonaState?,
-        gameAppId: Int,
-        gameName: String?,
-        lastLogOff: Long
-    ): String {
-        if (gameAppId != 0 || !gameName.isNullOrEmpty()) {
-            return context.getString(R.string.statusPlaying, gameName ?: "")
-        }
-
-        return when (state) {
-            EPersonaState.Online -> context.getString(R.string.statusOnline)
-            EPersonaState.Busy -> context.getString(R.string.statusBusy)
-            EPersonaState.Away -> context.getString(R.string.statusAway)
-            EPersonaState.Snooze -> context.getString(R.string.statusSnooze)
-            EPersonaState.LookingToTrade -> context.getString(R.string.statusLookingTrade)
-            EPersonaState.LookingToPlay -> context.getString(R.string.statusLookingPlay)
-            else -> context.getString(
-                R.string.statusOffline,
-                DateUtils.getRelativeTimeSpanString(
-                    lastLogOff,
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS
-                )
-            )
-        }
-    }
-
-    fun hideKeyboardFrom(context: Context, view: View) {
-        val imm = context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     fun convertDpToPixel(dp: Float, context: Context): Float {
