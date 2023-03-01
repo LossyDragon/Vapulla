@@ -54,7 +54,7 @@ data class ChatState(
     val emoteSet: Set<String> = setOf(),
     val emoticonData: List<Emoticon> = listOf(),
 
-    val isUpdating: Boolean = false,
+    val isUpdating: Boolean = false
 )
 
 // TODO paperplane
@@ -177,7 +177,9 @@ class ChatViewModel @Inject constructor(
             _state.update { it.copy(lastTypingMessage = System.currentTimeMillis()) }
 
             val steamID = _state.value.currentChatSteamID
-                ?: throw IllegalArgumentException("SteamID was null trying to send a message status")
+                ?: throw IllegalArgumentException(
+                    "SteamID was null trying to send a message status"
+                )
 
             emit(ChatUiEvent.SendTypingStatus(steamID))
         }

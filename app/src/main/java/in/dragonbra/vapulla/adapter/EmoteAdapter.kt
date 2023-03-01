@@ -1,28 +1,28 @@
 package `in`.dragonbra.vapulla.adapter
 
-//import `in`.dragonbra.vapulla.data.entity.Emoticon
-//import `in`.dragonbra.vapulla.extension.click
-//import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
-//import `in`.dragonbra.vapulla.util.Utils.STICKER_URL
-//import android.content.Context
-//import android.os.Handler
-//import android.view.LayoutInflater
-//import android.view.ViewGroup
-//import androidx.recyclerview.widget.DiffUtil
-//import androidx.recyclerview.widget.RecyclerView
-//import com.bumptech.glide.Glide
-//import com.bumptech.glide.load.DataSource
-//import com.bumptech.glide.load.engine.GlideException
-//import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-//import com.bumptech.glide.request.RequestListener
-//import com.bumptech.glide.request.target.Target
-//import com.github.penfeizhou.animation.apng.APNGDrawable
-//import java.io.File
+// import `in`.dragonbra.vapulla.data.entity.Emoticon
+// import `in`.dragonbra.vapulla.extension.click
+// import `in`.dragonbra.vapulla.util.Utils.EMOTE_URL
+// import `in`.dragonbra.vapulla.util.Utils.STICKER_URL
+// import android.content.Context
+// import android.os.Handler
+// import android.view.LayoutInflater
+// import android.view.ViewGroup
+// import androidx.recyclerview.widget.DiffUtil
+// import androidx.recyclerview.widget.RecyclerView
+// import com.bumptech.glide.Glide
+// import com.bumptech.glide.load.DataSource
+// import com.bumptech.glide.load.engine.GlideException
+// import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+// import com.bumptech.glide.request.RequestListener
+// import com.bumptech.glide.request.target.Target
+// import com.github.penfeizhou.animation.apng.APNGDrawable
+// import java.io.File
 //
-//class EmoteAdapter(
+// class EmoteAdapter(
 //    val context: Context,
 //    val listener: EmoteListener? = null
-//) : RecyclerView.Adapter<EmoteAdapter.ViewHolder>() {
+// ) : RecyclerView.Adapter<EmoteAdapter.ViewHolder>() {
 //
 //    var emoteList: List<Emoticon> = emptyList()
 //
@@ -108,4 +108,4 @@ package `in`.dragonbra.vapulla.adapter
 //    interface EmoteListener {
 //        fun onEmoteSelected(emoticon: Emoticon)
 //    }
-//}
+// }

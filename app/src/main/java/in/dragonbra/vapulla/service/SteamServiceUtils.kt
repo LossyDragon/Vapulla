@@ -6,26 +6,30 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.text.format.DateUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import androidx.core.app.TaskStackBuilder
 import androidx.core.graphics.drawable.IconCompat
-import com.bumptech.glide.Glide
+import coil.Coil
+import coil.request.ImageRequest
+import coil.transform.CircleCropTransformation
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.broadcastreceiver.*
+import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
+import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
+import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver
+import `in`.dragonbra.vapulla.broadcastreceiver.LogOutReceiver
+import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.util.Utils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.spongycastle.util.encoders.Hex
-import java.util.concurrent.TimeUnit
 
 private var remoteInput: RemoteInput =
     RemoteInput.Builder(KEY_TEXT_REPLY)
@@ -104,16 +108,20 @@ suspend fun Context.serviceMessageNotification(
     val backoff = messages.isNotEmpty() &&
         currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
-    val bitmap: Bitmap = withContext(Dispatchers.IO) {
-        Glide.with(applicationContext)
-            .asBitmap()
-            .load(Utils.getAvatarUrl(friend.avatar))
-            .apply(Utils.avatarOptions)
-            .submit()
-            .get(5, TimeUnit.SECONDS)
-    }
+    var bitmap: Bitmap? = null
+    val imageLoader = Coil.imageLoader(this)
+    val request = ImageRequest.Builder(this)
+        .data(Utils.getAvatarUrl(friend.avatar))
+        .target { drawable ->
+            bitmap = (drawable as BitmapDrawable).bitmap
+        }
+        .fallback(R.drawable.vapulla)
+        .error(R.drawable.vapulla)
+        .transformations(CircleCropTransformation())
+        .build()
+    imageLoader.execute(request)
 
-    val iconBitmap = IconCompat.createWithBitmap(bitmap)
+    val iconBitmap = IconCompat.createWithBitmap(bitmap!!)
     val steamUser = Person
         .Builder()
         .setName(friend.name ?: "")
@@ -174,14 +182,18 @@ suspend fun Context.serviceRequestNotification(
 ) {
     val steamId = state.friendID.convertToUInt64().toInt()
 
-    val bitmap = withContext(Dispatchers.IO) {
-        Glide.with(applicationContext)
-            .asBitmap()
-            .load(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
-            .apply(Utils.avatarOptions)
-            .submit()
-            .get(5, TimeUnit.SECONDS)
-    }
+    var bitmap: Bitmap? = null
+    val imageLoader = Coil.imageLoader(this)
+    val request = ImageRequest.Builder(this)
+        .data(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
+        .target { drawable ->
+            bitmap = (drawable as BitmapDrawable).bitmap
+        }
+        .fallback(R.drawable.vapulla)
+        .error(R.drawable.vapulla)
+        .transformations(CircleCropTransformation())
+        .build()
+    imageLoader.execute(request)
 
     val acceptReceiver = Intent(this, AcceptRequestReceiver::class.java).apply {
         putExtra(AcceptRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())

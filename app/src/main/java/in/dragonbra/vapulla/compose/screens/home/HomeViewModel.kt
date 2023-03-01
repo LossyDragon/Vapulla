@@ -10,7 +10,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.vapulla.adapter.FriendListItem
-import `in`.dragonbra.vapulla.chat.PaperPlane
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +29,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     application: Application,
     private val gameSchemaManager: GameSchemaManager,
-    private val paperPlane: PaperPlane,
+    // private val paperPlane: PaperPlane,
     private val steamFriendDao: SteamFriendDao
 ) : AndroidViewModel(application) {
 
@@ -213,6 +212,6 @@ class HomeViewModel @Inject constructor(
     fun onDestroy() {
         Timber.d("onDestroy")
         friendsData.removeObserver(dataObserver)
-        paperPlane.clearAll()
+        // paperPlane.clearAll()
     }
 }

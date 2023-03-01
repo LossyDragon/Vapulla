@@ -32,7 +32,6 @@ class SettingsActivity : AppCompatActivity() {
     @Inject
     lateinit var db: VapullaDatabase
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

@@ -1,20 +1,30 @@
 package `in`.dragonbra.vapulla.compose.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,29 +32,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun VapullaEditDialog(
+    icon: ImageVector? = null,
     name: String,
     currentName: String?,
     openDialog: Boolean,
@@ -59,7 +68,8 @@ fun VapullaEditDialog(
     var newName by remember { mutableStateOf(TextFieldValue(currentName ?: "")) }
 
     Dialog(onDismissRequest = onDismiss) {
-        DialogLayout(
+        DialogLayoutUI(
+            icon = icon,
             title = stringResource(id = R.string.dialogTitleNickname, name),
             content = {
                 OutlinedTextField(
@@ -88,6 +98,7 @@ fun VapullaEditDialog(
 
 @Composable
 fun VapullaListDialog(
+    icon: ImageVector? = null,
     title: String,
     list: List<Any>,
     openDialog: Boolean,
@@ -98,12 +109,12 @@ fun VapullaListDialog(
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        DialogLayout(
+        DialogLayoutUI(
+            icon = icon,
             title = title,
             content = {
                 LazyColumn(
                     modifier = Modifier
-                        .padding(12.dp)
                         .heightIn(50.dp, 150.dp)
                         .fillMaxWidth()
                 ) {
@@ -120,87 +131,124 @@ fun VapullaListDialog(
 
 @Composable
 fun VapullaMessageDialog(
+    icon: ImageVector? = null,
     title: String,
     message: String,
     openDialog: Boolean,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onPositive: () -> Unit,
+    positiveText: String,
+    onNegative: () -> Unit,
+    negativeText: String
 ) {
     if (!openDialog) {
         return
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        DialogLayout(
+    Dialog(onDismissRequest = onNegative) {
+        DialogLayoutUI(
+            icon = icon,
             title = title,
-            content = {
-                Text(
-                    modifier = Modifier.padding(16.dp),
-                    text = message,
-                    textAlign = TextAlign.Start,
-                    style = TextStyle(fontSize = 12.sp)
-                )
-            },
-            positiveText = stringResource(id = R.string.menuBlock),
-            onPositive = onConfirm,
-            negativeText = stringResource(id = R.string.dialogCancel),
-            onNegative = onDismiss
+            message = message,
+            positiveText = positiveText,
+            onPositive = onPositive,
+            negativeText = negativeText,
+            onNegative = onNegative
         )
     }
 }
 
+// Referenced from https://stackoverflow.com/a/70588212/13225929
+// The 2 Compose Dialog Libraries aren't maintained as often
 @Composable
-private fun DialogLayout(
+fun DialogLayoutUI(
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
     title: String,
-    content: @Composable () -> Unit,
-    positiveText: String,
+    message: String? = null,
     onPositive: () -> Unit,
+    positiveText: String,
+    onNegative: (() -> Unit)? = null,
     negativeText: String? = null,
-    onNegative: (() -> Unit)? = null
+    content: (@Composable () -> Unit)? = null
 ) {
-    Surface(
+    Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
-        shadowElevation = 4.dp
+            .padding(10.dp, 5.dp, 10.dp, 10.dp)
+            .widthIn(280.dp, 560.dp),
+        shape = RoundedCornerShape(10.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                modifier = Modifier.padding(vertical = 12.dp),
-                text = title,
-                textAlign = TextAlign.Center,
-                style = TextStyle(fontSize = 20.sp)
-            )
-
-            content()
-
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 36.dp, vertical = 6.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colorSecondary),
-                onClick = onPositive
-            ) {
-                Text(
-                    text = positiveText,
-                    color = Color.White,
-                    style = TextStyle(fontSize = 16.sp)
+        Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
+            Spacer(modifier = Modifier.heightIn(24.dp))
+            icon?.let {
+                Icon(
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .height(24.dp)
+                        .fillMaxWidth(),
+                    imageVector = it,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    contentDescription = null
                 )
             }
 
-            negativeText?.let {
-                TextButton(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    onClick = { onNegative?.invoke() }
-                ) {
+            if (message == null && content == null) {
+                throw IllegalArgumentException("Message or Content is null")
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Text(
+                    text = title,
+                    textAlign = TextAlign.Center,
+                    fontSize = 24.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                message?.let {
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
+                        modifier = Modifier.fillMaxWidth(),
                         text = it,
-                        color = Color.LightGray,
-                        style = TextStyle(fontSize = 14.sp)
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
                     )
+                }
+
+                content?.let {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        it.invoke()
+                    }
+                }
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp)
+                    .background(MaterialTheme.colorScheme.secondary),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                TextButton(onClick = onPositive) {
+                    Text(
+                        text = positiveText,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+                    )
+                }
+                if (onNegative != null && negativeText != null) {
+                    TextButton(onClick = onNegative) {
+                        Text(
+                            text = negativeText,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+                        )
+                    }
                 }
             }
         }
@@ -216,6 +264,7 @@ private fun Preview_DialogListContent() {
     }
     VapullaTheme {
         VapullaListDialog(
+            icon = Icons.Default.History,
             title = stringResource(id = R.string.dialogTitleAliases),
             list = list,
             openDialog = true,
@@ -229,8 +278,9 @@ private fun Preview_DialogListContent() {
 private fun Preview_DialogEditContent() {
     VapullaTheme {
         VapullaEditDialog(
-            name = "Mr. Fancy Pants",
-            currentName = "Fancy Pants",
+            icon = Icons.Default.Edit,
+            name = "Blackhole Comet",
+            currentName = "Google Assistant",
             openDialog = true,
             onConfirm = {},
             onDismiss = {}
@@ -242,12 +292,16 @@ private fun Preview_DialogEditContent() {
 @Composable
 private fun Preview_DialogMessageContent() {
     VapullaTheme {
+        val name = "Blackhole Comet"
         VapullaMessageDialog(
-            title = stringResource(id = R.string.dialogTitleBlockFriend, "Mr.Fancy Pants"),
-            message = stringResource(id = R.string.dialogMessageBlockFriend, "Mr.Fancy Pants"),
+            icon = Icons.Default.Block,
+            title = stringResource(id = R.string.dialogTitleBlockFriend, name),
+            message = stringResource(id = R.string.dialogMessageBlockFriend, name),
             openDialog = true,
-            onConfirm = {},
-            onDismiss = {}
+            onPositive = {},
+            positiveText = stringResource(id = R.string.menuBlock),
+            onNegative = {},
+            negativeText = stringResource(id = R.string.dialogCancel)
         )
     }
 }

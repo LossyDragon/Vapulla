@@ -7,6 +7,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import org.spongycastle.util.encoders.Hex
 import java.io.File
@@ -18,78 +19,81 @@ import java.security.MessageDigest
 class AccountManager(private val context: Context) {
 
     companion object {
+        private const val KEY_AVATAR_HASH = "account_avatar_hash"
         private const val KEY_LOGIN_KEY = "account_login_key"
+        private const val KEY_NICKNAME = "account_nickname"
+        private const val KEY_STATE = "account_state"
+        private const val KEY_STEAM_ID = "account_steam_id"
         private const val KEY_UNIQUE_ID = "account_unique_id"
         private const val KEY_USERNAME = "account_username"
-        private const val KEY_NICKNAME = "account_nickname"
-        private const val KEY_AVATAR_HASH = "account_avatar_hash"
-        private const val KEY_STEAM_ID = "account_steam_id"
-        private const val KEY_STATE = "account_state"
 
         private const val SENTRY_FILE_NAME = "sentry.bin"
     }
 
-    private val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-
-    private val editor: SharedPreferences.Editor = prefs.edit()
+    var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        private set
 
     private val listeners = mutableSetOf<AccountManagerListener>()
 
+    val hasLoginKey: Boolean
+        get() = prefs.contains(KEY_LOGIN_KEY)
+
+    val hasSentryFile: Boolean
+        get() = File(context.filesDir, SENTRY_FILE_NAME).exists()
+
     var loginKey: String?
         get() = prefs.getString(KEY_LOGIN_KEY, null)
-        set(value) = editor.putString(KEY_LOGIN_KEY, value).apply()
+        set(value) = prefs.edit { putString(KEY_LOGIN_KEY, value) }
 
     var uniqueId: Int
         get() = prefs.getInt(KEY_UNIQUE_ID, 0)
-        set(value) = editor.putInt(KEY_UNIQUE_ID, value).apply()
+        set(value) = prefs.edit { putInt(KEY_UNIQUE_ID, value) }
 
     var username: String?
         get() = prefs.getString(KEY_USERNAME, null)
-        set(value) = editor.putString(KEY_USERNAME, value).apply()
+        set(value) = prefs.edit { putString(KEY_USERNAME, value) }
 
     var nickname: String?
         get() = prefs.getString(KEY_NICKNAME, null)
-        set(value) = editor.putString(KEY_NICKNAME, value).apply()
+        set(value) = prefs.edit { putString(KEY_NICKNAME, value) }
 
     var steamId: Long
         get() = prefs.getLong(KEY_STEAM_ID, 0L)
-        set(value) = editor.putLong(KEY_STEAM_ID, value).apply()
+        set(value) = prefs.edit { putLong(KEY_STEAM_ID, value) }
 
     var avatarHash: String?
         get() = prefs.getString(KEY_AVATAR_HASH, null)
-        set(value) = editor.putString(KEY_AVATAR_HASH, value).apply()
+        set(value) = prefs.edit { putString(KEY_AVATAR_HASH, value) }
 
     var state: EPersonaState
         get() = EPersonaState.from(prefs.getInt(KEY_STATE, 0))
-        set(value) = editor.putInt(KEY_STATE, value.code()).apply()
+        set(value) = prefs.edit { putInt(KEY_STATE, value.code()) }
 
     val sentrySize: Long
         get() = File(context.filesDir, SENTRY_FILE_NAME).length()
 
     fun updateSentryFile(callback: UpdateMachineAuthCallback) {
         val sentryFile = File(context.filesDir, SENTRY_FILE_NAME)
-        FileOutputStream(sentryFile).use {
+        FileOutputStream(sentryFile).use { fos ->
             val byteBuffer = ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite)
-            val channel = it.channel
-            channel.position(callback.offset.toLong())
-            channel.write(byteBuffer)
+            fos.channel.run {
+                position(callback.offset.toLong())
+                write(byteBuffer)
+            }
         }
     }
 
     fun clear() {
-        editor.remove(KEY_LOGIN_KEY)
-            .remove(KEY_UNIQUE_ID)
-            .remove(KEY_USERNAME)
-            .remove(KEY_STEAM_ID)
-            .remove(KEY_AVATAR_HASH)
-            .remove(KEY_NICKNAME)
-            .remove(KEY_STATE)
-            .apply()
+        prefs.edit {
+            remove(KEY_LOGIN_KEY)
+            remove(KEY_UNIQUE_ID)
+            remove(KEY_USERNAME)
+            remove(KEY_STEAM_ID)
+            remove(KEY_AVATAR_HASH)
+            remove(KEY_NICKNAME)
+            remove(KEY_STATE)
+        }
     }
-
-    fun hasLoginKey() = prefs.contains(KEY_LOGIN_KEY)
-
-    fun hasSentryFile() = File(context.filesDir, SENTRY_FILE_NAME).exists()
 
     fun readSentryFile(): ByteArray {
         val file = File(context.filesDir, SENTRY_FILE_NAME)
@@ -112,11 +116,11 @@ class AccountManager(private val context: Context) {
         return digest.digest()
     }
 
-    fun saveLocalUser(state: PersonaState) {
-        avatarHash = Hex.toHexString(state.avatarHash)
-        nickname = state.name
-        steamId = state.friendID.convertToUInt64()
-        this.state = state.state
+    fun saveLocalUser(personaState: PersonaState) {
+        avatarHash = Hex.toHexString(personaState.avatarHash)
+        nickname = personaState.name
+        steamId = personaState.friendID.convertToUInt64()
+        state = personaState.state
 
         listeners.forEach {
             it.onAccountUpdate(this@AccountManager)

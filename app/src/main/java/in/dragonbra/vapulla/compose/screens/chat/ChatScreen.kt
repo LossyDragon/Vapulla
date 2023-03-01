@@ -68,7 +68,7 @@ import kotlin.random.Random
 fun ChatScreen(
     viewModel: ChatViewModel,
     onBackPressed: () -> Unit,
-    onViewProfile: (SteamID) -> Unit,
+    onViewProfile: (SteamID) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -88,7 +88,7 @@ private fun ChatScreenContent(
     state: ChatState,
     onBackPressed: () -> Unit,
     onViewProfile: (SteamID) -> Unit,
-    onChatMessage: (String) -> Unit,
+    onChatMessage: (String) -> Unit
 ) {
     Scaffold(
         modifier = Modifier
@@ -117,7 +117,7 @@ private fun ChatScreenContent(
                     Row(
                         modifier = Modifier.padding(start = 0.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         val borderStroke = BorderStroke(1.dp, getStatusColor(state.friend))
                         val cornerShape = RoundedCornerShape(4.dp)
@@ -155,8 +155,10 @@ private fun ChatScreenContent(
                             val status = if ((lastMsg || typingTs) && currentTs) {
                                 stringResource(id = R.string.statusTyping)
                             } else {
-                                if (state.friend?.isInGame() == true || state.friend?.isInGameAwayOrSnooze() == true) {
-                                    val gameName = state.friend.gameName ?: "a game."
+                                val isOnline = state.friend?.isInGame() == true
+                                val isAway = state.friend?.isInGameAwayOrSnooze() == true
+                                if (isOnline || isAway) {
+                                    val gameName = state.friend?.gameName ?: "a game."
                                     stringResource(id = R.string.statusPlaying, gameName)
                                 } else {
                                     getStatusText(state.friend)
@@ -203,7 +205,7 @@ private fun ChatScreenContent(
             ) {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    state = scrollState,
+                    state = scrollState
                 ) {
                     // TODO, VM this
                     val groupedMessages = messages.itemSnapshotList.items.reversed().groupBy {
@@ -219,10 +221,9 @@ private fun ChatScreenContent(
                             // TODO handle long click to copy message
                             ChatMessageItem(
                                 modifier = Modifier.animateItemPlacement(),
-                                message = msg,
+                                message = msg
                             )
                         }
-
                     }
                 }
 
@@ -250,15 +251,16 @@ private fun Preview_ChatScreenContent() {
     repeat(100) {
         val currentTime = System.currentTimeMillis()
         val randomTime = currentTime - Random.nextLong(currentTime)
+        val time = if (it < 75) randomTime else if (it < 95) 1677647978791 else 1699999998791
         messages.add(
             ChatMessage(
                 id = it.toLong(),
                 message = "Sup\nBro $it",
-                timestamp = if (it < 75) randomTime else if (it < 95) 1677647978791 else 1699999998791,
+                timestamp = time,
                 friendId = 1,
                 fromLocal = it.mod(2) == 0,
                 unread = false,
-                timestampConfirmed = false,
+                timestampConfirmed = false
             )
         )
     }

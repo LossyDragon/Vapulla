@@ -74,7 +74,7 @@ class LoginActivity : VapullaBaseActivity() {
         Timber.d("onDisconnected")
         with(viewModel) {
             if (!loginState.expectSteamGuard) {
-                if (accountManager.hasLoginKey()) {
+                if (accountManager.hasLoginKey) {
                     val event = LoginEvent.ShowFailedScreen
                     viewModel.onEvent(event)
                 }
@@ -152,7 +152,7 @@ class LoginActivity : VapullaBaseActivity() {
             Notifications.createServiceNotificationChannel(notificationManager)
         }
 
-        if (accountManager.hasLoginKey()) {
+        if (accountManager.hasLoginKey) {
             with(viewModel.logOnDetails) {
                 loginKey = accountManager.loginKey
                 password = null

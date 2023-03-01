@@ -97,7 +97,7 @@ fun ChatInputBox(
     modifier: Modifier = Modifier,
     onMessage: (String) -> Unit,
     onSticker: (String) -> Unit,
-    onResetScroll: () -> Unit,
+    onResetScroll: () -> Unit
 ) {
     var isEmoticonsOpen by rememberSaveable { mutableStateOf(false) }
     val dismissKeyboard = { isEmoticonsOpen = false }
@@ -509,24 +509,24 @@ private fun Preview_ChatMessageItem() {
         Surface {
             Column(Modifier.fillMaxWidth()) {
                 ChatMessageItem(
-                    message=     ChatMessage(
+                    message = ChatMessage(
                         message = randomMsg,
                         timestamp = (1_000_000..5_000_000).random().toLong(),
                         friendId = 1,
                         fromLocal = false,
                         unread = false,
-                        timestampConfirmed = false,
+                        timestampConfirmed = false
                     )
                 )
                 Spacer(Modifier.height(8.dp))
                 ChatMessageItem(
-                    message= ChatMessage(
+                    message = ChatMessage(
                         message = randomMsg,
                         timestamp = (1_000_000..5_000_000).random().toLong(),
                         friendId = 1,
                         fromLocal = true,
                         unread = false,
-                        timestampConfirmed = false,
+                        timestampConfirmed = false
                     )
                 )
             }

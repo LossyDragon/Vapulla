@@ -318,7 +318,7 @@ class SteamService : Service() {
 
         details.isShouldRememberPassword = true
 
-        if (account.hasSentryFile()) {
+        if (account.hasSentryFile) {
             details.sentryFileHash = account.readSentryFile()
         }
 
@@ -472,7 +472,7 @@ class SteamService : Service() {
                 loginKey = account.loginKey
                 isShouldRememberPassword = true
 
-                if (account.hasSentryFile()) {
+                if (account.hasSentryFile) {
                     sentryFileHash = account.readSentryFile()
                 }
             }

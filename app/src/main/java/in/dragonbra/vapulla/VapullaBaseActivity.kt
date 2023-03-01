@@ -26,9 +26,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     private val stopReceiver = StopReceiver()
 
-    val vapulla: VapullaApplication
-        get() = application as VapullaApplication
-
     private val serviceSubscriptions = LinkedList<Closeable?>()
 
     var isBound = false

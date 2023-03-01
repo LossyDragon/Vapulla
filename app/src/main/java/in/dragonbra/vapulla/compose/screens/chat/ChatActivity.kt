@@ -48,7 +48,7 @@ class ChatActivity : VapullaBaseActivity() {
                 ChatScreen(
                     viewModel = viewModel,
                     onBackPressed = { finish() },
-                    onViewProfile = { viewProfile(it) },
+                    onViewProfile = { viewProfile(it) }
                 )
             }
         }
