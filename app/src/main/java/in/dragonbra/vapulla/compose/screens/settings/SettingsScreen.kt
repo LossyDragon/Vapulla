@@ -43,7 +43,7 @@ private val recentsMap = mapOf(
     "1 week" to 604800000L,
     "2 weeks" to 1209600000L,
     "1 month" to 2592000000L,
-    "Forever" to 0L,
+    "Forever" to 0L
 )
 
 @Composable

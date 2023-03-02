@@ -14,7 +14,6 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistor
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
-import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.service.SteamService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,18 +51,10 @@ abstract class VapullaBaseActivity : ComponentActivity() {
             val binder = service as SteamService.SteamBinder
             steamService = binder.getService()
 
-            subs.add(steamService?.callbackMgr?.subscribe(ConnectedCallback::class.java) {
-                onConnected()
-            })
-            subs.add(steamService?.callbackMgr?.subscribe(DisconnectedCallback::class.java) {
-                onDisconnected()
-            })
-            subs.add(steamService?.callbackMgr?.subscribe(LoggedOnCallback::class.java) {
-                onLoggedOn(it)
-            })
-            subs.add(steamService?.callbackMgr?.subscribe(AliasHistoryCallback::class.java) {
-                onAliasHistory(it) // Leaked; Unified this so it gets closed properly
-            })
+            subs.add(steamService?.subscribe<ConnectedCallback> { onConnected() })
+            subs.add(steamService?.subscribe<DisconnectedCallback> { onDisconnected() })
+            subs.add(steamService?.subscribe<LoggedOnCallback> { onLoggedOn(it) })
+            subs.add(steamService?.subscribe<AliasHistoryCallback> { onAliasHistory(it) })
 
             isBound = true
             this@VapullaBaseActivity.onServiceConnected(name, service)
@@ -75,28 +66,40 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 
-    override fun onStop() {
-        super.onStop()
-        unbindService(connection)
-        subs.forEach { it?.close() }
-        subs.clear()
-        isBound = false
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val filter = IntentFilter(STOP_INTENT)
         registerReceiver(stopReceiver, filter)
     }
 
+    override fun onStop() {
+        super.onStop()
+        if (isBound) {
+            unbindService(connection)
+            subs.forEach { it?.close() }
+            subs.clear()
+        }
+        isBound = false
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (isBound) {
+            steamService?.isActivityRunning = false
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isBound) {
+            steamService?.isActivityRunning = true
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(stopReceiver)
-        steamService = null // Memory Leak Hunting
-    }
-
-    fun subscribe(sub: Closeable?) {
-        subs.add(sub)
+        steamService = null
     }
 
     open fun onConnected(showLoading: () -> Unit = {}, isLoggedIn: () -> Unit = {}) {}
@@ -109,9 +112,16 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     open fun onAliasHistory(callback: AliasHistoryCallback) {}
 
-    open fun onServiceConnected(name: ComponentName, service: IBinder) {}
+    open fun onServiceConnected(name: ComponentName, service: IBinder) {
+        Timber.d("Bound to Steam service")
+        if (isBound) {
+            steamService?.isActivityRunning = true
+        }
+    }
 
-    open fun onServiceDisconnected(name: ComponentName) {}
+    open fun onServiceDisconnected(name: ComponentName) {
+        Timber.d("Unbound from Steam service")
+    }
 
     fun startSteamService(showLoading: () -> Unit) {
         Timber.d("Starting steam service...")

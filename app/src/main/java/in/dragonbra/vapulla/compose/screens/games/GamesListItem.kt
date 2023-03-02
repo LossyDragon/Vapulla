@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -17,23 +15,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.request.ImageRequest
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.GameImage
 import `in`.dragonbra.vapulla.compose.util.formatPlayTime
-import `in`.dragonbra.vapulla.util.Utils
 
 @Composable
 fun GamesListItem(
@@ -48,46 +38,9 @@ fun GamesListItem(
             .fillMaxWidth()
             .height(88.dp)
     ) {
-        val context = LocalContext.current
-        val density = LocalDensity.current
-        val width = with(density) { 460.toDp() }
-        val height = with(density) { 215.toDp() }
-
         ListItem(
             leadingContent = {
-                CoilImage(
-                    modifier = Modifier.size(width, height),
-                    imageRequest = {
-                        ImageRequest.Builder(context)
-                            .data(String.format(Utils.GAME_LOGO_URL, appId))
-                            .crossfade(true)
-                            .build()
-                    },
-                    imageOptions = ImageOptions(
-                        contentScale = ContentScale.Fit,
-                        // requestSize = IntSize(460, 215)
-                    ),
-                    previewPlaceholder = R.mipmap.ic_launcher_foreground,
-                    loading = {
-                        Box(
-                            modifier = Modifier.size(width, height),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    },
-                    failure = {
-                        Box(
-                            modifier = Modifier.size(width, height),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painterResource(id = R.mipmap.ic_launcher_foreground),
-                                contentDescription = null
-                            )
-                        }
-                    }
-                )
+                GameImage(appId = appId)
             },
             headlineText = {
                 Text(

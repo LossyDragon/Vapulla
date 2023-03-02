@@ -5,13 +5,11 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.retrofit.response.Games
 
 data class ProfileState(
-    val isLoading: Boolean = true,
-
     val aliasHistory: List<String> = listOf(),
     val friend: FriendListItem? = null,
-    val steamID: SteamID? = null,
-
     val gamesCount: Int? = 0,
     val gamesList: ArrayList<Games> = arrayListOf(),
-    val levelCount: Int? = 0
+    val isLoading: Boolean = true,
+    val levelCount: Int? = 0,
+    val steamID: SteamID? = null
 )

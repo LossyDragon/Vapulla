@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.compose.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
@@ -20,9 +19,8 @@ fun VapullaTheme(
     content: @Composable () -> Unit
 ) {
     val systemUiController = rememberSystemUiController()
-    val useDarkIcons = !isSystemInDarkTheme()
     SideEffect {
-        systemUiController.setSystemBarsColor(Color.Transparent, darkIcons = useDarkIcons)
+        systemUiController.setSystemBarsColor(Color.Transparent, darkIcons = false)
     }
 
     MaterialTheme(

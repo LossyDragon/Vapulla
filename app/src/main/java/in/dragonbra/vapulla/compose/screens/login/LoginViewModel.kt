@@ -24,7 +24,6 @@ class LoginViewModel(
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
 
-    // ViewModel stuff
     fun onEvent(event: LoginEvent) {
         Timber.d("Login Event: ${event.javaClass}")
         when (event) {
@@ -95,6 +94,11 @@ class LoginViewModel(
                 _loginState.update { it.copy(username = event.username) }
             }
         }
+    }
+
+    fun prefillInputs(username: String?) {
+        if (username == null) return
+        _loginState.update { it.copy(username = username) }
     }
 
     fun onDestroy() {

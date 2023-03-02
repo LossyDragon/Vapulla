@@ -14,6 +14,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import timber.log.Timber
 import java.math.RoundingMode
+import java.text.DateFormat
 import java.text.DecimalFormat
 
 private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
@@ -23,6 +24,41 @@ private const val AVATAR_URL = "$STEAM_CDN/$STEAM_AVATAR/"
 private const val DEFAULT_AVATAR =
     "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
+/**
+ *
+ */
+@Composable
+fun getLastMessageTime(friend: FriendListItem?): CharSequence? {
+    if (friend == null) return ""
+    return DateUtils.formatSameDayTime(
+        friend.lastMessageTime ?: 0,
+        System.currentTimeMillis(),
+        DateFormat.SHORT,
+        DateFormat.SHORT
+    )
+}
+
+/**
+ * Gets the last log off time from a friend item and converts it to a relative time stamp.
+ *
+ * @param friend The friend item data class
+ * @return The
+ */
+@Composable
+fun getLastSeenText(friend: FriendListItem?): CharSequence {
+    if (friend == null) return "some time ago"
+    return DateUtils.getRelativeTimeSpanString(
+        friend.lastLogOff,
+        System.currentTimeMillis(),
+        DateUtils.MINUTE_IN_MILLIS
+    )
+}
+
+/**
+ * Gets the avatar hash and constructs the full steam url at full size
+ * @param avatar The avatar hash
+ * @return The steam url of the hash, or default avatar if null
+ */
 fun getAvatarUrl(avatar: String?): String {
     if (avatar.isNullOrEmpty() || avatar == ALL_ZEROS) {
         return DEFAULT_AVATAR
@@ -31,6 +67,12 @@ fun getAvatarUrl(avatar: String?): String {
     return "${AVATAR_URL}${avatar.substring(0, 2)}/${avatar}_full.jpg"
 }
 
+/**
+ * Converts a friends playtime into a approximate double of their playtime in hours.
+ *
+ * @param time The time a friend has played a game
+ * @return A double representing how many hours were played, ie: 1.5 hrs
+ */
 fun formatPlayTime(time: Int): Double {
     return DecimalFormat("#.#").run {
         roundingMode = RoundingMode.CEILING
@@ -38,10 +80,45 @@ fun formatPlayTime(time: Int): Double {
     }
 }
 
+/**
+ * Gers the number of unread messages you have with a friend
+ *
+ * @param number The number of unread messages
+ * @return The number of unread messages as a string, capped at 99
+ */
+@Composable
+fun getUnreadMessageCount(number: Int?): String {
+    val unreadMsg = number ?: 0
+    return if (unreadMsg > 99) "99+" else unreadMsg.toString()
+}
+
+/**
+ * Gets the current status of a friend
+ *
+ * If the friend is null, we'll assume offline.
+ *
+ * @param friend The friend item data class
+ * @return A formatted string containing their status
+ */
 @Composable
 fun getStatusText(friend: FriendListItem?): String {
     if (friend == null) {
         return stringResource(id = R.string.statusOfflineLabel)
+    }
+
+    if (friend.isRequestRecipient()) {
+        return stringResource(id = R.string.notificationTitleFriendRequest)
+    }
+
+    val isTypingFromLastMessage = friend.typingTs > (friend.lastMessageTime ?: 0)
+    val isTyping = friend.typingTs > (System.currentTimeMillis() - 20000L)
+    if (isTypingFromLastMessage && isTyping) {
+        // Would be nice to have a typing indicator
+        return stringResource(id = R.string.statusTyping)
+    }
+
+    if (friend.state == EPersonaState.Offline.code()) {
+        return stringResource(id = R.string.statusOffline, getLastSeenText(friend))
     }
 
     if (friend.gameAppId != 0 || !friend.gameName.isNullOrEmpty()) {
@@ -58,12 +135,19 @@ fun getStatusText(friend: FriendListItem?): String {
         EPersonaState.Busy -> stringResource(R.string.statusBusy)
         EPersonaState.Away -> stringResource(R.string.statusAway)
         EPersonaState.Snooze -> stringResource(R.string.statusSnooze)
-        EPersonaState.LookingToTrade -> stringResource(R.string.statusLookingTrade)
-        EPersonaState.LookingToPlay -> stringResource(R.string.statusLookingPlay)
         else -> stringResource(R.string.statusOffline, relativeDate)
     }
 }
 
+/**
+ * Constructs a friend's name into a themed annotated string
+ * Will display 'Loading..." if the friend is null
+ * Name will be colorized according to their status
+ * Nicknames will have a grey asterisk at the end.
+ *
+ * @param friend The Friend Item data class
+ * @return A themed annotated string.
+ */
 @Composable
 fun friendNameBuilder(friend: FriendListItem?): AnnotatedString {
     val builder = AnnotatedString.Builder()
@@ -88,6 +172,14 @@ fun friendNameBuilder(friend: FriendListItem?): AnnotatedString {
     return builder.toAnnotatedString()
 }
 
+/**
+ * Gets the EResult of a unsuccessful login attempt
+ *
+ * @param eResult The EResult of the error
+ * @param extendedResult The extended result of the error
+ *
+ * @return A string generalizing the error.
+ */
 fun Context.getErrorMessage(eResult: EResult, extendedResult: EResult? = null): String {
     Timber.w("getErrorMessage(): $extendedResult")
     return when (eResult) {

@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -49,7 +48,6 @@ class HomeViewModel @Inject constructor(
 
     private lateinit var friendsData: LiveData<List<FriendListItem>>
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
-        Timber.d("Observe: ${list.size}")
         val updateTime = System.currentTimeMillis()
         if (!state.value.isSearching) {
             swap(list, updateTime)
@@ -74,7 +72,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onEvent(event: HomeEvent) {
-        Timber.d("Event: ${event.javaClass}")
         when (event) {
             is HomeEvent.SwipeRefresh -> {
                 _state.update { it.copy(isRefreshing = event.isRefreshing) }
@@ -86,7 +83,6 @@ class HomeViewModel @Inject constructor(
             }
 
             is HomeEvent.UpdateAccount -> {
-                Timber.d("Proot: ${event.nickname} : ${event.status} :  ${event.avatarHash}")
                 _state.update {
                     it.copy(
                         nickname = event.nickname,
@@ -133,6 +129,7 @@ class HomeViewModel @Inject constructor(
             }
         }
 
+        // TODO pref
         val recentTimeout =
             prefs.getString("pref_friends_list_recents", "604800000")?.toLong() ?: 0L
 
@@ -162,7 +159,6 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        Timber.d("Friends List Size: ${groupedList.size}")
         if (state.value.isSearching) {
             _state.update { it.copy(filteredFriendsList = groupedList, updateTime = updateTime) }
         } else {
@@ -201,7 +197,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onPostCreate(owner: LifecycleOwner) {
-        Timber.d("onPostCreate")
         friendsData = steamFriendDao.getLive()
         friendsData.observe(owner, dataObserver)
 
@@ -210,8 +205,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onDestroy() {
-        Timber.d("onDestroy")
         friendsData.removeObserver(dataObserver)
-        // paperPlane.clearAll()
     }
 }

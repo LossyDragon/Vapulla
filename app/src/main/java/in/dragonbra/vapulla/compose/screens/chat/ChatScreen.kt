@@ -35,20 +35,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil.request.ImageRequest
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.types.SteamID
@@ -57,6 +52,7 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.compose.util.AvatarImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusText
@@ -122,19 +118,12 @@ private fun ChatScreenContent(
                     ) {
                         val borderStroke = BorderStroke(1.dp, getStatusColor(state.friend))
                         val cornerShape = RoundedCornerShape(4.dp)
-                        CoilImage(
+                        AvatarImage(
                             modifier = Modifier
                                 .size(48.dp)
                                 .border(borderStroke, cornerShape)
                                 .clip(cornerShape),
-                            imageRequest = {
-                                ImageRequest.Builder(context)
-                                    .data(getAvatarUrl(state.friend?.avatar))
-                                    .crossfade(true)
-                                    .build()
-                            },
-                            previewPlaceholder = R.drawable.vapulla,
-                            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
+                            avatarUrl = getAvatarUrl(state.friend?.avatar)
                         )
 
                         Column(modifier = Modifier.padding(start = 6.dp)) {

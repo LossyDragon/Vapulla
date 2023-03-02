@@ -35,9 +35,6 @@ class AccountManager(private val context: Context) {
 
     private val listeners = mutableSetOf<AccountManagerListener>()
 
-    val hasLoginKey: Boolean
-        get() = prefs.contains(KEY_LOGIN_KEY)
-
     val hasSentryFile: Boolean
         get() = File(context.filesDir, SENTRY_FILE_NAME).exists()
 

@@ -50,19 +50,13 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.request.ImageRequest
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
@@ -79,10 +73,10 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
+import `in`.dragonbra.vapulla.compose.util.AvatarImage
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Composable
 fun HomeScreen(
@@ -178,10 +172,6 @@ private fun HomeScreenContent(
             ) {
                 val listState = rememberLazyListState()
 
-                LaunchedEffect(state.friendsList) {
-                    Timber.d("Recomping List")
-                }
-
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
@@ -205,8 +195,7 @@ private fun HomeScreenContent(
                                 onClickChat = { onChatSelected(friend) },
                                 onClickProfile = { onProfileSelected(friend) },
                                 onClickAccept = { TODO() },
-                                onClickIgnore = { TODO() },
-                                onClickBlock = { TODO() }
+                                onClickIgnore = { TODO() }
                             )
                         }
                     }
@@ -304,20 +293,12 @@ private fun DrawerAccountInfo(state: HomeState) {
             .padding(bottom = 36.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val context = LocalContext.current
-        CoilImage(
+        AvatarImage(
             modifier = Modifier
                 .size(150.dp)
                 .border(borderStroke, cornerShape)
                 .clip(cornerShape),
-            imageRequest = {
-                ImageRequest.Builder(context)
-                    .data(Utils.getAvatarUrl(state.avatarHash))
-                    .crossfade(true)
-                    .build()
-            },
-            previewPlaceholder = R.drawable.vapulla,
-            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
+            avatarUrl = Utils.getAvatarUrl(state.avatarHash)
         )
 
         Text(state.nickname, Modifier.padding(6.dp))

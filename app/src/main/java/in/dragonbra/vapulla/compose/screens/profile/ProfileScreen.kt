@@ -53,17 +53,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.request.ImageRequest
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.types.SteamID
@@ -81,6 +75,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorPrimary
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.compose.util.AvatarImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
@@ -215,7 +210,9 @@ private fun ProfileScreenContent(
         shape = Shapes.extraLarge
     ) {
         Scaffold(
-            modifier = Modifier.statusBarsPadding().waterfallPadding(),
+            modifier = Modifier
+                .statusBarsPadding()
+                .waterfallPadding(),
             containerColor = Color.Transparent,
             topBar = {
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -271,23 +268,14 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val context = LocalContext.current
-
         val borderStroke = BorderStroke(4.dp, getStatusColor(state.friend))
         val cornerShape = RoundedCornerShape(16.dp)
-        CoilImage(
+        AvatarImage(
             modifier = Modifier
                 .size(150.dp)
                 .border(borderStroke, cornerShape)
                 .clip(cornerShape),
-            imageRequest = {
-                ImageRequest.Builder(context)
-                    .data(getAvatarUrl(state.friend?.avatar))
-                    .crossfade(true)
-                    .build()
-            },
-            previewPlaceholder = R.drawable.vapulla,
-            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
+            avatarUrl = getAvatarUrl(state.friend?.avatar)
         )
     }
 }
@@ -341,6 +329,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // TODO hoist
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -386,6 +375,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
             )
 
+            // TODO hoist
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -574,6 +564,7 @@ private fun Preview_ProfileScreenContent() {
         stateFlags = 512,
         typingTs = 0
     )
+
     VapullaTheme {
         ProfileScreenContent(
             state = ProfileState(

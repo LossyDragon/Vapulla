@@ -69,31 +69,16 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
-        Timber.d("Bound to Steam service")
-        if (isBound) {
-            steamService?.isActivityRunning = true
-            accountManager.addListener(this@HomeActivity)
-        }
-    }
-
-    override fun onServiceDisconnected(name: ComponentName) {
-        super.onServiceDisconnected(name)
-        Timber.d("Unbound from Steam service")
+        accountManager.addListener(this@HomeActivity)
     }
 
     override fun onDisconnected() {
         super.onDisconnected()
-        Timber.d("onDisconnected")
         closeApplication()
     }
 
     override fun onPause() {
         super.onPause()
-        Timber.d("onPause")
-        if (isBound) {
-            steamService?.isActivityRunning = false
-        }
-
         accountManager.removeListener(this)
     }
 
@@ -142,14 +127,23 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     private fun onSettings() {
         Timber.d("onSettings")
-
-        startActivity(Intent(this, SettingsActivity::class.java))
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
     }
 
     private fun onFriendAction(event: HomeUiEvent) {
         Timber.d("onFriendAction ${event.javaClass}")
         scope.executeAsyncTask {
             when (event) {
+                HomeUiEvent.AddFriend -> TODO("Add Friend")
+                HomeUiEvent.Disconnect -> steamService?.disconnect()
+                HomeUiEvent.LogOut -> steamService?.disconnect()
+                HomeUiEvent.Settings -> onSettings()
+                HomeUiEvent.Refresh -> {
+                    viewModel.clearStates()
+                    steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
+                }
+
                 is HomeUiEvent.AcceptRequest -> {
                     val friend = SteamID(event.friend.id)
                     steamService?.getHandler<SteamFriends>()?.addFriend(friend)
@@ -167,25 +161,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
                 is HomeUiEvent.IgnoreRequest -> {
                     val friend = SteamID(event.friend.id)
                     steamService?.getHandler<SteamFriends>()?.removeFriend(friend)
-                }
-
-                HomeUiEvent.Disconnect -> {
-                    steamService?.disconnect()
-                }
-
-                HomeUiEvent.Refresh -> {
-                    viewModel.clearStates()
-                    steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
-                }
-
-                HomeUiEvent.AddFriend -> TODO("Add Friend")
-
-                HomeUiEvent.LogOut -> {
-                    steamService?.disconnect()
-                }
-
-                HomeUiEvent.Settings -> {
-                    onSettings()
                 }
             }
         }

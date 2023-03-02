@@ -47,6 +47,8 @@ class LoginActivity : VapullaBaseActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         Timber.d("onCreate")
 
+        viewModel.prefillInputs(accountManager.username)
+
         setContent {
             VapullaTheme {
                 LoginScreen(
@@ -60,6 +62,10 @@ class LoginActivity : VapullaBaseActivity() {
                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                             Uri.fromParts("package", packageName, null)
                         ).also(::startActivity)
+                    },
+                    onReset = {
+                        accountManager.clear()
+                        finish()
                     }
                 )
             }
@@ -88,7 +94,7 @@ class LoginActivity : VapullaBaseActivity() {
         Timber.d("onDisconnected")
         with(viewModel) {
             if (!loginState.value.expectSteamGuard) {
-                if (accountManager.hasLoginKey) {
+                if (!accountManager.loginKey.isNullOrEmpty()) {
                     val event = LoginEvent.ShowFailedScreen
                     viewModel.onEvent(event)
                 }
@@ -170,7 +176,7 @@ class LoginActivity : VapullaBaseActivity() {
             Notifications.createServiceNotificationChannel(notificationManager)
         }
 
-        if (accountManager.hasLoginKey) {
+        if (!accountManager.loginKey.isNullOrEmpty() && !accountManager.username.isNullOrEmpty()) {
             with(viewModel.logOnDetails) {
                 loginKey = accountManager.loginKey
                 password = null

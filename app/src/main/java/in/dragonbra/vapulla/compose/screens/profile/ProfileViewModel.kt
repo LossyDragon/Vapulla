@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,8 +42,6 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.executeAsyncTask {
             val level = levelManager.getLevel(state.value.steamID!!)
             val games = levelManager.getGames(state.value.steamID!!)
-
-            Timber.d("profileExec $level : ${games.list.size}")
             _state.update {
                 it.copy(
                     levelCount = level,
@@ -58,43 +55,37 @@ class ProfileViewModel @Inject constructor(
 
     private lateinit var friendData: LiveData<FriendListItem>
     private val friendObserver = Observer<FriendListItem> { friend ->
-        Timber.d("Observing")
         if (friend.relation == EFriendRelationship.Friend.code()) {
             _state.update { it.copy(friend = friend) }
             state.value.steamID?.let { profileExec }
-        } else {
-            emit(ProfileUiEvent.NavigateBack)
+            return@Observer
         }
+
+        emit(ProfileUiEvent.NavigateBack)
     }
 
     fun onPostCreate(owner: LifecycleOwner, steamID: SteamID) {
-        Timber.d("onPostCreate")
         _state.update { it.copy(steamID = steamID) }
 
         friendData = steamFriendDao.findLive(steamID.convertToUInt64())
         friendData.observe(owner, friendObserver)
 
         friendData.value?.let {
-            if (it.gameAppId > 0) {
-                schemaManager.touch(it.gameAppId)
-            }
+            if (it.gameAppId > 0) schemaManager.touch(it.gameAppId)
         }
 
         _state.update { it.copy(friend = friendData.value) }
     }
 
     fun onDestroy() {
-        Timber.d("onDestroy")
         friendData.removeObserver(friendObserver)
     }
 
     fun setJobID(jobID: JobID?) {
-        Timber.d("setJobID")
         this.jobID = jobID ?: JobID.INVALID
     }
 
     fun onAliasHistory(callback: AliasHistoryCallback) {
-        Timber.d("onAliasHistory")
         if (jobID == callback.jobID) {
             val list = callback.responses[0].names.toList().sortedByDescending { it.nameSince }
             val nickNames = list.map { it.name }
@@ -103,7 +94,6 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun setNickname(nickName: String) {
-        Timber.d("setNickname")
         if (_state.value.steamID == null) {
             return
         }
@@ -120,12 +110,10 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun removeFriend() {
-        Timber.d("blockFriend")
         emit(ProfileUiEvent.RemoveFriend(_state.value.steamID!!))
     }
 
     fun blockFriend() {
-        Timber.d("blockFriend")
         emit(ProfileUiEvent.BlockFriend(_state.value.steamID!!))
     }
 
@@ -134,7 +122,6 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun emit(event: ProfileUiEvent) {
-        Timber.d("emit ${event.javaClass}")
         viewModelScope.launch {
             _uiEvent.emit(event)
         }

@@ -13,7 +13,9 @@ import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,11 +32,14 @@ import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -44,14 +49,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
+import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
+import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.delay
 import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation
@@ -63,14 +68,18 @@ fun LoginScreen(
     onStartService: () -> Unit,
     onBindService: () -> Unit,
     onSettings: () -> Unit,
+    onReset: () -> Unit
 ) {
     val state by viewModel.loginState.collectAsState()
 
-    var showPermissionsDialog by remember { mutableStateOf(false) }
-    var showRationale by remember { mutableStateOf(false) }
-    var permissionsMsg by remember { mutableStateOf("") }
+    @SuppressLint("InlinedApi")
+    val permissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
 
     LaunchedEffect(Unit) {
+        if (Utils.isAtLeastT) {
+            permissionState.launchPermissionRequest()
+        }
+
         viewModel.loginEvents.collect { event ->
             when (event) {
                 is ValidationEvent.StartService -> onStartService()
@@ -79,50 +88,10 @@ fun LoginScreen(
         }
     }
 
-    @SuppressLint("InlinedApi")
-    val permissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
-    LaunchedEffect(Unit) {
-        if (Utils.isAtLeastT) {
-            permissionState.launchPermissionRequest()
-
-            if (permissionState.status.isGranted) {
-                onBindService()
-                return@LaunchedEffect
-            }
-
-            showPermissionsDialog = !permissionState.status.isGranted
-            showRationale = permissionState.status.shouldShowRationale
-            permissionsMsg = if (showRationale) {
-                "This app requires permission to post notifications. " +
-                    "This allows a status icon to be displayed while the " +
-                    "app is running and to receive messages and requests. " +
-                    "Without this permission, you won't be notified and the app may prematurely terminate"
-            } else {
-                "This app cannot post notifications. The permission can be changed in the App's Settings."
-            }
-        }
-    }
-
-
-    /* Permissions Dialog */
-    VapullaMessageDialog(
-        title = "Permission required",
-        message = permissionsMsg,
-        openDialog = showPermissionsDialog,
-        onPositive = {
-            if (showRationale) {
-                onBindService()
-            } else {
-                onSettings()
-            }
-
-            showPermissionsDialog = false
-        },
-        positiveText = if (showRationale) "Grant" else "Settings",
-        onNegative = {
-
-        },
-        negativeText = "Dismiss"
+    PermissionsDialog(
+        permissionState = permissionState,
+        onPermGranted = { onBindService() },
+        onSettings = onSettings
     )
 
     /* Content */
@@ -134,10 +103,12 @@ fun LoginScreen(
         onPasswordVisible = { viewModel.onEvent(LoginEvent.PasswordVisibleChanged(it)) },
         onLogin = { viewModel.onEvent(LoginEvent.Login) },
         onRetry = { viewModel.onEvent(LoginEvent.Retry) },
+        onClear = onReset,
         on2faMessage = { viewModel.onEvent(LoginEvent.ShowLoginForm(it, false)) }
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LoginScreenContent(
     loginState: LoginState,
@@ -147,11 +118,13 @@ private fun LoginScreenContent(
     onPasswordVisible: (Boolean) -> Unit,
     onLogin: () -> Unit,
     onRetry: () -> Unit,
+    onClear: () -> Unit,
     on2faMessage: (string: String) -> Unit
 ) {
     Column(
         modifier = Modifier
             .waterfallPadding()
+            .systemBarsPadding()
             .imePadding()
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -186,10 +159,25 @@ private fun LoginScreenContent(
             modifier = Modifier.padding(horizontal = 16.dp),
             isRetryVisible = loginState.isRetryVisible,
             onLogin = onLogin,
-            onRetry = onRetry,
+            onRetry = onRetry
+        )
+
+        val haptics = LocalHapticFeedback.current
+        Text(
+            modifier = Modifier
+                .padding(top = 16.dp, bottom = 8.dp)
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onClear()
+                    }
+                ),
+            color = friendOffline,
+            fontSize = 12.sp,
+            text = "Not working right? Long press to reset settings"
         )
     }
-
 }
 
 @OptIn(ExperimentalAnimationGraphicsApi::class)
@@ -199,15 +187,13 @@ private fun LoginAnimatedLogo(
     loginState: LoginState
 ) {
     var atEnd by remember { mutableStateOf(false) }
-    val pumperMiddle = Animation.animatedVectorResource(R.drawable.animated_vapulla_middle)
-    val pumperBottom = Animation.animatedVectorResource(R.drawable.animated_vapulla_bottom)
 
     LaunchedEffect(loginState.isLoading) {
-        // TODO animation isn't quite right. Not "Pumping" like the original
+        // NOTE: animation isn't quite right. Not "Pumping" like the original
         while (loginState.isLoading) {
             delay(300)
             atEnd = !atEnd
-            delay(pumperBottom.totalDuration.toLong()) // 2000
+            delay(2000)
         }
     }
 
@@ -216,21 +202,20 @@ private fun LoginAnimatedLogo(
             .size(150.dp)
             .padding(vertical = 12.dp)
     ) {
-        Image(
-            modifier = modifier.size(150.dp),
-            painter = rememberAnimatedVectorPainter(pumperBottom, atEnd),
-            contentDescription = null
-        )
-        Image(
-            modifier = modifier.size(150.dp),
-            painter = rememberAnimatedVectorPainter(pumperMiddle, !atEnd),
-            contentDescription = null
-        )
-        Image(
-            modifier = modifier.size(150.dp),
-            painter = painterResource(id = R.drawable.vapulla_top),
-            contentDescription = null
-        )
+        val pumperMiddle = Animation.animatedVectorResource(R.drawable.animated_vapulla_middle)
+        val pumperBottom = Animation.animatedVectorResource(R.drawable.animated_vapulla_bottom)
+
+        val image: @Composable (painter: Painter) -> Unit = {
+            Image(
+                modifier = modifier.size(150.dp),
+                painter = it,
+                contentDescription = null
+            )
+        }
+
+        image(rememberAnimatedVectorPainter(pumperBottom, atEnd))
+        image(rememberAnimatedVectorPainter(pumperMiddle, !atEnd))
+        image(painterResource(id = R.drawable.vapulla_top))
     }
 }
 
@@ -248,14 +233,8 @@ private fun LoginTextFields(
     val focusManager = LocalFocusManager.current
 
     /* Autofill Nodes */
-    val usernameAutofillNode = AutofillNode(
-        autofillTypes = listOf(AutofillType.Username),
-        onFill = { onUsername(it) }
-    )
-    val passwordAutofillNode = AutofillNode(
-        autofillTypes = listOf(AutofillType.Password),
-        onFill = { onPassword(it) }
-    )
+    val usernameAutofillNode = AutofillNode(listOf(AutofillType.Username), null) { onUsername(it) }
+    val passwordAutofillNode = AutofillNode(listOf(AutofillType.Password), null) { onPassword(it) }
     val autofill = LocalAutofill.current
     LocalAutofillTree.current += usernameAutofillNode
     LocalAutofillTree.current += passwordAutofillNode
@@ -292,12 +271,6 @@ private fun LoginTextFields(
     )
 
     /* Password */
-    val imeAction = if (!loginState.expectSteamGuard) ImeAction.Done else ImeAction.Next
-    val passwordTransformation = if (loginState.isPasswordVisible) {
-        VisualTransformation.None
-    } else {
-        PasswordVisualTransformation()
-    }
     LoginTextField(
         modifier = modifier
             .onGloballyPositioned {
@@ -319,17 +292,16 @@ private fun LoginTextFields(
         keyboardOptions = KeyboardOptions(
             autoCorrect = false,
             keyboardType = KeyboardType.Password,
-            imeAction = imeAction
+            imeAction = if (!loginState.expectSteamGuard) ImeAction.Done else ImeAction.Next
         ),
         trailingIcon = {
-            val trailingIcon = if (loginState.isPasswordVisible) {
-                Icons.Default.Visibility
-            } else {
-                Icons.Default.VisibilityOff
-            }
             IconButton(onClick = { onPasswordVisible(!loginState.isPasswordVisible) }) {
                 Icon(
-                    imageVector = trailingIcon,
+                    imageVector = if (loginState.isPasswordVisible) {
+                        Icons.Default.Visibility
+                    } else {
+                        Icons.Default.VisibilityOff
+                    },
                     contentDescription = "Toggle password visibility"
                 )
             }
@@ -337,16 +309,20 @@ private fun LoginTextFields(
         isEnabled = !loginState.isLoading,
         isError = loginState.passwordError.isNotEmpty(),
         label = R.string.editTextHintPassword,
-        onValueChange = { onPassword(it) },
+        onValueChange = onPassword,
         supportingText = loginState.passwordError,
         value = loginState.password,
-        visualTransformation = passwordTransformation
+        visualTransformation = if (loginState.isPasswordVisible) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        }
     )
 
     /* SteamGuard */
     AnimatedVisibility(
         visible = loginState.expectSteamGuard,
-        enter = fadeIn() + slideInHorizontally(),
+        enter = slideInHorizontally() + fadeIn(),
         exit = slideOutHorizontally() + fadeOut()
     ) {
         if (loginState.expectSteamGuard) {
@@ -382,8 +358,8 @@ private fun LoginTextFields(
 @Composable
 private fun LoginButtons(
     modifier: Modifier = Modifier,
-    onLogin: () -> Unit,
     isRetryVisible: Boolean,
+    onLogin: () -> Unit,
     onRetry: () -> Unit
 ) {
     Button(
@@ -401,7 +377,7 @@ private fun LoginButtons(
     AnimatedVisibility(
         visible = isRetryVisible,
         enter = fadeIn() + expandIn(),
-        exit = scaleOut() + fadeOut(),
+        exit = scaleOut() + fadeOut()
     ) {
         OutlinedButton(
             modifier = modifier.padding(vertical = 12.dp),
@@ -440,6 +416,7 @@ private fun Preview_LoginScreenContent() {
             onPasswordVisible = {},
             onLogin = {},
             onRetry = {},
+            onClear = {},
             on2faMessage = {}
         )
     }

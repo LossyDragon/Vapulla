@@ -1,10 +1,8 @@
 package `in`.dragonbra.vapulla.compose.screens.profile
 
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
@@ -70,34 +68,9 @@ class ProfileActivity : VapullaBaseActivity() {
         onServiceStart()
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (isBound) {
-            steamService?.isActivityRunning = true
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        if (isBound) {
-            steamService?.isActivityRunning = false
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         viewModel.onDestroy()
-    }
-
-    override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        super.onServiceConnected(name, service)
-        Timber.d("Bound to Steam service")
-        steamService?.isActivityRunning = true
-    }
-
-    override fun onServiceDisconnected(name: ComponentName) {
-        super.onServiceDisconnected(name)
-        Timber.d("Unbound from Steam service")
     }
 
     override fun onDisconnected() {
@@ -114,10 +87,6 @@ class ProfileActivity : VapullaBaseActivity() {
     override fun onAliasHistory(callback: AliasHistoryCallback) {
         super.onAliasHistory(callback)
         viewModel.onAliasHistory(callback)
-    }
-
-    private fun navigateUp() {
-        finish()
     }
 
     private fun viewChat(steamId: SteamID) {
@@ -149,7 +118,7 @@ class ProfileActivity : VapullaBaseActivity() {
     private fun onProfileEvent(event: ProfileUiEvent, steamID: SteamID) {
         scope.executeAsyncTask {
             when (event) {
-                ProfileUiEvent.NavigateBack -> navigateUp()
+                ProfileUiEvent.NavigateBack -> finish()
                 is ProfileUiEvent.GetAliases -> {
                     val jobID = getHandler<SteamFriends>()?.requestAliasHistory(event.steamID)
                     viewModel.setJobID(jobID)

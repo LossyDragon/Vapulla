@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
@@ -20,9 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -199,6 +202,7 @@ fun VapullaListDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VapullaMessageDialog(
     icon: ImageVector? = null,
@@ -214,7 +218,10 @@ fun VapullaMessageDialog(
         return
     }
 
-    Dialog(onDismissRequest = onNegative) {
+    AlertDialog(
+        modifier = Modifier.wrapContentHeight(),
+        onDismissRequest = onNegative
+    ) {
         DialogLayoutUI(
             icon = icon,
             title = title,
@@ -244,12 +251,13 @@ fun DialogLayoutUI(
     Card(
         modifier = Modifier
             .padding(10.dp, 5.dp, 10.dp, 10.dp)
-            .widthIn(280.dp, 560.dp),
+            .widthIn(280.dp, 560.dp)
+            .wrapContentHeight(unbounded = true),
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
-            Spacer(modifier = Modifier.heightIn(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             icon?.let {
                 Icon(
                     modifier = Modifier
@@ -280,7 +288,9 @@ fun DialogLayoutUI(
                 message?.let {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .wrapContentHeight()
+                            .fillMaxWidth(),
                         text = it,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -300,21 +310,26 @@ fun DialogLayoutUI(
                     .background(MaterialTheme.colorScheme.secondary),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                TextButton(onClick = onPositive) {
+                TextButton(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    onClick = onPositive
+                ) {
                     Text(
                         text = positiveText,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+
                     )
                 }
                 if (onNegative != null && negativeText != null) {
-                    TextButton(onClick = onNegative) {
+                    TextButton(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        onClick = onNegative
+                    ) {
                         Text(
                             text = negativeText,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(top = 5.dp, bottom = 5.dp)
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
                 }
@@ -365,7 +380,7 @@ private fun Preview_DialogMessageContent() {
         VapullaMessageDialog(
             icon = Icons.Default.Block,
             title = stringResource(id = R.string.dialogTitleBlockFriend, name),
-            message = stringResource(id = R.string.dialogMessageBlockFriend, name),
+            message = stringResource(id = R.string.dialogMessageBlockFriend, name).repeat(2),
             openDialog = true,
             onPositive = {},
             positiveText = stringResource(id = R.string.menuBlock),
