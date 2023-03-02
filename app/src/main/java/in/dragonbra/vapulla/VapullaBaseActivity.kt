@@ -1,13 +1,20 @@
 package `in`.dragonbra.vapulla
 
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import `in`.dragonbra.javasteam.handlers.ClientMsgHandler
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
+import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.service.SteamService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +33,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     private val stopReceiver = StopReceiver()
 
-    private val serviceSubscriptions = LinkedList<Closeable?>()
+    private val subs: MutableList<Closeable?> = LinkedList()
 
     var isBound = false
         private set
@@ -35,10 +42,8 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     private val connection: ServiceConnection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName) {
-            serviceSubscriptions.run {
-                forEach { it?.close() }
-                clear()
-            }
+            subs.forEach { it?.close() }
+            subs.clear()
             isBound = false
             this@VapullaBaseActivity.onServiceDisconnected(name)
         }
@@ -46,18 +51,26 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
             val binder = service as SteamService.SteamBinder
             steamService = binder.getService()
-            serviceSubscriptions.run {
-                add(steamService?.subscribe<ConnectedCallback> { onConnected() })
-                add(steamService?.subscribe<DisconnectedCallback> { onDisconnected() })
-                add(steamService?.subscribe<LoggedOnCallback> { onLoggedOn(it) })
-            }
+
+            subs.add(steamService?.callbackMgr?.subscribe(ConnectedCallback::class.java) {
+                onConnected()
+            })
+            subs.add(steamService?.callbackMgr?.subscribe(DisconnectedCallback::class.java) {
+                onDisconnected()
+            })
+            subs.add(steamService?.callbackMgr?.subscribe(LoggedOnCallback::class.java) {
+                onLoggedOn(it)
+            })
+            subs.add(steamService?.callbackMgr?.subscribe(AliasHistoryCallback::class.java) {
+                onAliasHistory(it) // Leaked; Unified this so it gets closed properly
+            })
+
             isBound = true
             this@VapullaBaseActivity.onServiceConnected(name, service)
         }
     }
 
-    override fun onStart() {
-        super.onStart()
+    open fun onServiceStart() {
         val intent = Intent(this, SteamService::class.java)
         bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
@@ -65,10 +78,8 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         unbindService(connection)
-        serviceSubscriptions.run {
-            forEach { it?.close() }
-            clear()
-        }
+        subs.forEach { it?.close() }
+        subs.clear()
         isBound = false
     }
 
@@ -81,6 +92,11 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(stopReceiver)
+        steamService = null // Memory Leak Hunting
+    }
+
+    fun subscribe(sub: Closeable?) {
+        subs.add(sub)
     }
 
     open fun onConnected(showLoading: () -> Unit = {}, isLoggedIn: () -> Unit = {}) {}
@@ -90,6 +106,8 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     open fun onLoginSuccess() {}
 
     open fun onLoggedOn(callback: LoggedOnCallback) {}
+
+    open fun onAliasHistory(callback: AliasHistoryCallback) {}
 
     open fun onServiceConnected(name: ComponentName, service: IBinder) {}
 
@@ -110,10 +128,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
                 onConnected()
             }
         }
-    }
-
-    fun subscribe(sub: Closeable?) {
-        serviceSubscriptions.add(sub)
     }
 
     inline fun <reified T : ClientMsgHandler> getHandler(): T? {

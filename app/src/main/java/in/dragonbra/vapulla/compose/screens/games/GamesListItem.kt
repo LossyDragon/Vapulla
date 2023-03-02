@@ -64,8 +64,8 @@ fun GamesListItem(
                             .build()
                     },
                     imageOptions = ImageOptions(
-                        contentScale = ContentScale.Crop,
-                        requestSize = IntSize(460, 215)
+                        contentScale = ContentScale.Fit,
+                        // requestSize = IntSize(460, 215)
                     ),
                     previewPlaceholder = R.mipmap.ic_launcher_foreground,
                     loading = {

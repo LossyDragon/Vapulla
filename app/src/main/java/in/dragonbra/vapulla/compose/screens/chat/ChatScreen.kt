@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -133,7 +134,7 @@ private fun ChatScreenContent(
                                     .build()
                             },
                             previewPlaceholder = R.drawable.vapulla,
-                            imageOptions = ImageOptions(requestSize = IntSize(48, 48))
+                            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
                         )
 
                         Column(modifier = Modifier.padding(start = 6.dp)) {

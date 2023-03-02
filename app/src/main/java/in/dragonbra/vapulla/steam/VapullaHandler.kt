@@ -31,9 +31,9 @@ class VapullaHandler : ClientMsgHandler() {
     }
 
     // Set the UIMode so that we can receive Unified callbacks
-    // Send this on a sucessful LoggedOn to enable 'new unified' steam features.
+    // Send this on a successful LoggedOn to enable 'new unified' steam features.
     fun setClientUIMode() {
-        // TODO find callback response
+        // TODO find callback response?
         val request = ClientMsgProtobuf<SteammessagesClientserver2.CMsgClientUIMode.Builder>(
             SteammessagesClientserver2.CMsgClientUIMode::class.java,
             EMsg.ClientCurrentUIMode

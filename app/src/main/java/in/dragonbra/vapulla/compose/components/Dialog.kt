@@ -2,7 +2,6 @@ package `in`.dragonbra.vapulla.compose.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -22,9 +22,11 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,11 +34,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,11 +54,75 @@ import androidx.compose.ui.window.Dialog
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 
+@Composable
+fun VapullaSelectionDialog(
+    icon: ImageVector? = null,
+    title: String,
+    currentSelection: Long,
+    items: Map<String, Long>,
+    openDialog: Boolean,
+    onPositive: (Long) -> Unit,
+    positiveText: String,
+    onNegative: () -> Unit,
+    negativeText: String
+) {
+    if (!openDialog) {
+        return
+    }
+
+    var selectedItem by remember {
+        mutableStateOf(items.values.find { it == currentSelection }!!)
+    }
+
+    Dialog(onDismissRequest = onNegative) {
+        DialogLayoutUI(
+            icon = icon,
+            title = title,
+            content = {
+                LazyColumn(
+                    modifier = Modifier
+                        .heightIn(100.dp, 250.dp)
+                        .fillMaxWidth()
+                ) {
+                    items.forEach { (key, value) ->
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .selectable(
+                                        selected = (selectedItem == value),
+                                        onClick = { selectedItem = value },
+                                        role = Role.RadioButton
+                                    )
+                                    .padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    selected = (selectedItem == value),
+                                    onClick = null
+                                )
+                                Text(text = key)
+                            }
+                        }
+                    }
+                }
+            },
+            positiveText = positiveText,
+            onPositive = { onPositive(selectedItem) },
+            negativeText = negativeText,
+            onNegative = onNegative
+        )
+    }
+}
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun VapullaEditDialog(
     icon: ImageVector? = null,
-    name: String,
+    title: String,
+    editTextLabel: String,
     currentName: String?,
     openDialog: Boolean,
     onConfirm: (String) -> Unit,
@@ -70,14 +138,14 @@ fun VapullaEditDialog(
     Dialog(onDismissRequest = onDismiss) {
         DialogLayoutUI(
             icon = icon,
-            title = stringResource(id = R.string.dialogTitleNickname, name),
+            title = title,
             content = {
                 OutlinedTextField(
                     modifier = Modifier.padding(vertical = 12.dp),
                     value = newName,
                     onValueChange = { newName = it },
                     singleLine = true,
-                    label = { Text(text = stringResource(id = R.string.nickname)) },
+                    label = { Text(text = editTextLabel) },
                     keyboardActions = KeyboardActions(
                         onDone = { keyboard?.hide() }
                     ),
@@ -113,15 +181,17 @@ fun VapullaListDialog(
             icon = icon,
             title = title,
             content = {
+                Divider(Modifier.fillMaxWidth())
                 LazyColumn(
                     modifier = Modifier
-                        .heightIn(50.dp, 150.dp)
+                        .heightIn(100.dp, 250.dp)
                         .fillMaxWidth()
                 ) {
                     items(list) {
                         Text(text = it.toString())
                     }
                 }
+                Divider(Modifier.fillMaxWidth())
             },
             positiveText = stringResource(id = R.string.dialogClose),
             onPositive = onDismiss
@@ -220,9 +290,7 @@ fun DialogLayoutUI(
 
                 content?.let {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        it.invoke()
-                    }
+                    it.invoke()
                 }
             }
             Row(
@@ -279,7 +347,8 @@ private fun Preview_DialogEditContent() {
     VapullaTheme {
         VapullaEditDialog(
             icon = Icons.Default.Edit,
-            name = "Blackhole Comet",
+            title = stringResource(id = R.string.dialogTitleNickname, "Blackhole Comet"),
+            editTextLabel = stringResource(id = R.string.nickname),
             currentName = "Google Assistant",
             openDialog = true,
             onConfirm = {},

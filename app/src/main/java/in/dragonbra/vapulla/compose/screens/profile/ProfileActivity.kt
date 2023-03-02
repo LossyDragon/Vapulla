@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
@@ -34,6 +35,8 @@ class ProfileActivity : VapullaBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         Timber.d("onCreate")
 
         val steamId = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
@@ -62,6 +65,11 @@ class ProfileActivity : VapullaBaseActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        onServiceStart()
+    }
+
     override fun onResume() {
         super.onResume()
         if (isBound) {
@@ -84,7 +92,6 @@ class ProfileActivity : VapullaBaseActivity() {
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
         Timber.d("Bound to Steam service")
-        subscribe(steamService?.subscribe<AliasHistoryCallback> { viewModel.onAliasHistory(it) })
         steamService?.isActivityRunning = true
     }
 
@@ -102,6 +109,11 @@ class ProfileActivity : VapullaBaseActivity() {
             startActivity(it)
         }
         finish()
+    }
+
+    override fun onAliasHistory(callback: AliasHistoryCallback) {
+        super.onAliasHistory(callback)
+        viewModel.onAliasHistory(callback)
     }
 
     private fun navigateUp() {

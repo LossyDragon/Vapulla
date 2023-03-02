@@ -5,11 +5,13 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.core.view.WindowCompat
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.parcelableArrayList
+import timber.log.Timber
 
 class GamesActivity : VapullaBaseActivity() {
 
@@ -21,6 +23,9 @@ class GamesActivity : VapullaBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        Timber.d("onCreate")
 
         val items: List<Games> = intent.extras?.parcelableArrayList(INTENT_GAMES)!!
         val name = intent.extras?.getString("name")!!
@@ -35,6 +40,11 @@ class GamesActivity : VapullaBaseActivity() {
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        onServiceStart()
     }
 
     private fun gotoGameStore(appid: Int) {

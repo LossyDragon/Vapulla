@@ -7,14 +7,15 @@ import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.activity.SettingsActivity
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
+import `in`.dragonbra.vapulla.compose.screens.settings.SettingsActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
@@ -35,7 +36,10 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Timber.d("HomeActivity")
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        Timber.d("onCreate")
+
         setContent {
             LaunchedEffect(Unit) {
                 viewModel.uiEvent.collectLatest { event ->
@@ -56,6 +60,11 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        onServiceStart()
     }
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {

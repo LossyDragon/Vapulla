@@ -13,7 +13,10 @@ data class LoginState(
     val is2Fa: Boolean = false,
     val expectSteamGuard: Boolean = false,
 
+    val isPermissionGranted: Boolean = false,
+
     val generalMessage: String = "",
     val isLoading: Boolean = false,
+    val isRetryVisible: Boolean = false,
     val isPasswordVisible: Boolean = false
 )

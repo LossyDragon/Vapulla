@@ -1,13 +1,12 @@
 package `in`.dragonbra.vapulla.compose.ui.theme
 
-import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
+import androidx.compose.ui.graphics.Color
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 val darkColorScheme = darkColorScheme(
@@ -18,26 +17,17 @@ val darkColorScheme = darkColorScheme(
 
 @Composable
 fun VapullaTheme(
-    /* darkTheme: Boolean = true, // isSystemInDarkTheme() */
     content: @Composable () -> Unit
 ) {
     val systemUiController = rememberSystemUiController()
+    val useDarkIcons = !isSystemInDarkTheme()
     SideEffect {
-        systemUiController.setSystemBarsColor(color = colorPrimary)
-    }
-
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-            window.statusBarColor = darkColorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
-        }
+        systemUiController.setSystemBarsColor(Color.Transparent, darkIcons = useDarkIcons)
     }
 
     MaterialTheme(
         colorScheme = darkColorScheme,
         shapes = Shapes,
-        content = content
+        content = { Surface { content() } }
     )
 }

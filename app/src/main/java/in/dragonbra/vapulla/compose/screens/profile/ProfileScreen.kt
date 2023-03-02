@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.waterfallPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -25,13 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,7 +100,9 @@ fun ProfileScreen(
     /* Set Nickname Dialog */
     var showNicknameDialog by remember { mutableStateOf(false) }
     VapullaEditDialog(
-        name = state.friend?.name ?: "",
+        icon = Icons.Default.Edit,
+        title = stringResource(id = R.string.dialogTitleNickname, state.friend?.name ?: ""),
+        editTextLabel = stringResource(id = R.string.nickname),
         currentName = state.friend?.nickname,
         openDialog = showNicknameDialog,
         onConfirm = {
@@ -112,6 +117,7 @@ fun ProfileScreen(
     /* Show Aliases Dialog */
     var showAliasDialog by remember { mutableStateOf(false) }
     VapullaListDialog(
+        icon = Icons.Default.History,
         title = stringResource(id = R.string.dialogTitleAliases),
         list = state.aliasHistory,
         openDialog = showAliasDialog,
@@ -123,12 +129,14 @@ fun ProfileScreen(
     VapullaMessageDialog(
         title = stringResource(id = R.string.dialogTitleRemoveFriend, state.friend?.name ?: ""),
         message = stringResource(id = R.string.dialogMessageRemoveFriend, state.friend?.name ?: ""),
+        positiveText = stringResource(id = R.string.dialogConfirm),
+        negativeText = stringResource(id = R.string.dialogCancel),
         openDialog = showRemoveDialog,
-        onConfirm = {
+        onPositive = {
             viewModel.removeFriend()
             showRemoveDialog = false
         },
-        onDismiss = {
+        onNegative = {
             showRemoveDialog = false
         }
     )
@@ -138,12 +146,14 @@ fun ProfileScreen(
     VapullaMessageDialog(
         title = stringResource(id = R.string.dialogTitleBlockFriend, state.friend?.name ?: ""),
         message = stringResource(id = R.string.dialogMessageBlockFriend, state.friend?.name ?: ""),
+        positiveText = stringResource(id = R.string.dialogConfirm),
+        negativeText = stringResource(id = R.string.dialogCancel),
         openDialog = showBlockDialog,
-        onConfirm = {
+        onPositive = {
             viewModel.blockFriend()
             showBlockDialog = false
         },
-        onDismiss = {
+        onNegative = {
             showBlockDialog = false
         }
     )
@@ -166,7 +176,6 @@ fun ProfileScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileScreenContent(
     state: ProfileState,
@@ -206,7 +215,7 @@ private fun ProfileScreenContent(
         shape = Shapes.extraLarge
     ) {
         Scaffold(
-            modifier = Modifier.waterfallPadding(),
+            modifier = Modifier.statusBarsPadding().waterfallPadding(),
             containerColor = Color.Transparent,
             topBar = {
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -278,7 +287,7 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
                     .build()
             },
             previewPlaceholder = R.drawable.vapulla,
-            imageOptions = ImageOptions(requestSize = IntSize(150, 150))
+            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
         )
     }
 }

@@ -1,13 +1,13 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -18,92 +18,136 @@ class LoginViewModel(
     var logOnDetails = LogOnDetails()
         private set
 
-    var loginState by mutableStateOf(LoginState())
+    private val _loginState = MutableStateFlow(LoginState())
+    val loginState = _loginState.asStateFlow()
 
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
+
+    // ViewModel stuff
     fun onEvent(event: LoginEvent) {
         Timber.d("Login Event: ${event.javaClass}")
         when (event) {
             LoginEvent.Login -> doLogin()
+            LoginEvent.Retry -> doRetry()
             LoginEvent.ShowFailedScreen -> {
-                loginState = loginState.copy(
-                    generalMessage = "Failed to connect to steam",
-                    isLoading = false
-                )
+                _loginState.update {
+                    it.copy(
+                        expectSteamGuard = false,
+                        generalMessage = "Failed to connect to steam",
+                        isLoading = false,
+                        isRetryVisible = true
+                    )
+                }
             }
 
             is LoginEvent.PasswordChanged -> {
-                loginState = loginState.copy(password = event.password)
+                if (_loginState.value.passwordError.isNotEmpty()) {
+                    _loginState.update { it.copy(passwordError = "") }
+                }
+                _loginState.update { it.copy(password = event.password) }
             }
 
             is LoginEvent.PasswordVisibleChanged -> {
-                loginState = loginState.copy(isPasswordVisible = event.visibility)
+                _loginState.update { it.copy(isPasswordVisible = event.visibility) }
             }
 
             is LoginEvent.ShowLoading -> {
-                loginState =
-                    loginState.copy(isLoading = event.isLoading, generalMessage = "Loading")
+                _loginState.update {
+                    it.copy(
+                        isLoading = event.isLoading,
+                        generalMessage = "Loading"
+                    )
+                }
             }
 
             is LoginEvent.ShowLoginForm -> {
-                loginState = loginState.copy(generalMessage = event.error)
+                _loginState.update {
+                    it.copy(
+                        generalMessage = event.error,
+                        isRetryVisible = event.canRetry
+                    )
+                }
             }
 
             is LoginEvent.ShowSteamGuard -> {
-                loginState = loginState.copy(
-                    expectSteamGuard = event.expectSteamGuard,
-                    generalMessage = event.error,
-                    is2Fa = event.is2fa,
-                    isLoading = false
-                )
+                _loginState.update {
+                    it.copy(
+                        expectSteamGuard = event.expectSteamGuard,
+                        generalMessage = event.error,
+                        is2Fa = event.is2fa,
+                        isLoading = false
+                    )
+                }
             }
 
             is LoginEvent.SteamGuardChanged -> {
-                loginState = loginState.copy(steamGuard = event.steamGuard)
+                if (_loginState.value.steamGuardError.isNotEmpty()) {
+                    _loginState.update { it.copy(steamGuardError = "") }
+                }
+                _loginState.update { it.copy(steamGuard = event.steamGuard) }
             }
 
             is LoginEvent.UsernameChanged -> {
-                loginState = loginState.copy(username = event.username)
+                if (_loginState.value.usernameError.isNotEmpty()) {
+                    _loginState.update { it.copy(usernameError = "") }
+                }
+                _loginState.update { it.copy(username = event.username) }
             }
         }
     }
 
+    fun onDestroy() {
+        _loginState.update { it.copy(expectSteamGuard = false) }
+    }
+
+    private fun doRetry() {
+        _loginState.update { it.copy(isRetryVisible = false) }
+        viewModelScope.launch {
+            val event = ValidationEvent.StartService
+            loginEventChannel.send(event)
+        }
+    }
+
     private fun doLogin() {
-        val username = loginValidation.validateUsername(loginState.username)
-        val password = loginValidation.validatePassword(loginState.password)
+        val username = loginValidation.validateUsername(_loginState.value.username)
+        val password = loginValidation.validatePassword(_loginState.value.password)
 
         val isError = listOf(username, password).any { !it.isSuccessful }
         if (isError) {
-            loginState = loginState.copy(
-                usernameError = username.errorMessage,
-                passwordError = password.errorMessage
-            )
+            _loginState.update {
+                it.copy(
+                    usernameError = username.errorMessage,
+                    passwordError = password.errorMessage
+                )
+            }
 
             return
         }
 
         logOnDetails.apply {
-            this.username = loginState.username
-            this.password = loginState.password
+            this.username = _loginState.value.username
+            this.password = _loginState.value.password
             this.loginKey = null
         }
 
-        if (loginState.expectSteamGuard) {
-            val steamGuard = loginValidation.validateSteamGuard(loginState.steamGuard)
+        if (_loginState.value.expectSteamGuard) {
+            val steamGuard = loginValidation.validateSteamGuard(_loginState.value.steamGuard)
             if (!steamGuard.isSuccessful) {
-                loginState = loginState.copy(
-                    steamGuardError = steamGuard.errorMessage,
-                    isLoading = false
-                )
+                _loginState.update {
+                    it.copy(
+                        steamGuardError = steamGuard.errorMessage,
+                        isLoading = false
+                    )
+                }
 
                 return
             }
 
-            if (loginState.is2Fa) {
-                logOnDetails.twoFactorCode = loginState.steamGuard
+            if (_loginState.value.is2Fa) {
+                logOnDetails.twoFactorCode = _loginState.value.steamGuard
             } else {
-                logOnDetails.authCode = loginState.steamGuard
+                logOnDetails.authCode = _loginState.value.steamGuard
             }
         }
 
@@ -112,20 +156,4 @@ class LoginViewModel(
             loginEventChannel.send(event)
         }
     }
-
-//    fun retry() {
-//        if (account.hasLoginKey()) {
-//            logOnDetails.username = account.username
-//            logOnDetails.password = null
-//            logOnDetails.loginKey = account.loginKey
-//            startSteamService()
-//        }
-//    }
-//
-//    fun cancelSteamGuard() {
-//        expectSteamGuard = false
-//        ifViewAttached {
-//            it.showLoginForm()
-//        }
-//    }
 }

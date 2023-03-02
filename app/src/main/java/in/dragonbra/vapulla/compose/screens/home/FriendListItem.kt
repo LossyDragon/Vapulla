@@ -14,12 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.request.ImageRequest
@@ -168,9 +168,7 @@ fun FriendItem(
                                     .build()
                             },
                             previewPlaceholder = R.mipmap.ic_launcher_foreground,
-                            imageOptions = ImageOptions(
-                                requestSize = IntSize(56, 56)
-                            )
+                            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
                         )
 
                         getStatusIcon(friend)?.let {
@@ -221,61 +219,59 @@ private fun Preview_FriendListItem() {
         }
 
         VapullaTheme {
-            Surface {
-                Column {
-                    FriendItem(
-                        friend = friendItem(1L, "Friend Online", EPersonaState.Online),
-                        onClickChat = {},
-                        onClickProfile = {},
-                        onClickAccept = {},
-                        onClickIgnore = {},
-                        onClickBlock = {}
-                    )
-                    FriendItem(
-                        friend = friendItem(2L, "Friend Away", EPersonaState.Away),
-                        onClickChat = {},
-                        onClickProfile = {},
-                        onClickAccept = {},
-                        onClickIgnore = {},
-                        onClickBlock = {}
-                    )
-                    FriendItem(
-                        friend = friendItem(3L, "Friend Offline", EPersonaState.Offline),
-                        onClickChat = {},
-                        onClickProfile = {},
-                        onClickAccept = {},
-                        onClickIgnore = {},
-                        onClickBlock = {}
-                    )
-                    FriendItem(
-                        friend = friendItem(
-                            4L,
-                            "Friend In Game",
-                            EPersonaState.Online,
-                            440,
-                            "Team Fortress 2"
-                        ),
-                        onClickChat = {},
-                        onClickProfile = {},
-                        onClickAccept = {},
-                        onClickIgnore = {},
-                        onClickBlock = {}
-                    )
-                    FriendItem(
-                        friend = friendItem(
-                            5L,
-                            "Friend Away In Game",
-                            EPersonaState.Away,
-                            440,
-                            "Team Fortress 2"
-                        ),
-                        onClickChat = {},
-                        onClickProfile = {},
-                        onClickAccept = {},
-                        onClickIgnore = {},
-                        onClickBlock = {}
-                    )
-                }
+            Column {
+                FriendItem(
+                    friend = friendItem(1L, "Friend Online", EPersonaState.Online),
+                    onClickChat = {},
+                    onClickProfile = {},
+                    onClickAccept = {},
+                    onClickIgnore = {},
+                    onClickBlock = {}
+                )
+                FriendItem(
+                    friend = friendItem(2L, "Friend Away", EPersonaState.Away),
+                    onClickChat = {},
+                    onClickProfile = {},
+                    onClickAccept = {},
+                    onClickIgnore = {},
+                    onClickBlock = {}
+                )
+                FriendItem(
+                    friend = friendItem(3L, "Friend Offline", EPersonaState.Offline),
+                    onClickChat = {},
+                    onClickProfile = {},
+                    onClickAccept = {},
+                    onClickIgnore = {},
+                    onClickBlock = {}
+                )
+                FriendItem(
+                    friend = friendItem(
+                        4L,
+                        "Friend In Game",
+                        EPersonaState.Online,
+                        440,
+                        "Team Fortress 2"
+                    ),
+                    onClickChat = {},
+                    onClickProfile = {},
+                    onClickAccept = {},
+                    onClickIgnore = {},
+                    onClickBlock = {}
+                )
+                FriendItem(
+                    friend = friendItem(
+                        5L,
+                        "Friend Away In Game",
+                        EPersonaState.Away,
+                        440,
+                        "Team Fortress 2"
+                    ),
+                    onClickChat = {},
+                    onClickProfile = {},
+                    onClickAccept = {},
+                    onClickIgnore = {},
+                    onClickBlock = {}
+                )
             }
         }
     }

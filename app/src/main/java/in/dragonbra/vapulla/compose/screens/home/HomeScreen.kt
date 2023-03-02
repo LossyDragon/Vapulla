@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,12 +50,12 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.request.ImageRequest
@@ -114,7 +113,6 @@ fun HomeScreen(
 }
 
 @OptIn(
-    ExperimentalMaterial3Api::class,
     ExperimentalMaterialApi::class,
     ExperimentalFoundationApi::class,
     ExperimentalComposeUiApi::class
@@ -137,103 +135,101 @@ private fun HomeScreenContent(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val keyboard = LocalSoftwareKeyboardController.current
 
-    Surface {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                HomeScreenDrawer(
-                    state = state,
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            HomeScreenDrawer(
+                state = state,
+                drawerState = drawerState,
+                onStatusChange = { onStatusChange(it) },
+                onPersonAdd = onPersonAdd,
+                onSettings = onSettings,
+                onLogout = onLogout
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                VapullaAppbar(
                     drawerState = drawerState,
-                    onStatusChange = { onStatusChange(it) },
-                    onPersonAdd = onPersonAdd,
-                    onSettings = onSettings,
-                    onLogout = onLogout
+                    actions = {
+                        IconButton(onClick = onSearchOpened) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Search"
+                            )
+                        }
+                    },
+                    searchTextState = searchTextState,
+                    isSearching = state.isSearching,
+                    onSearchClose = {
+                        onSearchClosed()
+                        keyboard?.hide()
+                    }
                 )
             }
-        ) {
-            Scaffold(
-                topBar = {
-                    VapullaAppbar(
-                        drawerState = drawerState,
-                        actions = {
-                            IconButton(onClick = onSearchOpened) {
-                                Icon(
-                                    imageVector = Icons.Filled.Search,
-                                    contentDescription = "Search"
-                                )
-                            }
-                        },
-                        searchTextState = searchTextState,
-                        isSearching = state.isSearching,
-                        onSearchClose = {
-                            onSearchClosed()
-                            keyboard?.hide()
-                        }
-                    )
-                }
-            ) { paddingValues ->
-                val pullRefreshState = rememberPullRefreshState(state.isRefreshing, { onRefresh() })
+        ) { paddingValues ->
+            val pullRefreshState = rememberPullRefreshState(state.isRefreshing, { onRefresh() })
 
-                Box(
-                    modifier = Modifier
-                        .pullRefresh(pullRefreshState)
-                        .padding(paddingValues)
+            Box(
+                modifier = Modifier
+                    .pullRefresh(pullRefreshState)
+                    .padding(paddingValues)
+            ) {
+                val listState = rememberLazyListState()
+
+                LaunchedEffect(state.friendsList) {
+                    Timber.d("Recomping List")
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    val listState = rememberLazyListState()
-
-                    LaunchedEffect(state.friendsList) {
-                        Timber.d("Recomping List")
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        state = listState,
-                        contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        if (state.isSearching) {
-                            scope.launch {
-                                listState.animateScrollToItem(0)
-                            }
-                        }
-
-                        state.filteredFriendsList.forEach { (header, friends) ->
-                            stickyHeader(contentType = header) {
-                                StickyHeaderItem(header, friends.size)
-                            }
-
-                            items(friends, key = { it.id }) { friend ->
-                                FriendItem(
-                                    modifier = Modifier.animateItemPlacement(),
-                                    friend = friend,
-                                    onClickChat = { onChatSelected(friend) },
-                                    onClickProfile = { onProfileSelected(friend) },
-                                    onClickAccept = { TODO() },
-                                    onClickIgnore = { TODO() },
-                                    onClickBlock = { TODO() }
-                                )
-                            }
+                    if (state.isSearching) {
+                        scope.launch {
+                            listState.animateScrollToItem(0)
                         }
                     }
 
-                    val showUpButton by remember {
-                        derivedStateOf { listState.firstVisibleItemIndex > 5 }
-                    }
-                    ScrollBackUp(
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                        enabled = showUpButton,
-                        onClicked = {
-                            scope.launch {
-                                listState.animateScrollToItem(0)
-                            }
+                    state.filteredFriendsList.forEach { (header, friends) ->
+                        stickyHeader(contentType = header) {
+                            StickyHeaderItem(header, friends.size)
                         }
-                    )
 
-                    PullRefreshIndicator(
-                        state.isRefreshing,
-                        pullRefreshState,
-                        Modifier.align(Alignment.TopCenter)
-                    )
+                        items(friends, key = { it.id }) { friend ->
+                            FriendItem(
+                                modifier = Modifier.animateItemPlacement(),
+                                friend = friend,
+                                onClickChat = { onChatSelected(friend) },
+                                onClickProfile = { onProfileSelected(friend) },
+                                onClickAccept = { TODO() },
+                                onClickIgnore = { TODO() },
+                                onClickBlock = { TODO() }
+                            )
+                        }
+                    }
                 }
+
+                val showUpButton by remember {
+                    derivedStateOf { listState.firstVisibleItemIndex > 5 }
+                }
+                ScrollBackUp(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    enabled = showUpButton,
+                    onClicked = {
+                        scope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    }
+                )
+
+                PullRefreshIndicator(
+                    state.isRefreshing,
+                    pullRefreshState,
+                    Modifier.align(Alignment.TopCenter)
+                )
             }
         }
     }
@@ -321,9 +317,7 @@ private fun DrawerAccountInfo(state: HomeState) {
                     .build()
             },
             previewPlaceholder = R.drawable.vapulla,
-            imageOptions = ImageOptions(
-                requestSize = IntSize(150, 150)
-            )
+            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
         )
 
         Text(state.nickname, Modifier.padding(6.dp))

@@ -7,6 +7,7 @@ import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EChatEntryType
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
@@ -31,6 +32,7 @@ class ChatActivity : VapullaBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         Timber.d("onCreate")
 
         val steamId = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
@@ -52,6 +54,11 @@ class ChatActivity : VapullaBaseActivity() {
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        onServiceStart()
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {

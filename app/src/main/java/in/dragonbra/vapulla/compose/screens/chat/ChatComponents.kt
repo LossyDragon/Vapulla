@@ -506,30 +506,28 @@ private fun Preview_ChatMessageItem() {
         on the bridge is just a little purty―she is an AN-GEL.
     """.trimIndent()
     VapullaTheme {
-        Surface {
-            Column(Modifier.fillMaxWidth()) {
-                ChatMessageItem(
-                    message = ChatMessage(
-                        message = randomMsg,
-                        timestamp = (1_000_000..5_000_000).random().toLong(),
-                        friendId = 1,
-                        fromLocal = false,
-                        unread = false,
-                        timestampConfirmed = false
-                    )
+        Column(Modifier.fillMaxWidth()) {
+            ChatMessageItem(
+                message = ChatMessage(
+                    message = randomMsg,
+                    timestamp = (1_000_000..5_000_000).random().toLong(),
+                    friendId = 1,
+                    fromLocal = false,
+                    unread = false,
+                    timestampConfirmed = false
                 )
-                Spacer(Modifier.height(8.dp))
-                ChatMessageItem(
-                    message = ChatMessage(
-                        message = randomMsg,
-                        timestamp = (1_000_000..5_000_000).random().toLong(),
-                        friendId = 1,
-                        fromLocal = true,
-                        unread = false,
-                        timestampConfirmed = false
-                    )
+            )
+            Spacer(Modifier.height(8.dp))
+            ChatMessageItem(
+                message = ChatMessage(
+                    message = randomMsg,
+                    timestamp = (1_000_000..5_000_000).random().toLong(),
+                    friendId = 1,
+                    fromLocal = true,
+                    unread = false,
+                    timestampConfirmed = false
                 )
-            }
+            )
         }
     }
 }
@@ -538,8 +536,6 @@ private fun Preview_ChatMessageItem() {
 @Composable
 private fun Preview_ChatMessageDateHeader() {
     VapullaTheme {
-        Surface {
-            ChatMessageDateHeader(isVisible = true, dateStamp = "Wednesday - January 5, 2023")
-        }
+        ChatMessageDateHeader(isVisible = true, dateStamp = "Wednesday - January 5, 2023")
     }
 }

@@ -24,6 +24,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize"
             tools:ignore="LockedOrientationActivity">
             <intent-filter>
@@ -38,6 +39,7 @@
             android:name=".compose.screens.home.HomeActivity"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="stateHidden"
             tools:ignore="LockedOrientationActivity" />
 
@@ -46,6 +48,7 @@
             android:name=".compose.screens.chat.ChatActivity"
             android:launchMode="singleTop"
             android:parentActivityName=".compose.screens.home.HomeActivity"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -57,7 +60,7 @@
             android:name=".compose.screens.profile.ProfileActivity"
             android:launchMode="singleTop"
             android:parentActivityName=".compose.screens.home.HomeActivity"
-            android:theme="@style/AppTheme.Settings"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -69,7 +72,7 @@
             android:name=".compose.screens.games.GamesActivity"
             android:launchMode="singleTop"
             android:parentActivityName=".compose.screens.profile.ProfileActivity"
-            android:theme="@style/AppTheme.Settings"
+            android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -78,11 +81,11 @@
 
         <!-- Settings -->
         <activity
-            android:name=".activity.SettingsActivity"
+            android:name=".compose.screens.settings.SettingsActivity"
             android:exported="true"
             android:label="@string/title_activity_settings"
             android:parentActivityName=".compose.screens.home.HomeActivity"
-            android:theme="@style/AppTheme.Settings">
+            android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="in.dragonbra.vapulla.compose.screens.home.HomeActivity" />

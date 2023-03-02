@@ -53,18 +53,16 @@ private fun Preview_StickyHeaderItem() {
         typingTs = 0L
     )
     VapullaTheme {
-        Surface {
-            Column {
-                StickyHeaderItem("Online", 60)
-                FriendItem(
-                    friend = friend,
-                    onClickChat = {},
-                    onClickProfile = {},
-                    onClickAccept = {},
-                    onClickIgnore = {},
-                    onClickBlock = {}
-                )
-            }
+        Column {
+            StickyHeaderItem("Online", 60)
+            FriendItem(
+                friend = friend,
+                onClickChat = {},
+                onClickProfile = {},
+                onClickAccept = {},
+                onClickIgnore = {},
+                onClickBlock = {}
+            )
         }
     }
 }

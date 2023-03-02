@@ -41,6 +41,21 @@ class AccountManager(private val context: Context) {
     val hasSentryFile: Boolean
         get() = File(context.filesDir, SENTRY_FILE_NAME).exists()
 
+    /* Pref Item */
+    var prefClearNotifications: Boolean
+        get() = prefs.getBoolean("pref_clear_notifications", false)
+        set(value) = prefs.edit { putBoolean("pref_clear_notifications", value) }
+
+    /* Pref Item */
+    var prefFriendsListSort: Boolean
+        get() = prefs.getBoolean("pref_friends_list_sort", true)
+        set(value) = prefs.edit { putBoolean("pref_friends_list_sort", value) }
+
+    /* Pref Item */
+    var prefFriendsListRecents: Long
+        get() = prefs.getLong("pref_friends_list_recents", 604800000)
+        set(value) = prefs.edit { putLong("pref_friends_list_recents", value) }
+
     var loginKey: String?
         get() = prefs.getString(KEY_LOGIN_KEY, null)
         set(value) = prefs.edit { putString(KEY_LOGIN_KEY, value) }

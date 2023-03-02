@@ -1,5 +1,10 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
+data class LoginValidationResult(
+    val isSuccessful: Boolean,
+    val errorMessage: String = ""
+)
+
 class LoginValidation {
     fun validateUsername(username: String): LoginValidationResult {
         return if (username.isBlank()) {

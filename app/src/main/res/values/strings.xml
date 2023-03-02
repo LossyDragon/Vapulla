@@ -80,6 +80,7 @@
     <string name="dialogYes">Yes</string>
     <string name="dialogNo">No</string>
     <string name="dialogTitleNickname">Set %1$s\'s nickname</string>
+    <string name="dialogTitleChangeName">Change profile name?</string>
     <string name="dialogCancel">Cancel</string>
     <string name="dialogSet">Set</string>
     <string name="dialogTitleRemoveFriend">Remove %1$s</string>
@@ -172,7 +173,9 @@
     <string name="desc_send_button">Send Button</string>
     <string name="change">Change</string>
     <string name="nickname">Nickname</string>
+    <string name="profileName">Profile Name</string>
     <string name="title_activity_games">%1$s\'s games</string>
+    <string name="dialogConfirm">Confirm</string>
 
     <!--endregion-->
 

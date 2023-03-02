@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.alorma.compose.settings.storage.base.rememberBooleanSettingState
 import com.alorma.compose.settings.ui.SettingsGroup
 import com.alorma.compose.settings.ui.SettingsMenuLink
 import com.alorma.compose.settings.ui.SettingsSwitch
@@ -30,8 +32,19 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
 import `in`.dragonbra.vapulla.compose.components.VapullaEditDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
+import `in`.dragonbra.vapulla.compose.components.VapullaSelectionDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
+
+private val recentsMap = mapOf(
+    "Disable" to -1L,
+    "1 day" to 86400000L,
+    "3 days" to 259200000L,
+    "1 week" to 604800000L,
+    "2 weeks" to 1209600000L,
+    "1 month" to 2592000000L,
+    "Forever" to 0L,
+)
 
 @Composable
 fun SettingsScreen(
@@ -51,23 +64,42 @@ fun SettingsScreen(
         positiveText = stringResource(id = R.string.dialogYes),
         negativeText = stringResource(id = R.string.dialogNo),
         openDialog = changeUserDialog,
-        onPositive = onChangeUser,
+        onPositive = {
+            onChangeUser()
+            changeUserDialog = false
+        },
         onNegative = {
             changeUserDialog = false
         }
     )
 
-    // TODO not quite right
     var changeNameDialog by remember { mutableStateOf(false) }
     VapullaEditDialog(
         icon = Icons.Default.Edit,
-        name = accountManager.nickname!!,
-        currentName = accountManager.nickname!!,
+        title = stringResource(id = R.string.dialogTitleChangeName),
+        editTextLabel = stringResource(id = R.string.profileName),
+        currentName = accountManager.nickname,
         openDialog = changeNameDialog,
-        onConfirm = onChangeName,
-        onDismiss = {
+        onConfirm = {
+            onChangeName(it)
             changeNameDialog = false
-        }
+        },
+        onDismiss = { changeNameDialog = false }
+    )
+
+    var changeRecentDialog by remember { mutableStateOf(false) }
+    VapullaSelectionDialog(
+        title = stringResource(id = R.string.prefTitleFriendsRecents),
+        currentSelection = accountManager.prefFriendsListRecents,
+        items = recentsMap,
+        openDialog = changeRecentDialog,
+        onPositive = {
+            accountManager.prefFriendsListRecents = it
+            changeRecentDialog = false
+        },
+        positiveText = stringResource(id = R.string.dialogConfirm),
+        onNegative = { changeRecentDialog = false },
+        negativeText = stringResource(id = R.string.dialogCancel)
     )
 
     Scaffold(
@@ -109,7 +141,7 @@ fun SettingsScreen(
                     subtitle = { Text(text = accountManager.nickname ?: "*unknown*") },
                     onClick = { changeNameDialog = true }
                 )
-                Divider(Modifier.fillMaxWidth())
+                Divider(Modifier.padding(vertical = 2.dp).fillMaxWidth())
             }
 
             /* Friends */
@@ -123,24 +155,26 @@ fun SettingsScreen(
             ) {
                 SettingsMenuLink(
                     title = { Text(text = stringResource(R.string.prefTitleFriendsRecents)) },
-                    onClick = {
-                        // TODO set recent chats time out to the following.
-                        //  Disable -> -1
-                        //  1 day -> 86400000
-                        //  3 days -> 259200000
-                        //  1 week -> 604800000
-                        //  2 weeks -> 1209600000
-                        //  1 month -> 2592000000
-                        //  Forever -> 0
-                    }
+                    subtitle = {
+                        val text = recentsMap.entries.find {
+                            it.value == accountManager.prefFriendsListRecents
+                        }?.key ?: "??"
+                        Text(text = text)
+                    },
+                    onClick = { changeRecentDialog = true }
                 )
                 SettingsSwitch(
                     title = { Text(text = stringResource(R.string.prefTitleSortFriends)) },
-                    onCheckedChange = {
-                        // TODO show list to sort by "Name" -> 0 or "Status" -> 1, defaults to "Status"
+                    subtitle = {
+                        val text = if (accountManager.prefFriendsListSort) "Status" else "Name"
+                        Text(text = text)
+                    },
+                    state = rememberBooleanSettingState(accountManager.prefFriendsListSort),
+                    onCheckedChange = { value ->
+                        accountManager.prefFriendsListSort = value
                     }
                 )
-                Divider(Modifier.fillMaxWidth())
+                Divider(Modifier.padding(vertical = 2.dp).fillMaxWidth())
             }
 
             /* Other */
@@ -154,16 +188,15 @@ fun SettingsScreen(
             ) {
                 SettingsSwitch(
                     title = { Text(text = stringResource(R.string.prefTitleClearNotifications)) },
+                    state = rememberBooleanSettingState(accountManager.prefClearNotifications),
                     subtitle = {
-                        Text(
-                            text = stringResource(id = R.string.prefSummaryClearNotifications)
-                        )
+                        Text(text = stringResource(id = R.string.prefSummaryClearNotifications))
                     },
-                    onCheckedChange = {
-                        // TODO change pref_clear_notifications
+                    onCheckedChange = { value ->
+                        accountManager.prefClearNotifications = value
                     }
                 )
-                Divider(Modifier.fillMaxWidth())
+                Divider(Modifier.padding(vertical = 2.dp).fillMaxWidth())
             }
 
             /* About */
@@ -202,6 +235,8 @@ fun SettingsScreen(
                         onBrowseUrl(url)
                     }
                 )
+
+                Divider(Modifier.padding(top = 2.dp).fillMaxWidth())
             }
         }
     }
