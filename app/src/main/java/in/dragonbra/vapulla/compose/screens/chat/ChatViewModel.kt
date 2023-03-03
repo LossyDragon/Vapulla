@@ -35,28 +35,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed class ChatUiEvent {
-    object RequestEmotes : ChatUiEvent()
-    object NavigateUp : ChatUiEvent()
-    data class UpdateFriend(val friend: FriendListItem) : ChatUiEvent()
-    data class RequestMsgHistory(val id: SteamID) : ChatUiEvent()
-    data class SendTypingStatus(val id: SteamID) : ChatUiEvent()
-    data class SendMessage(val id: SteamID, val message: String, val emoteSet: Set<String>) :
-        ChatUiEvent()
-}
-
-data class ChatState(
-    val lastTypingMessage: Long = 0L,
-    val currentChatSteamID: SteamID? = null,
-
-    val friend: FriendListItem? = null,
-    val messages: Flow<PagingData<ChatMessage>> = flowOf(), // TODO Paging compose
-    val emoteSet: Set<String> = setOf(),
-    val emoticonData: List<Emoticon> = listOf(),
-
-    val isUpdating: Boolean = false
-)
-
 // TODO paperplane
 
 @HiltViewModel
@@ -197,13 +175,6 @@ class ChatViewModel @Inject constructor(
             ?: throw IllegalArgumentException("SteamID was null trying to send a message")
 
         emit(ChatUiEvent.SendMessage(steamID, message, emoteSet))
-    }
-
-    fun getMessageHistory() {
-        val steamID = _state.value.currentChatSteamID
-            ?: throw IllegalArgumentException("SteamID was null trying to request message history")
-
-        emit(ChatUiEvent.RequestMsgHistory(steamID))
     }
 
     private fun emit(event: ChatUiEvent) {

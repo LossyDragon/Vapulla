@@ -93,7 +93,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         val name = account.nickname.orEmpty()
         val state = account.state
         val avatarHash = account.avatarHash.orEmpty()
-        viewModel.onEvent(HomeEvent.UpdateAccount(name, state, avatarHash))
+        viewModel.onUpdateAccount(name, state, avatarHash)
     }
 
     private fun closeApplication() {

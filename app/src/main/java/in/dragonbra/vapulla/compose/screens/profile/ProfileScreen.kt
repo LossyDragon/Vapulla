@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.profile
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
@@ -316,7 +317,6 @@ private fun ProfileScreenNameAndStatus(state: ProfileState) {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun ProfileScreenInfo(state: ProfileState) {
     Card(
@@ -329,43 +329,12 @@ private fun ProfileScreenInfo(state: ProfileState) {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // TODO hoist
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(80.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(id = R.string.textLevel),
-                    color = Color.White,
-                    fontSize = 20.sp
-                )
-
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .padding(top = 5.dp),
-                        color = colorSecondary,
-                        strokeWidth = 2.dp
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = !state.isLoading,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut()
-                ) {
-                    Text(
-                        text = (state.levelCount ?: 0).toString(),
-                        modifier = Modifier.padding(top = 5.dp),
-                        color = Color.White,
-                        fontSize = 18.sp
-                    )
-                }
-            }
+            ProfileLevelLayout(
+                modifier = Modifier.weight(1f),
+                levelTitle = R.string.textLevel,
+                levelNumber = (state.levelCount ?: 0).toString(),
+                isLoading = state.isLoading
+            )
 
             Divider(
                 modifier = Modifier
@@ -375,45 +344,59 @@ private fun ProfileScreenInfo(state: ProfileState) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
             )
 
-            // TODO hoist
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(80.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(id = R.string.textGames),
-                    color = Color.White,
-                    fontSize = 20.sp
-                )
-
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .padding(top = 5.dp),
-                        color = colorSecondary,
-                        strokeWidth = 2.dp
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = !state.isLoading,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut()
-                ) {
-                    Text(
-                        text = (state.gamesCount ?: 0).toString(),
-                        modifier = Modifier.padding(top = 5.dp),
-                        color = Color.White,
-                        fontSize = 18.sp
-                    )
-                }
-            }
+            ProfileLevelLayout(
+                modifier = Modifier.weight(1f),
+                levelTitle = R.string.textGames,
+                levelNumber = (state.gamesCount ?: 0).toString(),
+                isLoading = state.isLoading
+            )
         }
     }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun ProfileLevelLayout(
+    modifier: Modifier,
+    @StringRes levelTitle: Int,
+    levelNumber: String,
+    isLoading: Boolean,
+) {
+    Column(
+        modifier = modifier.height(80.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(id = levelTitle),
+            color = Color.White,
+            fontSize = 20.sp
+        )
+
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(36.dp)
+                    .padding(top = 5.dp),
+                color = colorSecondary,
+                strokeWidth = 2.dp
+            )
+        }
+
+        AnimatedVisibility(
+            visible = !isLoading,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut()
+        ) {
+            Text(
+                text = levelNumber,
+                modifier = Modifier.padding(top = 5.dp),
+                color = Color.White,
+                fontSize = 18.sp
+            )
+        }
+    }
+
 }
 
 @Composable

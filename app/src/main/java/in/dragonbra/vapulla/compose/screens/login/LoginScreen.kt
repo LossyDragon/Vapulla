@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
@@ -97,14 +98,14 @@ fun LoginScreen(
     /* Content */
     LoginScreenContent(
         loginState = state,
-        onUsername = { viewModel.onEvent(LoginEvent.UsernameChanged(it)) },
-        onPassword = { viewModel.onEvent(LoginEvent.PasswordChanged(it)) },
-        onSteamGuard = { viewModel.onEvent(LoginEvent.SteamGuardChanged(it)) },
-        onPasswordVisible = { viewModel.onEvent(LoginEvent.PasswordVisibleChanged(it)) },
-        onLogin = { viewModel.onEvent(LoginEvent.Login) },
-        onRetry = { viewModel.onEvent(LoginEvent.Retry) },
+        onUsername = { viewModel.onUsernameUpdate(it) },
+        onPassword = { viewModel.onPasswordUpdate(it) },
+        onSteamGuard = { viewModel.onSteamGuardUpdate(it) },
+        onPasswordVisible = { viewModel.onPasswordVisible(it) },
+        onLogin = { viewModel.doLogin() },
+        onRetry = { viewModel.doRetry() },
         onClear = onReset,
-        on2faMessage = { viewModel.onEvent(LoginEvent.ShowLoginForm(it, false)) }
+        on2faMessage = { viewModel.onShowMessage(it, false) }
     )
 }
 

@@ -9,6 +9,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
@@ -31,8 +32,6 @@ class HomeViewModel @Inject constructor(
     // private val paperPlane: PaperPlane,
     private val steamFriendDao: SteamFriendDao
 ) : AndroidViewModel(application) {
-
-    private val prefs = PreferenceManager.getDefaultSharedPreferences(vmApplication)
 
     private val vmApplication: Application
         get() = getApplication()
@@ -62,60 +61,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun setSearching(value: Boolean) {
-        if (!value) {
-            // Force an update when closing search
+    fun setSearching(isSearching: Boolean) {
+        // Force an update when closing search
+        if (!isSearching) {
             search("")
         }
 
-        _state.update { it.copy(isSearching = value) }
-    }
-
-    fun onEvent(event: HomeEvent) {
-        when (event) {
-            is HomeEvent.SwipeRefresh -> {
-                _state.update { it.copy(isRefreshing = event.isRefreshing) }
-                viewModelScope.launch {
-                    _uiEvent.emit(HomeUiEvent.Refresh)
-                    delay(1000L)
-                    _state.update { it.copy(isRefreshing = false) }
-                }
-            }
-
-            is HomeEvent.UpdateAccount -> {
-                _state.update {
-                    it.copy(
-                        nickname = event.nickname,
-                        status = event.status,
-                        avatarHash = event.avatarHash
-                    )
-                }
-            }
-
-            is HomeEvent.StatusChange -> {
-                viewModelScope.launch {
-                    _uiEvent.emit(HomeUiEvent.ChangeStatus(event.status))
-                }
-            }
-
-            HomeEvent.AddFriend -> {
-                viewModelScope.launch {
-                    _uiEvent.emit(HomeUiEvent.AddFriend)
-                }
-            }
-
-            HomeEvent.Logout -> {
-                viewModelScope.launch {
-                    _uiEvent.emit(HomeUiEvent.LogOut)
-                }
-            }
-
-            HomeEvent.Settings -> {
-                viewModelScope.launch {
-                    _uiEvent.emit(HomeUiEvent.Settings)
-                }
-            }
-        }
+        _state.update { it.copy(isSearching = isSearching) }
     }
 
     private fun swap(list: List<FriendListItem>, updateTime: Long) {
@@ -130,6 +82,7 @@ class HomeViewModel @Inject constructor(
         }
 
         // TODO pref
+        val prefs = PreferenceManager.getDefaultSharedPreferences(vmApplication)
         val recentTimeout =
             prefs.getString("pref_friends_list_recents", "604800000")?.toLong() ?: 0L
 
@@ -206,5 +159,42 @@ class HomeViewModel @Inject constructor(
 
     fun onDestroy() {
         friendsData.removeObserver(dataObserver)
+    }
+
+    fun onSwipeRefresh(isRefreshing: Boolean) {
+        _state.update { it.copy(isRefreshing = isRefreshing) }
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.Refresh)
+            delay(1000L)
+            _state.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    fun onUpdateAccount(nickname: String, status: EPersonaState, avatarHash: String) {
+        _state.update { it.copy(nickname = nickname, status = status, avatarHash = avatarHash) }
+    }
+
+    fun onStatusUpdate(status: EPersonaState) {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.ChangeStatus(status))
+        }
+    }
+
+    fun onAddFriend() {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.AddFriend)
+        }
+    }
+
+    fun onLogout() {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.LogOut)
+        }
+    }
+
+    fun onSettings() {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.Settings)
+        }
     }
 }

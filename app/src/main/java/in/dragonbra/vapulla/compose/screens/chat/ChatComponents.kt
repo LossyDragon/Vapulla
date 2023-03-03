@@ -3,8 +3,10 @@ package `in`.dragonbra.vapulla.compose.screens.chat
 import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -55,7 +57,11 @@ import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -389,8 +395,12 @@ fun ExtendedSelectorInnerButton(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChatMessageItem(modifier: Modifier = Modifier, message: ChatMessage) {
+fun ChatMessageItem(
+    modifier: Modifier = Modifier,
+    message: ChatMessage,
+) {
     var bubbleColor = MaterialTheme.colorScheme.primary
     var bubbleShape = ChatBubbleFriendShape
     var bubbleSide: Alignment = Alignment.CenterEnd
@@ -413,13 +423,22 @@ fun ChatMessageItem(modifier: Modifier = Modifier, message: ChatMessage) {
         }
     }
 
+    val clipboard = LocalClipboardManager.current
     val configuration = LocalConfiguration.current
+    val haptics = LocalHapticFeedback.current
     val maxWidth = configuration.screenWidthDp
     Box(
         modifier = modifier
             .waterfallPadding()
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(8.dp)
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    clipboard.setText(AnnotatedString(message.message))
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+            ),
         contentAlignment = bubbleSide
     ) {
         Surface(

@@ -95,14 +95,14 @@ fun HomeScreen(
         state = state,
         searchTextState = viewModel.searchText,
         onChatSelected = { onChatSelected(it) },
-        onLogout = { viewModel.onEvent(HomeEvent.Logout) },
-        onPersonAdd = { viewModel.onEvent(HomeEvent.AddFriend) },
+        onLogout = { viewModel.onLogout() },
+        onPersonAdd = { viewModel.onAddFriend() },
         onProfileSelected = { onProfileSelected(it) },
-        onRefresh = { viewModel.onEvent(HomeEvent.SwipeRefresh(true)) },
+        onRefresh = { viewModel.onSwipeRefresh(true) },
         onSearchClosed = { viewModel.setSearching(false) },
         onSearchOpened = { viewModel.setSearching(true) },
-        onSettings = { viewModel.onEvent(HomeEvent.Settings) },
-        onStatusChange = { viewModel.onEvent(HomeEvent.StatusChange(it)) }
+        onSettings = { viewModel.onSettings() },
+        onStatusChange = { viewModel.onStatusUpdate(it) }
     )
 }
 

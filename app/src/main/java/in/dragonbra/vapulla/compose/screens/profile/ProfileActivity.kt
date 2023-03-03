@@ -41,11 +41,9 @@ class ProfileActivity : VapullaBaseActivity() {
 
         setContent {
             val lifecycleOwner = LocalLifecycleOwner.current
-            LaunchedEffect(Unit) {
-                viewModel.onPostCreate(lifecycleOwner, steamId)
-            }
 
             LaunchedEffect(Unit) {
+                viewModel.onPostCreate(lifecycleOwner, steamId)
                 viewModel.uiEvent.collectLatest { event ->
                     onProfileEvent(event, steamId)
                 }
@@ -123,15 +121,12 @@ class ProfileActivity : VapullaBaseActivity() {
                     val jobID = getHandler<SteamFriends>()?.requestAliasHistory(event.steamID)
                     viewModel.setJobID(jobID)
                 }
-
                 is ProfileUiEvent.SetNickName -> {
                     getHandler<SteamFriends>()?.setFriendNickname(event.steamID, event.nickName)
                 }
-
                 is ProfileUiEvent.BlockFriend -> {
                     getHandler<SteamFriends>()?.ignoreFriend(steamID)
                 }
-
                 is ProfileUiEvent.RemoveFriend -> {
                     getHandler<SteamFriends>()?.removeFriend(steamID)
                 }

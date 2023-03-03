@@ -142,22 +142,10 @@ fun FriendItem(
                     shape = RectangleShape,
                     color = getStatusColor(friend)
                 ) {
-                    Box {
-                        AvatarImage(
-                            modifier = Modifier.size(58.dp),
-                            avatarUrl = Utils.getAvatarUrl(friend.avatar)
-                        )
-
-                        getStatusIcon(friend)?.let {
-                            Icon(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .align(Alignment.BottomEnd),
-                                imageVector = it,
-                                contentDescription = it.name
-                            )
-                        }
-                    }
+                    AvatarImage(
+                        modifier = Modifier.size(58.dp),
+                        avatarUrl = Utils.getAvatarUrl(friend.avatar)
+                    )
                 }
             }
         )

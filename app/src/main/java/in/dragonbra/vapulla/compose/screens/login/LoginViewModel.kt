@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 class LoginViewModel(
     private val loginValidation: LoginValidation = LoginValidation()
@@ -24,78 +23,6 @@ class LoginViewModel(
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
 
-    fun onEvent(event: LoginEvent) {
-        Timber.d("Login Event: ${event.javaClass}")
-        when (event) {
-            LoginEvent.Login -> doLogin()
-            LoginEvent.Retry -> doRetry()
-            LoginEvent.ShowFailedScreen -> {
-                _loginState.update {
-                    it.copy(
-                        expectSteamGuard = false,
-                        generalMessage = "Failed to connect to steam",
-                        isLoading = false,
-                        isRetryVisible = true
-                    )
-                }
-            }
-
-            is LoginEvent.PasswordChanged -> {
-                if (_loginState.value.passwordError.isNotEmpty()) {
-                    _loginState.update { it.copy(passwordError = "") }
-                }
-                _loginState.update { it.copy(password = event.password) }
-            }
-
-            is LoginEvent.PasswordVisibleChanged -> {
-                _loginState.update { it.copy(isPasswordVisible = event.visibility) }
-            }
-
-            is LoginEvent.ShowLoading -> {
-                _loginState.update {
-                    it.copy(
-                        isLoading = event.isLoading,
-                        generalMessage = "Loading"
-                    )
-                }
-            }
-
-            is LoginEvent.ShowLoginForm -> {
-                _loginState.update {
-                    it.copy(
-                        generalMessage = event.error,
-                        isRetryVisible = event.canRetry
-                    )
-                }
-            }
-
-            is LoginEvent.ShowSteamGuard -> {
-                _loginState.update {
-                    it.copy(
-                        expectSteamGuard = event.expectSteamGuard,
-                        generalMessage = event.error,
-                        is2Fa = event.is2fa,
-                        isLoading = false
-                    )
-                }
-            }
-
-            is LoginEvent.SteamGuardChanged -> {
-                if (_loginState.value.steamGuardError.isNotEmpty()) {
-                    _loginState.update { it.copy(steamGuardError = "") }
-                }
-                _loginState.update { it.copy(steamGuard = event.steamGuard) }
-            }
-
-            is LoginEvent.UsernameChanged -> {
-                if (_loginState.value.usernameError.isNotEmpty()) {
-                    _loginState.update { it.copy(usernameError = "") }
-                }
-                _loginState.update { it.copy(username = event.username) }
-            }
-        }
-    }
-
     fun prefillInputs(username: String?) {
         if (username == null) return
         _loginState.update { it.copy(username = username) }
@@ -105,7 +32,62 @@ class LoginViewModel(
         _loginState.update { it.copy(expectSteamGuard = false) }
     }
 
-    private fun doRetry() {
+    fun onUsernameUpdate(username: String) {
+        if (_loginState.value.usernameError.isNotEmpty()) {
+            _loginState.update { it.copy(usernameError = "") }
+        }
+        _loginState.update { it.copy(username = username) }
+    }
+
+    fun onPasswordUpdate(password: String) {
+        if (_loginState.value.passwordError.isNotEmpty()) {
+            _loginState.update { it.copy(passwordError = "") }
+        }
+        _loginState.update { it.copy(password = password) }
+    }
+
+    fun onSteamGuardUpdate(steamGuard: String) {
+        if (_loginState.value.steamGuardError.isNotEmpty()) {
+            _loginState.update { it.copy(steamGuardError = "") }
+        }
+        _loginState.update { it.copy(steamGuard = steamGuard) }
+    }
+
+    fun onPasswordVisible(isVisible: Boolean) {
+        _loginState.update { it.copy(isPasswordVisible = isVisible) }
+    }
+
+    fun onLoadingVisible(isLoading: Boolean) {
+        _loginState.update { it.copy(isLoading = isLoading, generalMessage = "Loading") }
+    }
+
+    fun onShowSteamGuard(expectSteamGuard: Boolean, error: String, is2fa: Boolean) {
+        _loginState.update {
+            it.copy(
+                expectSteamGuard = expectSteamGuard,
+                generalMessage = error,
+                is2Fa = is2fa,
+                isLoading = false
+            )
+        }
+    }
+
+    fun onShowMessage(error: String, canRetry: Boolean) {
+        _loginState.update { it.copy(generalMessage = error, isRetryVisible = canRetry) }
+    }
+
+    fun showFailedScreen() {
+        _loginState.update {
+            it.copy(
+                expectSteamGuard = false,
+                generalMessage = "Failed to connect to steam",
+                isLoading = false,
+                isRetryVisible = true
+            )
+        }
+    }
+
+    fun doRetry() {
         _loginState.update { it.copy(isRetryVisible = false) }
         viewModelScope.launch {
             val event = ValidationEvent.StartService
@@ -113,7 +95,7 @@ class LoginViewModel(
         }
     }
 
-    private fun doLogin() {
+    fun doLogin() {
         val username = loginValidation.validateUsername(_loginState.value.username)
         val password = loginValidation.validatePassword(_loginState.value.password)
 
@@ -139,10 +121,7 @@ class LoginViewModel(
             val steamGuard = loginValidation.validateSteamGuard(_loginState.value.steamGuard)
             if (!steamGuard.isSuccessful) {
                 _loginState.update {
-                    it.copy(
-                        steamGuardError = steamGuard.errorMessage,
-                        isLoading = false
-                    )
+                    it.copy(steamGuardError = steamGuard.errorMessage, isLoading = false)
                 }
 
                 return

@@ -14,9 +14,6 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -78,7 +75,7 @@ class SettingsActivity : VapullaBaseActivity() {
     }
 
     private fun clearData() {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.executeAsyncTask {
             accountManager.clear()
             db.steamFriendDao().delete()
             db.chatMessageDao().delete()

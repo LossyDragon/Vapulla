@@ -20,6 +20,8 @@ import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 
+// TODO message history doesn't seem to be working, use NHA2 to check it out.
+
 @AndroidEntryPoint
 class ChatActivity : VapullaBaseActivity() {
 
@@ -78,7 +80,12 @@ class ChatActivity : VapullaBaseActivity() {
 
             steamService?.setChatFriendId(steamID)
             steamService?.isActivityRunning = true
-            viewModel.getMessageHistory()
+
+            scope.executeAsyncTask {
+                // TODO why two requests
+                steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamID)
+                steamService?.getMessageHistory(steamID)
+            }
         }
 
         viewModel.onResume()
@@ -94,6 +101,11 @@ class ChatActivity : VapullaBaseActivity() {
         viewModel.onPause()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.onDestroy()
+    }
+
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
         Timber.i("Bound to Steam service")
@@ -103,7 +115,12 @@ class ChatActivity : VapullaBaseActivity() {
 
         steamService?.setChatFriendId(steamID)
         steamService?.isActivityRunning = true
-        viewModel.getMessageHistory()
+
+        scope.executeAsyncTask {
+            // TODO why two requests
+            steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamID)
+            steamService?.getMessageHistory(steamID)
+        }
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
@@ -139,11 +156,6 @@ class ChatActivity : VapullaBaseActivity() {
 
                 ChatUiEvent.NavigateUp -> {
                     finish()
-                }
-
-                is ChatUiEvent.RequestMsgHistory -> {
-                    steamService?.getHandler<SteamFriends>()?.requestMessageHistory(event.id)
-                    steamService?.getMessageHistory(event.id)
                 }
 
                 is ChatUiEvent.SendTypingStatus -> {

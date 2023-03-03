@@ -3,20 +3,6 @@ package `in`.dragonbra.vapulla.compose.screens.home
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 
-sealed class HomeEvent {
-    data class StatusChange(val status: EPersonaState) : HomeEvent()
-    data class SwipeRefresh(val isRefreshing: Boolean) : HomeEvent()
-    data class UpdateAccount(
-        val nickname: String,
-        val status: EPersonaState,
-        val avatarHash: String
-    ) : HomeEvent()
-
-    object AddFriend : HomeEvent()
-    object Logout : HomeEvent()
-    object Settings : HomeEvent()
-}
-
 sealed class HomeUiEvent {
     data class AcceptRequest(val friend: FriendListItem) : HomeUiEvent()
     data class BlockFriend(val friend: FriendListItem) : HomeUiEvent()

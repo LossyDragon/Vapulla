@@ -21,16 +21,13 @@ fun getAccountStatusColor(state: EPersonaState): Color {
         EPersonaState.Busy,
         EPersonaState.Away,
         EPersonaState.Snooze -> friendAwayOrSnooze
-
         EPersonaState.Online -> friendOnline
         else -> friendOffline
     }
 }
 
 fun getStatusColor(friend: FriendListItem?): Color {
-    if (friend == null) {
-        return friendOffline
-    }
+    if (friend == null) return friendOffline
 
     return when {
         friend.isOffline() -> friendOffline

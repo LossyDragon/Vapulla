@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,7 +109,6 @@ private fun ChatScreenContent(
                     }
                 },
                 title = {
-                    val context = LocalContext.current
                     Row(
                         modifier = Modifier.padding(start = 0.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -168,14 +166,14 @@ private fun ChatScreenContent(
             )
         }
     ) { paddingValues ->
-        val messages = state.messages.collectAsLazyPagingItems()
+        val messages = state.messages.collectAsLazyPagingItems().itemSnapshotList.items.reversed()
         val scope = rememberCoroutineScope()
         val topBarState = rememberTopAppBarState()
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
         val scrollState = rememberLazyListState()
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (messages.itemSnapshotList.items.isEmpty()) {
+            if (messages.isEmpty()) {
                 val name = state.friend?.friendName ?: "this friend."
                 Text(
                     modifier = Modifier
@@ -197,18 +195,15 @@ private fun ChatScreenContent(
                     modifier = Modifier.weight(1f),
                     state = scrollState
                 ) {
-                    // TODO, VM this
-                    val groupedMessages = messages.itemSnapshotList.items.reversed().groupBy {
-                        it.formattedTs
-                    }
+                    // NOTE: This should be in the VM, but some refacoring will be needed.
+                    val groupedMessages = messages.groupBy { it.formattedTs }
 
                     groupedMessages.forEach { (header, items) ->
                         stickyHeader(contentType = header) {
                             ChatMessageDateHeader(dateStamp = header)
                         }
 
-                        items(items, key = { it.id }) { msg ->
-                            // TODO handle long click to copy message
+                        items(items, key = { it.timestamp }) { msg ->
                             ChatMessageItem(
                                 modifier = Modifier.animateItemPlacement(),
                                 message = msg

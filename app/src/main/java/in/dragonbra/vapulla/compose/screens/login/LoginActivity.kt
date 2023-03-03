@@ -55,7 +55,7 @@ class LoginActivity : VapullaBaseActivity() {
                     viewModel = viewModel,
                     onBindService = { onServiceStart() },
                     onStartService = {
-                        startSteamService { viewModel.onEvent(LoginEvent.ShowLoading(true)) }
+                        startSteamService { viewModel.onLoadingVisible(true) }
                     },
                     onSettings = {
                         Intent(
@@ -84,6 +84,10 @@ class LoginActivity : VapullaBaseActivity() {
                 return
             }
 
+            Timber.d("viewModel.logOnDetails ${viewModel.logOnDetails.username}")
+            Timber.d("viewModel.logOnDetails ${viewModel.logOnDetails.password}")
+            Timber.d("viewModel.logOnDetails ${viewModel.logOnDetails.twoFactorCode}")
+
             service.logOn(viewModel.logOnDetails)
             showLoading()
         }
@@ -95,8 +99,7 @@ class LoginActivity : VapullaBaseActivity() {
         with(viewModel) {
             if (!loginState.value.expectSteamGuard) {
                 if (!accountManager.loginKey.isNullOrEmpty()) {
-                    val event = LoginEvent.ShowFailedScreen
-                    viewModel.onEvent(event)
+                    viewModel.showFailedScreen()
                 }
             }
         }
@@ -113,13 +116,11 @@ class LoginActivity : VapullaBaseActivity() {
             if (eResult.any { callback.result == it }) {
                 if (callback.result == EResult.AccountLoginDeniedNeedTwoFactor) {
                     val is2Fa = callback.result == EResult.AccountLoginDeniedNeedTwoFactor
-                    val event = LoginEvent.ShowSteamGuard(is2fa = is2Fa, expectSteamGuard = true)
-                    viewModel.onEvent(event)
+                    viewModel.onShowSteamGuard(true, "", is2Fa)
                 }
             } else {
                 Timber.w("Failed to log in ${callback.result} / ${callback.extendedResult}")
-                val failedEvent = LoginEvent.ShowSteamGuard(is2fa = false, expectSteamGuard = false)
-                viewModel.onEvent(failedEvent)
+                viewModel.onShowSteamGuard(false, "", false)
 
                 // SnackBar this?
                 val errorMessage = getErrorMessage(callback.result, callback.extendedResult)
@@ -129,22 +130,16 @@ class LoginActivity : VapullaBaseActivity() {
                 )
 
                 if (authEResult.any { callback.result == it }) {
-                    val event = LoginEvent.ShowSteamGuard(
-                        expectSteamGuard = true,
-                        is2fa = false,
-                        error = errorMessage
-                    )
-                    viewModel.onEvent(event)
+                    viewModel.onShowSteamGuard(true, errorMessage, true)
                 } else {
-                    val event = LoginEvent.ShowLoginForm(errorMessage, true)
-                    viewModel.onEvent(event)
+                    viewModel.onShowMessage(errorMessage, true)
                 }
             }
             steamService?.disconnect()
             return
         }
 
-        viewModel.onEvent(LoginEvent.ShowSteamGuard(is2fa = false, expectSteamGuard = false))
+        viewModel.onShowSteamGuard(false, "", false)
 
         CoroutineScope(Dispatchers.Default).executeAsyncTask {
             steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
@@ -182,7 +177,7 @@ class LoginActivity : VapullaBaseActivity() {
                 password = null
                 username = accountManager.username
             }
-            startSteamService { viewModel.onEvent(LoginEvent.ShowLoading(true)) }
+            startSteamService { viewModel.onLoadingVisible(true) }
         }
     }
 

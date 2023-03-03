@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.compose.screens.login
+package `in`.dragonbra.vapulla.compose.components
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,14 +42,14 @@ fun LoginTextField(
         ),
         enabled = isEnabled,
         isError = isError,
-        keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
+        keyboardOptions = keyboardOptions,
         label = { Text(text = stringResource(id = label)) },
         onValueChange = { onValueChange(it) },
         singleLine = true,
         supportingText = { Text(supportingText) },
+        trailingIcon = trailingIcon,
         value = value,
         visualTransformation = visualTransformation,
-        trailingIcon = trailingIcon
     )
 }

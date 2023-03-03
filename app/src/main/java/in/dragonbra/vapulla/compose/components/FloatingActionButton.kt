@@ -33,31 +33,24 @@ fun ScrollBackUp(
     )
 
     val bottomOffset by transition.animateDp(label = "ScrollBackUp offset") {
-        if (it == Visibility.Gone) {
-            (-24).dp
-        } else {
-            24.dp
-        }
+        if (it == Visibility.Gone) (-24).dp else 24.dp
     }
 
     if (bottomOffset > 0.dp) {
         ExtendedFloatingActionButton(
+            modifier = modifier
+                .offset(x = 0.dp, y = -bottomOffset)
+                .height(36.dp),
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = Color.White,
             icon = {
                 Icon(
                     imageVector = Icons.Filled.ArrowUpward,
                     modifier = Modifier.height(18.dp),
-                    contentDescription = null
-                )
-            },
-            text = {
-                Text(text = "Scroll Up")
+                    contentDescription = null)
             },
             onClick = onClicked,
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = Color.White,
-            modifier = modifier
-                .offset(x = 0.dp, y = -bottomOffset)
-                .height(36.dp)
+            text = { Text(text = "Scroll Up") },
         )
     }
 }
