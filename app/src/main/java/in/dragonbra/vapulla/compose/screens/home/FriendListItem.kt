@@ -2,11 +2,12 @@ package `in`.dragonbra.vapulla.compose.screens.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.chat.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.util.AvatarImage
@@ -74,21 +76,33 @@ fun FriendItem(
                 )
             },
             supportingText = {
-                // TODO: Messages + PaperPlane for URL, Stickers, and Emojis
-                val messageText: String? = friend.lastMessage
-
                 Column {
-                    Text(
-                        text = getStatusText(friend),
-                        color = getStatusColor(friend),
-                        fontSize = 10.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    messageText?.let {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        getStatusIcon(friend)?.let {
+                            Icon(
+                                modifier = Modifier.size(12.dp),
+                                imageVector = it,
+                                contentDescription = it.name
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
                         Text(
-                            text = messageText,
+                            text = getStatusText(friend),
+                            color = getStatusColor(friend),
+                            fontSize = 10.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    // TODO:
+                    //  Messages = Done
+                    //  Emoticons = Done
+                    //  URLS =
+                    //  Stickers =
+                    friend.lastMessage?.let {
+                        PaperPlane(
+                            text = it,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )

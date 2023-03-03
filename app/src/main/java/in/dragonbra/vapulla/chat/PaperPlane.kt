@@ -1,147 +1,78 @@
 package `in`.dragonbra.vapulla.chat
 
-import java.util.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.AvatarImage
+import `in`.dragonbra.vapulla.util.Utils
 
-// class PaperPlane(val context: Context, private val emoteSizeDp: Float) {
-//
-//    companion object {
-//        // val EMOTE_PATTERN: Pattern = Pattern.compile("\\[emoticon]([a-zA-Z0-9]+)\\[/emoticon]")
-//        val EMOTE_PATTERN: Pattern =
-//            Pattern.compile("\\u02D0([a-zA-Z\\d]+)\\u02D0")
-//        val STICKER_PATTERN: Pattern =
-//            Pattern.compile("\\[sticker type=\"([a-zA-Z\\d]+)\".limit=\"0\"]\\[/sticker]")
-//    }
-//
-//    private val targets: MutableMap<TextView, MutableList<Any>> = HashMap()
-//
-//    fun load(view: TextView, message: String, showUrl: Boolean, showStickers: Boolean) {
-//        clear(view)
-//
-//        val spannable = SpannableString(message)
-//
-//        //region [Region] URL
-//        if (showUrl) {
-//            val urlMatcher = Patterns.WEB_URL.matcher(message)
-//            while (urlMatcher.find()) {
-//                val result = urlMatcher.toMatchResult()
-//
-//                val nextSpace = message.indexOf(' ', result.start())
-//                val end = if (nextSpace == -1) message.length else nextSpace
-//                spannable.setSpan(
-//                    URLSpan(result.group()),
-//                    result.start(),
-//                    end,
-//                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-//                )
-//            }
-//
-//            view.movementMethod = LinkMovementMethod.getInstance()
-//        }
-//
-//        view.text = spannable
-//        view.requestLayout()
-//        //endregion
-//
-//        //region [Region] Emoji
-//        val emoteMatcher = EMOTE_PATTERN.matcher(message)
-//
-//        while (emoteMatcher.find()) {
-//            if (!targets.containsKey(view)) {
-//                targets[view] = LinkedList()
-//            }
-//
-//            val result = emoteMatcher.toMatchResult()
-//
-//            val emote = result.group(1)
-//
-//            val target = EmoteTarget(
-//                context,
-//                view,
-//                spannable,
-//                result.start(),
-//                result.end(),
-//                emoteSizeDp,
-//                targets[view]
-//            )
-//
-//            val request = ImageRequest.Builder(context)
-//                .scale(Scale.FIT)
-//                .data("$EMOTE_URL:$emote:")
-//                .target(target)
-//                .build()
-//
-//            CoroutineScope(Dispatchers.Default + Job()).launch {
-//                context.imageLoader.execute(request)
-//            }
-//        }
-//        //endregion
-//
-//        //region [Region] Sticker
-//        val stickerMatcher = STICKER_PATTERN.matcher(message)
-//
-//        if (!showStickers && stickerMatcher.matches()) {
-//            val sticker = stickerMatcher.toMatchResult().group(1)
-//            view.text = context.getString(R.string.messageSentSticker, sticker)
-//        } else {
-//            while (stickerMatcher.find()) {
-//                if (!targets.containsKey(view)) {
-//                    targets[view] = LinkedList()
-//                }
-//
-//                val result = stickerMatcher.toMatchResult()
-//
-//                val sticker = result.group(1)
-//
-//                val target = StickerTarget(
-//                    context,
-//                    view,
-//                    spannable,
-//                    result.start(),
-//                    result.end(),
-//                    targets[view]
-//                )
-//
-//                val imageLoader = ImageLoader.Builder(context)
-//                    .components {
-//                        add(AnimatedPngDecoder())
-//                    }
-//                    .build()
-//
-//                val request = ImageRequest.Builder(context)
-//                    .scale(Scale.FIT)
-//                    .data("$STICKER_URL$sticker")
-//                    .target(target)
-//                    .build()
-//
-//                CoroutineScope(Dispatchers.Default + Job()).launch {
-//                    context.imageLoader.execute(request)
-//                }
-//            }
-//        }
-//        //endregion
-//    }
-//
-//    fun clear(view: TextView) {
-//        view.text = ""
-//
-//        targets[view]?.forEach {
-//            when (it) {
-//                is StickerTarget -> it.cancel()
-//                is EmoteTarget -> it.cancel()
-//            }
-//        }
-//        targets[view]?.clear()
-//    }
-//
-//    fun clearAll() {
-//        targets.entries.forEach { targets ->
-//            targets.value.forEach { value ->
-//                when (value) {
-//                    is StickerTarget -> value.cancel()
-//                    is EmoteTarget -> value.cancel()
-//                }
-//            }
-//        }
-//        targets.clear()
-//    }
-// }
+val stickerPattern = "\\[sticker type=\"(.*?)\" limit=0]\\[sticker]".toRegex()
+
+// TODO: Move this to it's correct package, maybe compose.utils?
+// TODO: Mature this so that stickers can be rendered, APNG though.
+// TODO: Maybe this can also be versatile enough to use as the Emoji Picker?
+@Composable
+fun PaperPlane(
+    modifier: Modifier = Modifier,
+    text: String,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+) {
+    val contentMap = mutableMapOf<String, InlineTextContent>()
+
+    val annotatedString = buildAnnotatedString {
+        val pattern = "\\[emoticon](.*?)\\[/emoticon]".toRegex()
+        var lastIndex = 0
+
+        pattern.findAll(text).forEach { matchResult ->
+            val (emoticonName) = matchResult.destructured
+            append(text.substring(lastIndex, matchResult.range.first))
+            contentMap.getOrPut(emoticonName) {
+                InlineTextContent(Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.Center)) {
+                    AvatarImage(
+                        modifier = Modifier.size(20.dp),
+                        avatarUrl = "${Utils.EMOTE_URL}$emoticonName"
+                    )
+                }
+            }
+            appendInlineContent(emoticonName)
+            lastIndex = matchResult.range.last + 1
+        }
+
+        append(text.substring(lastIndex, text.length))
+    }
+
+    Text(
+        modifier = modifier,
+        text = annotatedString,
+        inlineContent = contentMap,
+        maxLines = maxLines,
+        overflow = overflow,
+    )
+}
+
+@Preview
+@Composable
+private fun Preview_PaperPlane() {
+    VapullaTheme {
+        Column {
+            PaperPlane(text = "Left [emoticon]health[/emoticon] 4 [emoticon]missing[/emoticon] Dead 2!")
+            Spacer(modifier = Modifier.height(10.dp))
+            PaperPlane(text = "No Emojis, but Left 4 Dead 2!")
+        }
+    }
+}
