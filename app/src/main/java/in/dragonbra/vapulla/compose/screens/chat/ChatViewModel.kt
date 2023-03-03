@@ -23,8 +23,6 @@ import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +44,6 @@ class ChatViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        const val UPDATE_INTERVAL = DateUtils.MINUTE_IN_MILLIS
         const val TYPING_INTERVAL = DateUtils.SECOND_IN_MILLIS * 20
     }
 
@@ -111,8 +108,6 @@ class ChatViewModel @Inject constructor(
     }
 
     fun onResume() {
-        updateFriendData()
-
         val steamID = _state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID was null in markRead")
 
@@ -121,29 +116,10 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun onPause() {
-        _state.update { it.copy(isUpdating = false) }
-    }
-
     fun onDestroy() {
         chatData.asLiveData().removeObserver(chatObserver)
         friendData.removeObserver(friendObserver)
         emoticonData.removeObserver(emoteObserver)
-    }
-
-    private fun updateFriendData() {
-        if (!_state.value.isUpdating) {
-            _state.update { it.copy(isUpdating = true) }
-        }
-
-        val friend = friendData.value ?: return
-        viewModelScope.launch {
-            while (_state.value.isUpdating) {
-                delay(UPDATE_INTERVAL)
-                emit(ChatUiEvent.UpdateFriend(friend))
-            }
-            cancel()
-        }
     }
 
     fun setChatSteamID(steamID: SteamID) {

@@ -16,6 +16,4 @@ data class ChatState(
     val messages: Flow<PagingData<ChatMessage>> = flowOf(), // TODO Paging compose
     val emoteSet: Set<String> = setOf(),
     val emoticonData: List<Emoticon> = listOf(),
-
-    val isUpdating: Boolean = false
 )

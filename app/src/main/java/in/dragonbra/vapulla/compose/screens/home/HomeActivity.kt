@@ -18,7 +18,6 @@ import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.screens.settings.SettingsActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
@@ -141,7 +140,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
                 HomeUiEvent.Settings -> onSettings()
                 HomeUiEvent.Refresh -> {
                     viewModel.clearStates()
-                    steamService?.getHandler<UnifiedChatHandler>()?.getFriendsList()
+                    steamService?.getFriendPersonaStates()
                 }
 
                 is HomeUiEvent.AcceptRequest -> {

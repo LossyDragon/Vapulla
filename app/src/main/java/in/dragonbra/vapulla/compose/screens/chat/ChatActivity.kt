@@ -9,8 +9,6 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
-import `in`.dragonbra.javasteam.enums.EChatEntryType
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
@@ -43,7 +41,6 @@ class ChatActivity : VapullaBaseActivity() {
         setContent {
             LaunchedEffect(Unit) {
                 viewModel.uiState.collectLatest { event ->
-                    Timber.d("FLOWING: ${event.javaClass}")
                     onChatEvent(event)
                 }
             }
@@ -82,8 +79,6 @@ class ChatActivity : VapullaBaseActivity() {
             steamService?.isActivityRunning = true
 
             scope.executeAsyncTask {
-                // TODO why two requests
-                steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamID)
                 steamService?.getMessageHistory(steamID)
             }
         }
@@ -97,8 +92,6 @@ class ChatActivity : VapullaBaseActivity() {
             steamService?.isActivityRunning = false
             steamService?.removeChatFriendId()
         }
-
-        viewModel.onPause()
     }
 
     override fun onDestroy() {
@@ -117,8 +110,6 @@ class ChatActivity : VapullaBaseActivity() {
         steamService?.isActivityRunning = true
 
         scope.executeAsyncTask {
-            // TODO why two requests
-            steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamID)
             steamService?.getMessageHistory(steamID)
         }
     }
@@ -153,22 +144,15 @@ class ChatActivity : VapullaBaseActivity() {
                 ChatUiEvent.RequestEmotes -> {
                     steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
                 }
-
                 ChatUiEvent.NavigateUp -> {
                     finish()
                 }
-
                 is ChatUiEvent.SendTypingStatus -> {
-                    steamService
-                        ?.getHandler<SteamFriends>()
-                        ?.sendChatMessage(event.id, EChatEntryType.Typing, "")
+                    steamService?.setTyping(event.id)
                 }
-
                 is ChatUiEvent.SendMessage -> {
                     steamService?.sendMessage(event.id, event.message, event.emoteSet)
                 }
-
-                is ChatUiEvent.UpdateFriend -> TODO()
             }
         }
     }

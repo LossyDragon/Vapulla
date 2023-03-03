@@ -4,11 +4,12 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverF
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 
 class EmoticonListCallback(private val msg: CMsgClientEmoticonList.Builder) : CallbackMsg() {
-    private var emoticons: MutableList<Emoticon> = mutableListOf()
+    private var emoticons: List<Emoticon> = listOf()
+    private var stickers: List<Emoticon> = listOf()
     fun getEmoteList(): List<Emoticon> {
-        msg.emoticonsList.forEach { emoticons.add(Emoticon(it)) }
-        msg.stickersList.forEach { emoticons.add(Emoticon(it)) }
-        return emoticons.toList()
+        emoticons.map { msg.emoticonsList }
+        stickers.map { msg.stickersList }
+        return emoticons.plus(stickers)
     }
 }
 

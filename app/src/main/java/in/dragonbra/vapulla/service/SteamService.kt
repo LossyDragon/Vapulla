@@ -1,8 +1,10 @@
 package `in`.dragonbra.vapulla.service
 
+import android.Manifest
 import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
@@ -13,10 +15,17 @@ import androidx.core.app.*
 import androidx.core.app.NotificationCompat.MessagingStyle
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
+import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
 import `in`.dragonbra.javasteam.enums.EChatEntryType
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
+import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.handlers.ClientMsgHandler
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.*
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2.CMsgClientUIMode
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.*
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetFavoriteBadge_Response
+import `in`.dragonbra.javasteam.rpc.service.FriendMessages
 import `in`.dragonbra.javasteam.steam.discovery.FileServerListProvider
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
@@ -29,6 +38,9 @@ import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServ
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.SteamNotifications
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.callback.OfflineMessageNotificationCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamscreenshots.SteamScreenshots
+import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnifiedMessages
+import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodNotification
+import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodResponse
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.MachineAuthDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.OTPDetails
@@ -55,12 +67,8 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.steam.UnifiedChatHandler
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
-import `in`.dragonbra.vapulla.steam.callback.RecentMessagesResponseCallback
-import `in`.dragonbra.vapulla.steam.callback.SendMessageResponseCallback
-import `in`.dragonbra.vapulla.steam.callback.ServiceMethodCallback
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import `in`.dragonbra.vapulla.util.*
 import kotlinx.coroutines.CoroutineScope
@@ -73,6 +81,7 @@ import java.io.File
 import java.util.*
 import javax.inject.Inject
 import kotlin.math.abs
+
 
 @AndroidEntryPoint
 class SteamService : Service() {
@@ -168,7 +177,6 @@ class SteamService : Service() {
 
         steamClient = SteamClient(config).apply {
             addHandler(VapullaHandler())
-            addHandler(UnifiedChatHandler())
 
             removeHandler(SteamApps::class.java)
             removeHandler(SteamCloud::class.java)
@@ -183,12 +191,10 @@ class SteamService : Service() {
         callbackMgr = CallbackManager(steamClient)
 
         subscriptions.apply {
-            // add(callbackMgr.subscribe(FriendMsgCallback::class.java, onFriendMsg))
             add(callbackMgr.subscribe(ConnectedCallback::class.java, onConnected))
             add(callbackMgr.subscribe(DisconnectedCallback::class.java, onDisconnected))
             add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
             add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
-            add(callbackMgr.subscribe(FriendMsgHistoryCallback::class.java, onFriendMsgHistory))
             add(callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList))
             add(callbackMgr.subscribe(LoggedOffCallback::class.java, onLoggedOff))
             add(callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn))
@@ -201,19 +207,8 @@ class SteamService : Service() {
                 )
             )
             add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
-            add(
-                callbackMgr.subscribe(
-                    RecentMessagesResponseCallback::class.java,
-                    onRecentMessagesCallback
-                )
-            )
-            add(
-                callbackMgr.subscribe(
-                    SendMessageResponseCallback::class.java,
-                    onSendMessageCallback
-                )
-            )
-            add(callbackMgr.subscribe(ServiceMethodCallback::class.java, onServiceMethodCallback))
+            add(callbackMgr.subscribe(ServiceMethodResponse::class.java, onMethodResponse))
+            add(callbackMgr.subscribe(ServiceMethodNotification::class.java, onMethodNotification))
             add(callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth))
         }
 
@@ -289,6 +284,20 @@ class SteamService : Service() {
         sendBroadcast(stopIntent)
     }
 
+    private fun checkNotificationPermission(onGranted: () -> Unit) {
+        if (Utils.isAtLeastT) {
+            val isGranted = ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+
+            if (isGranted) onGranted()
+            return
+        }
+
+        onGranted()
+    }
+
     private fun setNotification(@StringRes string: Int) {
         val text = getString(string)
         serviceNotification(text) { builder ->
@@ -344,8 +353,10 @@ class SteamService : Service() {
 
         scope.launch {
             serviceMessageNotification(friendId, friend, message, messages) { builder ->
-                val steamId = friendId.convertToUInt64().toInt()
-                notificationManager.notify(steamId, builder.build())
+                checkNotificationPermission {
+                    val steamId = friendId.convertToUInt64().toInt()
+                    notificationManager.notify(steamId, builder.build())
+                }
             }
         }
 
@@ -357,8 +368,10 @@ class SteamService : Service() {
     private fun postFriendRequestNotification(state: PersonaState) {
         scope.launch {
             serviceRequestNotification(state) { builder ->
-                val steamId = state.friendID.convertToUInt64().toInt()
-                notificationManager.notify(steamId, builder.build())
+                checkNotificationPermission {
+                    val steamId = state.friendID.convertToUInt64().toInt()
+                    notificationManager.notify(steamId, builder.build())
+                }
             }
         }
     }
@@ -379,23 +392,85 @@ class SteamService : Service() {
         chatFriendId = null
     }
 
-    fun getMessageHistory(steamID2: SteamID) {
-        getHandler<UnifiedChatHandler>().getRecentMessages(account.steamId, steamID2)
+    /**
+     * Request a fresh state of Friend's PersonaStates
+     */
+
+    fun getFriendPersonaStates() {
+        Timber.d("getFriendPersonaStates")
+        val request = CChat_RequestFriendPersonaStates_Request.newBuilder().build()
+        // Chat(getHandler()).RequestFriendPersonaStates(request) // TODO debug this
+
+        getHandler<SteamUnifiedMessages>().sendMessage("Chat.RequestFriendPersonaStates#1", request)
     }
 
-    fun sendMessage(id: SteamID, message: String, emoteSet: Set<String>) {
-        val trimmedMessage = message.trim()
+    /**
+     * Acknowledge a message that was unread
+     */
+    fun ackMessage(steamID: SteamID) {
+        Timber.d("ackMessage($steamID)")
+        val msgNotification = CFriendMessages_AckMessage_Notification.newBuilder().apply {
+            steamidPartner = steamID.convertToUInt64()
+            timestamp = System.currentTimeMillis().div(1000).toInt()
+        }.build()
+
+        FriendMessages(getHandler()).AckMessage(msgNotification)
+    }
+
+    /**
+     * Get the last 50 recent messages from a friend conversation.
+     */
+    fun getMessageHistory(steamID2: SteamID) {
+        Timber.d("getMessageHistory($steamID2)")
+        val msgHistory = CFriendMessages_GetRecentMessages_Request.newBuilder().apply {
+            steamid1 = account.steamId
+            steamid2 = steamID2.convertToUInt64()
+            count = 50
+            rtime32StartTime = 0
+            bbcodeFormat = true
+            startOrdinal = 0
+            timeLast = 2147483647 // ???
+            ordinalLast = 0
+        }.build()
+
+        // FriendMessages(getHandler()).GetRecentMessages(msgHistory) // TODO debug this
+        getHandler<SteamUnifiedMessages>().sendMessage(
+            "FriendMessages.GetRecentMessages#1",
+            msgHistory
+        )
+    }
+
+    fun setTyping(steamID: SteamID) {
+        Timber.d("setTyping($steamID)")
+        val message = CFriendMessages_SendMessage_Request.newBuilder().apply {
+            chatEntryType = EChatEntryType.Typing.code()
+            message = ""
+            steamid = steamID.convertToUInt64()
+        }.build()
+        FriendMessages(getHandler()).SendMessage(message)
+    }
+
+    fun sendMessage(id: SteamID, msg: String, emoteSet: Set<String>) {
+        val trimmedMessage = msg.trim()
 
         if (trimmedMessage.isEmpty()) {
             return
         }
 
+        val message = CFriendMessages_SendMessage_Request.newBuilder().apply {
+            chatEntryType = EChatEntryType.ChatMsg.code()
+            message = msg
+            steamid = id.convertToUInt64()
+            containsBbcode = true
+            echoToSender = false
+            lowPriority = false
+        }.build()
+
+        FriendMessages(getHandler()).SendMessage(message)
+
         val formattedMessage = trimmedMessage.replace('\u02D0', ':')
         val emoteMessage = Utils.findEmotes(formattedMessage, emoteSet)
-
-        getHandler<UnifiedChatHandler>().sendMessage(id, message)
-
-        val msg = ChatMessage(
+        val chatMessage = ChatMessage(
             message = emoteMessage,
             timestamp = System.currentTimeMillis(),
             friendId = id.convertToUInt64(),
@@ -403,13 +478,13 @@ class SteamService : Service() {
             unread = false,
             timestampConfirmed = false
         )
-        db.chatMessageDao().insert(msg)
+        db.chatMessageDao().insert(chatMessage)
 
         clearMessageNotifications(id)
     }
 
     inline fun <reified T : ICallbackMsg>
-    subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
+        subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
         return when (T::class) {
             DisconnectedCallback::class -> {
                 @Suppress("UNCHECKED_CAST")
@@ -448,7 +523,7 @@ class SteamService : Service() {
     private val onDisconnected = Consumer<DisconnectedCallback> { cb ->
         if (expectDisconnect || retryCount >= MAX_RETRY_COUNT) {
             Timber.i("disconnected from steam")
-            stopForeground(true)
+            stopForeground(STOP_FOREGROUND_REMOVE)
             isRunning = false
             isLoggedIn = false
             expectDisconnect = false
@@ -488,7 +563,13 @@ class SteamService : Service() {
                 getHandler<SteamNotifications>().requestOfflineMessageCount()
 
                 // Set the client's "UI" mode to receive new callbacks.
-                getHandler<VapullaHandler>().setClientUIMode()
+                val uiMode = ClientMsgProtobuf<CMsgClientUIMode.Builder>(
+                    CMsgClientUIMode::class.java, EMsg.ClientCurrentUIMode
+                ).apply {
+                    body.uimode = 0
+                    body.chatMode = 2
+                }
+                steamClient.send(uiMode)
             }
 
             EResult.InvalidPassword -> account.loginKey = null
@@ -587,8 +668,7 @@ class SteamService : Service() {
                 }
             }
 
-            // TODO: this crashes
-            if (inc && friend!!.relation == EFriendRelationship.RequestRecipient.code()) {
+            if (inc && friend?.relation == EFriendRelationship.RequestRecipient.code()) {
                 requestsToNotify.add(currentFriend.steamID)
             }
         }
@@ -596,46 +676,6 @@ class SteamService : Service() {
         dao.insert(*friendsToAdd.toTypedArray())
         dao.update(*friendsToUpdate.toTypedArray())
         dao.remove(*friendsToRemove.toTypedArray())
-    }
-
-    private val onFriendMsgHistory = Consumer<FriendMsgHistoryCallback> { cb ->
-        cb.messages.forEach {
-            val fromLocal = cb.steamID != it.steamID
-            val friendId = cb.steamID.convertToUInt64()
-            val timestamp = it.timestamp.time
-
-            db.chatMessageDao()
-                .find(it.message, timestamp, friendId, fromLocal, true)
-                .also { msg ->
-                    if (msg != null) {
-                        return@forEach
-                    }
-                }
-
-            val findMessages = db.chatMessageDao().find(it.message, friendId, fromLocal, false)
-            val unconfirmedMessages =
-                findMessages.sortedWith { o1, o2 ->
-                    (abs(timestamp - o1.timestamp) - abs(timestamp - o2.timestamp)).toInt()
-                }
-
-            if (unconfirmedMessages.isNotEmpty()) {
-                unconfirmedMessages[0].timestamp = timestamp
-                unconfirmedMessages[0].timestampConfirmed = true
-
-                db.chatMessageDao().update(unconfirmedMessages[0])
-            } else {
-                ChatMessage(
-                    message = it.message,
-                    timestamp = timestamp,
-                    friendId = friendId,
-                    fromLocal = fromLocal,
-                    unread = it.isUnread,
-                    timestampConfirmed = true
-                ).also { msg ->
-                    db.chatMessageDao().insert(msg)
-                }
-            }
-        }
     }
 
     private val onNicknameList = Consumer<NicknameListCallback> {
@@ -690,51 +730,107 @@ class SteamService : Service() {
         clearMessageNotifications(it.sender)
     }
 
-    private val onServiceMethodCallback = Consumer<ServiceMethodCallback> {
-        Timber.i("onServiceMethodCallback: ${it.jobName}")
+    private val onMethodResponse = Consumer<ServiceMethodResponse> { resp ->
+        Timber.d("onMethodResponse Method Name: ${resp.methodName}")
+        Timber.d("onMethodResponse Result: ${resp.result}")
+        Timber.d("onMethodResponse RPC Name: ${resp.rpcName}")
+        Timber.d("onMethodResponse Service Name: ${resp.serviceName}")
+        Timber.d("onMethodResponse Job ID: ${resp.jobID}")
 
-        // Friend is typing
-        if (it.entryType == EChatEntryType.Typing) {
-            // Add Typing timeout???
-            val friend = db.steamFriendDao().find(it.steamID.convertToUInt64())
-
-            if (friend != null) {
-                friend.typingTs = System.currentTimeMillis()
-                db.steamFriendDao().update(friend)
-            }
+        if (resp.result != EResult.OK) {
+            Timber.w("Unified service request failed with " + resp.result)
+            return@Consumer
         }
 
-        // Friend sent a message
-        if (it.entryType == EChatEntryType.ChatMsg && it.message.isNotEmpty()) {
-            val msg = ChatMessage(
-                it.message,
-                System.currentTimeMillis(),
-                it.steamID.convertToUInt64(),
-                false,
-                chatFriendId != it.steamID.convertToUInt64(),
-                false
-            )
-            db.chatMessageDao().insert(msg)
+        if (resp.serviceName == FriendMessages::class.simpleName) {
+            if (resp.rpcName == "GetRecentMessages") {
+                resp.getDeserializedResponse<CFriendMessages_GetRecentMessages_Response.Builder>(
+                    CFriendMessages_GetRecentMessages_Response::class.java
+                ).also { cb ->
+                    val steamID = resp.protoHeader.steamid
+                    Timber.d("Recent Msg SteamID: $steamID")
+                    cb.messagesList.forEach {
+                        Timber.d("Message:")
+                        Timber.d("  accountid: ${it.accountid}")
+                        Timber.d("  timestamp: ${it.timestamp}")
+                        Timber.d("  message: ${it.message}")
 
-            if (it.steamID.convertToUInt64() != chatFriendId) {
-                postMessageNotification(it.steamID, it.message)
+                    }
+//                        val fromLocal = cb.steamID != it.steamID
+//                        val friendId = cb.steamID.convertToUInt64()
+//                        val timestamp = it.timestamp.time
+//
+//                        db.chatMessageDao()
+//                            .find(it.message, timestamp, friendId, fromLocal, true)
+//                            .also { msg -> if (msg != null) return@forEach }
+//
+//                        val findMessages =
+//                            db.chatMessageDao().find(it.message, friendId, fromLocal, false)
+//                        val unconfirmedMessages =
+//                            findMessages.sortedWith { o1, o2 ->
+//                                (abs(timestamp - o1.timestamp) - abs(timestamp - o2.timestamp)).toInt()
+//                            }
+//
+//                        if (unconfirmedMessages.isNotEmpty()) {
+//                            unconfirmedMessages[0].timestamp = timestamp
+//                            unconfirmedMessages[0].timestampConfirmed = true
+//
+//                            db.chatMessageDao().update(unconfirmedMessages[0])
+//                        } else {
+//                            ChatMessage(
+//                                message = it.message,
+//                                timestamp = timestamp,
+//                                friendId = friendId,
+//                                fromLocal = fromLocal,
+//                                unread = it.isUnread,
+//                                timestampConfirmed = true
+//                            ).also { msg ->
+//                                db.chatMessageDao().insert(msg)
+//                            }
+//                        }
+//                    }
+                }
             }
         }
     }
 
-    // Callback on messages you sent. Trasformed to Unified/BBCode
-    private val onSendMessageCallback = Consumer<SendMessageResponseCallback> {
-        Timber.i("onSendMessageCallback: ${it.jobName}")
+    private val onMethodNotification = Consumer<ServiceMethodNotification> {
+        Timber.d("onMethodNotification Method Name: " + it.methodName)
+        Timber.d("onMethodNotification RPC Name: " + it.rpcName)
+        Timber.d("onMethodNotification Serive Name: " + it.serviceName)
+        Timber.d("onMethodNotification Job ID: " + it.jobID)
 
-        Timber.i("onSendMessageCallback: ${it.modifiedMessage}")
-        Timber.i("onSendMessageCallback: ${it.timestamp}")
-    }
+        when (val callbackObject = it.body) {
+            is CFriendMessages_IncomingMessage_Notification -> {
+                when (callbackObject.chatEntryType) {
+                    EChatEntryType.Typing.code() -> {
+                        val steamID = SteamID(callbackObject.steamidFriend)
+                        db.steamFriendDao().find(steamID.convertToUInt64())?.apply {
+                            typingTs = System.currentTimeMillis()
+                        }?.also { friend ->
+                            db.steamFriendDao().update(friend)
+                        }
+                    }
+                    EChatEntryType.ChatMsg.code() -> {
+                        val steamID = SteamID(callbackObject.steamidFriend)
+                        db.chatMessageDao().insert(
+                            ChatMessage(
+                                message = callbackObject.message,
+                                timestamp = System.currentTimeMillis(),
+                                friendId = steamID.convertToUInt64(),
+                                fromLocal = false,
+                                unread = chatFriendId != steamID.convertToUInt64(),
+                                timestampConfirmed = false
+                            )
+                        )
 
-    // Callback to receive recent messages on a chat. Unified/BBCode enabled
-    private val onRecentMessagesCallback = Consumer<RecentMessagesResponseCallback> {
-        Timber.i("onRecentMessagesCallback: ${it.jobName}")
-
-        Timber.i("onRecentMessagesCallback: ${it.messageHistory!!.toList()}")
+                        if (steamID.convertToUInt64() != chatFriendId) {
+                            postMessageNotification(steamID, callbackObject.message)
+                        }
+                    }
+                }
+            }
+        }
     }
 
 //endregion
