@@ -12,3 +12,7 @@ plugins {
     id "org.jetbrains.kotlin.android" version "$kotlin_version" apply false
     id 'com.google.dagger.hilt.android' version "$hilt_version" apply false
 }
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}

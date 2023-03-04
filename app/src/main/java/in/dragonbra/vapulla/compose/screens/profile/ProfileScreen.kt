@@ -1,5 +1,7 @@
 package `in`.dragonbra.vapulla.compose.screens.profile
 
+import android.content.Intent
+import android.os.Bundle
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -54,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -61,7 +65,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
@@ -71,26 +74,26 @@ import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
 import `in`.dragonbra.vapulla.compose.components.contrastAgainst
 import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
 import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
+import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
+import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.Shapes
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorPrimary
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
-import `in`.dragonbra.vapulla.compose.util.AvatarImage
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
+import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
-import `in`.dragonbra.vapulla.retrofit.response.Games
+import `in`.dragonbra.vapulla.util.Utils
 
 @Composable
-fun ProfileScreen(
-    viewModel: ProfileViewModel,
-    onBackPressed: () -> Unit,
-    onChatClick: (steamID: SteamID) -> Unit,
-    onAccountClick: (steamID: SteamID) -> Unit,
-    onGamesClick: (gamesList: ArrayList<Games>, name: String) -> Unit
-) {
+fun ProfileScreen(viewModel: ProfileViewModel) {
+    val uriHandler = LocalUriHandler.current
+    val activity = LocalActivity.current
+    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
     /* Set Nickname Dialog */
@@ -156,10 +159,25 @@ fun ProfileScreen(
 
     ProfileScreenContent(
         state = state,
-        onBackPressed = onBackPressed,
-        onChatClick = { onChatClick(state.steamID!!) },
-        onAccountClick = { onAccountClick(state.steamID!!) },
-        onGamesClick = { onGamesClick(state.gamesList, state.friend!!.friendName) },
+        onBackPressed = { activity.finish() },
+        onChatClick = {
+            Intent(context, ChatActivity::class.java).apply {
+                putExtra(ProfileActivity.INTENT_STEAM_ID, state.steamID!!.convertToUInt64())
+            }.also { context.startActivity(it) }
+        },
+        onAccountClick = {
+            val url = Utils.PROFILE_URL + state.steamID!!.convertToUInt64()
+            uriHandler.openUri(url)
+        },
+        onGamesClick = {
+            Intent(context, GamesActivity::class.java).apply {
+                val bundle = Bundle().apply {
+                    putParcelableArrayList(GamesActivity.INTENT_GAMES, state.gamesList)
+                    putString("name", state.friend!!.friendName)
+                }
+                putExtras(bundle)
+            }.also { context.startActivity(it) }
+        },
         onNickName = { showNicknameDialog = true },
         onAliases = {
             viewModel.getAlias()
@@ -271,7 +289,7 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
     ) {
         val borderStroke = BorderStroke(4.dp, getStatusColor(state.friend))
         val cornerShape = RoundedCornerShape(16.dp)
-        AvatarImage(
+        StaticImage(
             modifier = Modifier
                 .size(150.dp)
                 .border(borderStroke, cornerShape)
@@ -360,7 +378,7 @@ private fun ProfileLevelLayout(
     modifier: Modifier,
     @StringRes levelTitle: Int,
     levelNumber: String,
-    isLoading: Boolean,
+    isLoading: Boolean
 ) {
     Column(
         modifier = modifier.height(80.dp),
@@ -396,7 +414,6 @@ private fun ProfileLevelLayout(
             )
         }
     }
-
 }
 
 @Composable

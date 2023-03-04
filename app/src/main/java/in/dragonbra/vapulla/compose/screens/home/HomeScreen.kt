@@ -73,7 +73,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
-import `in`.dragonbra.vapulla.compose.util.AvatarImage
+import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -293,7 +293,7 @@ private fun DrawerAccountInfo(state: HomeState) {
             .padding(bottom = 36.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        AvatarImage(
+        StaticImage(
             modifier = Modifier
                 .size(150.dp)
                 .border(borderStroke, cornerShape)

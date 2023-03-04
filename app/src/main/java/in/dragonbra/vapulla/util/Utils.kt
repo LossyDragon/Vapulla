@@ -1,10 +1,8 @@
 package `in`.dragonbra.vapulla.util
 
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
-import android.util.DisplayMetrics
 import java.util.regex.Pattern
 
 object Utils {
@@ -53,12 +51,6 @@ object Utils {
         }
 
         return "$AVATAR_URL${avatar.substring(0, 2)}/${avatar}_full.jpg"
-    }
-
-    fun convertDpToPixel(dp: Float, context: Context): Float {
-        val resources = context.resources
-        val metrics = resources.displayMetrics
-        return dp * (metrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)
     }
 
     fun findEmotes(message: String, emoteSet: Set<String>): String {

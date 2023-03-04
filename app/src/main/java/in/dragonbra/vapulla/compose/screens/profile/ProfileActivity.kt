@@ -1,10 +1,10 @@
 package `in`.dragonbra.vapulla.compose.screens.profile
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.view.WindowCompat
@@ -13,12 +13,9 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
-import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.retrofit.response.Games
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
-import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.coroutines.flow.collectLatest
 import timber.log.Timber
 
@@ -50,13 +47,9 @@ class ProfileActivity : VapullaBaseActivity() {
             }
 
             VapullaTheme {
-                ProfileScreen(
-                    viewModel = viewModel,
-                    onBackPressed = { finish() },
-                    onChatClick = { viewChat(it) },
-                    onAccountClick = { viewProfile(it) },
-                    onGamesClick = { games, name -> viewGames(games, name) }
-                )
+                CompositionLocalProvider(LocalActivity provides this) {
+                    ProfileScreen(viewModel = viewModel)
+                }
             }
         }
     }
@@ -85,32 +78,6 @@ class ProfileActivity : VapullaBaseActivity() {
     override fun onAliasHistory(callback: AliasHistoryCallback) {
         super.onAliasHistory(callback)
         viewModel.onAliasHistory(callback)
-    }
-
-    private fun viewChat(steamId: SteamID) {
-        val intent = Intent(this, ChatActivity::class.java).apply {
-            putExtra(INTENT_STEAM_ID, steamId.convertToUInt64())
-        }
-        startActivity(intent)
-    }
-
-    private fun viewProfile(steamID: SteamID) {
-        val url = Utils.PROFILE_URL + steamID.convertToUInt64()
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(url)
-        }
-        startActivity(intent)
-    }
-
-    private fun viewGames(gamesList: ArrayList<Games>, friendName: String) {
-        val bundle = Bundle().apply {
-            putParcelableArrayList(GamesActivity.INTENT_GAMES, gamesList)
-            putString("name", friendName)
-        }
-        val intent = Intent(this, GamesActivity::class.java).apply {
-            putExtras(bundle)
-        }
-        startActivity(intent)
     }
 
     private fun onProfileEvent(event: ProfileUiEvent, steamID: SteamID) {

@@ -34,10 +34,10 @@ import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.adapter.FriendListItem
-import `in`.dragonbra.vapulla.chat.PaperPlane
+import `in`.dragonbra.vapulla.compose.util.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
-import `in`.dragonbra.vapulla.compose.util.AvatarImage
+import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getLastMessageTime
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
@@ -103,6 +103,7 @@ fun FriendItem(
                     friend.lastMessage?.let {
                         PaperPlane(
                             text = it,
+                            isPreviewMode = true,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -156,7 +157,7 @@ fun FriendItem(
                     shape = RectangleShape,
                     color = getStatusColor(friend)
                 ) {
-                    AvatarImage(
+                    StaticImage(
                         modifier = Modifier.size(58.dp),
                         avatarUrl = Utils.getAvatarUrl(friend.avatar)
                     )

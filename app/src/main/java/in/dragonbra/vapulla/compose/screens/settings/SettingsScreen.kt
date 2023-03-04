@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import `in`.dragonbra.vapulla.compose.components.VapullaEditDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaSelectionDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.manager.AccountManager
 
 private val recentsMap = mapOf(
@@ -49,12 +51,13 @@ private val recentsMap = mapOf(
 @Composable
 fun SettingsScreen(
     accountManager: AccountManager,
-    onBackPressed: () -> Unit,
     onChangeName: (String) -> Unit,
     onChangeUser: () -> Unit,
-    onBrowseUrl: (String) -> Unit
+    onClearDatabase: () -> Unit
 ) {
+    val activity = LocalActivity.current
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     var changeUserDialog by remember { mutableStateOf(false) }
     VapullaMessageDialog(
@@ -102,11 +105,25 @@ fun SettingsScreen(
         negativeText = stringResource(id = R.string.dialogCancel)
     )
 
+    var clearDatabaseDialog by remember { mutableStateOf(false) }
+    VapullaMessageDialog(
+        title = stringResource(id = R.string.dialogClearDbTitle),
+        message = stringResource(id = R.string.dialogClearDbMessage),
+        openDialog = clearDatabaseDialog,
+        onPositive = {
+            onClearDatabase()
+            clearDatabaseDialog = false
+        },
+        positiveText = stringResource(id = R.string.dialogConfirm),
+        onNegative = { clearDatabaseDialog = false },
+        negativeText = stringResource(id = R.string.dialogCancel)
+    )
+
     Scaffold(
         topBar = {
             VapullaAppbar(
                 toolbarText = stringResource(id = R.string.title_activity_settings),
-                onBackPressed = onBackPressed
+                onBackPressed = { activity.finish() }
             )
         }
     ) { paddingValues ->
@@ -141,7 +158,11 @@ fun SettingsScreen(
                     subtitle = { Text(text = accountManager.nickname ?: "*unknown*") },
                     onClick = { changeNameDialog = true }
                 )
-                Divider(Modifier.padding(vertical = 2.dp).fillMaxWidth())
+                Divider(
+                    Modifier
+                        .padding(vertical = 2.dp)
+                        .fillMaxWidth()
+                )
             }
 
             /* Friends */
@@ -174,7 +195,11 @@ fun SettingsScreen(
                         accountManager.prefFriendsListSort = value
                     }
                 )
-                Divider(Modifier.padding(vertical = 2.dp).fillMaxWidth())
+                Divider(
+                    Modifier
+                        .padding(vertical = 2.dp)
+                        .fillMaxWidth()
+                )
             }
 
             /* Other */
@@ -196,7 +221,20 @@ fun SettingsScreen(
                         accountManager.prefClearNotifications = value
                     }
                 )
-                Divider(Modifier.padding(vertical = 2.dp).fillMaxWidth())
+                SettingsMenuLink(
+                    title = { Text(text = stringResource(id = R.string.prefTitleDatabase)) },
+                    subtitle = {
+                        Text(
+                            text = stringResource(id = R.string.prefMessageDatabase)
+                        )
+                    },
+                    onClick = { clearDatabaseDialog = true }
+                )
+                Divider(
+                    Modifier
+                        .padding(vertical = 2.dp)
+                        .fillMaxWidth()
+                )
             }
 
             /* About */
@@ -218,13 +256,15 @@ fun SettingsScreen(
                     enabled = false,
                     onClick = {
                         val pkgName = context.packageName
-                        onBrowseUrl("https://play.google.com/store/apps/details?id=$pkgName")
+                        val url = "https://play.google.com/store/apps/details?id=$pkgName"
+                        uriHandler.openUri(url)
                     }
                 )
                 SettingsMenuLink(
                     title = { Text(text = stringResource(R.string.prefTitleSourceCode)) },
                     onClick = {
-                        onBrowseUrl("https://github.com/Longi94/Vapulla")
+                        val url = "https://github.com/Longi94/Vapulla"
+                        uriHandler.openUri(url)
                     }
                 )
                 SettingsMenuLink(
@@ -232,11 +272,15 @@ fun SettingsScreen(
                     onClick = {
                         val githubUrl = "https://raw.githubusercontent.com"
                         val url = "$githubUrl/Longi94/Vapulla/master/third_party.txt"
-                        onBrowseUrl(url)
+                        uriHandler.openUri(url)
                     }
                 )
 
-                Divider(Modifier.padding(top = 2.dp).fillMaxWidth())
+                Divider(
+                    Modifier
+                        .padding(top = 2.dp)
+                        .fillMaxWidth()
+                )
             }
         }
     }
@@ -248,10 +292,9 @@ private fun Preview_SettingsScreen() {
     VapullaTheme {
         SettingsScreen(
             accountManager = AccountManager(LocalContext.current),
-            onBackPressed = {},
-            onBrowseUrl = {},
             onChangeUser = {},
-            onChangeName = {}
+            onChangeName = {},
+            onClearDatabase = {}
         )
     }
 }

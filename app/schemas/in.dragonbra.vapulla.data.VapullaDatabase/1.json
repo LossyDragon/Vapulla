@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "a91fd38e5b8c4373f3c2e41e3a4178d6",
+    "identityHash": "4c15bd0ae7db62af38e7490d4159efee",
     "entities": [
       {
         "tableName": "steam_friend",
@@ -82,21 +82,39 @@
           }
         ],
         "primaryKey": {
+          "autoGenerate": false,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": false
+          ]
         },
         "indices": [],
         "foreignKeys": []
       },
       {
         "tableName": "chat_message",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `message` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `friend_id` INTEGER NOT NULL, `from_local` INTEGER NOT NULL, `unread` INTEGER NOT NULL, `timestamp_confirmed` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `account_id` INTEGER NOT NULL, `from_local` INTEGER NOT NULL, `is_unread` INTEGER NOT NULL, `message` TEXT NOT NULL, `timestamp` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
             "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountid",
+            "columnName": "account_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromLocal",
+            "columnName": "from_local",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isUnread",
+            "columnName": "is_unread",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -111,46 +129,23 @@
             "columnName": "timestamp",
             "affinity": "INTEGER",
             "notNull": true
-          },
-          {
-            "fieldPath": "friendId",
-            "columnName": "friend_id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "fromLocal",
-            "columnName": "from_local",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "unread",
-            "columnName": "unread",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "timestampConfirmed",
-            "columnName": "timestamp_confirmed",
-            "affinity": "INTEGER",
-            "notNull": true
           }
         ],
         "primaryKey": {
+          "autoGenerate": true,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": true
+          ]
         },
         "indices": [
           {
-            "name": "index_chat_message_friend_id",
+            "name": "index_chat_message_account_id",
             "unique": false,
             "columnNames": [
-              "friend_id"
+              "account_id"
             ],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_chat_message_friend_id` ON `${TABLE_NAME}` (`friend_id`)"
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_chat_message_account_id` ON `${TABLE_NAME}` (`account_id`)"
           }
         ],
         "foreignKeys": []
@@ -179,10 +174,10 @@
           }
         ],
         "primaryKey": {
+          "autoGenerate": false,
           "columnNames": [
             "id"
-          ],
-          "autoGenerate": false
+          ]
         },
         "indices": [],
         "foreignKeys": []
@@ -211,10 +206,10 @@
           }
         ],
         "primaryKey": {
+          "autoGenerate": false,
           "columnNames": [
             "name"
-          ],
-          "autoGenerate": false
+          ]
         },
         "indices": [],
         "foreignKeys": []
@@ -223,7 +218,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a91fd38e5b8c4373f3c2e41e3a4178d6')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4c15bd0ae7db62af38e7490d4159efee')"
     ]
   }
 }

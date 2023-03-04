@@ -1,15 +1,11 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
-import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +16,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.waterfallPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.Mood
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -43,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,26 +50,15 @@ import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleFriendShape
-import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleMeShape
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
-import java.util.Calendar
 
 enum class EmojiStickerSelector {
     RECENT, EMOJI, STICKER
@@ -395,114 +377,6 @@ fun ExtendedSelectorInnerButton(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun ChatMessageItem(
-    modifier: Modifier = Modifier,
-    message: ChatMessage,
-) {
-    var bubbleColor = MaterialTheme.colorScheme.primary
-    var bubbleShape = ChatBubbleFriendShape
-    var bubbleSide: Alignment = Alignment.CenterEnd
-    var bubbleTimeSide: Alignment.Horizontal = Alignment.End
-
-    if (message.fromLocal) {
-        bubbleColor = MaterialTheme.colorScheme.surfaceVariant
-        bubbleShape = ChatBubbleMeShape
-        bubbleSide = Alignment.CenterStart
-        bubbleTimeSide = Alignment.Start
-    }
-
-    val timestamp by remember {
-        // TODO, this should be done in the VM
-        derivedStateOf {
-            val calendar = Calendar.getInstance()
-            calendar.timeInMillis = message.timestamp
-            val formattedTime = DateFormat.format("h:mm a", calendar).toString()
-            mutableStateOf(formattedTime)
-        }
-    }
-
-    val clipboard = LocalClipboardManager.current
-    val configuration = LocalConfiguration.current
-    val haptics = LocalHapticFeedback.current
-    val maxWidth = configuration.screenWidthDp
-    Box(
-        modifier = modifier
-            .waterfallPadding()
-            .fillMaxWidth()
-            .padding(8.dp)
-            .combinedClickable(
-                onClick = {},
-                onLongClick = {
-                    clipboard.setText(AnnotatedString(message.message))
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
-            ),
-        contentAlignment = bubbleSide
-    ) {
-        Surface(
-            modifier = Modifier
-                .widthIn(max = maxWidth.times(.85).dp)
-                .width(IntrinsicSize.Max),
-            color = bubbleColor,
-            shape = bubbleShape
-        ) {
-            Column(
-                modifier = Modifier.padding(6.dp),
-                horizontalAlignment = bubbleTimeSide
-            ) {
-                Text(
-                    modifier = Modifier.widthIn(64.dp),
-                    color = Color.White,
-                    text = message.message
-                )
-
-                Text(
-                    text = timestamp.value,
-                    fontSize = 8.sp,
-                    color = friendOffline
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ChatMessageDateHeader(
-    isVisible: Boolean = true,
-    dateStamp: String
-) {
-    if (!isVisible) {
-        return
-    }
-
-    Row {
-        val divider = @Composable {
-            Divider(
-                modifier = Modifier
-                    .weight(.4f)
-                    .padding(horizontal = 8.dp)
-                    .align(Alignment.CenterVertically),
-                color = friendOffline.copy(alpha = 0.60f)
-            )
-        }
-
-        divider()
-        Text(
-            modifier = Modifier
-                .weight(.6f)
-                .padding(vertical = 4.dp, horizontal = 0.dp),
-            color = friendOffline.copy(alpha = 0.95f),
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            text = dateStamp,
-            textAlign = TextAlign.Center
-        )
-        divider()
-    }
-}
-
 @Preview
 @Composable
 fun Preview_ChatInputBox() {
@@ -513,48 +387,5 @@ fun Preview_ChatInputBox() {
         ) {
             ChatInputBox(onMessage = {}, onSticker = {}, onResetScroll = {})
         }
-    }
-}
-
-@Preview
-@Composable
-private fun Preview_ChatMessageItem() {
-    val randomMsg = """
-        Just a car? Just a car!? That's like saying the Mona Lisa is just a sculpture or shit, 
-        man; that's like saying Jimmy Gibbs is just a driver; that's like saying the girl 
-        on the bridge is just a little purty―she is an AN-GEL.
-    """.trimIndent()
-    VapullaTheme {
-        Column(Modifier.fillMaxWidth()) {
-            ChatMessageItem(
-                message = ChatMessage(
-                    message = randomMsg,
-                    timestamp = (1_000_000..5_000_000).random().toLong(),
-                    friendId = 1,
-                    fromLocal = false,
-                    unread = false,
-                    timestampConfirmed = false
-                )
-            )
-            Spacer(Modifier.height(8.dp))
-            ChatMessageItem(
-                message = ChatMessage(
-                    message = randomMsg,
-                    timestamp = (1_000_000..5_000_000).random().toLong(),
-                    friendId = 1,
-                    fromLocal = true,
-                    unread = false,
-                    timestampConfirmed = false
-                )
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun Preview_ChatMessageDateHeader() {
-    VapullaTheme {
-        ChatMessageDateHeader(isVisible = true, dateStamp = "Wednesday - January 5, 2023")
     }
 }

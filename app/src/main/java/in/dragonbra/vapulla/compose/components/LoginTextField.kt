@@ -50,6 +50,6 @@ fun LoginTextField(
         supportingText = { Text(supportingText) },
         trailingIcon = trailingIcon,
         value = value,
-        visualTransformation = visualTransformation,
+        visualTransformation = visualTransformation
     )
 }

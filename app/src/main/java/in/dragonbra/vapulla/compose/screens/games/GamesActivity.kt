@@ -5,9 +5,11 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.view.WindowCompat
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.parcelableArrayList
@@ -33,11 +35,12 @@ class GamesActivity : VapullaBaseActivity() {
 
         setContent {
             VapullaTheme {
-                GamesScreen(
-                    viewModel = viewModel,
-                    onBackPressed = { finish() },
-                    onItemClick = { gotoGameStore(it) }
-                )
+                CompositionLocalProvider(LocalActivity provides this) {
+                    GamesScreen(
+                        viewModel = viewModel,
+                        onItemClick = { gotoGameStore(it) }
+                    )
+                }
             }
         }
     }

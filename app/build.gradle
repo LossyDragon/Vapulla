@@ -150,7 +150,7 @@ dependencies {
     implementation "com.github.skydoves:landscapist-coil:2.1.4"
 
     // Java-Steam
-    implementation("in.dragonbra:javasteam:1.2.1-SNAPSHOT")
+    implementation("in.dragonbra:javasteam:1.2.1-SNAPSHOT") { changing = true }
     implementation "com.madgag.spongycastle:prov:1.58.0.0"
     api "com.google.protobuf:protobuf-java:3.22.0" // For protobuf builders
     api "org.apache.commons:commons-lang3:3.12.0"

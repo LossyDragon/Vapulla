@@ -20,7 +20,7 @@ interface SteamFriendDao {
             "  ifnull(gs.name, sf.game_name) AS playing_game_name " +
             "FROM steam_friend sf " +
             "LEFT JOIN chat_message cm " +
-            "ON sf.id = cm.friend_id " +
+            "ON sf.id = cm.account_id " +
             "LEFT JOIN game_schema gs " +
             "ON gs.id = sf.game_app_id " +
             "WHERE sf.id = :id"
@@ -36,10 +36,10 @@ interface SteamFriendDao {
             "  cm.message as last_message, " +
             "  max(cm.timestamp) as last_message_time, " +
             "  ifnull(gs.name, sf.game_name) as playing_game_name, " +
-            "  sum(cm.unread) as new_message_count " +
+            "  sum(cm.is_unread) as new_message_count " +
             "FROM steam_friend sf " +
             "LEFT JOIN chat_message cm " +
-            "ON sf.id = cm.friend_id " +
+            "ON sf.id = cm.account_id " +
             "LEFT JOIN game_schema gs " +
             "ON gs.id = sf.game_app_id " +
             "WHERE sf.relation = 2 " +

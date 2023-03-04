@@ -69,7 +69,7 @@ private val slideIn = {
     )
 }
 
-// Animation slide in when searching is disabled
+// Animation slide up when searching is disabled
 private val slideUp = {
     slideOut(
         targetOffset = { IntOffset(0, -it.height) },

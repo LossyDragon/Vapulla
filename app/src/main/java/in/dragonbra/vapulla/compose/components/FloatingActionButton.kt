@@ -47,10 +47,11 @@ fun ScrollBackUp(
                 Icon(
                     imageVector = Icons.Filled.ArrowUpward,
                     modifier = Modifier.height(18.dp),
-                    contentDescription = null)
+                    contentDescription = null
+                )
             },
             onClick = onClicked,
-            text = { Text(text = "Scroll Up") },
+            text = { Text(text = "Scroll Up") }
         )
     }
 }

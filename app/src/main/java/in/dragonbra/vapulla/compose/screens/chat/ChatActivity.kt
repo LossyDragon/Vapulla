@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
@@ -13,6 +14,7 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.flow.collectLatest
@@ -46,11 +48,12 @@ class ChatActivity : VapullaBaseActivity() {
             }
 
             VapullaTheme {
-                ChatScreen(
-                    viewModel = viewModel,
-                    onBackPressed = { finish() },
-                    onViewProfile = { viewProfile(it) }
-                )
+                CompositionLocalProvider(LocalActivity provides this) {
+                    ChatScreen(
+                        viewModel = viewModel,
+                        onViewProfile = { viewProfile(it) }
+                    )
+                }
             }
         }
     }

@@ -51,7 +51,8 @@ import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
-import `in`.dragonbra.vapulla.compose.util.AvatarImage
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
+import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusText
@@ -63,14 +64,12 @@ import kotlin.random.Random
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel,
-    onBackPressed: () -> Unit,
     onViewProfile: (SteamID) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
     ChatScreenContent(
         state = state,
-        onBackPressed = onBackPressed,
         onViewProfile = onViewProfile,
         onChatMessage = {
             viewModel.sendMessage(it)
@@ -82,10 +81,11 @@ fun ChatScreen(
 @Composable
 private fun ChatScreenContent(
     state: ChatState,
-    onBackPressed: () -> Unit,
     onViewProfile: (SteamID) -> Unit,
     onChatMessage: (String) -> Unit
 ) {
+    val activity = LocalActivity.current
+
     Scaffold(
         modifier = Modifier
             .imePadding()
@@ -101,7 +101,7 @@ private fun ChatScreenContent(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
+                    IconButton(onClick = { activity.finish() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Go Back"
@@ -116,7 +116,7 @@ private fun ChatScreenContent(
                     ) {
                         val borderStroke = BorderStroke(1.dp, getStatusColor(state.friend))
                         val cornerShape = RoundedCornerShape(4.dp)
-                        AvatarImage(
+                        StaticImage(
                             modifier = Modifier
                                 .size(48.dp)
                                 .border(borderStroke, cornerShape)
@@ -166,7 +166,7 @@ private fun ChatScreenContent(
             )
         }
     ) { paddingValues ->
-        val messages = state.messages.collectAsLazyPagingItems().itemSnapshotList.items.reversed()
+        val messages = state.messages.collectAsLazyPagingItems().itemSnapshotList.items
         val scope = rememberCoroutineScope()
         val topBarState = rememberTopAppBarState()
         val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
@@ -193,7 +193,8 @@ private fun ChatScreenContent(
             ) {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    state = scrollState
+                    state = scrollState,
+                    reverseLayout = true
                 ) {
                     // NOTE: This should be in the VM, but some refacoring will be needed.
                     val groupedMessages = messages.groupBy { it.formattedTs }
@@ -203,7 +204,7 @@ private fun ChatScreenContent(
                             ChatMessageDateHeader(dateStamp = header)
                         }
 
-                        items(items, key = { it.timestamp }) { msg ->
+                        items(items, key = { it.id }) { msg ->
                             ChatMessageItem(
                                 modifier = Modifier.animateItemPlacement(),
                                 message = msg
@@ -242,10 +243,9 @@ private fun Preview_ChatScreenContent() {
                 id = it.toLong(),
                 message = "Sup\nBro $it",
                 timestamp = time,
-                friendId = 1,
+                accountid = 1,
                 fromLocal = it.mod(2) == 0,
-                unread = false,
-                timestampConfirmed = false
+                isUnread = false
             )
         )
     }
@@ -271,6 +271,6 @@ private fun Preview_ChatScreenContent() {
         )
     )
     VapullaTheme {
-        ChatScreenContent(state = state, onViewProfile = {}, onBackPressed = {}, onChatMessage = {})
+        ChatScreenContent(state = state, onViewProfile = {}, onChatMessage = {})
     }
 }

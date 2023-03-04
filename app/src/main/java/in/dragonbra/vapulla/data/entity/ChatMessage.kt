@@ -5,17 +5,16 @@ import androidx.room.*
 import java.text.DateFormat
 import java.util.*
 
-@Entity(tableName = "chat_message", indices = [Index("friend_id")])
+@Entity(tableName = "chat_message", indices = [Index("account_id")])
 data class ChatMessage(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     var id: Long,
-    @ColumnInfo(name = "message") var message: String,
-    @ColumnInfo(name = "timestamp") var timestamp: Long,
-    @ColumnInfo(name = "friend_id") var friendId: Long,
+    @ColumnInfo(name = "account_id") var accountid: Long,
     @ColumnInfo(name = "from_local") var fromLocal: Boolean,
-    @ColumnInfo(name = "unread") var unread: Boolean,
-    @ColumnInfo(name = "timestamp_confirmed") var timestampConfirmed: Boolean
+    @ColumnInfo(name = "is_unread") var isUnread: Boolean,
+    @ColumnInfo(name = "message") var message: String,
+    @ColumnInfo(name = "timestamp") var timestamp: Long
 ) {
     companion object {
         @SuppressLint("ConstantLocale")
@@ -23,15 +22,22 @@ data class ChatMessage(
     }
 
     @Ignore
-    val formattedTs = DATE_FORMAT.format(Date(timestamp)).uppercase(Locale.ROOT)
+    val formattedTs = DATE_FORMAT.format(Date(timestamp.times(1000))).uppercase(Locale.ROOT)
+
+    @Ignore
+    fun formattedChatTime(): String {
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = timestamp.times(1000)
+        }
+        return android.text.format.DateFormat.format("h:mm a", calendar).toString()
+    }
 
     @Ignore
     constructor(
-        message: String,
-        timestamp: Long,
-        friendId: Long,
+        accountid: Long,
         fromLocal: Boolean,
-        unread: Boolean,
-        timestampConfirmed: Boolean
-    ) : this(0L, message, timestamp, friendId, fromLocal, unread, timestampConfirmed)
+        isUnread: Boolean,
+        message: String,
+        timestamp: Long
+    ) : this(0L, accountid, fromLocal, isUnread, message, timestamp)
 }

@@ -13,4 +13,7 @@ interface GameSchemaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg gameSchema: GameSchema)
+
+    @Query("DELETE FROM game_schema")
+    fun delete()
 }

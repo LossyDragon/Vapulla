@@ -31,6 +31,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -38,14 +39,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun GamesScreen(
     viewModel: GamesViewModel,
-    onBackPressed: () -> Unit,
     onItemClick: (Int) -> Unit
 ) {
+    val activity = LocalActivity.current
     val state by viewModel.state.collectAsState()
 
     GamesScreenContent(
         state = state,
-        onBackPressed = onBackPressed,
+        onBackPressed = { activity.finish() },
         onItemClick = onItemClick,
         searchTextState = viewModel.searchText,
         onSearchOpened = { viewModel.setSearching(true) },

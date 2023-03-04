@@ -1,9 +1,9 @@
 package `in`.dragonbra.vapulla.compose.screens.settings
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
@@ -11,6 +11,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.login.LoginActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.threading.executeAsyncTask
@@ -35,28 +36,29 @@ class SettingsActivity : VapullaBaseActivity() {
         setContent {
             val scope = rememberCoroutineScope()
             VapullaTheme {
-                SettingsScreen(
-                    accountManager = accountManager,
-                    onBackPressed = { finish() },
-                    onChangeName = { name ->
-                        if (name.isEmpty()) {
-                            return@SettingsScreen
-                        }
-
-                        scope.executeAsyncTask {
-                            steamService?.getHandler<SteamFriends>()?.setPersonaName(name).let {
-                                accountManager.nickname = name
+                CompositionLocalProvider(LocalActivity provides this) {
+                    SettingsScreen(
+                        accountManager = accountManager,
+                        onChangeName = { name ->
+                            if (name.isEmpty()) {
+                                return@SettingsScreen
                             }
-                        }
-                    },
-                    onChangeUser = {
-                        scope.executeAsyncTask(
-                            doInBackground = { steamService?.disconnect() },
-                            onPostExecute = { clearData() }
-                        )
-                    },
-                    onBrowseUrl = { browse(it) }
-                )
+
+                            scope.executeAsyncTask {
+                                steamService?.getHandler<SteamFriends>()?.setPersonaName(name).let {
+                                    accountManager.nickname = name
+                                }
+                            }
+                        },
+                        onChangeUser = {
+                            scope.executeAsyncTask(
+                                doInBackground = { steamService?.disconnect() },
+                                onPostExecute = { clearData() }
+                            )
+                        },
+                        onClearDatabase = { clearDatabase() }
+                    )
+                }
             }
         }
     }
@@ -77,17 +79,17 @@ class SettingsActivity : VapullaBaseActivity() {
     private fun clearData() {
         scope.executeAsyncTask {
             accountManager.clear()
-            db.steamFriendDao().delete()
-            db.chatMessageDao().delete()
-            db.emoticonDao().delete()
+            clearDatabase()
             accountManager.prefs.edit().clear().apply()
         }
     }
 
-    private fun browse(url: String) {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse(url)
+    private fun clearDatabase() {
+        scope.executeAsyncTask {
+            db.steamFriendDao().delete()
+            db.chatMessageDao().delete()
+            db.emoticonDao().delete()
+            db.gameSchemaDao().delete()
         }
-        startActivity(intent)
     }
 }
