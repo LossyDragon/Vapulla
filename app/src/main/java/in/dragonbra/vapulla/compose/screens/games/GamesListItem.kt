@@ -29,7 +29,7 @@ import `in`.dragonbra.vapulla.compose.util.formatPlayTime
 fun GamesListItem(
     appId: Int,
     gameName: String,
-    hoursTwoWeeks: Int,
+    hoursTwoWeeks: Int?,
     hoursAllTime: Int,
     onOverflowClick: () -> Unit
 ) {
@@ -58,7 +58,7 @@ fun GamesListItem(
                         overflow = TextOverflow.Ellipsis,
                         text = stringResource(
                             id = R.string.textPlayedRecent,
-                            formatPlayTime(hoursTwoWeeks)
+                            formatPlayTime(hoursTwoWeeks ?: 0)
                         )
                     )
                     Text(

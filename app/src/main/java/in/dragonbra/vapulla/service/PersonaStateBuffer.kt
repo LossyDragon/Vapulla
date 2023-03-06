@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.util
+package `in`.dragonbra.vapulla.service
 
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
@@ -37,9 +37,10 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
                 if (state.state != EPersonaState.Offline || state.lastLogOff > old?.lastLogOff) {
                     map[state.friendID] = state
                 }
-            } else {
-                map[state.friendID] = state
+                return
             }
+
+            map[state.friendID] = state
         }
     }
 
@@ -51,12 +52,8 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
                 return
             }
 
-            map.entries.forEach {
-                val id = it.key
-                val state = it.value
-
-                val friend = steamFriendDao.find(id.convertToUInt64())
-                friend?.let {
+            map.forEach { (id, state) ->
+                steamFriendDao.find(id.convertToUInt64())?.let { friend ->
                     val isOnline = state.state != EPersonaState.Offline
                     val isTime = state.lastLogOff.time > friend.lastLogOff
                     if (isOnline || isTime) {

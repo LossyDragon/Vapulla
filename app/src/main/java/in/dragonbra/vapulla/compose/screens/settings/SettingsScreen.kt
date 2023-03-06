@@ -56,6 +56,24 @@ fun SettingsScreen(
     onClearDatabase: () -> Unit
 ) {
     val activity = LocalActivity.current
+
+    SettingsContent(
+        accountManager = accountManager,
+        onBackPressed = { activity.finish() },
+        onChangeName = onChangeName,
+        onChangeUser = onChangeUser,
+        onClearDatabase = onClearDatabase
+    )
+}
+
+@Composable
+private fun SettingsContent(
+    accountManager: AccountManager,
+    onBackPressed: () -> Unit,
+    onChangeName: (String) -> Unit,
+    onChangeUser: () -> Unit,
+    onClearDatabase: () -> Unit
+) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -123,7 +141,7 @@ fun SettingsScreen(
         topBar = {
             VapullaAppbar(
                 toolbarText = stringResource(id = R.string.title_activity_settings),
-                onBackPressed = { activity.finish() }
+                onBackPressed = onBackPressed
             )
         }
     ) { paddingValues ->
@@ -290,8 +308,9 @@ fun SettingsScreen(
 @Composable
 private fun Preview_SettingsScreen() {
     VapullaTheme {
-        SettingsScreen(
+        SettingsContent(
             accountManager = AccountManager(LocalContext.current),
+            onBackPressed = {},
             onChangeUser = {},
             onChangeName = {},
             onClearDatabase = {}

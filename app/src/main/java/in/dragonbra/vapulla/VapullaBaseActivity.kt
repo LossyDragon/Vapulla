@@ -102,7 +102,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         steamService = null
     }
 
-    open fun onConnected(showLoading: () -> Unit = {}, isLoggedIn: () -> Unit = {}) {}
+    open fun onConnected() {}
 
     open fun onDisconnected() {}
 

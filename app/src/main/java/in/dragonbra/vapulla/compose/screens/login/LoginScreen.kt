@@ -58,7 +58,7 @@ import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.core.Constants
 import kotlinx.coroutines.delay
 import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation
 
@@ -77,7 +77,7 @@ fun LoginScreen(
     val permissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
 
     LaunchedEffect(Unit) {
-        if (Utils.isAtLeastT) {
+        if (Constants.isAtLeastT) {
             permissionState.launchPermissionRequest()
         }
 

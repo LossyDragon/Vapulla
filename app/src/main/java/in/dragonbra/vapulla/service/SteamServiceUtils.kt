@@ -27,8 +27,9 @@ import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
+import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
+import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import `in`.dragonbra.vapulla.util.Utils
 import org.spongycastle.util.encoders.Hex
 
 private var remoteInput: RemoteInput =
@@ -37,7 +38,7 @@ private var remoteInput: RemoteInput =
         .build()
 
 private val flagUpdateCurrent =
-    if (Utils.isAtLeastS) {
+    if (Constants.isAtLeastS) {
         PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     } else {
         PendingIntent.FLAG_UPDATE_CURRENT
@@ -111,7 +112,7 @@ suspend fun Context.serviceMessageNotification(
     var bitmap: Bitmap? = null
     val imageLoader = Coil.imageLoader(this)
     val request = ImageRequest.Builder(this)
-        .data(Utils.getAvatarUrl(friend.avatar))
+        .data(getAvatarUrl(friend.avatar))
         .target { drawable ->
             bitmap = (drawable as BitmapDrawable).bitmap
         }
@@ -185,7 +186,7 @@ suspend fun Context.serviceRequestNotification(
     var bitmap: Bitmap? = null
     val imageLoader = Coil.imageLoader(this)
     val request = ImageRequest.Builder(this)
-        .data(Utils.getAvatarUrl(Hex.toHexString(state.avatarHash)))
+        .data(getAvatarUrl(Hex.toHexString(state.avatarHash)))
         .target { drawable ->
             bitmap = (drawable as BitmapDrawable).bitmap
         }

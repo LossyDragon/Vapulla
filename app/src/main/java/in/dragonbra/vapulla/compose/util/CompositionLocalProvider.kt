@@ -3,6 +3,9 @@ package `in`.dragonbra.vapulla.compose.util
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.staticCompositionLocalOf
 
+/**
+ * The CompositionLocal containing the current [ComponentActivity].
+ */
 val LocalActivity = staticCompositionLocalOf<ComponentActivity> {
     noLocalProvidedFor("LocalActivity")
 }

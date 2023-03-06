@@ -9,29 +9,27 @@ import androidx.compose.ui.text.SpanStyle
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.core.Constants
 import timber.log.Timber
 import java.math.RoundingMode
 import java.text.DateFormat
 import java.text.DecimalFormat
 
-private const val ALL_ZEROS = "0000000000000000000000000000000000000000"
-private const val STEAM_CDN = "https://cdn.akamai.steamstatic.com"
-private const val STEAM_AVATAR = "steamcommunity/public/images/avatars"
-private const val AVATAR_URL = "$STEAM_CDN/$STEAM_AVATAR/"
-private const val DEFAULT_AVATAR =
-    "$AVATAR_URL/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+/**
+ * This Class provides helpers that return a String of some kind
+ */
 
 /**
- *
+ * Get the last message time in ##:##AM/PM
  */
 @Composable
 fun getLastMessageTime(friend: FriendListItem?): CharSequence? {
-    if (friend == null) return ""
+    if (friend == null || friend.lastMessage.isNullOrEmpty()) return ""
     return DateUtils.formatSameDayTime(
-        friend.lastMessageTime ?: 0,
+        friend.lastMessageTime?.times(1000) ?: 0,
         System.currentTimeMillis(),
         DateFormat.SHORT,
         DateFormat.SHORT
@@ -60,11 +58,11 @@ fun getLastSeenText(friend: FriendListItem?): CharSequence {
  * @return The steam url of the hash, or default avatar if null
  */
 fun getAvatarUrl(avatar: String?): String {
-    if (avatar.isNullOrEmpty() || avatar == ALL_ZEROS) {
-        return DEFAULT_AVATAR
+    if (avatar.isNullOrEmpty() || avatar == Constants.ALL_ZEROS) {
+        return Constants.DEFAULT_AVATAR
     }
 
-    return "${AVATAR_URL}${avatar.substring(0, 2)}/${avatar}_full.jpg"
+    return "${Constants.AVATAR_URL}${avatar.substring(0, 2)}/${avatar}_full.jpg"
 }
 
 /**
@@ -189,4 +187,40 @@ fun Context.getErrorMessage(eResult: EResult, extendedResult: EResult? = null): 
         EResult.InvalidLoginAuthCode -> getString(R.string.errorMessageInvalidLoginAuthCode)
         else -> eResult.toString()
     }
+}
+
+/**
+ * Goes through a message text from chat and transforms anything with an emote or sticker.
+ */
+fun findEmotes(message: String, emoteSet: Set<String>): String {
+    val matcher = Constants.EMOTE_PATTERN.matcher(message)
+    val matcher2 = Constants.STICKER_PATTERN.matcher(message)
+
+    if (matcher2.find()) {
+        val result = matcher2.toMatchResult()
+        val emote = result.group(1)
+
+        if (emoteSet.contains(emote)) {
+            return "[sticker type=\"$emote\" limit=\"0\"][/sticker]"
+        }
+    }
+
+    if (matcher.find()) {
+        val result = matcher.toMatchResult()
+
+        val emote = result.group(1)
+
+        if (emoteSet.contains(emote)) {
+            val builder = StringBuilder(message)
+            builder.setCharAt(result.start(), '\u02D0')
+            builder.setCharAt(result.end() - 1, '\u02D0')
+
+            return findEmotes(builder.toString(), emoteSet)
+        }
+
+        return message.substring(0, result.end() - 1) +
+            findEmotes(message.substring(result.end() - 1), emoteSet)
+    }
+
+    return message
 }

@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
@@ -50,6 +51,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
@@ -57,7 +59,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
@@ -68,22 +70,20 @@ import `in`.dragonbra.vapulla.compose.components.pullrefresh.pullRefresh
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.rememberPullRefreshState
 import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
 import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
-import `in`.dragonbra.vapulla.compose.ui.theme.Shapes
+import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
+import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeScreen(
-    viewModel: HomeViewModel,
-    onChatSelected: (friend: FriendListItem) -> Unit,
-    onProfileSelected: (friend: FriendListItem) -> Unit
-) {
+fun HomeScreen(viewModel: HomeViewModel) {
+    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -94,10 +94,24 @@ fun HomeScreen(
     HomeScreenContent(
         state = state,
         searchTextState = viewModel.searchText,
-        onChatSelected = { onChatSelected(it) },
+        onChatSelected = {
+            Intent(context, ChatActivity::class.java).apply {
+                putExtra(ChatActivity.INTENT_STEAM_ID, it.id)
+            }.also {
+                context.startActivity(it)
+            }
+        },
         onLogout = { viewModel.onLogout() },
         onPersonAdd = { viewModel.onAddFriend() },
-        onProfileSelected = { onProfileSelected(it) },
+        onProfileSelected = {
+            Intent(context, ProfileActivity::class.java).apply {
+                putExtra(ProfileActivity.INTENT_STEAM_ID, it.id)
+            }.also {
+                context.startActivity(it)
+            }
+        },
+        onClickAccept = { viewModel.onFriendAccept(it) },
+        onClickIgnore = { viewModel.onFriendIgnore(it) },
         onRefresh = { viewModel.onSwipeRefresh(true) },
         onSearchClosed = { viewModel.setSearching(false) },
         onSearchOpened = { viewModel.setSearching(true) },
@@ -119,6 +133,8 @@ private fun HomeScreenContent(
     onLogout: () -> Unit,
     onPersonAdd: () -> Unit,
     onProfileSelected: (friend: FriendListItem) -> Unit,
+    onClickAccept: (friend: FriendListItem) -> Unit,
+    onClickIgnore: (friend: FriendListItem) -> Unit,
     onRefresh: () -> Unit,
     onSearchClosed: () -> Unit,
     onSearchOpened: () -> Unit,
@@ -194,8 +210,8 @@ private fun HomeScreenContent(
                                 friend = friend,
                                 onClickChat = { onChatSelected(friend) },
                                 onClickProfile = { onProfileSelected(friend) },
-                                onClickAccept = { TODO() },
-                                onClickIgnore = { TODO() }
+                                onClickAccept = { onClickAccept(friend) },
+                                onClickIgnore = { onClickIgnore(friend) }
                             )
                         }
                     }
@@ -242,7 +258,7 @@ private fun HomeScreenDrawer(
     )
 
     LaunchedEffect(state.avatarHash) {
-        dominantColorState.updateColorsFromImageUrl(Utils.getAvatarUrl(state.avatarHash))
+        dominantColorState.updateColorsFromImageUrl(getAvatarUrl(state.avatarHash))
     }
 
     ModalDrawerSheet(modifier = Modifier.fillMaxHeight()) {
@@ -255,7 +271,7 @@ private fun HomeScreenDrawer(
                     endYPercentage = 0f
                 ),
             color = Color.Transparent,
-            shape = Shapes.extraLarge
+            shape = MaterialTheme.shapes.extraLarge
         ) {
             Column(
                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -298,7 +314,7 @@ private fun DrawerAccountInfo(state: HomeState) {
                 .size(150.dp)
                 .border(borderStroke, cornerShape)
                 .clip(cornerShape),
-            avatarUrl = Utils.getAvatarUrl(state.avatarHash)
+            url = getAvatarUrl(state.avatarHash)
         )
 
         Text(state.nickname, Modifier.padding(6.dp))
@@ -414,6 +430,8 @@ private fun Preview_HomeScreenContent() {
             onLogout = {},
             onPersonAdd = {},
             onProfileSelected = {},
+            onClickAccept = {},
+            onClickIgnore = {},
             onRefresh = {},
             onSearchClosed = {},
             onSearchOpened = {},

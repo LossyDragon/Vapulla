@@ -12,15 +12,13 @@ import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.steam.VapullaHandler
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import timber.log.Timber
-
-// TODO message history doesn't seem to be working, use NHA2 to check it out.
 
 @AndroidEntryPoint
 class ChatActivity : VapullaBaseActivity() {
@@ -49,10 +47,7 @@ class ChatActivity : VapullaBaseActivity() {
 
             VapullaTheme {
                 CompositionLocalProvider(LocalActivity provides this) {
-                    ChatScreen(
-                        viewModel = viewModel,
-                        onViewProfile = { viewProfile(it) }
-                    )
+                    ChatScreen(viewModel = viewModel)
                 }
             }
         }
@@ -61,11 +56,6 @@ class ChatActivity : VapullaBaseActivity() {
     override fun onStart() {
         super.onStart()
         onServiceStart()
-    }
-
-    override fun onPostCreate(savedInstanceState: Bundle?) {
-        super.onPostCreate(savedInstanceState)
-        viewModel.onPostCreate(this)
     }
 
     override fun onResume() {
@@ -81,7 +71,7 @@ class ChatActivity : VapullaBaseActivity() {
             steamService?.setChatFriendId(steamID)
             steamService?.isActivityRunning = true
 
-            scope.executeAsyncTask {
+            scope.launch(Dispatchers.IO) {
                 steamService?.getMessageHistory(steamID)
             }
         }
@@ -104,7 +94,6 @@ class ChatActivity : VapullaBaseActivity() {
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
-        Timber.i("Bound to Steam service")
 
         val steamID = viewModel.state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID was null in onServiceConnected")
@@ -112,9 +101,12 @@ class ChatActivity : VapullaBaseActivity() {
         steamService?.setChatFriendId(steamID)
         steamService?.isActivityRunning = true
 
-        scope.executeAsyncTask {
+        scope.launch(Dispatchers.IO) {
             steamService?.getMessageHistory(steamID)
+            steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
         }
+
+        viewModel.onPostCreate(this)
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
@@ -133,29 +125,13 @@ class ChatActivity : VapullaBaseActivity() {
         finish()
     }
 
-    private fun viewProfile(steamID: SteamID) {
-        Intent(this, ProfileActivity::class.java).apply {
-            putExtra(ProfileActivity.INTENT_STEAM_ID, steamID.convertToUInt64())
-        }.also {
-            startActivity(it)
-        }
-    }
-
     private fun onChatEvent(event: ChatUiEvent) {
-        scope.executeAsyncTask {
+        Timber.d("onChatEvent: ${event::class.java.simpleName}")
+        scope.launch(Dispatchers.IO) {
             when (event) {
-                ChatUiEvent.RequestEmotes -> {
-                    steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
-                }
-                ChatUiEvent.NavigateUp -> {
-                    finish()
-                }
-                is ChatUiEvent.SendTypingStatus -> {
-                    steamService?.setTyping(event.id)
-                }
-                is ChatUiEvent.SendMessage -> {
-                    steamService?.sendMessage(event.id, event.message, event.emoteSet)
-                }
+                ChatUiEvent.NavigateUp -> finish()
+                is ChatUiEvent.SendTypingStatus -> steamService?.setTyping(event.id)
+                is ChatUiEvent.SendMessage -> steamService?.sendMessage(event.id, event.message)
             }
         }
     }

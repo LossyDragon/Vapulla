@@ -9,6 +9,7 @@ import android.provider.Settings
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EPersonaState
@@ -19,16 +20,13 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.getErrorMessage
+import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.Notifications
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
-import `in`.dragonbra.vapulla.util.Utils
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
-
-// TODO: Add Splash Screen, need older android device to test
 
 @AndroidEntryPoint
 class LoginActivity : VapullaBaseActivity() {
@@ -48,6 +46,12 @@ class LoginActivity : VapullaBaseActivity() {
         Timber.d("onCreate")
 
         viewModel.prefillInputs(accountManager.username)
+
+        installSplashScreen().apply {
+            setKeepOnScreenCondition {
+                viewModel.isServiceNotBound.value
+            }
+        }
 
         setContent {
             VapullaTheme {
@@ -77,19 +81,15 @@ class LoginActivity : VapullaBaseActivity() {
         viewModel.onDestroy()
     }
 
-    override fun onConnected(showLoading: () -> Unit, isLoggedIn: () -> Unit) {
+    override fun onConnected() {
         steamService?.let { service ->
             if (service.isLoggedIn) {
-                isLoggedIn()
+                onLoginSuccess()
                 return
             }
 
-            Timber.d("viewModel.logOnDetails ${viewModel.logOnDetails.username}")
-            Timber.d("viewModel.logOnDetails ${viewModel.logOnDetails.password}")
-            Timber.d("viewModel.logOnDetails ${viewModel.logOnDetails.twoFactorCode}")
-
             service.logOn(viewModel.logOnDetails)
-            showLoading()
+            viewModel.onLoadingVisible(true)
         }
     }
 
@@ -141,7 +141,7 @@ class LoginActivity : VapullaBaseActivity() {
 
         viewModel.onShowSteamGuard(false, "", false)
 
-        CoroutineScope(Dispatchers.Default).executeAsyncTask {
+        scope.launch(Dispatchers.IO) {
             steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
         }
 
@@ -162,10 +162,9 @@ class LoginActivity : VapullaBaseActivity() {
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
-        Timber.d("Bound to Steam service")
 
         // Create our notification channels when the service is bound.
-        if (Utils.isAtLeastO) {
+        if (Constants.isAtLeastO) {
             Notifications.createMessagesNotificationChannel(notificationManager)
             Notifications.createRequestNotificationChannel(notificationManager)
             Notifications.createServiceNotificationChannel(notificationManager)
@@ -177,8 +176,12 @@ class LoginActivity : VapullaBaseActivity() {
                 password = null
                 username = accountManager.username
             }
-            startSteamService { viewModel.onLoadingVisible(true) }
+            startSteamService {
+                viewModel.onLoadingVisible(true)
+            }
         }
+
+        viewModel.onServiceBound()
     }
 
     override fun onServiceDisconnected(name: ComponentName) {

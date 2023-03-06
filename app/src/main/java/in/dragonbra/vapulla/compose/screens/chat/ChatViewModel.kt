@@ -14,14 +14,13 @@ import androidx.paging.PagingData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.data.dao.EmoticonDao
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -31,9 +30,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
-
-// TODO paperplane
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -63,7 +61,7 @@ class ChatViewModel @Inject constructor(
 
     private lateinit var emoticonData: LiveData<List<Emoticon>>
     private val emoteObserver = Observer<List<Emoticon>> { list ->
-        _state.update { it.copy(emoteSet = list.map { emote -> emote.name }.toSet()) }
+        _state.update { it.copy(emoticonData = list) }
     }
 
     private lateinit var friendData: LiveData<FriendListItem>
@@ -76,6 +74,8 @@ class ChatViewModel @Inject constructor(
     }
 
     fun onPostCreate(lifecycleOwner: LifecycleOwner) {
+        Timber.d("onPostCreate")
+
         val steamID = _state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID null no onPostCreate")
 
@@ -101,8 +101,7 @@ class ChatViewModel @Inject constructor(
             it.copy(
                 messages = chatData,
                 friend = friendData.value,
-                emoticonData = emoticonData.value ?: listOf(),
-                emoteSet = emoticonData.value?.map { emote -> emote.name }?.toSet().orEmpty()
+                emoticonData = emoticonData.value ?: listOf()
             )
         }
     }
@@ -111,7 +110,7 @@ class ChatViewModel @Inject constructor(
         val steamID = _state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID was null in markRead")
 
-        viewModelScope.executeAsyncTask {
+        viewModelScope.launch(Dispatchers.IO) {
             chatMessageDao.markRead(steamID.convertToUInt64())
         }
     }
@@ -140,17 +139,14 @@ class ChatViewModel @Inject constructor(
     }
 
     fun sendMessage(message: String) {
-        if (message.isEmpty()) {
-            return
-        }
+        if (message.isEmpty()) return
 
         _state.update { it.copy(lastTypingMessage = 0L) }
 
-        val emoteSet = _state.value.emoteSet
         val steamID = _state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID was null trying to send a message")
 
-        emit(ChatUiEvent.SendMessage(steamID, message, emoteSet))
+        emit(ChatUiEvent.SendMessage(steamID, message))
     }
 
     private fun emit(event: ChatUiEvent) {

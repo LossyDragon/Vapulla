@@ -1,11 +1,11 @@
 package `in`.dragonbra.vapulla.compose.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /* Jetpack Compose Shapes */
-val Shapes = Shapes()
+val iconSmallCornerShape = RoundedCornerShape(8.dp)
+val iconCornerShape = RoundedCornerShape(16.dp)
 
 val ChatBubbleFriendShape = RoundedCornerShape(
     topStart = 10.dp,

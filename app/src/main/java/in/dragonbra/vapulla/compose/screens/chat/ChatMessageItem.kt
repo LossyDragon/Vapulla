@@ -33,7 +33,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleFriendShape
 import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleMeShape
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.compose.util.PaperPlane
+import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 
 @OptIn(ExperimentalFoundationApi::class)

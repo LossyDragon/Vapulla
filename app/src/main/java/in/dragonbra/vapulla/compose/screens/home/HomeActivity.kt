@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.IBinder
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
@@ -12,18 +13,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.adapter.FriendListItem
-import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
-import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.screens.settings.SettingsActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
-
-// TODO: Make sure the friends list is updated shortly after initting.
 
 @AndroidEntryPoint
 class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity() {
@@ -48,15 +45,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
             }
 
             VapullaTheme {
-                HomeScreen(
-                    viewModel = viewModel,
-                    onChatSelected = { friend ->
-                        onChatSelected(friend)
-                    },
-                    onProfileSelected = { friend ->
-                        onProfileSelected(friend)
-                    }
-                )
+                HomeScreen(viewModel = viewModel)
             }
         }
     }
@@ -106,24 +95,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         finish()
     }
 
-    private fun onChatSelected(friend: FriendListItem) {
-        Timber.d("onChatSelected: ${friend.nickname ?: friend.name}")
-        Intent(this, ChatActivity::class.java).apply {
-            putExtra(ChatActivity.INTENT_STEAM_ID, friend.id)
-        }.also {
-            startActivity(it)
-        }
-    }
-
-    private fun onProfileSelected(friend: FriendListItem) {
-        Timber.d("onProfileSelected: ${friend.nickname ?: friend.name}")
-        Intent(this, ProfileActivity::class.java).apply {
-            putExtra(ProfileActivity.INTENT_STEAM_ID, friend.id)
-        }.also {
-            startActivity(it)
-        }
-    }
-
     private fun onSettings() {
         Timber.d("onSettings")
         val intent = Intent(this, SettingsActivity::class.java)
@@ -132,9 +103,19 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     private fun onFriendAction(event: HomeUiEvent) {
         Timber.d("onFriendAction ${event.javaClass}")
-        scope.executeAsyncTask {
+        scope.launch(Dispatchers.IO) {
             when (event) {
-                HomeUiEvent.AddFriend -> TODO("Add Friend")
+                HomeUiEvent.AddFriend -> {
+                    // TODO there is a protobuf to create/get an invite token,
+                    //  but is it possible to figure out a way to construct the s.team url?
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@HomeActivity,
+                            "Not Available",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
                 HomeUiEvent.Disconnect -> steamService?.disconnect()
                 HomeUiEvent.LogOut -> steamService?.disconnect()
                 HomeUiEvent.Settings -> onSettings()

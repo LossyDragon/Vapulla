@@ -66,7 +66,7 @@ import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.VapullaEditDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaListDialog
@@ -76,18 +76,18 @@ import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
 import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
-import `in`.dragonbra.vapulla.compose.ui.theme.Shapes
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.colorPrimary
 import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.compose.ui.theme.iconCornerShape
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
-import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.core.Constants
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel) {
@@ -166,7 +166,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
             }.also { context.startActivity(it) }
         },
         onAccountClick = {
-            val url = Utils.PROFILE_URL + state.steamID!!.convertToUInt64()
+            val url = Constants.PROFILE_URL + state.steamID!!.convertToUInt64()
             uriHandler.openUri(url)
         },
         onGamesClick = {
@@ -226,7 +226,7 @@ private fun ProfileScreenContent(
                 endYPercentage = 0f
             ),
         color = Color.Transparent,
-        shape = Shapes.extraLarge
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Scaffold(
             modifier = Modifier
@@ -288,13 +288,12 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val borderStroke = BorderStroke(4.dp, getStatusColor(state.friend))
-        val cornerShape = RoundedCornerShape(16.dp)
         StaticImage(
             modifier = Modifier
                 .size(150.dp)
-                .border(borderStroke, cornerShape)
-                .clip(cornerShape),
-            avatarUrl = getAvatarUrl(state.friend?.avatar)
+                .border(borderStroke, iconCornerShape)
+                .clip(iconCornerShape),
+            url = getAvatarUrl(state.friend?.avatar)
         )
     }
 }
@@ -394,7 +393,7 @@ private fun ProfileLevelLayout(
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(28.dp)
                     .padding(top = 5.dp),
                 color = colorSecondary,
                 strokeWidth = 2.dp

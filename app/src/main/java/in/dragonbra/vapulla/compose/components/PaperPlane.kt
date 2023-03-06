@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.compose.util
+package `in`.dragonbra.vapulla.compose.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
-import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.compose.util.StaticImage
+import `in`.dragonbra.vapulla.compose.util.StickerImage
+import `in`.dragonbra.vapulla.core.Constants
 
 private val stickerPattern = "\\[sticker type=\"(.*?)\" limit=\"0\"]\\[/sticker]".toRegex()
 private val emoticonPattern = "\\[emoticon](.*?)\\[/emoticon]".toRegex()
@@ -64,7 +66,10 @@ fun PaperPlane(
         }
 
         val (sticker) = stickerPattern.find(text)!!.destructured
-        StickerImage(modifier = Modifier.size(150.dp), stickerUrl = (Utils.STICKER_URL + sticker))
+        StickerImage(
+            modifier = Modifier.size(150.dp),
+            url = Constants.STICKER_URL + sticker
+        )
         return
     }
 
@@ -99,7 +104,7 @@ fun PaperPlane(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .size(256.dp),
-                    avatarUrl = preview
+                    url = preview
                 )
                 Text(
                     modifier = Modifier.padding(start = 2.dp),
@@ -130,7 +135,7 @@ fun PaperPlane(
                 InlineTextContent(Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.Center)) {
                     StaticImage(
                         modifier = Modifier.size(20.dp),
-                        avatarUrl = "${Utils.EMOTE_URL}$emoticonName"
+                        url = Constants.EMOTE_URL + emoticonName
                     )
                 }
             }

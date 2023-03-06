@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class LoginViewModel(
     private val loginValidation: LoginValidation = LoginValidation()
@@ -16,6 +17,9 @@ class LoginViewModel(
 
     var logOnDetails = LogOnDetails()
         private set
+
+    private val _isServiceNotBound = MutableStateFlow(true)
+    val isServiceNotBound = _isServiceNotBound.asStateFlow()
 
     private val _loginState = MutableStateFlow(LoginState())
     val loginState = _loginState.asStateFlow()
@@ -26,6 +30,11 @@ class LoginViewModel(
     fun prefillInputs(username: String?) {
         if (username == null) return
         _loginState.update { it.copy(username = username) }
+    }
+
+    fun onServiceBound() {
+        Timber.d("onServiceBound")
+        _isServiceNotBound.value = false
     }
 
     fun onDestroy() {

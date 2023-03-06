@@ -23,7 +23,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
@@ -33,37 +33,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.adapter.FriendListItem
-import `in`.dragonbra.vapulla.compose.util.PaperPlane
+import `in`.dragonbra.vapulla.model.FriendListItem
+import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
+import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getLastMessageTime
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.compose.util.getUnreadMessageCount
-import `in`.dragonbra.vapulla.util.Utils
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FriendItem(
     modifier: Modifier = Modifier,
     friend: FriendListItem,
-    onClickChat: (friend: FriendListItem) -> Unit,
-    onClickProfile: (friend: FriendListItem) -> Unit,
-    onClickAccept: (friend: FriendListItem) -> Unit,
-    onClickIgnore: (friend: FriendListItem) -> Unit
+    onClickChat: () -> Unit,
+    onClickProfile: () -> Unit,
+    onClickAccept: () -> Unit,
+    onClickIgnore: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
 
     Column(
         modifier = modifier
             .combinedClickable(
-                onClick = { onClickChat(friend) },
+                onClick = { if (!friend.isRequestRecipient()) onClickChat() },
                 onLongClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onClickProfile(friend)
+                    onClickProfile()
                 }
             )
     ) {
@@ -95,14 +96,9 @@ fun FriendItem(
                         )
                     }
 
-                    // TODO:
-                    //  Messages = Done
-                    //  Emoticons = Done
-                    //  URLS =
-                    //  Stickers =
-                    friend.lastMessage?.let {
+                    if (friend.lastMessage != null && !friend.isRequestRecipient()) {
                         PaperPlane(
-                            text = it,
+                            text = friend.lastMessage!!,
                             isPreviewMode = true,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -113,13 +109,13 @@ fun FriendItem(
             trailingContent = {
                 if (friend.isRequestRecipient()) {
                     Row {
-                        IconButton(onClick = { onClickAccept(friend) }) {
+                        IconButton(onClick = onClickAccept) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "Accept"
                             )
                         }
-                        IconButton(onClick = { onClickIgnore(friend) }) {
+                        IconButton(onClick = onClickIgnore) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Ignore"
@@ -153,13 +149,15 @@ fun FriendItem(
             },
             leadingContent = {
                 Surface(
-                    modifier = Modifier.size(58.dp),
-                    shape = RectangleShape,
+                    shape = iconSmallCornerShape,
                     color = getStatusColor(friend)
                 ) {
                     StaticImage(
-                        modifier = Modifier.size(58.dp),
-                        avatarUrl = Utils.getAvatarUrl(friend.avatar)
+                        modifier = Modifier
+                            .padding(1.dp)
+                            .clip(iconSmallCornerShape)
+                            .size(58.dp),
+                        url = getAvatarUrl(friend.avatar)
                     )
                 }
             }
@@ -188,7 +186,7 @@ private fun Preview_FriendListItem() {
                     id = 0,
                     lastLogOff = 0,
                     lastLogOn = 0,
-                    lastMessage = null,
+                    lastMessage = "Left 4 Dead 2 is so fun!",
                     lastMessageTime = null,
                     name = "New Friend Request",
                     newMessageCount = null,

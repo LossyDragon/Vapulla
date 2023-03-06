@@ -1,18 +1,17 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
-import android.app.Application
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.preference.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
+import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
+import `in`.dragonbra.vapulla.model.FriendListItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -27,14 +26,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    application: Application,
     private val gameSchemaManager: GameSchemaManager,
-    // private val paperPlane: PaperPlane,
+    private val accountManager: AccountManager,
     private val steamFriendDao: SteamFriendDao
-) : AndroidViewModel(application) {
-
-    private val vmApplication: Application
-        get() = getApplication()
+) : ViewModel() {
 
     private val _uiEvent = MutableSharedFlow<HomeUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -47,7 +42,7 @@ class HomeViewModel @Inject constructor(
 
     private lateinit var friendsData: LiveData<List<FriendListItem>>
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
-        val updateTime = System.currentTimeMillis()
+        val updateTime = System.currentTimeMillis().div(1000)
         if (!state.value.isSearching) {
             swap(list, updateTime)
         }
@@ -81,13 +76,9 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        // TODO pref
-        val prefs = PreferenceManager.getDefaultSharedPreferences(vmApplication)
-        val recentTimeout =
-            prefs.getString("pref_friends_list_recents", "604800000")?.toLong() ?: 0L
-
         // Sort friends by name and the following:
         //      Request -> Recent -> In-Game + In-Game-Away -> Online + Away -> Offline.
+        val recentTimeout = accountManager.prefFriendsListRecents
         val sortedList = list.sortedWith(
             compareBy(
                 { it.isRequestRecipient().not() },
@@ -155,6 +146,12 @@ class HomeViewModel @Inject constructor(
 
         val updateTime = System.currentTimeMillis()
         swap(friendsData.value.orEmpty(), updateTime)
+
+        // Queue a first time refresh to get a current friend states.
+        viewModelScope.launch {
+            delay(1000L)
+            _uiEvent.emit(HomeUiEvent.Refresh)
+        }
     }
 
     fun onDestroy() {
@@ -177,6 +174,18 @@ class HomeViewModel @Inject constructor(
     fun onStatusUpdate(status: EPersonaState) {
         viewModelScope.launch {
             _uiEvent.emit(HomeUiEvent.ChangeStatus(status))
+        }
+    }
+
+    fun onFriendAccept(friendListItem: FriendListItem) {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.AcceptRequest(friendListItem))
+        }
+    }
+
+    fun onFriendIgnore(friendListItem: FriendListItem) {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.IgnoreRequest(friendListItem))
         }
     }
 

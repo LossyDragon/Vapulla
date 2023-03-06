@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
@@ -7,15 +8,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
@@ -23,7 +31,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
@@ -35,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,12 +54,13 @@ import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
+import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
@@ -63,17 +73,22 @@ import kotlin.random.Random
 
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel,
-    onViewProfile: (SteamID) -> Unit
+    viewModel: ChatViewModel
 ) {
     val state by viewModel.state.collectAsState()
+    val activity = LocalActivity.current
+    val context = LocalContext.current
 
     ChatScreenContent(
         state = state,
-        onViewProfile = onViewProfile,
-        onChatMessage = {
-            viewModel.sendMessage(it)
-        }
+        onBackPressed = { activity.finish() },
+        onProfileClicked = {
+            val steamID = state.currentChatSteamID!!.convertToUInt64()
+            Intent(context, ProfileActivity::class.java).apply {
+                putExtra(ProfileActivity.INTENT_STEAM_ID, steamID)
+            }.also { context.startActivity(it) }
+        },
+        onChatMessage = { viewModel.sendMessage(it) }
     )
 }
 
@@ -81,19 +96,86 @@ fun ChatScreen(
 @Composable
 private fun ChatScreenContent(
     state: ChatState,
-    onViewProfile: (SteamID) -> Unit,
+    onBackPressed: () -> Unit,
+    onProfileClicked: () -> Unit,
     onChatMessage: (String) -> Unit
 ) {
-    val activity = LocalActivity.current
+    val messages = state.messages.collectAsLazyPagingItems().itemSnapshotList.items
+    val scope = rememberCoroutineScope()
+    val scrollState = rememberLazyListState()
+    val topBarState = rememberTopAppBarState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
 
-    Scaffold(
-        modifier = Modifier
-            .imePadding()
-            .fillMaxSize(),
-        topBar = {
+    Surface(
+        modifier = Modifier.windowInsetsPadding(
+            WindowInsets
+                .navigationBars
+                .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    LazyColumn(
+                        reverseLayout = true,
+                        state = scrollState,
+                        contentPadding = WindowInsets.statusBars.add(WindowInsets(top = 90.dp))
+                            .asPaddingValues(),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // NOTE: This should be in the VM, but some refacoring will be needed.
+                        val groupedMessages = messages.groupBy { it.formattedTs }
+
+                        groupedMessages.forEach { (header, items) ->
+                            items(items, key = { it.id }) { msg ->
+                                ChatMessageItem(
+                                    modifier = Modifier.animateItemPlacement(),
+                                    message = msg
+                                )
+                            }
+                            stickyHeader(contentType = header) {
+                                ChatMessageDateHeader(dateStamp = header)
+                            }
+                        }
+                    }
+                }
+
+                UserInput(
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .imePadding(),
+                    emoticonList = state.emoticonData,
+                    onMessageSent = onChatMessage,
+                    onResetScroll = {
+                        scope.launch {
+                            scrollState.scrollToItem(0)
+                        }
+                    }
+                )
+            }
+
+            // Empty Conversation Text
+            if (messages.isEmpty()) {
+                val name = state.friend?.friendName ?: "this friend."
+                Text(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .align(Alignment.Center),
+                    color = friendOffline,
+                    text = "You have no recent messages with $name",
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Top App Bar
             CenterAlignedTopAppBar(
+                scrollBehavior = scrollBehavior,
                 actions = {
-                    IconButton(onClick = { onViewProfile(state.currentChatSteamID!!) }) {
+                    IconButton(onClick = onProfileClicked) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Go to profile"
@@ -101,7 +183,7 @@ private fun ChatScreenContent(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { activity.finish() }) {
+                    IconButton(onClick = onBackPressed) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Go Back"
@@ -115,13 +197,12 @@ private fun ChatScreenContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val borderStroke = BorderStroke(1.dp, getStatusColor(state.friend))
-                        val cornerShape = RoundedCornerShape(4.dp)
                         StaticImage(
                             modifier = Modifier
                                 .size(48.dp)
-                                .border(borderStroke, cornerShape)
-                                .clip(cornerShape),
-                            avatarUrl = getAvatarUrl(state.friend?.avatar)
+                                .border(borderStroke, iconSmallCornerShape)
+                                .clip(iconSmallCornerShape),
+                            url = getAvatarUrl(state.friend?.avatar)
                         )
 
                         Column(modifier = Modifier.padding(start = 6.dp)) {
@@ -165,68 +246,6 @@ private fun ChatScreenContent(
                 }
             )
         }
-    ) { paddingValues ->
-        val messages = state.messages.collectAsLazyPagingItems().itemSnapshotList.items
-        val scope = rememberCoroutineScope()
-        val topBarState = rememberTopAppBarState()
-        val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
-        val scrollState = rememberLazyListState()
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (messages.isEmpty()) {
-                val name = state.friend?.friendName ?: "this friend."
-                Text(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .align(Alignment.Center),
-                    color = friendOffline,
-                    text = "You have no recent messages with $name",
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-            ) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    state = scrollState,
-                    reverseLayout = true
-                ) {
-                    // NOTE: This should be in the VM, but some refacoring will be needed.
-                    val groupedMessages = messages.groupBy { it.formattedTs }
-
-                    groupedMessages.forEach { (header, items) ->
-                        stickyHeader(contentType = header) {
-                            ChatMessageDateHeader(dateStamp = header)
-                        }
-
-                        items(items, key = { it.id }) { msg ->
-                            ChatMessageItem(
-                                modifier = Modifier.animateItemPlacement(),
-                                message = msg
-                            )
-                        }
-                    }
-                }
-
-                ChatInputBox(
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                        .imePadding(),
-                    onMessage = onChatMessage,
-                    onSticker = { TODO() },
-                    onResetScroll = {
-                        scope.launch {
-                            scrollState.scrollToItem(0)
-                        }
-                    }
-                )
-            }
-        }
     }
 }
 
@@ -256,21 +275,20 @@ private fun Preview_ChatScreenContent() {
             avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
             gameAppId = 100,
             gameName = "A Very Long Game Name that Should Ellipse At The End",
-            id = 1,
-            lastLogOff = 0,
-            lastLogOn = 0,
-            lastMessage = null,
-            lastMessageTime = 0,
             name = "Lu",
             newMessageCount = 50,
             nickname = "A Very Long Friend Name that Should Ellipse",
             relation = EFriendRelationship.Friend.code(),
             state = EPersonaState.Online.code(),
-            stateFlags = 512,
-            typingTs = 0
+            stateFlags = 512
         )
     )
     VapullaTheme {
-        ChatScreenContent(state = state, onViewProfile = {}, onChatMessage = {})
+        ChatScreenContent(
+            state = state,
+            onBackPressed = {},
+            onProfileClicked = {},
+            onChatMessage = {}
+        )
     }
 }

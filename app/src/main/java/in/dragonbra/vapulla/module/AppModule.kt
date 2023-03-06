@@ -18,11 +18,6 @@ import javax.inject.Singleton
 @Module
 object AppModule {
 
-//    @Provides
-//    @Singleton
-//    fun providePaperPlane(@ApplicationContext context: Context) =
-//        PaperPlane(context, 14.0f)
-
     @Provides
     @Singleton
     fun provideNotificationManager(@ApplicationContext context: Context) =

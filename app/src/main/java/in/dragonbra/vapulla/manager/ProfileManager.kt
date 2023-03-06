@@ -2,12 +2,10 @@ package `in`.dragonbra.vapulla.manager
 
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.BuildConfig
-import `in`.dragonbra.vapulla.adapter.GamesListItem
+import `in`.dragonbra.vapulla.model.GamesListItem
 import `in`.dragonbra.vapulla.retrofit.SteamApi
 
-class ProfileManager(
-    private val steamApi: SteamApi
-) {
+class ProfileManager(private val steamApi: SteamApi) {
 
     fun getGames(steamId: SteamID): GamesListItem {
         val args = hashMapOf(
@@ -17,39 +15,30 @@ class ProfileManager(
             "include_appinfo" to "true"
         )
 
-        var list = GamesListItem(0, arrayListOf())
+        val response = steamApi.getGamesOwned(args).execute()
 
-        val call = steamApi.getGamesOwned(args)
-        val response = call.execute()
-
-        if (response.isSuccessful) {
-            if (response.body() != null) {
-                list = GamesListItem(
-                    response.body()!!.gamesResponse!!.gameCount,
-                    response.body()!!.gamesResponse!!.games
-                )
-            }
+        if (!response.isSuccessful) {
+            return GamesListItem(0, arrayListOf())
         }
 
-        return list
+        return GamesListItem(
+            response.body()?.gamesResponse?.gameCount ?: 0,
+            response.body()?.gamesResponse?.games ?: arrayListOf()
+        )
     }
 
-    fun getLevel(steamId: SteamID): Int? {
-        val args = HashMap<String, String>()
-        args["key"] = BuildConfig.STEAM_API_KEY
-        args["steamid"] = steamId.convertToUInt64().toString()
+    fun getLevel(steamId: SteamID): Int {
+        val args = mapOf(
+            "key" to BuildConfig.STEAM_API_KEY,
+            "steamid" to steamId.convertToUInt64().toString()
+        )
 
-        val call = steamApi.getSteamLevel(args)
-        val response = call.execute()
+        val response = steamApi.getSteamLevel(args).execute()
 
-        return if (response.isSuccessful) {
-            if (response.body() == null) {
-                return 0
-            }
-
-            response.body()!!.level?.playerLevel ?: 0
-        } else {
-            null
+        if (!response.isSuccessful) {
+            return 0
         }
+
+        return response.body()?.level?.playerLevel ?: 0
     }
 }

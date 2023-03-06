@@ -10,11 +10,11 @@ import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.types.JobID
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -39,7 +39,7 @@ class ProfileViewModel @Inject constructor(
     private var jobID = JobID.INVALID
 
     private val profileExec by lazy {
-        viewModelScope.executeAsyncTask {
+        viewModelScope.launch(Dispatchers.IO) {
             val level = levelManager.getLevel(state.value.steamID!!)
             val games = levelManager.getGames(state.value.steamID!!)
             _state.update {
@@ -98,7 +98,7 @@ class ProfileViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.executeAsyncTask {
+        viewModelScope.launch(Dispatchers.IO) {
             emit(ProfileUiEvent.SetNickName(_state.value.steamID!!, nickName))
 
             val friend = steamFriendDao.find(_state.value.steamID!!.convertToUInt64())

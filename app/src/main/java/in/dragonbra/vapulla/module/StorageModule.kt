@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import javax.inject.Singleton
@@ -25,7 +26,7 @@ object StorageModule {
         Room.databaseBuilder(
             context,
             VapullaDatabase::class.java,
-            VapullaDatabase.DATABASE_NAME
+            Constants.DATABASE_NAME
         ).build()
 
     @Provides

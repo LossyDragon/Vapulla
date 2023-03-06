@@ -25,7 +25,6 @@ fun VapullaTheme(
 
     MaterialTheme(
         colorScheme = darkColorScheme,
-        shapes = Shapes,
         content = { Surface { content() } }
     )
 }

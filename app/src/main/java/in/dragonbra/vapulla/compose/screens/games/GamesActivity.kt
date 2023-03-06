@@ -10,9 +10,8 @@ import androidx.core.view.WindowCompat
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
+import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.retrofit.response.Games
-import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.Utils.parcelableArrayList
 import timber.log.Timber
 
 class GamesActivity : VapullaBaseActivity() {
@@ -29,7 +28,13 @@ class GamesActivity : VapullaBaseActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         Timber.d("onCreate")
 
-        val items: List<Games> = intent.extras?.parcelableArrayList(INTENT_GAMES)!!
+        val items = if (Constants.isAtLeastT) {
+            intent.extras?.getParcelableArrayList(INTENT_GAMES, Games::class.java) ?: arrayListOf()
+        } else {
+            @Suppress("DEPRECATION")
+            intent.extras?.getParcelableArrayList(INTENT_GAMES) ?: arrayListOf()
+        }
+
         val name = intent.extras?.getString("name")!!
         viewModel.setContents(name, items)
 
@@ -51,7 +56,7 @@ class GamesActivity : VapullaBaseActivity() {
     }
 
     private fun gotoGameStore(appid: Int) {
-        val url = String.format(Utils.STORE_PAGE_URL, appid)
+        val url = String.format(Constants.STORE_PAGE_URL, appid)
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse(url)
         }

@@ -44,7 +44,7 @@ class GamesViewModel : ViewModel() {
         _state.update { it.copy(filteredGamesList = sortedList) }
     }
 
-    fun setContents(name: String, items: List<Games>) {
+    fun setContents(name: String, items: ArrayList<Games>) {
         val list = items.sortedBy { it.name.lowercase() }
         _state.update { it.copy(name = name, gamesList = list, filteredGamesList = list) }
     }

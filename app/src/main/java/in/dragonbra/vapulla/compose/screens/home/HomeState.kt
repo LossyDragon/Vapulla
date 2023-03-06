@@ -1,7 +1,7 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 
 data class HomeState(
     val avatarHash: String = "",

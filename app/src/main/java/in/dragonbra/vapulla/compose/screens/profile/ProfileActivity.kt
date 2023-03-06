@@ -15,8 +15,9 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @AndroidEntryPoint
@@ -81,7 +82,7 @@ class ProfileActivity : VapullaBaseActivity() {
     }
 
     private fun onProfileEvent(event: ProfileUiEvent, steamID: SteamID) {
-        scope.executeAsyncTask {
+        scope.launch(Dispatchers.IO) {
             when (event) {
                 ProfileUiEvent.NavigateBack -> finish()
                 is ProfileUiEvent.GetAliases -> {

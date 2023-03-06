@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -54,7 +53,7 @@ fun GamesScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun GamesScreenContent(
     state: GamesState,
@@ -108,7 +107,7 @@ private fun GamesScreenContent(
                     GamesListItem(
                         appId = it.appid,
                         gameName = it.name,
-                        hoursTwoWeeks = it.playtime_2weeks ?: 0,
+                        hoursTwoWeeks = it.playtime_2weeks,
                         hoursAllTime = it.playtime_forever,
                         onOverflowClick = { onItemClick(it.appid) }
                     )

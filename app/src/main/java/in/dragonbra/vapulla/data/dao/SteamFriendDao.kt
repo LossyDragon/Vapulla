@@ -1,12 +1,13 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import androidx.lifecycle.LiveData
 import androidx.room.*
 
 @Dao
 interface SteamFriendDao {
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg steamFriends: SteamFriend)
 

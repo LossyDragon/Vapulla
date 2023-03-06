@@ -1,7 +1,7 @@
 package `in`.dragonbra.vapulla.compose.screens.profile
 
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.adapter.FriendListItem
+import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.retrofit.response.Games
 
 data class ProfileState(

@@ -14,7 +14,8 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.threading.executeAsyncTask
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -44,17 +45,17 @@ class SettingsActivity : VapullaBaseActivity() {
                                 return@SettingsScreen
                             }
 
-                            scope.executeAsyncTask {
+                            scope.launch(Dispatchers.IO) {
                                 steamService?.getHandler<SteamFriends>()?.setPersonaName(name).let {
                                     accountManager.nickname = name
                                 }
                             }
                         },
                         onChangeUser = {
-                            scope.executeAsyncTask(
-                                doInBackground = { steamService?.disconnect() },
-                                onPostExecute = { clearData() }
-                            )
+                            scope.launch(Dispatchers.IO) {
+                                steamService?.disconnect()
+                                clearData()
+                            }
                         },
                         onClearDatabase = { clearDatabase() }
                     )
@@ -77,7 +78,7 @@ class SettingsActivity : VapullaBaseActivity() {
     }
 
     private fun clearData() {
-        scope.executeAsyncTask {
+        scope.launch(Dispatchers.IO) {
             accountManager.clear()
             clearDatabase()
             accountManager.prefs.edit().clear().apply()
@@ -85,7 +86,7 @@ class SettingsActivity : VapullaBaseActivity() {
     }
 
     private fun clearDatabase() {
-        scope.executeAsyncTask {
+        scope.launch(Dispatchers.IO) {
             db.steamFriendDao().delete()
             db.chatMessageDao().delete()
             db.emoticonDao().delete()

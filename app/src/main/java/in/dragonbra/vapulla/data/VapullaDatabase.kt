@@ -17,10 +17,6 @@ import androidx.room.RoomDatabase
     exportSchema = true
 )
 abstract class VapullaDatabase : RoomDatabase() {
-    companion object {
-        const val DATABASE_NAME = "vapulla.db"
-    }
-
     abstract fun steamFriendDao(): SteamFriendDao
 
     abstract fun chatMessageDao(): ChatMessageDao

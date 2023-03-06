@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.adapter
+package `in`.dragonbra.vapulla.model
 
 import `in`.dragonbra.vapulla.retrofit.response.Games
 
