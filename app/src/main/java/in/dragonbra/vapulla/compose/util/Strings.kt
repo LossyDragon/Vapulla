@@ -105,7 +105,7 @@ fun getStatusText(friend: FriendListItem?): String {
     }
 
     if (friend.isRequestRecipient()) {
-        return stringResource(id = R.string.notificationTitleFriendRequest)
+        return stringResource(id = R.string.statusFriendRequest)
     }
 
     val isTypingFromLastMessage = friend.typingTs > (friend.lastMessageTime ?: 0)
@@ -130,9 +130,9 @@ fun getStatusText(friend: FriendListItem?): String {
 
     return when (EPersonaState.from(friend.state ?: 0)) {
         EPersonaState.Online -> stringResource(R.string.statusOnline)
-        EPersonaState.Busy -> stringResource(R.string.statusBusy)
-        EPersonaState.Away -> stringResource(R.string.statusAway)
-        EPersonaState.Snooze -> stringResource(R.string.statusSnooze)
+        EPersonaState.Busy,
+        EPersonaState.Away,
+        EPersonaState.Snooze -> stringResource(R.string.statusAway)
         else -> stringResource(R.string.statusOffline, relativeDate)
     }
 }

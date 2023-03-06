@@ -1,184 +1,107 @@
 <resources>
+    <!-- App Name -->
     <string name="app_name">Vapulla</string>
 
-    <!--region Activity titles-->
-
+    <!-- Activity Titles -->
+    <string name="title_activity_games">%1$s\'s games</string>
     <string name="title_activity_settings">Settings</string>
 
-    <!--endregion-->
+    <!-- Activity Profiles -->
+    <string name="textProfileGames">Games</string>
+    <string name="textProfileLevel">Level</string>
 
-    <!--region Statuses-->
+    <!-- Activity Settings -->
+    <string name="textSettingsAbout">About</string>
+    <string name="textSettingsAccount">Account</string>
+    <string name="textSettingsChangeAccount">Change Account</string>
+    <string name="textSettingsChangeAccountDesc">Logged in as %1$s</string>
+    <string name="textSettingsChangeProfileName">Profile Name</string>
+    <string name="textSettingsClearDatabase">Clear Databases</string>
+    <string name="textSettingsClearDatabaseDesc">Clear the database of any data</string>
+    <string name="textSettingsClearNotifications">Clear notifications</string>
+    <string name="textSettingsClearNotificationsDesc">Clear any chat or request notifications once the app is open.</string>
+    <string name="textSettingsFriends">Friends</string>
+    <string name="textSettingsLicenses">Licenses</string>
+    <string name="textSettingsOther">Other</string>
+    <string name="textSettingsRateApp">Rate App</string>
+    <string name="textSettingsRecentChats">Show recent chats on top for</string>
+    <string name="textSettingsSortFriendBy">Sort friends by Status</string>
+    <string name="textSettingsSortFriendByDesc">Enable sorts by Status, disable by Name</string>
+    <string name="textSettingsSourceCode">Source Code</string>
+    <string name="textSettingsVersion">Version</string>
 
-    <string name="statusOnline">Online</string>
+    <!-- Steam Status -->
+    <string name="statusAway">Away</string>
+    <string name="statusFriendRequest">New Friend Request</string>
     <string name="statusOffline">Last seen %1$s</string>
     <string name="statusOfflineLabel">Offline</string>
-    <string name="statusAway">Away</string>
-    <string name="statusInvisible">Invisible</string>
-    <string name="statusSnooze">Snooze</string>
-    <string name="statusBusy">Busy</string>
+    <string name="statusOnline">Online</string>
     <string name="statusPlaying">Playing: %1$s</string>
     <string name="statusTyping">Typing…</string>
 
-    <!--endregion-->
+    <!-- Steam Game Play Time -->
+    <string name="textPlayedForever">%.0f hrs on record</string>
+    <string name="textPlayedRecent">%.1f hrs past two weeks</string>
 
-    <!--region Menu items-->
+    <!-- Single Word Actions -->
+    <string name="apply">Apply</string>
+    <string name="block">Block</string>
+    <string name="cancel">Cancel</string>
+    <string name="change">Change</string>
+    <string name="close">Close</string>
+    <string name="login">Login</string>
+    <string name="remove">Remove</string>
+    <string name="retry">Retry</string>
 
-    <string name="menuSearch">Search</string>
-    <string name="menuViewProfile">View Profile</string>
-    <string name="menuSettings">Settings</string>
-    <string name="menuLogOut">Log Out</string>
-    <string name="menuAccept">Accept</string>
-    <string name="menuIgnore">Ignore</string>
-    <string name="menuSetNickname">Set nickname</string>
-    <string name="menuViewAliases">View aliases</string>
-    <string name="menuRemoveFriend">Remove friend</string>
-    <string name="menuBlock">Block</string>
-    <string name="menuSortNames">Sort by title</string>
-    <string name="menuSortPlaytime">Sort by playtime</string>
-
-    <!--endregion-->
-
-    <!--region Preference titles-->
-    <string name="prefTitleChangeUser">Change user</string>
-    <string name="prefTitleChangeProfileName">Profile name</string>
-    <string name="prefTitleVersion">Version</string>
-    <string name="prefTitleSourceCode">Source code</string>
-    <string name="prefTitleLicenses">Licenses</string>
-    <string name="prefTitleRateApp">Rate the app</string>
-    <string name="prefTitleSortFriends">Sort friends by</string>
-    <string name="prefTitleFriendsRecents">Show recent chats on top for</string>
-
-    <!--endregion-->
-
-    <!--region Preference descriptions-->
-
-    <string name="prefSummaryChangeUser">Logged in as %1$s</string>
-
-    <!--endregion-->
-
-    <!--region Preference categories-->
-
-    <string name="prefCategoryAbout">About</string>
-    <string name="prefCategoryOther">Other</string>
-    <string name="prefCategoryAccount">Account</string>
-    <string name="prefCategoryFriends">Friends</string>
-    <string name="prefTitleClearNotifications">Clear notifications</string>
-    <string name="prefSummaryClearNotifications">Clear any chat or request notifications once the app is open.</string>
-
-    <!--endregion-->
-
-    <!--region Toast messages-->
-
-    <string name="toastClipboard">Message copied to clipboard!</string>
-
-    <!--endregion-->
-
-    <!--region Dialogs-->
-
-    <string name="dialogYes">Yes</string>
-    <string name="dialogNo">No</string>
-    <string name="dialogTitleNickname">Set %1$s\'s nickname</string>
-    <string name="dialogTitleChangeName">Change profile name?</string>
-    <string name="dialogCancel">Cancel</string>
-    <string name="dialogSet">Set</string>
-    <string name="dialogTitleRemoveFriend">Remove %1$s</string>
-    <string name="dialogMessageRemoveFriend">Are you sure you want to remove %1$s from you friends list?</string>
-    <string name="dialogClose">Close</string>
-    <string name="dialogTitleAliases">Past aliases</string>
-    <string name="dialogTitleBlockFriend">Block %1$s</string>
-    <string name="dialogMessageBlockFriend">Are you sure you want to block %1$s? This will block all kinds of communication with your friend. You can undo this by visiting their profile and unblocking them.</string>
-    <string name="dialogTitleChangeUser">Change user</string>
-    <string name="dialogMessageChangeUser">This will log you out. You will have to reenter your credentials if you want to log back in.</string>
-
-    <!--endregion-->
-
-    <!--region EditText-->
-
-    <string name="editTextErrorSteamGuard">Code must be 5 characters long</string>
-    <string name="editTextErrorUsername">You did not enter your username</string>
-    <string name="editTextErrorPassword">You did not enter your password</string>
-    <string name="editTextHintMessage">Type a message…</string>
-    <string name="editTextHintUsername">Username</string>
-    <string name="editTextHintPassword">Password</string>
-    <string name="editTextHintSteamGuard">Steam guard</string>
-
-    <!--endregion-->
-
-    <!--region Buttons-->
-
-    <string name="buttonLogin">Login</string>
-    <string name="buttonSteamGuard">Enter</string>
-    <string name="buttonRetry">Try again</string>
-    <string name="buttonSteamGuardCancel">Cancel</string>
-    <string name="buttonManage">Manage</string>
-    <string name="buttonViewGames">View Games</string>
+    <!-- Button Actions -->
+    <string name="buttonAddNickname">Add Nickname</string>
+    <string name="buttonLogout">Log Out</string>
+    <string name="buttonManageFriend">Manage Friend</string>
+    <string name="buttonRemoveFriend">Remove Friend</string>
+    <string name="buttonSendMessage">Send Message</string>
     <string name="buttonViewAccount">View Account</string>
-    <string name="buttonChat">Chat</string>
+    <string name="buttonViewAliases">Recent Names</string>
+    <string name="buttonViewGames">View Games</string>
 
-    <!--endregion-->
+    <!-- Text Labels -->
+    <string name="textLabelNickname">Nickname</string>
+    <string name="textLabelPassword">Password</string>
+    <string name="textLabelProfileName">Profile Name</string>
+    <string name="textLabelSteamGuard">Steam guard</string>
+    <string name="textLabelUsername">Username</string>
 
-    <!--region Notifications-->
-
-    <string name="notificationConnecting">Connecting to Steam…</string>
-    <string name="notificationActionLogOut">LOG OUT</string>
-    <string name="notificationActionReply">REPLY</string>
-    <string name="notificationActionAccept">ACCEPT</string>
-    <string name="notificationActionIgnore">IGNORE</string>
-    <string name="notificationActionBlock">BLOCK</string>
-    <string name="notificationTitleFriendRequest">New friend request</string>
-    <string name="notificationMessageFriendRequest">%1$s has added to their friends list!</string>
-    <string name="notificationLostConnection">Lost connection to Steam, reconnecting…</string>
-    <string name="notificationConnected">Connected to Steam</string>
-
-    <!--endregion-->
-
-    <!--region error messages-->
-
+    <!-- Connection Status Errors -->
+    <string name="errorMessageInvalidLoginAuthCode">Invalid steam guard code</string>
     <string name="errorMessageInvalidPassword">Invalid username or password</string>
     <string name="errorMessageLostConnection">Lost connection</string>
+    <string name="errorMessageSteamGuardEmail">Enter your steam guard code you get through your email</string>
+    <string name="errorMessageSteamGuardMobile">Enter your steam guard code from your mobile authenticator app</string>
     <string name="errorMessageTwoFactorCodeMismatch">Invalid steam guard code</string>
-    <string name="errorMessageInvalidLoginAuthCode">Invalid steam guard code</string>
 
-    <!--endregion-->
+    <!-- Notifications -->
+    <string name="notificationActionAccept">Accept</string>
+    <string name="notificationActionBlock">Block</string>
+    <string name="notificationActionIgnore">Ignore</string>
+    <string name="notificationActionLogOut">Log Out</string>
+    <string name="notificationActionReply">Reply</string>
+    <string name="notificationConnected">Connected to Steam</string>
+    <string name="notificationConnecting">Connecting to Steam…</string>
+    <string name="notificationLostConnection">Lost connection to Steam, reconnecting…</string>
+    <string name="notificationMessageFriendRequest">%1$s has requested to be friends</string>
+    <string name="notificationTitleFriendRequest">New friend request</string>
 
-    <!--region Headers-->
-
-    <string name="headerFriendRequest">Friend Requests</string>
-    <string name="headerFriendRecent">Recent Chats</string>
-    <string name="headerFriendInGame">In Game</string>
-    <string name="headerFriendOnline">Online</string>
-    <string name="headerFriendOffline">Offline</string>
-
-    <!--endregion-->
-
-    <!--region Other-->
-
-    <string name="friendsListSearchViewHint">Search for a friend…</string>
-    <string name="gamesListSearchViewHint">Search a game…</string>
-    <string name="nicknameFormat">%1$s*</string>
-    <string name="messageSentSticker">(%1$s)</string>
-    <string name="loadingTextFailed">Failed to connect to steam</string>
-    <string name="loadingTextConnecting">Connecting to Steam…</string>
-    <string name="loadingTextLoggingIn">Logging in…</string>
-    <string name="loadingTextSteamGuardMobile">Enter your steam guard code from your mobile authenticator app</string>
-    <string name="loadingTextSteamGuardEmail">Enter your steam guard code you get through your email</string>
-    <string name="textGames">Games</string>
-    <string name="textLevel">Level</string>
-    <string name="textGamesTitle">\'s games</string>
-    <string name="textNoNames">No Games Found</string>
-    <string name="textPlayedRecent">%.1f hrs past two weeks</string>
-    <string name="textPlayedForever">%.0f hrs on record</string>
-    <string name="desc_send_button">Send Button</string>
-    <string name="change">Change</string>
-    <string name="nickname">Nickname</string>
-    <string name="profileName">Profile Name</string>
-    <string name="title_activity_games">%1$s\'s games</string>
-    <string name="dialogConfirm">Confirm</string>
-    <string name="dialogClearDbMessage">Confirming this will clear the database. Any chats, game data, and images will be erased.</string>
-    <string name="dialogClearDbTitle">Clear Databases</string>
-    <string name="prefTitleDatabase">Clear Database</string>
-    <string name="prefMessageDatabase">After confirming, this will remove everything stored in the local database</string>
-
-    <!--endregion-->
+    <!-- Dialog Strings -->
+    <string name="dialogMessageBlockFriend">Are you sure you want to block all communication with %1$s? You won\'t be able to send or receive direct messages, notifications, and won\'t see their messages in chat rooms.</string>
+    <string name="dialogMessageChangeUser">This will log you out. You will have to reenter your credentials if you want to log back in.</string>
+    <string name="dialogMessageClearDatabase">Are you sure you want to clear the App\'s database? This will clear out any chat history, images, and Game Name. The App will have to obtain everything again which could result in more data usage</string>
+    <string name="dialogMessageRemoveFriend">Are you sure you want to remove %1$s from your friends list?</string>
+    <string name="dialogTitleAliases">Past Aliases</string>
+    <string name="dialogTitleBlockFriend">Block All Communication</string>
+    <string name="dialogTitleChangeName">Edit Profile Name</string>
+    <string name="dialogTitleChangeUser">Change Account</string>
+    <string name="dialogTitleClearDatabase">Clear Databases</string>
+    <string name="dialogTitleNickname">Change Nickname</string>
+    <string name="dialogTitleRemoveFriend">Remove Friend</string>
+    <string name="dialogTitleRecentFriendChats">Show Recent Chats Limit</string>
 
 </resources>

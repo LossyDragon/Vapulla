@@ -83,7 +83,6 @@
         <activity
             android:name=".compose.screens.settings.SettingsActivity"
             android:exported="true"
-            android:label="@string/title_activity_settings"
             android:parentActivityName=".compose.screens.home.HomeActivity"
             android:theme="@style/AppTheme">
             <meta-data

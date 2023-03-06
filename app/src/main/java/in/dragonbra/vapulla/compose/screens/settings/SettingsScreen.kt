@@ -82,8 +82,8 @@ private fun SettingsContent(
         icon = Icons.Default.Logout,
         title = stringResource(id = R.string.dialogTitleChangeUser),
         message = stringResource(id = R.string.dialogMessageChangeUser),
-        positiveText = stringResource(id = R.string.dialogYes),
-        negativeText = stringResource(id = R.string.dialogNo),
+        positiveText = stringResource(id = R.string.buttonLogout),
+        negativeText = stringResource(id = R.string.cancel),
         openDialog = changeUserDialog,
         onPositive = {
             onChangeUser()
@@ -98,7 +98,7 @@ private fun SettingsContent(
     VapullaEditDialog(
         icon = Icons.Default.Edit,
         title = stringResource(id = R.string.dialogTitleChangeName),
-        editTextLabel = stringResource(id = R.string.profileName),
+        editTextLabel = stringResource(id = R.string.textLabelProfileName),
         currentName = accountManager.nickname,
         openDialog = changeNameDialog,
         onConfirm = {
@@ -110,7 +110,7 @@ private fun SettingsContent(
 
     var changeRecentDialog by remember { mutableStateOf(false) }
     VapullaSelectionDialog(
-        title = stringResource(id = R.string.prefTitleFriendsRecents),
+        title = stringResource(id = R.string.dialogTitleRecentFriendChats),
         currentSelection = accountManager.prefFriendsListRecents,
         items = recentsMap,
         openDialog = changeRecentDialog,
@@ -118,23 +118,23 @@ private fun SettingsContent(
             accountManager.prefFriendsListRecents = it
             changeRecentDialog = false
         },
-        positiveText = stringResource(id = R.string.dialogConfirm),
+        positiveText = stringResource(id = R.string.apply),
         onNegative = { changeRecentDialog = false },
-        negativeText = stringResource(id = R.string.dialogCancel)
+        negativeText = stringResource(id = R.string.cancel)
     )
 
     var clearDatabaseDialog by remember { mutableStateOf(false) }
     VapullaMessageDialog(
-        title = stringResource(id = R.string.dialogClearDbTitle),
-        message = stringResource(id = R.string.dialogClearDbMessage),
+        title = stringResource(id = R.string.dialogTitleClearDatabase),
+        message = stringResource(id = R.string.dialogMessageClearDatabase),
         openDialog = clearDatabaseDialog,
         onPositive = {
             onClearDatabase()
             clearDatabaseDialog = false
         },
-        positiveText = stringResource(id = R.string.dialogConfirm),
+        positiveText = stringResource(id = R.string.apply),
         onNegative = { clearDatabaseDialog = false },
-        negativeText = stringResource(id = R.string.dialogCancel)
+        negativeText = stringResource(id = R.string.cancel)
     )
 
     Scaffold(
@@ -155,16 +155,16 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.prefCategoryAccount),
+                        text = stringResource(id = R.string.textSettingsAccount),
                         color = Color.White
                     )
                 }
             ) {
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleChangeUser)) },
+                    title = { Text(text = stringResource(R.string.textSettingsChangeAccount)) },
                     subtitle = {
                         val username = stringResource(
-                            id = R.string.prefSummaryChangeUser,
+                            id = R.string.textSettingsChangeAccountDesc,
                             accountManager.username ?: "*unknown*"
                         )
                         Text(text = username)
@@ -172,7 +172,7 @@ private fun SettingsContent(
                     onClick = { changeUserDialog = true }
                 )
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleChangeProfileName)) },
+                    title = { Text(text = stringResource(R.string.textSettingsChangeProfileName)) },
                     subtitle = { Text(text = accountManager.nickname ?: "*unknown*") },
                     onClick = { changeNameDialog = true }
                 )
@@ -187,13 +187,13 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.prefCategoryFriends),
+                        text = stringResource(id = R.string.textSettingsFriends),
                         color = Color.White
                     )
                 }
             ) {
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleFriendsRecents)) },
+                    title = { Text(text = stringResource(R.string.textSettingsRecentChats)) },
                     subtitle = {
                         val text = recentsMap.entries.find {
                             it.value == accountManager.prefFriendsListRecents
@@ -203,10 +203,9 @@ private fun SettingsContent(
                     onClick = { changeRecentDialog = true }
                 )
                 SettingsSwitch(
-                    title = { Text(text = stringResource(R.string.prefTitleSortFriends)) },
+                    title = { Text(text = stringResource(R.string.textSettingsSortFriendBy)) },
                     subtitle = {
-                        val text = if (accountManager.prefFriendsListSort) "Status" else "Name"
-                        Text(text = text)
+                        Text(text = stringResource(R.string.textSettingsSortFriendByDesc))
                     },
                     state = rememberBooleanSettingState(accountManager.prefFriendsListSort),
                     onCheckedChange = { value ->
@@ -224,26 +223,26 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.prefCategoryOther),
+                        text = stringResource(id = R.string.textSettingsOther),
                         color = Color.White
                     )
                 }
             ) {
                 SettingsSwitch(
-                    title = { Text(text = stringResource(R.string.prefTitleClearNotifications)) },
+                    title = { Text(text = stringResource(R.string.textSettingsClearNotifications)) },
                     state = rememberBooleanSettingState(accountManager.prefClearNotifications),
                     subtitle = {
-                        Text(text = stringResource(id = R.string.prefSummaryClearNotifications))
+                        Text(text = stringResource(id = R.string.textSettingsClearNotificationsDesc))
                     },
                     onCheckedChange = { value ->
                         accountManager.prefClearNotifications = value
                     }
                 )
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(id = R.string.prefTitleDatabase)) },
+                    title = { Text(text = stringResource(id = R.string.textSettingsClearDatabase)) },
                     subtitle = {
                         Text(
-                            text = stringResource(id = R.string.prefMessageDatabase)
+                            text = stringResource(id = R.string.textSettingsClearDatabaseDesc)
                         )
                     },
                     onClick = { clearDatabaseDialog = true }
@@ -259,18 +258,18 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.prefCategoryAbout),
+                        text = stringResource(id = R.string.textSettingsAbout),
                         color = Color.White
                     )
                 }
             ) {
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleVersion)) },
+                    title = { Text(text = stringResource(R.string.textSettingsVersion)) },
                     subtitle = { Text(text = BuildConfig.VERSION_NAME) },
                     onClick = { /* Unit */ }
                 )
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleRateApp)) },
+                    title = { Text(text = stringResource(R.string.textSettingsRateApp)) },
                     enabled = false,
                     onClick = {
                         val pkgName = context.packageName
@@ -279,14 +278,14 @@ private fun SettingsContent(
                     }
                 )
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleSourceCode)) },
+                    title = { Text(text = stringResource(R.string.textSettingsSourceCode)) },
                     onClick = {
                         val url = "https://github.com/Longi94/Vapulla"
                         uriHandler.openUri(url)
                     }
                 )
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(R.string.prefTitleLicenses)) },
+                    title = { Text(text = stringResource(R.string.textSettingsLicenses)) },
                     onClick = {
                         val githubUrl = "https://raw.githubusercontent.com"
                         val url = "$githubUrl/Longi94/Vapulla/master/third_party.txt"

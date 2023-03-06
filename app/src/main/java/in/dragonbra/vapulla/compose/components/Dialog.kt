@@ -161,7 +161,7 @@ fun VapullaEditDialog(
             },
             positiveText = stringResource(id = R.string.change),
             onPositive = { onConfirm(newName.text) },
-            negativeText = stringResource(id = R.string.dialogCancel),
+            negativeText = stringResource(id = R.string.cancel),
             onNegative = onDismiss
         )
     }
@@ -196,7 +196,7 @@ fun VapullaListDialog(
                 }
                 Divider(Modifier.fillMaxWidth())
             },
-            positiveText = stringResource(id = R.string.dialogClose),
+            positiveText = stringResource(id = R.string.close),
             onPositive = onDismiss
         )
     }
@@ -363,7 +363,7 @@ private fun Preview_DialogEditContent() {
         VapullaEditDialog(
             icon = Icons.Default.Edit,
             title = stringResource(id = R.string.dialogTitleNickname, "Blackhole Comet"),
-            editTextLabel = stringResource(id = R.string.nickname),
+            editTextLabel = stringResource(id = R.string.textLabelNickname),
             currentName = "Google Assistant",
             openDialog = true,
             onConfirm = {},
@@ -383,9 +383,9 @@ private fun Preview_DialogMessageContent() {
             message = stringResource(id = R.string.dialogMessageBlockFriend, name).repeat(2),
             openDialog = true,
             onPositive = {},
-            positiveText = stringResource(id = R.string.menuBlock),
+            positiveText = stringResource(id = R.string.block),
             onNegative = {},
-            negativeText = stringResource(id = R.string.dialogCancel)
+            negativeText = stringResource(id = R.string.cancel)
         )
     }
 }

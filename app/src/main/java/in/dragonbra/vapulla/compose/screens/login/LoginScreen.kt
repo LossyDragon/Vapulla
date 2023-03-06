@@ -255,7 +255,7 @@ private fun LoginTextFields(
                     }
                 }
             },
-        label = R.string.editTextHintUsername,
+        label = R.string.textLabelUsername,
         isError = loginState.usernameError.isNotEmpty(),
         isEnabled = !loginState.isLoading,
         keyboardActions = KeyboardActions(
@@ -309,7 +309,7 @@ private fun LoginTextFields(
         },
         isEnabled = !loginState.isLoading,
         isError = loginState.passwordError.isNotEmpty(),
-        label = R.string.editTextHintPassword,
+        label = R.string.textLabelPassword,
         onValueChange = onPassword,
         supportingText = loginState.passwordError,
         value = loginState.password,
@@ -328,16 +328,16 @@ private fun LoginTextFields(
     ) {
         if (loginState.expectSteamGuard) {
             val string = if (loginState.is2Fa) {
-                stringResource(id = R.string.loadingTextSteamGuardMobile)
+                stringResource(id = R.string.errorMessageSteamGuardMobile)
             } else {
-                stringResource(id = R.string.loadingTextSteamGuardEmail)
+                stringResource(id = R.string.errorMessageSteamGuardEmail)
             }
             on2faMessage(string) // I don't like this
         }
 
         LoginTextField(
             modifier = modifier,
-            label = R.string.editTextHintSteamGuard,
+            label = R.string.textLabelSteamGuard,
             isEnabled = !loginState.isLoading,
             isError = loginState.steamGuardError.isNotEmpty(),
             keyboardActions = KeyboardActions(
@@ -372,7 +372,7 @@ private fun LoginButtons(
             contentColor = Color.White
         ),
         onClick = onLogin,
-        content = { Text(text = stringResource(id = R.string.buttonLogin)) }
+        content = { Text(text = stringResource(id = R.string.login)) }
     )
 
     AnimatedVisibility(
@@ -386,7 +386,7 @@ private fun LoginButtons(
                 contentColor = Color.White
             ),
             onClick = onRetry,
-            content = { Text(text = stringResource(id = R.string.buttonRetry)) }
+            content = { Text(text = stringResource(id = R.string.retry)) }
         )
     }
 }
@@ -394,7 +394,7 @@ private fun LoginButtons(
 @Preview
 @Composable
 private fun Preview_LoginScreenContent() {
-    val string = stringResource(id = R.string.loadingTextSteamGuardMobile)
+    val string = stringResource(id = R.string.errorMessageSteamGuardMobile)
     val loginState = LoginState(
         generalMessage = string,
         is2Fa = true,

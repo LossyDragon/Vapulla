@@ -101,7 +101,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     VapullaEditDialog(
         icon = Icons.Default.Edit,
         title = stringResource(id = R.string.dialogTitleNickname, state.friend?.name ?: ""),
-        editTextLabel = stringResource(id = R.string.nickname),
+        editTextLabel = stringResource(id = R.string.textLabelNickname),
         currentName = state.friend?.nickname,
         openDialog = showNicknameDialog,
         onConfirm = {
@@ -128,8 +128,8 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     VapullaMessageDialog(
         title = stringResource(id = R.string.dialogTitleRemoveFriend, state.friend?.name ?: ""),
         message = stringResource(id = R.string.dialogMessageRemoveFriend, state.friend?.name ?: ""),
-        positiveText = stringResource(id = R.string.dialogConfirm),
-        negativeText = stringResource(id = R.string.dialogCancel),
+        positiveText = stringResource(id = R.string.remove),
+        negativeText = stringResource(id = R.string.cancel),
         openDialog = showRemoveDialog,
         onPositive = {
             viewModel.removeFriend()
@@ -145,8 +145,8 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     VapullaMessageDialog(
         title = stringResource(id = R.string.dialogTitleBlockFriend, state.friend?.name ?: ""),
         message = stringResource(id = R.string.dialogMessageBlockFriend, state.friend?.name ?: ""),
-        positiveText = stringResource(id = R.string.dialogConfirm),
-        negativeText = stringResource(id = R.string.dialogCancel),
+        positiveText = stringResource(id = R.string.block),
+        negativeText = stringResource(id = R.string.cancel),
         openDialog = showBlockDialog,
         onPositive = {
             viewModel.blockFriend()
@@ -348,7 +348,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
         ) {
             ProfileLevelLayout(
                 modifier = Modifier.weight(1f),
-                levelTitle = R.string.textLevel,
+                levelTitle = R.string.textProfileLevel,
                 levelNumber = (state.levelCount ?: 0).toString(),
                 isLoading = state.isLoading
             )
@@ -363,7 +363,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
 
             ProfileLevelLayout(
                 modifier = Modifier.weight(1f),
-                levelTitle = R.string.textGames,
+                levelTitle = R.string.textProfileGames,
                 levelNumber = (state.gamesCount ?: 0).toString(),
                 isLoading = state.isLoading
             )
@@ -437,7 +437,7 @@ private fun ProfileScreenButtons(
             onClick = onChatClick
         ) {
             Text(
-                text = stringResource(id = R.string.buttonChat),
+                text = stringResource(id = R.string.buttonSendMessage),
                 color = Color.White
             )
         }
@@ -467,7 +467,7 @@ private fun ProfileScreenButtons(
             onClick = onManageClick
         ) {
             Text(
-                text = stringResource(id = R.string.buttonManage),
+                text = stringResource(id = R.string.buttonManageFriend),
                 color = Color.White
             )
         }
@@ -497,7 +497,7 @@ private fun ProfileExpandedButtons(
                 onClick = onNickName
             ) {
                 Text(
-                    text = stringResource(id = R.string.menuSetNickname),
+                    text = stringResource(id = R.string.buttonAddNickname),
                     color = Color.White
                 )
             }
@@ -509,7 +509,7 @@ private fun ProfileExpandedButtons(
                 onClick = onAliases
             ) {
                 Text(
-                    text = stringResource(id = R.string.menuViewAliases),
+                    text = stringResource(id = R.string.buttonViewAliases),
                     color = Color.White
                 )
             }
@@ -523,7 +523,7 @@ private fun ProfileExpandedButtons(
                 onClick = onRemove
             ) {
                 Text(
-                    text = stringResource(id = R.string.menuRemoveFriend),
+                    text = stringResource(id = R.string.buttonRemoveFriend),
                     color = Color.White
                 )
             }
@@ -535,7 +535,7 @@ private fun ProfileExpandedButtons(
                 onClick = onBlock
             ) {
                 Text(
-                    text = stringResource(id = R.string.menuBlock),
+                    text = stringResource(id = R.string.block),
                     color = Color.White
                 )
             }
