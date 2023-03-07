@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.types.SteamID
@@ -61,7 +62,8 @@ class ChatViewModel @Inject constructor(
 
     private lateinit var emoticonData: LiveData<List<Emoticon>>
     private val emoteObserver = Observer<List<Emoticon>> { list ->
-        _state.update { it.copy(emoticonData = list) }
+        val emoteSet = list.filter { !it.isSticker }.map { it.name }.toSet()
+        _state.update { it.copy(emoticonData = list, emoteSet = emoteSet) }
     }
 
     private lateinit var friendData: LiveData<FriendListItem>
@@ -82,7 +84,7 @@ class ChatViewModel @Inject constructor(
         val chatDao = chatMessageDao.findLivePaged(steamID.convertToUInt64())
         val pagingConfig = PagingConfig(50)
         val pagingFactory = chatDao.asPagingSourceFactory(Dispatchers.IO)
-        chatData = Pager(pagingConfig, null, pagingFactory).flow
+        chatData = Pager(pagingConfig, null, pagingFactory).flow.cachedIn(viewModelScope)
         chatData.asLiveData().observe(lifecycleOwner, chatObserver)
 
         friendData = steamFriendDao.findLive(steamID.convertToUInt64())
@@ -125,6 +127,7 @@ class ChatViewModel @Inject constructor(
         _state.update { it.copy(currentChatSteamID = steamID) }
     }
 
+    // TODO isTyping
     fun isTyping() {
         if (_state.value.lastTypingMessage < System.currentTimeMillis() - TYPING_INTERVAL) {
             _state.update { it.copy(lastTypingMessage = System.currentTimeMillis()) }
@@ -146,7 +149,8 @@ class ChatViewModel @Inject constructor(
         val steamID = _state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID was null trying to send a message")
 
-        emit(ChatUiEvent.SendMessage(steamID, message))
+        val emoteSet = _state.value.emoteSet
+        emit(ChatUiEvent.SendMessage(steamID, message, emoteSet))
     }
 
     private fun emit(event: ChatUiEvent) {

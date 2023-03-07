@@ -30,9 +30,9 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     protected val scope = CoroutineScope(Dispatchers.Default + Job())
 
-    private val stopReceiver = StopReceiver()
-
     private val subs: MutableList<Closeable?> = LinkedList()
+
+    private val stopReceiver = StopReceiver()
 
     var isBound = false
         private set
@@ -132,7 +132,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         steamService?.let { service ->
             if (!service.isRunning) {
                 steamService?.connect()
-
                 showLoading()
             } else {
                 onConnected()

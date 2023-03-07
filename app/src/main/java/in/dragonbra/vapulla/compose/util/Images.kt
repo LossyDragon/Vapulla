@@ -60,6 +60,7 @@ fun getStatusIcon(friend: FriendListItem?): ImageVector? {
 @Composable
 fun StaticImage(
     modifier: Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
     url: String
 ) {
     val context = LocalContext.current
@@ -86,7 +87,7 @@ fun StaticImage(
                     .build()
             },
             previewPlaceholder = R.mipmap.ic_launcher_foreground,
-            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
+            imageOptions = ImageOptions(contentScale = contentScale)
         )
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,8 +62,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.ui.theme.colorPrimaryDark
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.util.StickerImage
 import `in`.dragonbra.vapulla.core.Constants
@@ -103,24 +106,24 @@ fun UserInput(
     var textFieldFocusState by remember { mutableStateOf(false) }
 
     Surface(tonalElevation = 2.dp) {
-        Column(modifier = modifier) {
+        Column(
+            modifier = modifier.background(
+                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f)
+            )
+        ) {
             UserInputText(
                 onSelectorChange = { currentInputSelector = it },
                 currentInputSelector = currentInputSelector,
                 sendMessageEnabled = textState.text.isNotBlank(),
                 onMessageSent = {
                     onMessageSent(textState.text)
-                    // Reset text field and close keyboard
                     textState = TextFieldValue()
-                    // Move scroll to bottom
                     onResetScroll()
                     dismissKeyboard()
                 },
                 textFieldValue = textState,
                 onTextChanged = { textState = it },
-                // Only show the keyboard if there's no input selector and text field has focus
                 keyboardShown = currentInputSelector == InputSelector.NONE && textFieldFocusState,
-                // Close extended selector if text field receives focus
                 onTextFieldFocused = { focused ->
                     if (focused) {
                         currentInputSelector = InputSelector.NONE
@@ -132,8 +135,13 @@ fun UserInput(
             )
             SelectorExpanded(
                 emoticonList = emoticonList,
-                onCloseRequested = dismissKeyboard,
-                onTextAdded = { textState = textState.addText(it) },
+                onTextAdded = { emote, isSticker ->
+                    if (isSticker) {
+                        onMessageSent("/sticker $emote")
+                    } else {
+                        textState = textState.addText(":$emote:")
+                    }
+                },
                 currentSelector = currentInputSelector
             )
         }
@@ -157,15 +165,13 @@ private fun TextFieldValue.addText(newString: String): TextFieldValue {
 @Composable
 private fun SelectorExpanded(
     currentSelector: InputSelector,
-    onCloseRequested: () -> Unit,
-    onTextAdded: (String) -> Unit,
+    onTextAdded: (String, Boolean) -> Unit,
     emoticonList: List<Emoticon>
 ) {
     if (currentSelector == InputSelector.NONE) return
 
-    // Request focus to force the TextField to lose it
+    var selected by remember { mutableStateOf(EmojiStickerSelector.EMOJI) }
     val focusRequester = FocusRequester()
-    // If the selector is shown, always request focus to trigger a TextField.onFocusChange.
     SideEffect {
         if (currentSelector == InputSelector.EMOJI) {
             focusRequester.requestFocus()
@@ -174,7 +180,13 @@ private fun SelectorExpanded(
 
     Surface(tonalElevation = 8.dp) {
         when (currentSelector) {
-            InputSelector.EMOJI -> EmojiSelector(emoticonList, onTextAdded, focusRequester)
+            InputSelector.EMOJI -> EmojiSelector(
+                selected = selected,
+                onSelected = { selected = it },
+                emoticonList = emoticonList,
+                onTextAdded = onTextAdded,
+                focusRequester = focusRequester
+            )
             else -> throw NotImplementedError()
         }
     }
@@ -291,8 +303,7 @@ private fun UserInputText(
                 }
             )
 
-            val disableContentColor =
-                MaterialTheme.colorScheme.onSurfaceVariant
+            val disableContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             if (textFieldValue.text.isEmpty() && !focusState) {
                 Text(
                     modifier = Modifier
@@ -349,18 +360,19 @@ private fun SendButton(
 
 @Composable
 fun EmojiSelector(
+    selected: EmojiStickerSelector,
+    onSelected: (EmojiStickerSelector) -> Unit,
     emoticonList: List<Emoticon>,
-    onTextAdded: (String) -> Unit,
+    onTextAdded: (String, Boolean) -> Unit,
     focusRequester: FocusRequester
 ) {
-    var selected by remember { mutableStateOf(EmojiStickerSelector.EMOJI) }
-
     Column(
         modifier = Modifier
-            .focusRequester(focusRequester) // Requests focus when the Emoji selector is displayed
-            // Make the emoji selector focusable so it can steal focus from TextField
+            .focusRequester(focusRequester)
+            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f))
             .focusTarget()
     ) {
+        // Emoticon / Sticker selection
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -368,36 +380,25 @@ fun EmojiSelector(
         ) {
             ExtendedSelectorInnerButton(
                 text = "Emoticons",
-                onClick = { selected = EmojiStickerSelector.EMOJI },
+                onClick = { onSelected(EmojiStickerSelector.EMOJI) },
                 selected = selected == EmojiStickerSelector.EMOJI,
                 modifier = Modifier.weight(1f)
             )
             ExtendedSelectorInnerButton(
                 text = "Stickers",
-                onClick = { selected = EmojiStickerSelector.STICKER },
+                onClick = { onSelected(EmojiStickerSelector.STICKER) },
                 selected = selected == EmojiStickerSelector.STICKER,
                 modifier = Modifier.weight(1f)
             )
         }
+
+        // Sticker Panel
         Row(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            when (selected) {
-                EmojiStickerSelector.EMOJI -> {
-                    EmojiTable(
-                        baseUrl = Constants.EMOTE_URL,
-                        emoticonList = emoticonList.filter { !it.isSticker },
-                        onTextAdded = onTextAdded,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                EmojiStickerSelector.STICKER -> {
-                    EmojiTable(
-                        baseUrl = Constants.STICKER_URL,
-                        emoticonList = emoticonList.filter { it.isSticker },
-                        onTextAdded = onTextAdded,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
+            EmojiTable(
+                emoticonList = emoticonList,
+                isSticker = selected == EmojiStickerSelector.STICKER,
+                onTextAdded = { onTextAdded(it, selected == EmojiStickerSelector.STICKER) }
+            )
         }
     }
 }
@@ -411,7 +412,7 @@ fun ExtendedSelectorInnerButton(
 ) {
     val colors = ButtonDefaults.buttonColors(
         containerColor = if (selected) {
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+            colorPrimaryDark.copy(alpha = 0.25f)
         } else {
             Color.Transparent
         },
@@ -436,21 +437,43 @@ fun ExtendedSelectorInnerButton(
 
 @Composable
 fun EmojiTable(
-    baseUrl: String,
     emoticonList: List<Emoticon>,
-    onTextAdded: (String) -> Unit,
-    modifier: Modifier = Modifier
+    isSticker: Boolean,
+    onTextAdded: (String) -> Unit
 ) {
+    var list by remember { mutableStateOf(listOf<Emoticon>()) }
+    val columns: GridCells.Adaptive
+    val size: Dp
+    val baseUrl: String
+
+    if (isSticker) {
+        // Stickers
+        baseUrl = Constants.STICKER_URL
+        columns = GridCells.Adaptive(minSize = 75.dp)
+        list = emoticonList.filter { it.isSticker }
+        size = 75.dp
+    } else {
+        // Emoticons
+        baseUrl = Constants.EMOTE_URL
+        columns = GridCells.Adaptive(minSize = 54.dp)
+        list = emoticonList.filter { !it.isSticker }
+        size = 54.dp
+    }
+
     LazyVerticalGrid(
         modifier = Modifier
             .fillMaxWidth()
             .height(216.dp),
-        columns = GridCells.Adaptive(minSize = 54.dp),
+        columns = columns,
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.Center,
         content = {
-            items(emoticonList) {
+            items(list) {
                 StickerImage(
-                    modifier = Modifier.size(54.dp),
+                    modifier = Modifier
+                        .clickable { onTextAdded(it.name) }
+                        .size(size)
+                        .padding(4.dp),
                     url = baseUrl + it.name
                 )
             }
@@ -468,5 +491,33 @@ fun Preview_ChatInputBox() {
         ) {
             UserInput(onMessageSent = {}, onResetScroll = {}, emoticonList = listOf())
         }
+    }
+}
+
+@Preview
+@Composable
+fun Preview_EmojiTable() {
+    VapullaTheme {
+        EmojiSelector(
+            selected = EmojiStickerSelector.EMOJI,
+            onSelected = {},
+            emoticonList = (1..64).map { Emoticon("emote", false, 0) }.toList(),
+            onTextAdded = { _, _ -> },
+            focusRequester = FocusRequester()
+        )
+    }
+}
+
+@Preview
+@Composable
+fun Preview_EmojiStickerTable() {
+    VapullaTheme {
+        EmojiSelector(
+            selected = EmojiStickerSelector.STICKER,
+            onSelected = {},
+            emoticonList = (1..64).map { Emoticon("emote", true, 0) }.toList(),
+            onTextAdded = { _, _ -> },
+            focusRequester = FocusRequester()
+        )
     }
 }

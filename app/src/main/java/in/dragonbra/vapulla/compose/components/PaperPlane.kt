@@ -1,23 +1,32 @@
 package `in`.dragonbra.vapulla.compose.components
 
+import android.webkit.URLUtil
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -34,16 +43,41 @@ import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.StickerImage
 import `in`.dragonbra.vapulla.core.Constants
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.jsoup.Jsoup
 
 private val stickerPattern = "\\[sticker type=\"(.*?)\" limit=\"0\"]\\[/sticker]".toRegex()
 private val emoticonPattern = "\\[emoticon](.*?)\\[/emoticon]".toRegex()
-private val publishedFilePattern = (
-    "publishedfile\\surl=\"([^\"]+)\"\\s[^>]*" +
-        "preview_url=\"([^\"]+)\"\\s[^>]*title=\"([^\"]+)\""
-    ).toRegex()
+private val steamUrlPattern = "](.*?)\\[".toRegex()
 private val domainNamePattern = "^(?:https?://)?(?:[^@/\\n]+@)?(?:www\\.)?([^:/\\n]+)".toRegex()
 
-// TODO: Maybe this can also be versatile enough to use as the Emoji Picker?
+data class OpenGraphData(
+    val url: String,
+    val ogTitle: String?,
+    val ogDescription: String?,
+    val ogImage: String?
+)
+
+fun parseOpenGraphData(url: String, html: String?): OpenGraphData? {
+    if (html == null) return null
+
+    var title: String? = null
+    var description: String? = null
+    var imageUrl: String? = null
+    Jsoup.parse(html).getElementsByTag("meta").forEach { tag ->
+        when (tag.attr("property")) {
+            "og:title" -> title = tag.attr("content")
+            "og:description" -> description = tag.attr("content")
+            "og:image" -> imageUrl = tag.attr("content")
+        }
+    }
+
+    return OpenGraphData(url, title, description, imageUrl)
+}
+
 @Composable
 fun PaperPlane(
     modifier: Modifier = Modifier,
@@ -73,55 +107,86 @@ fun PaperPlane(
         return
     }
 
-    // Rich Previews
-    publishedFilePattern.find(text)?.let {
-        val uriHandler = LocalUriHandler.current
-        val (url, preview, title) = it.destructured
-        if (isPreviewMode) {
-            Text(
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { uriHandler.openUri(url) },
-                text = buildAnnotatedString {
-                    val style = SpanStyle(color = friendOnline, fontStyle = FontStyle.Italic)
-                    withStyle(style = style) {
-                        append(url)
-                        addStringAnnotation(
-                            tag = "URL",
-                            annotation = url,
-                            start = 0,
-                            end = url.length
-                        )
-                    }
+    // Rich Previews -- Open Graph Meta
+    // This is probably a terrible way to do this, but I want to see the concept.
+    val urlMatchResult = steamUrlPattern.find(text)
+    if (urlMatchResult?.groupValues?.isNotEmpty() == true) {
+        val capturedUrl = urlMatchResult.groupValues[1]
+        val isValidUrl = remember { URLUtil.isValidUrl(capturedUrl) }
+        var openGraphData: OpenGraphData? by remember { mutableStateOf(null) }
+        if (isValidUrl) {
+            val scope = rememberCoroutineScope()
+            var client: OkHttpClient? = remember { OkHttpClient() }
+            var request: Request? = remember { Request.Builder().url(capturedUrl).build() }
+            DisposableEffect(capturedUrl) {
+                scope.launch(Dispatchers.IO) {
+                    val response = client?.newCall(request!!)?.execute()
+                    val htmlBody = response?.body?.string()
+                    openGraphData = parseOpenGraphData(capturedUrl, htmlBody)
                 }
-            )
-            return
-        }
 
-        Card(Modifier.clickable { uriHandler.openUri(url) }) {
-            Column(modifier = Modifier.padding(6.dp)) {
-                StaticImage(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .size(256.dp),
-                    url = preview
-                )
-                Text(
-                    modifier = Modifier.padding(start = 2.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = 10.sp,
-                    text = domainNamePattern.find(url)!!.groupValues[1].uppercase()
-                )
-                Text(
-                    modifier = Modifier.padding(start = 2.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    text = title
-                )
+                onDispose {
+                    client = null
+                    request = null
+                }
             }
         }
-        return
+
+        openGraphData?.let {
+            val uriHandler = LocalUriHandler.current
+
+            if (isPreviewMode) {
+                Text(
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable { uriHandler.openUri(it.url) },
+                    text = buildAnnotatedString {
+                        val style = SpanStyle(color = friendOnline, fontStyle = FontStyle.Italic)
+                        withStyle(style = style) {
+                            append(it.url)
+                            addStringAnnotation(
+                                tag = "URL",
+                                annotation = it.url,
+                                start = 0,
+                                end = it.url.length
+                            )
+                        }
+                    }
+                )
+                return
+            }
+
+            Card(modifier = Modifier.clickable { uriHandler.openUri(it.url) }) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom
+                ) {
+                    it.ogImage?.let {
+                        StaticImage(
+                            modifier = Modifier.size(height = 126.dp, width = 240.dp),
+                            contentScale = ContentScale.Fit,
+                            url = it
+                        )
+                    }
+                    Text(
+                        modifier = Modifier.padding(start = 0.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 10.sp,
+                        text = domainNamePattern.find(it.url)!!.groupValues[1].uppercase()
+                    )
+                    Text(
+                        modifier = Modifier.padding(start = 0.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        text = it.ogTitle ?: ""
+                    )
+                }
+            }
+
+            return
+        }
     }
 
     // Emoticons
@@ -146,6 +211,7 @@ fun PaperPlane(
         append(text.substring(lastIndex, text.length))
     }
 
+    // TODO text still gets rendered even though we captured an item above
     Text(
         color = Color.White,
         modifier = modifier,
@@ -159,26 +225,7 @@ fun PaperPlane(
 @Preview
 @Composable
 private fun Preview_PaperPlane() {
-    val input = """
-        [publishedfile url="https://steamcommunity.com/sharedfiles/filedetails/?id=2862951508" 
-        fileid="2862951508" 
-        preview_url="https://steamuserimages-a.akamaihd.net/ugc/
-        1803152413041139370/F6EC1CD906D49354DAF85F2C0D3A2AF913C95916/" 
-        creator="76561197997988385" 
-        creator_appid="766" 
-        num_comments_public="1" 
-        title="Dead Before Dawn (Uncut)" 
-        description=""BrInG mE a BeEr, h'I nEeD a BeEeEeR, mY FaVoRiTe BrAnD iS mUdWiSeR" (c) 
-        Hank Kowalski This is a very first version of this campaign ever released before even 
-        Left 4 Dead 2 came out. It has cut from further versions tasks, randomizations, 
-        voicelines, overa" 
-        votes_up="134" 
-        votes_down="25" 
-        file_type="2" 
-        file_type="2"]
-        https://steamcommunity.com/sharedfiles/filedetails/?id=2862951508
-        [/publishedfile]
-    """.trimIndent()
+    val input = "https://github.com/Longi94/Vapulla"
     VapullaTheme {
         Column(
             Modifier
@@ -188,23 +235,47 @@ private fun Preview_PaperPlane() {
             PaperPlane(
                 text = "Left [emoticon]health[/emoticon] 4 [emoticon]missing[/emoticon] Dead 2!"
             )
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
             PaperPlane(text = "No Emojis, but Left 4 Dead 2!")
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
             PaperPlane(text = "[sticker type=\"Winter2019HappyFire\" limit=\"0\"][/sticker]")
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
             PaperPlane(
                 isPreviewMode = false,
-                text = "[sticker type=\"Steam Pal\" limit=\"0\"][sticker]"
+                text = "[sticker type=\"Steam Pal\" limit=\"0\"][/sticker]"
             )
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
             PaperPlane(
                 isPreviewMode = true,
                 text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]"
             )
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
             PaperPlane(isPreviewMode = true, text = input)
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
             PaperPlane(isPreviewMode = false, text = input)
         }
     }

@@ -63,6 +63,7 @@ import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.*
+import `in`.dragonbra.vapulla.compose.util.findEmotes
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
@@ -239,9 +240,9 @@ class SteamService : Service() {
                     val message = intent.getStringExtra(EXTRA_MESSAGE)!!
                     scope.launch(Dispatchers.IO) {
                         // TODO emotes?
-                        // val emotes = db.emoticonDao().find()
-                        // val emoteSet = emotes.map { it.name }.toSet()
-                        sendMessage(id, message)
+                        val emotes = db.emoticonDao().find()
+                        val emoteSet = emotes.map { it.name }.toSet()
+                        sendMessage(id, message, emoteSet)
                     }
                     notificationManager.cancel(steamId)
                 }
@@ -295,6 +296,7 @@ class SteamService : Service() {
             ) != PackageManager.PERMISSION_GRANTED
 
             if (isGranted) onGranted()
+
             return
         }
 
@@ -324,9 +326,7 @@ class SteamService : Service() {
     }
 
     fun logOn(details: LogOnDetails) {
-        if (isLoggedIn) {
-            return
-        }
+        if (isLoggedIn) return
 
         details.isShouldRememberPassword = true
 
@@ -447,13 +447,14 @@ class SteamService : Service() {
         unifiedFriendMessages?.SendMessage(message)
     }
 
-    fun sendMessage(id: SteamID, msg: String) {
+    fun sendMessage(id: SteamID, msg: String, emoteSet: Set<String>) {
         val trimmedMessage = msg.trim()
 
         if (trimmedMessage.isEmpty()) {
             return
         }
 
+        // Send the message to steam
         val message = CFriendMessages_SendMessage_Request.newBuilder().apply {
             chatEntryType = EChatEntryType.ChatMsg.code()
             message = msg
@@ -462,17 +463,16 @@ class SteamService : Service() {
             echoToSender = false
             lowPriority = false
         }.build()
-
         unifiedFriendMessages?.SendMessage(message)
 
-        // TODO emotes?
+        // Then, save the message to our database.
         val formattedMessage = trimmedMessage.replace('\u02D0', ':')
-        // val emoteMessage = findEmotes(formattedMessage, emoteSet)
+        val emoteMessage = findEmotes(formattedMessage, emoteSet)
         val chatMessage = ChatMessage(
             accountid = id.convertToUInt64(),
             fromLocal = true,
             isUnread = false,
-            message = formattedMessage,
+            message = emoteMessage,
             timestamp = System.currentTimeMillis().div(1000)
         )
         db.chatMessageDao().insert(chatMessage)
@@ -600,6 +600,7 @@ class SteamService : Service() {
 
         val details = MachineAuthDetails().apply {
             bytesWritten = it.bytesToWrite
+            eResult = EResult.OK
             fileName = it.fileName
             fileSize = account.sentrySize.toInt()
             jobID = it.jobID
@@ -607,7 +608,6 @@ class SteamService : Service() {
             offset = it.offset
             oneTimePassword = otp
             sentryFileHash = account.readSentryFile()
-            seteResult(EResult.OK)
         }
 
         getHandler<SteamUser>().sendMachineAuthResponse(details)
@@ -750,36 +750,47 @@ class SteamService : Service() {
                 resp.getDeserializedResponse<CFriendMessages_GetRecentMessages_Response.Builder>(
                     CFriendMessages_GetRecentMessages_Response::class.java
                 ).also { cb ->
-                    cb.messagesList.forEach {
-                        val steamID = SteamID().apply {
-                            set(it.accountid.toLong(), EUniverse.Public, EAccountType.Individual)
-                        }
+                    cb.messagesList.forEachIndexed { index, friendMessage ->
 
                         if (chatFriendId == null) {
                             throw NullPointerException("chatFriendId null in onMethodResponse")
                         }
 
+                        val steamID = SteamID()
+                        steamID.set(
+                            friendMessage.accountid.toLong(),
+                            EUniverse.Public,
+                            EAccountType.Individual
+                        )
+
                         val fromLocal = account.steamId == steamID.convertToUInt64()
-                        val timestamp = it.timestamp.toLong()
+                        val timestamp = friendMessage.timestamp.toLong()
 
                         // TODO we're still duping messages when getting history
 
                         // Msg found, skip
                         db.chatMessageDao().find(
-                            message = it.message,
+                            message = friendMessage.message,
                             timestamp = timestamp,
                             accountid = chatFriendId!!,
                             fromLocal = fromLocal
                         ).also { msg ->
                             if (msg != null) {
-                                return@forEach
+                                Timber.d("Skipping Msg History: ${friendMessage.message}")
+                                return@forEachIndexed
                             }
                         }
+
+                        Timber.d("Item: $index")
+                        Timber.d("accountid -> ${friendMessage.accountid}")
+                        Timber.d("timestamp -> ${friendMessage.timestamp}")
+                        Timber.d("message -> ${friendMessage.message}")
+                        Timber.d("----\n")
 
                         val chatMsg = ChatMessage(
                             accountid = chatFriendId!!,
                             fromLocal = fromLocal,
-                            message = it.message,
+                            message = friendMessage.message,
                             timestamp = timestamp,
                             isUnread = false
                         )
@@ -810,15 +821,15 @@ class SteamService : Service() {
                     EChatEntryType.ChatMsg.code() -> {
                         Timber.d("Message: ${callbackObject.message}")
                         val steamID = SteamID(callbackObject.steamidFriend)
-                        db.chatMessageDao().insert(
-                            ChatMessage(
-                                accountid = steamID.convertToUInt64(),
-                                fromLocal = callbackObject.localEcho,
-                                message = callbackObject.message,
-                                timestamp = callbackObject.rtime32ServerTimestamp.toLong(),
-                                isUnread = chatFriendId != steamID.convertToUInt64()
-                            )
+
+                        val msg = ChatMessage(
+                            accountid = steamID.convertToUInt64(),
+                            fromLocal = callbackObject.localEcho,
+                            message = callbackObject.message,
+                            timestamp = callbackObject.rtime32ServerTimestamp.toLong(),
+                            isUnread = chatFriendId != steamID.convertToUInt64()
                         )
+                        db.chatMessageDao().insert(msg)
 
                         if (steamID.convertToUInt64() != chatFriendId) {
                             postMessageNotification(steamID, callbackObject.message)

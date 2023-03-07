@@ -229,10 +229,12 @@ private fun SettingsContent(
                 }
             ) {
                 SettingsSwitch(
-                    title = { Text(text = stringResource(R.string.textSettingsClearNotifications)) },
+                    title = {
+                        Text(text = stringResource(R.string.textSettingsClearNotifications))
+                    },
                     state = rememberBooleanSettingState(accountManager.prefClearNotifications),
                     subtitle = {
-                        Text(text = stringResource(id = R.string.textSettingsClearNotificationsDesc))
+                        Text(text = stringResource(R.string.textSettingsClearNotificationsDesc))
                     },
                     onCheckedChange = { value ->
                         accountManager.prefClearNotifications = value

@@ -130,8 +130,10 @@ class ChatActivity : VapullaBaseActivity() {
         scope.launch(Dispatchers.IO) {
             when (event) {
                 ChatUiEvent.NavigateUp -> finish()
-                is ChatUiEvent.SendTypingStatus -> steamService?.setTyping(event.id)
-                is ChatUiEvent.SendMessage -> steamService?.sendMessage(event.id, event.message)
+                is ChatUiEvent.SendTypingStatus ->
+                    steamService?.setTyping(event.id)
+                is ChatUiEvent.SendMessage ->
+                    steamService?.sendMessage(event.id, event.message, event.emoteSet)
             }
         }
     }

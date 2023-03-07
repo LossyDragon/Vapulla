@@ -17,7 +17,7 @@
     <string name="textSettingsChangeAccountDesc">Logged in as %1$s</string>
     <string name="textSettingsChangeProfileName">Profile Name</string>
     <string name="textSettingsClearDatabase">Clear Databases</string>
-    <string name="textSettingsClearDatabaseDesc">Clear the database of any data</string>
+    <string name="textSettingsClearDatabaseDesc">Clear the database of any data. This will log the app out but still keep account info.</string>
     <string name="textSettingsClearNotifications">Clear notifications</string>
     <string name="textSettingsClearNotificationsDesc">Clear any chat or request notifications once the app is open.</string>
     <string name="textSettingsFriends">Friends</string>

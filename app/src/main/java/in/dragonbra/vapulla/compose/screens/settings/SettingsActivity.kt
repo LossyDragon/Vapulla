@@ -57,7 +57,10 @@ class SettingsActivity : VapullaBaseActivity() {
                                 clearData()
                             }
                         },
-                        onClearDatabase = { clearDatabase() }
+                        onClearDatabase = {
+                            clearDatabase()
+                            steamService?.disconnect()
+                        }
                     )
                 }
             }

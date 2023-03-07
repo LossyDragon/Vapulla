@@ -196,11 +196,14 @@ fun findEmotes(message: String, emoteSet: Set<String>): String {
     val matcher = Constants.EMOTE_PATTERN.matcher(message)
     val matcher2 = Constants.STICKER_PATTERN.matcher(message)
 
+    Timber.d("Emote Set: $emoteSet")
+
     if (matcher2.find()) {
         val result = matcher2.toMatchResult()
         val emote = result.group(1)
 
         if (emoteSet.contains(emote)) {
+            Timber.d("Matched Sticker: $message")
             return "[sticker type=\"$emote\" limit=\"0\"][/sticker]"
         }
     }
@@ -222,5 +225,6 @@ fun findEmotes(message: String, emoteSet: Set<String>): String {
             findEmotes(message.substring(result.end() - 1), emoteSet)
     }
 
+    Timber.d("Matched Emotes: $message")
     return message
 }
