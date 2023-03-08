@@ -133,20 +133,17 @@ private fun GamesScreenContent(
 @Preview
 @Composable
 private fun Preview_GamesScreenContent() {
-    val gamesList = mutableListOf<Games>()
-    repeat(12) {
-        gamesList.add(
-            Games(
-                appid = it,
-                img_icon_url = null,
-                name = "Game Name: $it",
-                playtime_2weeks = (0..4000).random(),
-                playtime_forever = (0..4000).random()
-            )
+    val gamesList = (0..12).map {
+        Games(
+            appid = it,
+            img_icon_url = null,
+            name = "Game Name: $it",
+            playtime_2weeks = (0..4000).random(),
+            playtime_forever = (0..4000).random()
         )
     }
-    val state = GamesState(name = "Mr. Friendly", gamesList = gamesList)
 
+    val state = GamesState(name = "Mr. Friendly", gamesList = gamesList)
     VapullaTheme {
         GamesScreenContent(
             state,

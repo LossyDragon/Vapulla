@@ -21,7 +21,6 @@ import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.getErrorMessage
 import `in`.dragonbra.vapulla.core.Constants
-import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.Notifications
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,9 +29,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class LoginActivity : VapullaBaseActivity() {
-
-    @Inject
-    lateinit var accountManager: AccountManager
 
     @Inject
     lateinit var notificationManager: NotificationManagerCompat
@@ -45,7 +41,7 @@ class LoginActivity : VapullaBaseActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         Timber.d("onCreate")
 
-        viewModel.prefillInputs(accountManager.username)
+        viewModel.prefillInputs()
 
         installSplashScreen().apply {
             setKeepOnScreenCondition {
@@ -88,7 +84,7 @@ class LoginActivity : VapullaBaseActivity() {
         Timber.d("onDisconnected")
         with(viewModel) {
             if (!loginState.value.expectSteamGuard) {
-                if (!accountManager.loginKey.isNullOrEmpty()) {
+                if (!viewModel.loginKey.isNullOrEmpty()) {
                     viewModel.showFailedScreen()
                 }
             }
@@ -135,7 +131,7 @@ class LoginActivity : VapullaBaseActivity() {
             steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
         }
 
-        accountManager.username = viewModel.logOnDetails.username
+        viewModel.setUsername()
 
         onLoginSuccess()
     }
@@ -160,15 +156,8 @@ class LoginActivity : VapullaBaseActivity() {
             Notifications.createServiceNotificationChannel(notificationManager)
         }
 
-        if (!accountManager.loginKey.isNullOrEmpty() && !accountManager.username.isNullOrEmpty()) {
-            with(viewModel.logOnDetails) {
-                loginKey = accountManager.loginKey
-                password = null
-                username = accountManager.username
-            }
-
+        viewModel.onServiceBoundVerifyLoginDetails {
             startSteamService()
-            viewModel.onLoadingVisible(true)
         }
 
         viewModel.onServiceBound()
@@ -187,7 +176,7 @@ class LoginActivity : VapullaBaseActivity() {
     }
 
     private fun onReset() {
-        accountManager.clear()
+        viewModel.resetAccountManager()
         finish()
     }
 }

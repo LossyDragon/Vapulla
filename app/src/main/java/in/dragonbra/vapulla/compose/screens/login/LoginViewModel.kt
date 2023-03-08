@@ -2,7 +2,9 @@ package `in`.dragonbra.vapulla.compose.screens.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
+import `in`.dragonbra.vapulla.manager.AccountManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,13 +12,20 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
-class LoginViewModel(
-    private val loginValidation: LoginValidation = LoginValidation()
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val accountManager: AccountManager
 ) : ViewModel() {
+
+    private val loginValidation: LoginValidation = LoginValidation()
 
     var logOnDetails = LogOnDetails()
         private set
+
+    val loginKey: String?
+        get() = accountManager.loginKey
 
     private val _isServiceNotBound = MutableStateFlow(true)
     val isServiceNotBound = _isServiceNotBound.asStateFlow()
@@ -27,9 +36,30 @@ class LoginViewModel(
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
 
-    fun prefillInputs(username: String?) {
-        if (username == null) return
+    fun prefillInputs() {
+        val username = accountManager.username ?: return
         _loginState.update { it.copy(username = username) }
+    }
+
+    fun setUsername() {
+        accountManager.username = logOnDetails.username
+    }
+
+    fun resetAccountManager() {
+        accountManager.clear()
+    }
+
+    fun onServiceBoundVerifyLoginDetails(hasInfo: () -> Unit) {
+        if (!accountManager.loginKey.isNullOrEmpty() && !accountManager.username.isNullOrEmpty()) {
+            with(logOnDetails) {
+                loginKey = accountManager.loginKey
+                password = null
+                username = accountManager.username
+            }
+
+            onLoadingVisible(true)
+            hasInfo()
+        }
     }
 
     fun onServiceBound() {

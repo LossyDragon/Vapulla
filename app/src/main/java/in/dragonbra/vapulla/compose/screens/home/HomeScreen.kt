@@ -420,26 +420,17 @@ private fun DrawerMenuButtons(
 @Preview
 @Composable
 private fun Preview_HomeScreenContent() {
-    val friendsList = mutableListOf<FriendListItem>()
-    repeat(10) {
-        friendsList.add(
-            FriendListItem(
-                id = it.toLong(),
-                state = EPersonaState.Online.code(),
-                avatar = null,
-                gameAppId = 440,
-                gameName = "Team Fortess 2",
-                lastLogOff = 0L,
-                lastLogOn = 0L,
-                lastMessage = null,
-                lastMessageTime = null,
-                name = "Name $it",
-                newMessageCount = null,
-                nickname = null,
-                relation = 0,
-                stateFlags = 0,
-                typingTs = 0L
-            )
+    val friendsList = (0..10).map {
+        FriendListItem(
+            state = EPersonaState.Online.code(),
+            gameAppId = 440,
+            gameName = "Team Fortess 2",
+            lastLogOff = 0L,
+            lastLogOn = 0L,
+            name = "Name $it",
+            relation = 0,
+            stateFlags = 0,
+            typingTs = 0L
         )
     }
 

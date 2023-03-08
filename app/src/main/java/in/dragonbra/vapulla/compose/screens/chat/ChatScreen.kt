@@ -124,27 +124,25 @@ private fun ChatScreenContent(
                     .fillMaxSize()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    LazyColumn(
-                        reverseLayout = true,
-                        state = scrollState,
-                        contentPadding = WindowInsets.statusBars.add(WindowInsets(top = 90.dp))
-                            .asPaddingValues(),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // NOTE: This should be in the VM, but some refacoring will be needed.
-                        val groupedMessages = messages.groupBy { it.formattedTs }
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    reverseLayout = true,
+                    state = scrollState,
+                    contentPadding = WindowInsets.statusBars.add(WindowInsets(top = 90.dp))
+                        .asPaddingValues()
+                ) {
+                    // TODO: This should be in the VM, but some refacoring will be needed.
+                    val groupedMessages = messages.groupBy { it.formattedTs }
 
-                        groupedMessages.forEach { (header, items) ->
-                            items(items, key = { it.id }) { msg ->
-                                ChatMessageItem(
-                                    modifier = Modifier.animateItemPlacement(),
-                                    message = msg
-                                )
-                            }
-                            stickyHeader(contentType = header) {
-                                ChatMessageDateHeader(dateStamp = header)
-                            }
+                    groupedMessages.forEach { (header, items) ->
+                        items(items, key = { it.id }) { msg ->
+                            ChatMessageItem(
+                                modifier = Modifier.animateItemPlacement(),
+                                chatMessage = msg
+                            )
+                        }
+                        stickyHeader(contentType = header) {
+                            ChatMessageDateHeader(dateStamp = header)
                         }
                     }
                 }
@@ -259,20 +257,17 @@ private fun ChatScreenContent(
 @Preview
 @Composable
 private fun Preview_ChatScreenContent() {
-    val messages = mutableListOf<ChatMessage>()
-    repeat(100) {
+    val messages = (0..20).map {
         val currentTime = System.currentTimeMillis()
         val randomTime = currentTime - Random.nextLong(currentTime)
-        val time = if (it < 75) randomTime else if (it < 95) 1677647978791 else 1699999998791
-        messages.add(
-            ChatMessage(
-                id = it.toLong(),
-                message = "Sup\nBro $it",
-                timestamp = time,
-                accountid = 1,
-                fromLocal = it.mod(2) == 0,
-                isUnread = false
-            )
+        val time = if (it < 10) randomTime else if (it < 15) 1677647978791 else 1699999998791
+        ChatMessage(
+            id = it.toLong(),
+            message = "Sup\nBro $it",
+            timestamp = time,
+            accountid = 1,
+            fromLocal = it.mod(2) == 0,
+            isUnread = false
         )
     }
 

@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -40,12 +41,14 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 @Composable
 fun ChatMessageItem(
     modifier: Modifier = Modifier,
-    message: ChatMessage
+    chatMessage: ChatMessage
 ) {
+    val message = remember { chatMessage }
+
     var bubbleColor = MaterialTheme.colorScheme.primary
-    var bubbleShape = ChatBubbleFriendShape
-    var bubbleSide: Alignment = Alignment.CenterEnd
-    var bubbleTimeSide: Alignment.Horizontal = Alignment.End
+    var bubbleShape = remember { ChatBubbleFriendShape }
+    var bubbleSide = remember { Alignment.CenterEnd }
+    var bubbleTimeSide = remember { Alignment.End }
 
     if (!message.fromLocal) {
         bubbleColor = MaterialTheme.colorScheme.surfaceVariant
@@ -88,12 +91,6 @@ fun ChatMessageItem(
                     text = message.message
                 )
 
-//                Text(
-//                    modifier = Modifier.widthIn(64.dp),
-//                    color = Color.White,
-//                    text = message.message
-//                )
-
                 Text(
                     text = message.formattedChatTime(),
                     fontSize = 8.sp,
@@ -109,6 +106,7 @@ fun ChatMessageDateHeader(
     isVisible: Boolean = true,
     dateStamp: String
 ) {
+    val date = remember { dateStamp }
     if (!isVisible) {
         return
     }
@@ -132,7 +130,7 @@ fun ChatMessageDateHeader(
             color = friendOffline.copy(alpha = 0.95f),
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
-            text = dateStamp,
+            text = date,
             textAlign = TextAlign.Center
         )
         divider()
@@ -150,7 +148,7 @@ private fun Preview_ChatMessageItem() {
     VapullaTheme {
         Column(Modifier.fillMaxWidth()) {
             ChatMessageItem(
-                message = ChatMessage(
+                chatMessage = ChatMessage(
                     accountid = 1,
                     fromLocal = false,
                     isUnread = false,
@@ -160,7 +158,7 @@ private fun Preview_ChatMessageItem() {
             )
             Spacer(Modifier.height(8.dp))
             ChatMessageItem(
-                message = ChatMessage(
+                chatMessage = ChatMessage(
                     accountid = 1,
                     fromLocal = true,
                     isUnread = false,
