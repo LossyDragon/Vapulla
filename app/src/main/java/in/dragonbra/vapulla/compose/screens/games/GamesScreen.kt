@@ -45,11 +45,11 @@ fun GamesScreen(
 
     GamesScreenContent(
         state = state,
+        searchTextState = viewModel.searchText,
         onBackPressed = { activity.finish() },
         onItemClick = onItemClick,
-        searchTextState = viewModel.searchText,
-        onSearchOpened = { viewModel.setSearching(true) },
-        onSearchClosed = { viewModel.setSearching(false) }
+        onSearchClosed = viewModel::isNotSearching,
+        onSearchOpened = viewModel::isSearching
     )
 }
 

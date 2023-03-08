@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
-import `in`.dragonbra.javasteam.types.JobID
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
@@ -35,8 +34,6 @@ class ProfileViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(ProfileState())
     val state = _state.asStateFlow()
-
-    private var jobID = JobID.INVALID
 
     private val profileExec by lazy {
         viewModelScope.launch(Dispatchers.IO) {
@@ -81,16 +78,10 @@ class ProfileViewModel @Inject constructor(
         friendData.removeObserver(friendObserver)
     }
 
-    fun setJobID(jobID: JobID?) {
-        this.jobID = jobID ?: JobID.INVALID
-    }
-
     fun onAliasHistory(callback: AliasHistoryCallback) {
-        if (jobID == callback.jobID) {
-            val list = callback.responses[0].names.toList().sortedByDescending { it.nameSince }
-            val nickNames = list.map { it.name }
-            _state.update { it.copy(aliasHistory = nickNames) }
-        }
+        val list = callback.responses[0].names.toList().sortedByDescending { it.nameSince }
+        val nickNames = list.map { it.name }
+        _state.update { it.copy(aliasHistory = nickNames) }
     }
 
     fun setNickname(nickName: String) {

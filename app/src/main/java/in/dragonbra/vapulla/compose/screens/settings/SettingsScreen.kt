@@ -241,7 +241,9 @@ private fun SettingsContent(
                     }
                 )
                 SettingsMenuLink(
-                    title = { Text(text = stringResource(id = R.string.textSettingsClearDatabase)) },
+                    title = {
+                        Text(text = stringResource(id = R.string.textSettingsClearDatabase))
+                    },
                     subtitle = {
                         Text(
                             text = stringResource(id = R.string.textSettingsClearDatabaseDesc)

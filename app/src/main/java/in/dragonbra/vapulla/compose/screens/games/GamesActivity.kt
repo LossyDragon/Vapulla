@@ -43,7 +43,7 @@ class GamesActivity : VapullaBaseActivity() {
                 CompositionLocalProvider(LocalActivity provides this) {
                     GamesScreen(
                         viewModel = viewModel,
-                        onItemClick = { gotoGameStore(it) }
+                        onItemClick = ::gotoGameStore
                     )
                 }
             }

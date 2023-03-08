@@ -42,8 +42,6 @@ import `in`.dragonbra.vapulla.core.Constants
 /**
  * Helper functions that relate to Images/Icons
  */
-
-@Composable
 fun getStatusIcon(friend: FriendListItem?): ImageVector? {
     val flags = EPersonaStateFlag.from(friend?.stateFlags ?: 0)
     return when {

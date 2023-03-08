@@ -86,8 +86,7 @@ class ProfileActivity : VapullaBaseActivity() {
             when (event) {
                 ProfileUiEvent.NavigateBack -> finish()
                 is ProfileUiEvent.GetAliases -> {
-                    val jobID = getHandler<SteamFriends>()?.requestAliasHistory(event.steamID)
-                    viewModel.setJobID(jobID)
+                    getHandler<SteamFriends>()?.requestAliasHistory(event.steamID)
                 }
                 is ProfileUiEvent.SetNickName -> {
                     getHandler<SteamFriends>()?.setFriendNickname(event.steamID, event.nickName)

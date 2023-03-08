@@ -50,6 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import `in`.dragonbra.vapulla.R
@@ -83,7 +84,10 @@ fun LoginScreen(
 
         viewModel.loginEvents.collect { event ->
             when (event) {
-                is ValidationEvent.StartService -> onStartService()
+                is ValidationEvent.StartService -> {
+                    viewModel.onLoadingVisible(true)
+                    onStartService()
+                }
                 is ValidationEvent.BindService -> onBindService()
             }
         }
@@ -91,19 +95,19 @@ fun LoginScreen(
 
     PermissionsDialog(
         permissionState = permissionState,
-        onPermGranted = { onBindService() },
+        onPermGranted = onBindService,
         onSettings = onSettings
     )
 
     /* Content */
     LoginScreenContent(
         loginState = state,
-        onUsername = { viewModel.onUsernameUpdate(it) },
-        onPassword = { viewModel.onPasswordUpdate(it) },
-        onSteamGuard = { viewModel.onSteamGuardUpdate(it) },
-        onPasswordVisible = { viewModel.onPasswordVisible(it) },
-        onLogin = { viewModel.doLogin() },
-        onRetry = { viewModel.doRetry() },
+        onUsername = viewModel::onUsernameUpdate,
+        onPassword = viewModel::onPasswordUpdate,
+        onSteamGuard = viewModel::onSteamGuardUpdate,
+        onPasswordVisible = viewModel::onPasswordVisible,
+        onLogin = viewModel::doLogin,
+        onRetry = viewModel::doRetry,
         onClear = onReset,
         on2faMessage = { viewModel.onShowMessage(it, false) }
     )
@@ -148,11 +152,11 @@ private fun LoginScreenContent(
         LoginTextFields(
             modifier = Modifier.padding(horizontal = 16.dp),
             loginState = loginState,
-            onUsername = { onUsername(it) },
-            onPassword = { onPassword(it) },
-            onSteamGuard = { onSteamGuard(it) },
-            onPasswordVisible = { onPasswordVisible(it) },
-            on2faMessage = { on2faMessage(it) }
+            onUsername = onUsername,
+            onPassword = onPassword,
+            onSteamGuard = onSteamGuard,
+            onPasswordVisible = onPasswordVisible,
+            on2faMessage = on2faMessage
         )
 
         /* Login Button */
@@ -168,7 +172,7 @@ private fun LoginScreenContent(
             modifier = Modifier
                 .padding(top = 16.dp, bottom = 8.dp)
                 .combinedClickable(
-                    onClick = {},
+                    onClick = { /* Nothing */ },
                     onLongClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         onClear()
@@ -266,7 +270,7 @@ private fun LoginTextFields(
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Next
         ),
-        onValueChange = { onUsername(it) },
+        onValueChange = onUsername,
         supportingText = loginState.usernameError,
         value = loginState.username
     )
@@ -348,7 +352,7 @@ private fun LoginTextFields(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Done
             ),
-            onValueChange = { onSteamGuard(it) },
+            onValueChange = onSteamGuard,
             supportingText = loginState.steamGuardError,
             value = loginState.steamGuard
         )

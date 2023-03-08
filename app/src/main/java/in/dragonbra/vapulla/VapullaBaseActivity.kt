@@ -123,7 +123,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         Timber.d("Unbound from Steam service")
     }
 
-    fun startSteamService(showLoading: () -> Unit) {
+    fun startSteamService() {
         Timber.d("Starting steam service...")
 
         val intent = Intent(this, SteamService::class.java)
@@ -132,7 +132,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         steamService?.let { service ->
             if (!service.isRunning) {
                 steamService?.connect()
-                showLoading()
             } else {
                 onConnected()
             }

@@ -21,10 +21,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +42,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
+import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getLastMessageTime
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
@@ -57,21 +60,40 @@ fun FriendItem(
     onClickIgnore: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
+    val friendItem = remember { friend }
+
+    val onClick = remember {
+        {
+            if (!friendItem.isRequestRecipient()) onClickChat()
+        }
+    }
+
+    val onLongClick = remember {
+        {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClickProfile()
+        }
+    }
 
     Column(
         modifier = modifier
             .combinedClickable(
-                onClick = { if (!friend.isRequestRecipient()) onClickChat() },
-                onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onClickProfile()
-                }
+                onClick = onClick,
+                onLongClick = onLongClick
             )
     ) {
+        val context = LocalContext.current
+
+        val avatarUrl = remember { getAvatarUrl(friendItem.avatar) }
+        val friendName = remember { getFriendName(friend = friendItem) }
+        val statusColor = remember { getStatusColor(friendItem) }
+        val statusIcon = remember { getStatusIcon(friendItem) }
+        val statusText = remember { context.getStatusText(friendItem) }
+
         ListItem(
             headlineText = {
                 Text(
-                    text = friendNameBuilder(friend = friend),
+                    text = friendName,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -79,7 +101,7 @@ fun FriendItem(
             supportingText = {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        getStatusIcon(friend)?.let {
+                        statusIcon?.let {
                             Icon(
                                 modifier = Modifier.size(12.dp),
                                 imageVector = it,
@@ -88,17 +110,17 @@ fun FriendItem(
                             Spacer(modifier = Modifier.width(4.dp))
                         }
                         Text(
-                            text = getStatusText(friend),
-                            color = getStatusColor(friend),
+                            text = statusText,
+                            color = statusColor,
                             fontSize = 10.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    if (friend.lastMessage != null && !friend.isRequestRecipient()) {
+                    if (friendItem.lastMessage != null && !friendItem.isRequestRecipient()) {
                         PaperPlane(
-                            text = friend.lastMessage!!,
+                            text = friendItem.lastMessage!!,
                             isPreviewMode = true,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -107,7 +129,7 @@ fun FriendItem(
                 }
             },
             trailingContent = {
-                if (friend.isRequestRecipient()) {
+                if (friendItem.isRequestRecipient()) {
                     Row {
                         IconButton(onClick = onClickAccept) {
                             Icon(
@@ -122,8 +144,9 @@ fun FriendItem(
                             )
                         }
                     }
-                } else if ((friend.newMessageCount ?: 0) > 0) {
+                } else if ((friendItem.newMessageCount ?: 0) > 0) {
                     // New Messages
+                    val msgCount = remember { getUnreadMessageCount(friendItem.newMessageCount) }
                     Surface(
                         modifier = Modifier.minimumInteractiveComponentSize(),
                         shape = CircleShape,
@@ -132,7 +155,7 @@ fun FriendItem(
                         Text(
                             modifier = Modifier.padding(8.dp),
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            text = getUnreadMessageCount(friend.newMessageCount),
+                            text = msgCount,
                             textAlign = TextAlign.Center,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -140,8 +163,9 @@ fun FriendItem(
                     }
                 } else {
                     // Read Messages, show last time
+                    val time = remember { getLastMessageTime(friend = friendItem).toString() }
                     Text(
-                        text = getLastMessageTime(friend = friend).toString(),
+                        text = time,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -150,14 +174,14 @@ fun FriendItem(
             leadingContent = {
                 Surface(
                     shape = iconSmallCornerShape,
-                    color = getStatusColor(friend)
+                    color = statusColor
                 ) {
                     StaticImage(
                         modifier = Modifier
                             .padding(1.dp)
                             .clip(iconSmallCornerShape)
                             .size(58.dp),
-                        url = getAvatarUrl(friend.avatar)
+                        url = avatarUrl
                     )
                 }
             }

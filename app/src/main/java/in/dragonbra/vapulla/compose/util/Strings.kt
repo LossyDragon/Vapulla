@@ -2,17 +2,15 @@ package `in`.dragonbra.vapulla.compose.util
 
 import android.content.Context
 import android.text.format.DateUtils
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.core.Constants
+import `in`.dragonbra.vapulla.model.FriendListItem
 import timber.log.Timber
 import java.math.RoundingMode
 import java.text.DateFormat
@@ -25,7 +23,6 @@ import java.text.DecimalFormat
 /**
  * Get the last message time in ##:##AM/PM
  */
-@Composable
 fun getLastMessageTime(friend: FriendListItem?): CharSequence? {
     if (friend == null || friend.lastMessage.isNullOrEmpty()) return ""
     return DateUtils.formatSameDayTime(
@@ -42,7 +39,6 @@ fun getLastMessageTime(friend: FriendListItem?): CharSequence? {
  * @param friend The friend item data class
  * @return The
  */
-@Composable
 fun getLastSeenText(friend: FriendListItem?): CharSequence {
     if (friend == null) return "some time ago"
     return DateUtils.getRelativeTimeSpanString(
@@ -84,7 +80,6 @@ fun formatPlayTime(time: Int): Double {
  * @param number The number of unread messages
  * @return The number of unread messages as a string, capped at 99
  */
-@Composable
 fun getUnreadMessageCount(number: Int?): String {
     val unreadMsg = number ?: 0
     return if (unreadMsg > 99) "99+" else unreadMsg.toString()
@@ -98,29 +93,28 @@ fun getUnreadMessageCount(number: Int?): String {
  * @param friend The friend item data class
  * @return A formatted string containing their status
  */
-@Composable
-fun getStatusText(friend: FriendListItem?): String {
+fun Context.getStatusText(friend: FriendListItem?): String {
     if (friend == null) {
-        return stringResource(id = R.string.statusOfflineLabel)
+        return getString(R.string.statusOfflineLabel)
     }
 
     if (friend.isRequestRecipient()) {
-        return stringResource(id = R.string.statusFriendRequest)
+        return getString(R.string.statusFriendRequest)
     }
 
     val isTypingFromLastMessage = friend.typingTs > (friend.lastMessageTime ?: 0)
     val isTyping = friend.typingTs > (System.currentTimeMillis() - 20000L)
     if (isTypingFromLastMessage && isTyping) {
         // Would be nice to have a typing indicator
-        return stringResource(id = R.string.statusTyping)
+        return getString(R.string.statusTyping)
     }
 
     if (friend.state == EPersonaState.Offline.code()) {
-        return stringResource(id = R.string.statusOffline, getLastSeenText(friend))
+        return getString(R.string.statusOffline, getLastSeenText(friend))
     }
 
     if (friend.gameAppId != 0 || !friend.gameName.isNullOrEmpty()) {
-        return stringResource(R.string.statusPlaying, friend.gameName ?: "")
+        return getString(R.string.statusPlaying, friend.gameName ?: "")
     }
 
     val currentTime = System.currentTimeMillis()
@@ -129,11 +123,11 @@ fun getStatusText(friend: FriendListItem?): String {
         DateUtils.getRelativeTimeSpanString(friend.lastLogOff, currentTime, resolution)
 
     return when (EPersonaState.from(friend.state ?: 0)) {
-        EPersonaState.Online -> stringResource(R.string.statusOnline)
+        EPersonaState.Online -> getString(R.string.statusOnline)
         EPersonaState.Busy,
         EPersonaState.Away,
-        EPersonaState.Snooze -> stringResource(R.string.statusAway)
-        else -> stringResource(R.string.statusOffline, relativeDate)
+        EPersonaState.Snooze -> getString(R.string.statusAway)
+        else -> getString(R.string.statusOffline, relativeDate)
     }
 }
 
@@ -146,8 +140,7 @@ fun getStatusText(friend: FriendListItem?): String {
  * @param friend The Friend Item data class
  * @return A themed annotated string.
  */
-@Composable
-fun friendNameBuilder(friend: FriendListItem?): AnnotatedString {
+fun getFriendName(friend: FriendListItem?): AnnotatedString {
     val builder = AnnotatedString.Builder()
 
     val color = getStatusColor(friend)

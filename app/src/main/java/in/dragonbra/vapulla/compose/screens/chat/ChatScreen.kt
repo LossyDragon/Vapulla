@@ -38,6 +38,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +64,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
+import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
@@ -79,16 +80,20 @@ fun ChatScreen(
     val activity = LocalActivity.current
     val context = LocalContext.current
 
-    ChatScreenContent(
-        state = state,
-        onBackPressed = { activity.finish() },
-        onProfileClicked = {
+    val onProfileClicked = remember<() -> Unit> {
+        {
             val steamID = state.currentChatSteamID!!.convertToUInt64()
             Intent(context, ProfileActivity::class.java).apply {
                 putExtra(ProfileActivity.INTENT_STEAM_ID, steamID)
             }.also { context.startActivity(it) }
-        },
-        onChatMessage = { viewModel.sendMessage(it) }
+        }
+    }
+
+    ChatScreenContent(
+        state = state,
+        onBackPressed = { activity.finish() },
+        onProfileClicked = onProfileClicked,
+        onChatMessage = viewModel::sendMessage
     )
 }
 
@@ -212,10 +217,11 @@ private fun ChatScreenContent(
                                 fontSize = 16.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                text = friendNameBuilder(state.friend)
+                                text = getFriendName(state.friend)
                             )
 
                             // Get Game or Status
+                            // TODO should make a timer to do the "is typing" work, timeout ~20 unless we're notified again
                             val lastMsg = state.friend?.lastMessage == null
                             val typingTs =
                                 (state.friend?.typingTs ?: 0) > (state.friend?.lastMessageTime ?: 0)
@@ -230,7 +236,8 @@ private fun ChatScreenContent(
                                     val gameName = state.friend?.gameName ?: "a game."
                                     stringResource(id = R.string.statusPlaying, gameName)
                                 } else {
-                                    getStatusText(state.friend)
+                                    val context = LocalContext.current
+                                    context.getStatusText(state.friend)
                                 }
                             }
 

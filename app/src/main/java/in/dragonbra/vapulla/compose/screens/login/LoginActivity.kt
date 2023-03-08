@@ -57,20 +57,10 @@ class LoginActivity : VapullaBaseActivity() {
             VapullaTheme {
                 LoginScreen(
                     viewModel = viewModel,
-                    onBindService = { onServiceStart() },
-                    onStartService = {
-                        startSteamService { viewModel.onLoadingVisible(true) }
-                    },
-                    onSettings = {
-                        Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", packageName, null)
-                        ).also(::startActivity)
-                    },
-                    onReset = {
-                        accountManager.clear()
-                        finish()
-                    }
+                    onBindService = ::onServiceStart,
+                    onStartService = ::startSteamService,
+                    onSettings = ::onSettings,
+                    onReset = ::onReset
                 )
             }
         }
@@ -176,9 +166,9 @@ class LoginActivity : VapullaBaseActivity() {
                 password = null
                 username = accountManager.username
             }
-            startSteamService {
-                viewModel.onLoadingVisible(true)
-            }
+
+            startSteamService()
+            viewModel.onLoadingVisible(true)
         }
 
         viewModel.onServiceBound()
@@ -187,5 +177,17 @@ class LoginActivity : VapullaBaseActivity() {
     override fun onServiceDisconnected(name: ComponentName) {
         super.onServiceDisconnected(name)
         Timber.d("Unbound from Steam service")
+    }
+
+    private fun onSettings() {
+        Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", packageName, null)
+        ).also(::startActivity)
+    }
+
+    private fun onReset() {
+        accountManager.clear()
+        finish()
     }
 }

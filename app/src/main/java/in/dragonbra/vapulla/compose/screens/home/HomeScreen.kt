@@ -91,32 +91,40 @@ fun HomeScreen(viewModel: HomeViewModel) {
         viewModel.onPostCreate(lifecycleOwner)
     }
 
-    HomeScreenContent(
-        state = state,
-        searchTextState = viewModel.searchText,
-        onChatSelected = {
+    val onChatSelected = remember<(FriendListItem) -> Unit> {
+        {
             Intent(context, ChatActivity::class.java).apply {
                 putExtra(ChatActivity.INTENT_STEAM_ID, it.id)
             }.also {
                 context.startActivity(it)
             }
-        },
-        onLogout = { viewModel.onLogout() },
-        onPersonAdd = { viewModel.onAddFriend() },
-        onProfileSelected = {
+        }
+    }
+
+    val onProfileSelected = remember<(FriendListItem) -> Unit> {
+        {
             Intent(context, ProfileActivity::class.java).apply {
                 putExtra(ProfileActivity.INTENT_STEAM_ID, it.id)
             }.also {
                 context.startActivity(it)
             }
-        },
-        onClickAccept = { viewModel.onFriendAccept(it) },
-        onClickIgnore = { viewModel.onFriendIgnore(it) },
+        }
+    }
+
+    HomeScreenContent(
+        state = state,
+        searchTextState = viewModel.searchText,
+        onChatSelected = onChatSelected,
+        onClickAccept = viewModel::onFriendAccept,
+        onClickIgnore = viewModel::onFriendIgnore,
+        onLogout = viewModel::onLogout,
+        onPersonAdd = viewModel::onAddFriend,
+        onProfileSelected = onProfileSelected,
         onRefresh = { viewModel.onSwipeRefresh(true) },
-        onSearchClosed = { viewModel.setSearching(false) },
-        onSearchOpened = { viewModel.setSearching(true) },
-        onSettings = { viewModel.onSettings() },
-        onStatusChange = { viewModel.onStatusUpdate(it) }
+        onSearchClosed = viewModel::isNotSearching,
+        onSearchOpened = viewModel::isSearching,
+        onSettings = viewModel::onSettings,
+        onStatusChange = viewModel::onStatusUpdate
     )
 }
 
@@ -151,7 +159,7 @@ private fun HomeScreenContent(
             HomeScreenDrawer(
                 state = state,
                 drawerState = drawerState,
-                onStatusChange = { onStatusChange(it) },
+                onStatusChange = onStatusChange,
                 onPersonAdd = onPersonAdd,
                 onSettings = onSettings,
                 onLogout = onLogout
@@ -179,7 +187,7 @@ private fun HomeScreenContent(
                 )
             }
         ) { paddingValues ->
-            val pullRefreshState = rememberPullRefreshState(state.isRefreshing, { onRefresh() })
+            val pullRefreshState = rememberPullRefreshState(state.isRefreshing, onRefresh)
 
             Box(
                 modifier = Modifier
@@ -231,9 +239,9 @@ private fun HomeScreenContent(
                 )
 
                 PullRefreshIndicator(
-                    state.isRefreshing,
-                    pullRefreshState,
-                    Modifier.align(Alignment.TopCenter)
+                    refreshing = state.isRefreshing,
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
         }
@@ -281,7 +289,7 @@ private fun HomeScreenDrawer(
                 DrawerAccountInfo(state = state)
                 DrawerStatusButtons(
                     drawerState = drawerState,
-                    onStatusChange = { onStatusChange(it) }
+                    onStatusChange = onStatusChange
                 )
                 Divider(
                     Modifier
@@ -326,37 +334,50 @@ private fun DrawerStatusButtons(
     drawerState: DrawerState,
     onStatusChange: (EPersonaState) -> Unit
 ) {
-    val items = mapOf(
-        EPersonaState.Online to friendOnline,
-        EPersonaState.Invisible to friendOffline
-    )
     val statusButtonColors = NavigationDrawerItemDefaults.colors(
         unselectedContainerColor = Color.Transparent
     )
 
     val scope = rememberCoroutineScope()
-    var selectedItem by remember { mutableStateOf(items.entries.first()) }
+    var selectedItem by remember { mutableStateOf(EPersonaState.Online) }
 
-    items.forEach { item ->
-        NavigationDrawerItem(
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-            colors = statusButtonColors,
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Circle,
-                    contentDescription = null,
-                    tint = item.value
-                )
-            },
-            label = { Text(item.key.name) },
-            selected = item == selectedItem,
-            onClick = {
-                scope.launch { drawerState.close() }
-                selectedItem = item
-                onStatusChange(item.key)
-            }
-        )
-    }
+    NavigationDrawerItem(
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+        colors = statusButtonColors,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Circle,
+                contentDescription = null,
+                tint = friendOnline
+            )
+        },
+        label = { Text(EPersonaState.Online.name) },
+        selected = selectedItem == EPersonaState.Online,
+        onClick = {
+            scope.launch { drawerState.close() }
+            selectedItem = EPersonaState.Online
+            onStatusChange(EPersonaState.Online)
+        }
+    )
+
+    NavigationDrawerItem(
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+        colors = statusButtonColors,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Circle,
+                contentDescription = null,
+                tint = friendOffline
+            )
+        },
+        label = { Text(EPersonaState.Invisible.name) },
+        selected = selectedItem == EPersonaState.Invisible,
+        onClick = {
+            scope.launch { drawerState.close() }
+            selectedItem = EPersonaState.Invisible
+            onStatusChange(EPersonaState.Invisible)
+        }
+    )
 }
 
 @Composable

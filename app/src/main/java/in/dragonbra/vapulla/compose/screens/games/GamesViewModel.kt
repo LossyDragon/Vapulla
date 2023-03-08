@@ -26,8 +26,12 @@ class GamesViewModel : ViewModel() {
         }
     }
 
-    fun setSearching(value: Boolean) {
-        _state.update { it.copy(isSearching = value) }
+    fun isSearching() {
+        _state.update { it.copy(isSearching = true) }
+    }
+
+    fun isNotSearching() {
+        _state.update { it.copy(isSearching = false) }
     }
 
     private fun search(query: String) {

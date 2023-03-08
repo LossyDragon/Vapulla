@@ -56,13 +56,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun setSearching(isSearching: Boolean) {
-        // Force an update when closing search
-        if (!isSearching) {
-            search("")
-        }
+    fun isSearching() {
+        _state.update { it.copy(isSearching = true) }
+    }
 
-        _state.update { it.copy(isSearching = isSearching) }
+    fun isNotSearching() {
+        search("")
+        _state.update { it.copy(isSearching = false) }
     }
 
     private fun swap(list: List<FriendListItem>, updateTime: Long) {

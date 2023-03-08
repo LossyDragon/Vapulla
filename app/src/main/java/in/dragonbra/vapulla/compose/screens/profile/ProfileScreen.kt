@@ -2,7 +2,6 @@ package `in`.dragonbra.vapulla.compose.screens.profile
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
@@ -83,7 +82,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconCornerShape
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.friendNameBuilder
+import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
@@ -157,19 +156,16 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
         }
     )
 
-    ProfileScreenContent(
-        state = state,
-        onBackPressed = { activity.finish() },
-        onChatClick = {
+    val onChatClick = remember<() -> Unit> {
+        {
             Intent(context, ChatActivity::class.java).apply {
                 putExtra(ProfileActivity.INTENT_STEAM_ID, state.steamID!!.convertToUInt64())
             }.also { context.startActivity(it) }
-        },
-        onAccountClick = {
-            val url = Constants.PROFILE_URL + state.steamID!!.convertToUInt64()
-            uriHandler.openUri(url)
-        },
-        onGamesClick = {
+        }
+    }
+
+    val onGamesClicked = remember<() -> Unit> {
+        {
             Intent(context, GamesActivity::class.java).apply {
                 val bundle = Bundle().apply {
                     putParcelableArrayList(GamesActivity.INTENT_GAMES, state.gamesList)
@@ -177,15 +173,32 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 }
                 putExtras(bundle)
             }.also { context.startActivity(it) }
-        },
-        onNickName = { showNicknameDialog = true },
-        onAliases = {
+        }
+    }
+
+    val onAccountClick = remember {
+        {
+            val url = Constants.PROFILE_URL + state.steamID!!.convertToUInt64()
+            uriHandler.openUri(url)
+        }
+    }
+
+    val onAlias = remember {
+        {
             viewModel.getAlias()
             showAliasDialog = true
-        },
-        onRemove = {
-            showRemoveDialog = true
-        },
+        }
+    }
+
+    ProfileScreenContent(
+        state = state,
+        onBackPressed = { activity.finish() },
+        onChatClick = onChatClick,
+        onAccountClick = onAccountClick,
+        onGamesClick = onGamesClicked,
+        onNickName = { showNicknameDialog = true },
+        onAliases = onAlias,
+        onRemove = { showRemoveDialog = true },
         onBlock = { showBlockDialog = true }
     )
 }
@@ -288,20 +301,27 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val borderStroke = BorderStroke(4.dp, getStatusColor(state.friend))
+        val avatarUrl = remember { getAvatarUrl(state.friend?.avatar) }
         StaticImage(
             modifier = Modifier
                 .size(150.dp)
                 .border(borderStroke, iconCornerShape)
                 .clip(iconCornerShape),
-            url = getAvatarUrl(state.friend?.avatar)
+            url = avatarUrl
         )
     }
 }
 
 @Composable
 private fun ProfileScreenNameAndStatus(state: ProfileState) {
+    val context = LocalContext.current
+    val friendName = remember { getFriendName(friend = state.friend) }
+    val status = remember { context.getStatusText(state.friend) }
+    val statusColor = remember { getStatusColor(state.friend) }
+    val statusIcon = remember { getStatusIcon(state.friend) }
+
     Text(
-        text = friendNameBuilder(friend = state.friend),
+        text = friendName,
         modifier = Modifier.padding(5.dp),
         fontSize = 32.sp,
         maxLines = 1,
@@ -316,18 +336,18 @@ private fun ProfileScreenNameAndStatus(state: ProfileState) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = getStatusText(state.friend),
-            color = getStatusColor(state.friend),
+            text = status,
+            color = statusColor,
             fontSize = 16.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
 
-        getStatusIcon(state.friend)?.let {
+        statusIcon?.let {
             Icon(
                 modifier = Modifier.size(22.dp),
                 imageVector = it,
-                tint = getStatusColor(state.friend),
+                tint = statusColor,
                 contentDescription = null
             )
         }
@@ -348,7 +368,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
         ) {
             ProfileLevelLayout(
                 modifier = Modifier.weight(1f),
-                levelTitle = R.string.textProfileLevel,
+                title = stringResource(id = R.string.textProfileLevel),
                 levelNumber = (state.levelCount ?: 0).toString(),
                 isLoading = state.isLoading
             )
@@ -363,7 +383,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
 
             ProfileLevelLayout(
                 modifier = Modifier.weight(1f),
-                levelTitle = R.string.textProfileGames,
+                title = stringResource(id = R.string.textProfileGames),
                 levelNumber = (state.gamesCount ?: 0).toString(),
                 isLoading = state.isLoading
             )
@@ -375,7 +395,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
 @Composable
 private fun ProfileLevelLayout(
     modifier: Modifier,
-    @StringRes levelTitle: Int,
+    title: String,
     levelNumber: String,
     isLoading: Boolean
 ) {
@@ -385,7 +405,7 @@ private fun ProfileLevelLayout(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = stringResource(id = levelTitle),
+            text = title,
             color = Color.White,
             fontSize = 20.sp
         )

@@ -121,6 +121,7 @@ class LoginViewModel(
         }
 
         logOnDetails.apply {
+            this.machineName = "Vapulla Android"
             this.username = _loginState.value.username
             this.password = _loginState.value.password
             this.loginKey = null
