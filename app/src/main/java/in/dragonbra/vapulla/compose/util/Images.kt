@@ -62,7 +62,6 @@ fun StaticImage(
     url: String
 ) {
     val context = LocalContext.current
-
     val imageLoader = ImageLoader.Builder(context)
         .memoryCache {
             MemoryCache.Builder(context)
@@ -144,39 +143,41 @@ fun GameImage(appId: Int) {
                 .maxSizePercent(1.0)
                 .build()
         }.build()
-    CoilImage(
-        modifier = Modifier.size(width, height),
-        imageLoader = { imageLoader },
-        imageRequest = {
-            ImageRequest.Builder(context)
-                .data(String.format(Constants.GAME_LOGO_URL, appId))
-                .crossfade(true)
-                .build()
-        },
-        imageOptions = ImageOptions(
-            contentScale = ContentScale.Fit
-        ),
-        previewPlaceholder = R.mipmap.ic_launcher_foreground,
-        loading = {
-            Box(
-                modifier = Modifier.size(width, height),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+    CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
+        CoilImage(
+            modifier = Modifier.size(width, height),
+            imageLoader = { imageLoader },
+            imageRequest = {
+                ImageRequest.Builder(context)
+                    .data(String.format(Constants.GAME_LOGO_URL, appId))
+                    .crossfade(true)
+                    .build()
+            },
+            imageOptions = ImageOptions(
+                contentScale = ContentScale.Fit
+            ),
+            previewPlaceholder = R.mipmap.ic_launcher_foreground,
+            loading = {
+                Box(
+                    modifier = Modifier.size(width, height),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            },
+            failure = {
+                Box(
+                    modifier = Modifier.size(width, height),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = null
+                    )
+                }
             }
-        },
-        failure = {
-            Box(
-                modifier = Modifier.size(width, height),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Error,
-                    contentDescription = null
-                )
-            }
-        }
-    )
+        )
+    }
 }
 
 /**

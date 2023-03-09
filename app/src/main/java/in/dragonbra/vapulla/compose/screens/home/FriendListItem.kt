@@ -4,10 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -21,7 +19,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,11 +57,10 @@ fun FriendItem(
     onClickIgnore: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val friendItem = remember { friend }
 
     val onClick = remember {
         {
-            if (!friendItem.isRequestRecipient()) onClickChat()
+            if (!friend.isRequestRecipient()) onClickChat()
         }
     }
 
@@ -84,43 +80,45 @@ fun FriendItem(
     ) {
         val context = LocalContext.current
 
-        val avatarUrl = remember { getAvatarUrl(friendItem.avatar) }
-        val friendName = remember { getFriendName(friend = friendItem) }
-        val statusColor = remember { getStatusColor(friendItem) }
-        val statusIcon = remember { getStatusIcon(friendItem) }
-        val statusText = remember { context.getStatusText(friendItem) }
+        val avatarUrl = remember(friend) { getAvatarUrl(friend.avatar) }
+        val friendName = remember(friend) { getFriendName(friend = friend) }
+        val statusColor = remember(friend) { getStatusColor(friend) }
+        val statusIcon = remember(friend) { getStatusIcon(friend) }
+        val statusText = remember(friend) { context.getStatusText(friend) }
 
         ListItem(
-            headlineText = {
-                Text(
-                    text = friendName,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
-            supportingText = {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        statusIcon?.let {
-                            Icon(
-                                modifier = Modifier.size(12.dp),
-                                imageVector = it,
-                                contentDescription = it.name
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
-                        Text(
-                            text = statusText,
-                            color = statusColor,
-                            fontSize = 10.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+            headlineContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        modifier = Modifier.weight(1f, false),
+                        text = friendName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    statusIcon?.let {
+                        Icon(
+                            modifier = Modifier
+                                .padding(horizontal = 2.dp)
+                                .size(12.dp),
+                            imageVector = it,
+                            contentDescription = it.name
                         )
                     }
+                }
+            },
+            supportingContent = {
+                Column {
+                    Text(
+                        text = statusText,
+                        color = statusColor,
+                        fontSize = 10.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-                    if (friendItem.lastMessage != null && !friendItem.isRequestRecipient()) {
+                    if (friend.lastMessage != null && !friend.isRequestRecipient()) {
                         PaperPlane(
-                            text = friendItem.lastMessage!!,
+                            text = friend.lastMessage!!,
                             isPreviewMode = true,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -129,7 +127,7 @@ fun FriendItem(
                 }
             },
             trailingContent = {
-                if (friendItem.isRequestRecipient()) {
+                if (friend.isRequestRecipient()) {
                     Row {
                         IconButton(onClick = onClickAccept) {
                             Icon(
@@ -144,9 +142,12 @@ fun FriendItem(
                             )
                         }
                     }
-                } else if ((friendItem.newMessageCount ?: 0) > 0) {
+                } else if ((friend.newMessageCount ?: 0) > 0) {
                     // New Messages
-                    val msgCount = remember { getUnreadMessageCount(friendItem.newMessageCount) }
+                    val msgCount = remember(friend) {
+                        getUnreadMessageCount(friend.newMessageCount)
+                    }
+
                     Surface(
                         modifier = Modifier.minimumInteractiveComponentSize(),
                         shape = CircleShape,
@@ -163,7 +164,7 @@ fun FriendItem(
                     }
                 } else {
                     // Read Messages, show last time
-                    val time = remember { getLastMessageTime(friend = friendItem).toString() }
+                    val time = remember(friend) { getLastMessageTime(friend = friend).toString() }
                     Text(
                         text = time,
                         maxLines = 1,

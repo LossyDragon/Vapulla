@@ -42,14 +42,14 @@ fun GamesListItem(
             leadingContent = {
                 GameImage(appId = appId)
             },
-            headlineText = {
+            headlineContent = {
                 Text(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     text = gameName
                 )
             },
-            supportingText = {
+            supportingContent = {
                 Column {
                     Text(
                         color = Color.White.copy(alpha = .50f),

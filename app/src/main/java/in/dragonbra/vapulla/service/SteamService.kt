@@ -540,6 +540,8 @@ class SteamService : Service() {
                 username = account.username
                 loginKey = account.loginKey
                 isShouldRememberPassword = true
+                loginID = 121212
+                machineName = "Vapulla"
 
                 if (account.hasSentryFile) {
                     sentryFileHash = account.readSentryFile()
