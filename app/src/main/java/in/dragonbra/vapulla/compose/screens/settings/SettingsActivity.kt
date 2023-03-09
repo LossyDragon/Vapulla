@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
@@ -35,7 +34,6 @@ class SettingsActivity : VapullaBaseActivity() {
         Timber.d("onCreate")
 
         setContent {
-            val scope = rememberCoroutineScope()
             VapullaTheme {
                 CompositionLocalProvider(LocalActivity provides this) {
                     SettingsScreen(

@@ -13,6 +13,7 @@ plugins {
     id 'com.google.dagger.hilt.android' version "$hilt_version" apply false
 }
 
+// Used to try not to cache JavaSteam snapshots when developing
 configurations.all {
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }

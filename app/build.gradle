@@ -7,7 +7,6 @@ plugins {
     id("kotlin-kapt")
     id("kotlin-parcelize")
     id("org.jetbrains.kotlin.android")
-
 }
 
 android {
@@ -66,7 +65,8 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.4.2"
+        // https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
+        kotlinCompilerExtensionVersion "1.4.3"
     }
     packagingOptions {
         resources {
@@ -81,7 +81,8 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    // Jetpack Compose
+    // Jetpack Compose:
+    // https://developer.android.com/jetpack/androidx/releases/compose
     def composeBom = platform("androidx.compose:compose-bom:2023.01.00")
     implementation composeBom
     implementation "androidx.compose.animation:animation"
@@ -90,76 +91,90 @@ dependencies {
     implementation "androidx.compose.material:material-icons-core"
     implementation "androidx.compose.material:material-icons-extended"
     implementation "androidx.compose.runtime:runtime-livedata"
-    implementation "androidx.compose.ui:ui"
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.compose.ui:ui:1.4.0-rc01"
     debugImplementation "androidx.compose.ui:ui-tooling"
 
-    // Accompanist
+    // Accompanist:
+    // https://mvnrepository.com/artifact/com.google.accompanist/accompanist-systemuicontroller
     def accompanist = "0.29.1-alpha"
     implementation "com.google.accompanist:accompanist-permissions:$accompanist"
     implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist"
 
-    // Timber
-    implementation "com.jakewharton.timber:timber:5.0.1"
+    // Coil-Kt:
+    // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
+    implementation "com.github.skydoves:landscapist-coil:2.1.6"
 
-    // Preferences
-    def settings = "0.22.0"
+    // Preferences:
+    // https://mvnrepository.com/artifact/com.github.alorma/compose-settings-storage-preferences
+    def settings = "0.24.0"
     implementation "com.github.alorma:compose-settings-storage-preferences:$settings"
     implementation "com.github.alorma:compose-settings-ui-m3:$settings"
 
-    // RaamCosta Navigation
-    // implementation "io.github.raamcosta.compose-destinations:core:1.8.33-beta"
-    // ksp "io.github.raamcosta.compose-destinations:ksp:1.8.33-beta"
+    // RaamCosta Navigation:
+    // https://mvnrepository.com/artifact/io.github.raamcosta.compose-destinations/core
+    // def destinations = "1.8.36-beta"
+    // implementation "io.github.raamcosta.compose-destinations:core:$destinations"
+    // ksp "io.github.raamcosta.compose-destinations:ksp:$destinations"
 
     // Android Support Libs
     implementation "androidx.activity:activity-compose:1.6.1"
     implementation "androidx.compose.material3:material3:1.1.0-alpha08"
     implementation "androidx.core:core-ktx:1.9.0"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0"
     implementation "androidx.paging:paging-compose:1.0.0-alpha18"
     implementation "androidx.paging:paging-runtime-ktx:3.1.1"
     implementation "androidx.palette:palette:1.0.0"
     implementation "androidx.room:room-paging:2.5.0"
     implementation 'androidx.core:core-splashscreen:1.0.0'
+    implementation "androidx.preference:preference-ktx:1.2.0"
 
-    // Preferences
-    def androidx_preference = "1.2.0"
-    implementation "androidx.preference:preference-ktx:$androidx_preference"
-
-    // Room
+    // Room:
+    // https://mvnrepository.com/artifact/androidx.room/room-runtime
     def room = "2.5.0"
     implementation "androidx.room:room-runtime:$room"
     kapt "androidx.room:room-compiler:$room"
 
-    // Google Dagger/Hilt
-    implementation "androidx.hilt:hilt-navigation-compose:1.0.0"
+    // Google Dagger/Hilt:
+    // https://mvnrepository.com/artifact/androidx.hilt/hilt-compiler
+    // https://mvnrepository.com/artifact/androidx.hilt/hilt-navigation-compose
+    // https://mvnrepository.com/artifact/com.google.dagger/hilt-android
+    // implementation "androidx.hilt:hilt-navigation-compose:1.0.0"
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "androidx.hilt:hilt-compiler:1.0.0"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    // Others
+    // APNG:
+    // https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
     implementation "com.github.penfeizhou.android.animation:apng:2.24.0"
-    implementation "com.squareup.okhttp3:okhttp:5.0.0-alpha.10"
 
-    // Retrofit
+    // OkHttp:
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
+    implementation "com.squareup.okhttp3:okhttp:5.0.0-alpha.11"
+
+    // Retrofit:
+    // https://mvnrepository.com/artifact/com.squareup.retrofit2/retrofit
     def retrofit = "2.9.0"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit"
     implementation "com.squareup.retrofit2:retrofit:$retrofit"
 
-    // Jsoup
+    // Jsoup:
+    // https://mvnrepository.com/artifact/org.jsoup/jsoup
     implementation 'org.jsoup:jsoup:1.15.4'
 
-    // Coil-Kt
-    implementation "com.github.skydoves:landscapist-coil:2.1.6"
+    // Timber:
+    // https://mvnrepository.com/artifact/com.jakewharton.timber/timber
+    implementation "com.jakewharton.timber:timber:5.0.1"
 
-    // Java-Steam
+    // Java-Steam:
+    // https://mvnrepository.com/artifact/in.dragonbra/javasteam
+    // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
+    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation("in.dragonbra:javasteam:1.2.1-SNAPSHOT") { changing = true }
     implementation "com.madgag.spongycastle:prov:1.58.0.0"
-    api "com.google.protobuf:protobuf-java:3.22.0" // For protobuf builders
-    api "org.apache.commons:commons-lang3:3.12.0"
+    implementation "com.google.protobuf:protobuf-java:3.22.0" // For protobuf builders
 
-    // Memory Leak testing
+    // LeakCanary:
+    // https://mvnrepository.com/artifact/com.squareup.leakcanary/leakcanary-android
     debugImplementation "com.squareup.leakcanary:leakcanary-android:2.10"
 }
 
