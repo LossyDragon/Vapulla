@@ -541,7 +541,6 @@ class SteamService : Service() {
                 loginKey = account.loginKey
                 isShouldRememberPassword = true
                 loginID = 121212
-                machineName = "Vapulla"
 
                 if (account.hasSentryFile) {
                     sentryFileHash = account.readSentryFile()
@@ -731,7 +730,7 @@ class SteamService : Service() {
             fromLocal = true,
             isUnread = false,
             message = it.message,
-            timestamp = it.rtime32ServerTimestamp.toLong()
+            timestamp = it.rTime32ServerTimestamp.toLong()
         )
 
         db.chatMessageDao().insert(msg)
