@@ -65,7 +65,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.colorPrimaryDark
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.util.StickerImage
 import `in`.dragonbra.vapulla.core.Constants
@@ -412,7 +411,7 @@ fun ExtendedSelectorInnerButton(
 ) {
     val colors = ButtonDefaults.buttonColors(
         containerColor = if (selected) {
-            colorPrimaryDark.copy(alpha = 0.25f)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
         } else {
             Color.Transparent
         },

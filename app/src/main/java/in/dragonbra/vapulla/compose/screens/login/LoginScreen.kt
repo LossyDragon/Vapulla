@@ -56,7 +56,6 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.core.Constants
 import kotlinx.coroutines.delay
@@ -92,6 +91,7 @@ fun LoginScreen(
         }
     }
 
+    /* Notifications Permissions Dialog */
     PermissionsDialog(
         permissionState = permissionState,
         onPermGranted = onBindService,
@@ -370,10 +370,6 @@ private fun LoginButtons(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = colorSecondary,
-            contentColor = Color.White
-        ),
         onClick = onLogin,
         content = { Text(text = stringResource(id = R.string.login)) }
     )

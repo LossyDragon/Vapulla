@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -65,7 +64,6 @@ import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.VapullaEditDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaListDialog
@@ -76,17 +74,16 @@ import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.colorPrimary
-import `in`.dragonbra.vapulla.compose.ui.theme.colorSecondary
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconCornerShape
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
+import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.core.Constants
+import `in`.dragonbra.vapulla.model.FriendListItem
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel) {
@@ -360,7 +357,6 @@ private fun ProfileScreenInfo(state: ProfileState) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(20.dp),
-        colors = CardDefaults.cardColors(containerColor = colorPrimary)
     ) {
         Row(
             horizontalArrangement = Arrangement.Center,
@@ -415,7 +411,6 @@ private fun ProfileLevelLayout(
                 modifier = Modifier
                     .size(28.dp)
                     .padding(top = 5.dp),
-                color = colorSecondary,
                 strokeWidth = 2.dp
             )
         }
