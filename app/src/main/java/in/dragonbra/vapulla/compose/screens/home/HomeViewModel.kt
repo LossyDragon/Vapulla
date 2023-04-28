@@ -12,6 +12,7 @@ import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.model.FriendListItem
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -22,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(

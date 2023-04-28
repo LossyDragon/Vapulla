@@ -35,9 +35,9 @@ import com.skydoves.landscapist.coil.CoilImage
 import com.skydoves.landscapist.coil.LocalCoilImageLoader
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.icons.VR
 import `in`.dragonbra.vapulla.core.Constants
+import `in`.dragonbra.vapulla.model.FriendListItem
 
 /**
  * Helper functions that relate to Images/Icons

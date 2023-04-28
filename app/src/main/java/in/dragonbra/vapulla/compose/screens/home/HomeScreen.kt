@@ -59,7 +59,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
@@ -78,6 +77,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
+import `in`.dragonbra.vapulla.model.FriendListItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 

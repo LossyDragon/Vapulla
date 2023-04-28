@@ -1,5 +1,7 @@
 package `in`.dragonbra.vapulla.data
 
+import androidx.room.Database
+import androidx.room.RoomDatabase
 import `in`.dragonbra.vapulla.data.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.data.dao.EmoticonDao
 import `in`.dragonbra.vapulla.data.dao.GameSchemaDao
@@ -8,8 +10,6 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.data.entity.GameSchema
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import androidx.room.Database
-import androidx.room.RoomDatabase
 
 @Database(
     entities = [SteamFriend::class, ChatMessage::class, GameSchema::class, Emoticon::class],

@@ -72,15 +72,15 @@ import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
+import java.io.Closeable
+import java.io.File
+import java.util.*
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.Closeable
-import java.io.File
-import java.util.*
-import javax.inject.Inject
 
 // TODO friend requests don't get a name or avatar, PersonaStateBuffer doesn't allow it.
 

@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.model.FriendListItem
 
 @Composable
 fun StickyHeaderItem(header: String, count: Int) {

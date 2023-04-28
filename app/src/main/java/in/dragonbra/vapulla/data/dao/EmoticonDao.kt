@@ -1,11 +1,11 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import `in`.dragonbra.vapulla.data.entity.Emoticon
 import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import `in`.dragonbra.vapulla.data.entity.Emoticon
 
 @Dao
 interface EmoticonDao {

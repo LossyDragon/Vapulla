@@ -30,11 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleFriendShape
 import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleMeShape
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 
 @OptIn(ExperimentalFoundationApi::class)

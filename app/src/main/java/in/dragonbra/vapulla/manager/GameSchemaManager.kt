@@ -1,9 +1,9 @@
 package `in`.dragonbra.vapulla.manager
 
+import android.text.format.DateUtils
 import `in`.dragonbra.vapulla.data.dao.GameSchemaDao
 import `in`.dragonbra.vapulla.data.entity.GameSchema
 import `in`.dragonbra.vapulla.retrofit.StoreFront
-import android.text.format.DateUtils
 
 class GameSchemaManager(
     private val gameSchemaDao: GameSchemaDao,

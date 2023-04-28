@@ -1,10 +1,10 @@
 package `in`.dragonbra.vapulla.broadcastreceiver
 
-import `in`.dragonbra.vapulla.service.SteamService
 import android.app.RemoteInput
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import `in`.dragonbra.vapulla.service.SteamService
 
 class ReplyReceiver : BroadcastReceiver() {
 

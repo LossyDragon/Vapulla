@@ -1,9 +1,9 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import `in`.dragonbra.vapulla.model.FriendListItem
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.model.FriendListItem
 
 @Dao
 interface SteamFriendDao {

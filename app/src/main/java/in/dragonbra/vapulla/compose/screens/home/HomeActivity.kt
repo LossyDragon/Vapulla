@@ -16,11 +16,11 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.settings.SettingsActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity() {

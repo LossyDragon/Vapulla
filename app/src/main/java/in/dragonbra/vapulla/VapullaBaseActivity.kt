@@ -15,12 +15,12 @@ import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallba
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.vapulla.service.SteamService
+import java.io.Closeable
+import java.util.LinkedList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import timber.log.Timber
-import java.io.Closeable
-import java.util.LinkedList
 
 abstract class VapullaBaseActivity : ComponentActivity() {
 

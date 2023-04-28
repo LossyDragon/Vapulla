@@ -76,9 +76,7 @@ val md_theme_dark_surfaceTint = Color(0xFF61D4FF)
 val md_theme_dark_outlineVariant = Color(0xFF40484C)
 val md_theme_dark_scrim = Color(0xFF000000)
 
-
 val seed = Color(0xFF546E7A)
-
 
 fun getAccountStatusColor(state: EPersonaState): Color {
     return when (state) {

@@ -43,11 +43,11 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.size.Scale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * This is the minimum amount of calculated contrast for a color to be used on top of the

@@ -1,10 +1,10 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import `in`.dragonbra.vapulla.data.entity.GameSchema
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import `in`.dragonbra.vapulla.data.entity.GameSchema
 
 @Dao
 interface GameSchemaDao {

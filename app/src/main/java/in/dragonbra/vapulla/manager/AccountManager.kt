@@ -2,19 +2,19 @@
 
 package `in`.dragonbra.vapulla.manager
 
-import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import org.spongycastle.util.encoders.Hex
+import `in`.dragonbra.javasteam.enums.EPersonaState
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import org.spongycastle.util.encoders.Hex
 
 class AccountManager(private val context: Context) {
 

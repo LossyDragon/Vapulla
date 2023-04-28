@@ -6,9 +6,9 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import java.util.*
 import org.spongycastle.util.encoders.Hex
 import timber.log.Timber
-import java.util.*
 
 class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
     private val map: MutableMap<SteamID, PersonaState> = hashMapOf()

@@ -15,13 +15,14 @@ import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.data.dao.EmoticonDao
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
+import `in`.dragonbra.vapulla.model.FriendListItem
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(

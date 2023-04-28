@@ -9,10 +9,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
+import `in`.dragonbra.vapulla.model.FriendListItem
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(

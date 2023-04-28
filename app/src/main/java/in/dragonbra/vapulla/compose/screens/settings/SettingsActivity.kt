@@ -13,10 +13,10 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class SettingsActivity : VapullaBaseActivity() {

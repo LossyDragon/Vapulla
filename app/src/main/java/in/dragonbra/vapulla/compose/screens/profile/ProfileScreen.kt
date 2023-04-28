@@ -356,7 +356,7 @@ private fun ProfileScreenInfo(state: ProfileState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp),
+            .padding(20.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.Center,

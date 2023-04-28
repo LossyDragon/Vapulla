@@ -1,15 +1,15 @@
 package `in`.dragonbra.vapulla.module
 
-import `in`.dragonbra.vapulla.retrofit.SteamApi
-import `in`.dragonbra.vapulla.retrofit.StoreFront
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import `in`.dragonbra.vapulla.core.Constants
+import `in`.dragonbra.vapulla.retrofit.SteamApi
+import `in`.dragonbra.vapulla.retrofit.StoreFront
+import javax.inject.Singleton
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
 @Module

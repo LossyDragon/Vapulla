@@ -56,7 +56,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
@@ -64,13 +63,14 @@ import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
+import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
+import `in`.dragonbra.vapulla.model.FriendListItem
+import kotlin.random.Random
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 @Composable
 fun ChatScreen(

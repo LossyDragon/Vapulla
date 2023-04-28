@@ -33,18 +33,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
+import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getLastMessageTime
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.compose.util.getUnreadMessageCount
+import `in`.dragonbra.vapulla.model.FriendListItem
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

@@ -53,9 +53,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.vapulla.R
+import java.lang.RuntimeException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import java.lang.RuntimeException
 
 // Animation slide in when searching is enabled
 private val slideIn = {

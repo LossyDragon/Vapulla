@@ -11,10 +11,10 @@ import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.model.FriendListItem
-import timber.log.Timber
 import java.math.RoundingMode
 import java.text.DateFormat
 import java.text.DecimalFormat
+import timber.log.Timber
 
 /**
  * This Class provides helpers that return a String of some kind
