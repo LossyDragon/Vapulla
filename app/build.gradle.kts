@@ -72,7 +72,7 @@ android {
         // https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
         kotlinCompilerExtensionVersion = "1.4.6"
     }
-    packagingOptions {
+    packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,*.kotlin_module,DEPENDENCIES,LICENSE,NOTICE}"
             excludes += "META-INF/versions/9/previous-compilation-data.bin"
@@ -180,13 +180,21 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     implementation("com.google.protobuf:protobuf-java:3.22.3") // For protobuf builders
 
+    // QR:
+    // https://search.maven.org/artifact/io.github.g0dkar/qrcode-kotlin
+    implementation("io.github.g0dkar:qrcode-kotlin:3.3.0")
+
     // LeakCanary:
     // https://mvnrepository.com/artifact/com.squareup.leakcanary/leakcanary-android
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.10")
 }
 
-// Run: gradlew ktlintCheck
-// Run: gradlew ktlintFormat
+/**
+ * Ktlint gradle
+ *  Usages:
+ *      gradlew ktlintCheck
+ *      gradlew ktlintFormat
+ */
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     android.set(true)
     outputToConsole.set(true)

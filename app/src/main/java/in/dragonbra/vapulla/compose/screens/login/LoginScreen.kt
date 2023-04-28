@@ -2,20 +2,17 @@ package `in`.dragonbra.vapulla.compose.screens.login
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.expandIn
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,15 +28,13 @@ import androidx.compose.ui.autofill.AutofillNode
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -49,28 +44,27 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.core.Constants
 import kotlinx.coroutines.delay
-import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
     onStartService: () -> Unit,
+    onCancelService: () -> Unit,
     onBindService: () -> Unit,
-    onSettings: () -> Unit,
-    onReset: () -> Unit
+    onSettings: () -> Unit
 ) {
     val state by viewModel.loginState.collectAsState()
+    val scope = rememberCoroutineScope()
 
     @SuppressLint("InlinedApi")
     val permissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
@@ -82,11 +76,12 @@ fun LoginScreen(
 
         viewModel.loginEvents.collect { event ->
             when (event) {
+                is ValidationEvent.BindService -> onBindService()
+                is ValidationEvent.CancelService -> onCancelService()
                 is ValidationEvent.StartService -> {
                     viewModel.onLoadingVisible(true)
                     onStartService()
                 }
-                is ValidationEvent.BindService -> onBindService()
             }
         }
     }
@@ -99,34 +94,86 @@ fun LoginScreen(
     )
 
     /* Content */
-    LoginScreenContent(
-        loginState = state,
-        onUsername = viewModel::onUsernameUpdate,
-        onPassword = viewModel::onPasswordUpdate,
-        onSteamGuard = viewModel::onSteamGuardUpdate,
-        onPasswordVisible = viewModel::onPasswordVisible,
-        onLogin = viewModel::doLogin,
-        onRetry = viewModel::doRetry,
-        onClear = onReset,
-        on2faMessage = { viewModel.onShowMessage(it, false) }
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            skipHiddenState = false
+        )
     )
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Sign in using your Steam App authenticator")
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val bitmapStateFlow = viewModel.qrCodeStateFlow.collectAsState(initial = null)
+                val bitmap = bitmapStateFlow.value
+
+                if (bitmap != null) {
+                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = null)
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.size(128.dp))
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            scaffoldState.bottomSheetState.hide()
+                            viewModel.cancelLoginQR()
+                        }
+                    },
+                    content = { Text(text = stringResource(id = R.string.cancel)) }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    ) { paddingValues ->
+        LoginScreenContent(
+            modifier = Modifier.padding(paddingValues),
+            loginState = state,
+            onUsername = viewModel::onUsernameUpdate,
+            onPassword = viewModel::onPasswordUpdate,
+            onSteamGuard = viewModel::onSteamGuardUpdate,
+            onPasswordVisible = viewModel::onPasswordVisible,
+            onLogin = viewModel::doLogin,
+            onLoginQR = {
+                scope.launch {
+                    scaffoldState.bottomSheetState.expand()
+                    viewModel.doLoginQR()
+                }
+            },
+            onRetry = viewModel::doRetry,
+            on2faMessage = { viewModel.onShowMessage(it) }
+        )
+    }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LoginScreenContent(
+    modifier: Modifier = Modifier,
     loginState: LoginState,
     onUsername: (String) -> Unit,
     onPassword: (String) -> Unit,
     onSteamGuard: (String) -> Unit,
     onPasswordVisible: (Boolean) -> Unit,
     onLogin: () -> Unit,
+    onLoginQR: () -> Unit,
     onRetry: () -> Unit,
-    onClear: () -> Unit,
     on2faMessage: (string: String) -> Unit
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .waterfallPadding()
             .systemBarsPadding()
             .imePadding()
@@ -161,25 +208,9 @@ private fun LoginScreenContent(
         /* Login Button */
         LoginButtons(
             modifier = Modifier.padding(horizontal = 16.dp),
-            isRetryVisible = loginState.isRetryVisible,
             onLogin = onLogin,
+            onLoginQR = onLoginQR,
             onRetry = onRetry
-        )
-
-        val haptics = LocalHapticFeedback.current
-        Text(
-            modifier = Modifier
-                .padding(top = 16.dp, bottom = 8.dp)
-                .combinedClickable(
-                    onClick = { /* Nothing */ },
-                    onLongClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onClear()
-                    }
-                ),
-            color = friendOffline,
-            fontSize = 12.sp,
-            text = "Not working right? Long press to reset settings"
         )
     }
 }
@@ -358,12 +389,11 @@ private fun LoginTextFields(
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun LoginButtons(
     modifier: Modifier = Modifier,
-    isRetryVisible: Boolean,
     onLogin: () -> Unit,
+    onLoginQR: () -> Unit,
     onRetry: () -> Unit
 ) {
     Button(
@@ -374,30 +404,38 @@ private fun LoginButtons(
         content = { Text(text = stringResource(id = R.string.login)) }
     )
 
-    AnimatedVisibility(
-        visible = isRetryVisible,
-        enter = fadeIn() + expandIn(),
-        exit = scaleOut() + fadeOut()
-    ) {
-        OutlinedButton(
-            modifier = modifier.padding(vertical = 12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White
-            ),
-            onClick = onRetry,
-            content = { Text(text = stringResource(id = R.string.retry)) }
-        )
-    }
+    OutlinedButton(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        onClick = onLoginQR,
+        content = { Text(text = "Sign in via QR") }
+    )
+
+    // TODO merge with login button
+//    AnimatedVisibility(
+//        visible = isRetryVisible,
+//        enter = fadeIn() + expandIn(),
+//        exit = scaleOut() + fadeOut()
+//    ) {
+//        OutlinedButton(
+//            modifier = modifier.padding(vertical = 12.dp),
+//            colors = ButtonDefaults.outlinedButtonColors(
+//                contentColor = Color.White
+//            ),
+//            onClick = onRetry,
+//            content = { Text(text = stringResource(id = R.string.retry)) }
+//        )
+//    }
 }
 
-@Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview_LoginScreenContent() {
     val string = stringResource(id = R.string.errorMessageSteamGuardMobile)
     val loginState = LoginState(
         generalMessage = string,
         is2Fa = true,
-        isRetryVisible = true,
         isPasswordVisible = true,
         expectSteamGuard = true,
         password = "Password",
@@ -415,8 +453,8 @@ private fun Preview_LoginScreenContent() {
             onSteamGuard = {},
             onPasswordVisible = {},
             onLogin = {},
+            onLoginQR = {},
             onRetry = {},
-            onClear = {},
             on2faMessage = {}
         )
     }

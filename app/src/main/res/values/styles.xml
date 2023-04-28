@@ -1,9 +1,18 @@
 <resources>
-    <style name="AppTheme" parent="android:Theme.Material.NoActionBar" />
+
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">false</item>
+    </style>
 
     <style name="AppTheme.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#303030</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/vapulla</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
+
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">false</item>
     </style>
 </resources>

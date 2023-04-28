@@ -1,10 +1,13 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
+import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
 import `in`.dragonbra.vapulla.manager.AccountManager
+import io.github.g0dkar.qrcode.QRCode
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,23 +15,13 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val accountManager: AccountManager
+    val accountManager: AccountManager
 ) : ViewModel() {
 
     private val loginValidation: LoginValidation = LoginValidation()
-
-    var logOnDetails = LogOnDetails()
-        private set
-
-    val loginKey: String?
-        get() = accountManager.loginKey
-
-    private val _isServiceNotBound = MutableStateFlow(true)
-    val isServiceNotBound = _isServiceNotBound.asStateFlow()
 
     private val _loginState = MutableStateFlow(LoginState())
     val loginState = _loginState.asStateFlow()
@@ -36,27 +29,16 @@ class LoginViewModel @Inject constructor(
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
 
+    private val _qrCodeStateFlow = MutableStateFlow<Bitmap?>(null)
+    val qrCodeStateFlow = _qrCodeStateFlow.asStateFlow()
+
     fun prefillInputs() {
         val username = accountManager.username ?: return
         _loginState.update { it.copy(username = username) }
     }
 
-    fun setUsername() {
-        accountManager.username = logOnDetails.username
-    }
-
-    fun resetAccountManager() {
-        accountManager.clear()
-    }
-
     fun onServiceBoundVerifyLoginDetails(hasInfo: () -> Unit) {
         if (!accountManager.loginKey.isNullOrEmpty() && !accountManager.username.isNullOrEmpty()) {
-            with(logOnDetails) {
-                loginKey = accountManager.loginKey
-                password = null
-                username = accountManager.username
-            }
-
             onLoadingVisible(true)
             hasInfo()
         }
@@ -64,7 +46,9 @@ class LoginViewModel @Inject constructor(
 
     fun onServiceBound() {
         Timber.d("onServiceBound")
-        _isServiceNotBound.value = false
+        _loginState.update {
+            it.copy(isServiceConnected = true)
+        }
     }
 
     fun onDestroy() {
@@ -111,8 +95,8 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun onShowMessage(error: String, canRetry: Boolean) {
-        _loginState.update { it.copy(generalMessage = error, isRetryVisible = canRetry) }
+    fun onShowMessage(error: String) {
+        _loginState.update { it.copy(generalMessage = error) }
     }
 
     fun showFailedScreen() {
@@ -120,40 +104,57 @@ class LoginViewModel @Inject constructor(
             it.copy(
                 expectSteamGuard = false,
                 generalMessage = "Failed to connect to steam",
-                isLoading = false,
-                isRetryVisible = true
+                isLoading = false
             )
         }
     }
 
     fun doRetry() {
-        _loginState.update { it.copy(isRetryVisible = false) }
         viewModelScope.launch {
             val event = ValidationEvent.StartService
             loginEventChannel.send(event)
         }
     }
 
-    fun doLogin() {
-        val username = loginValidation.validateUsername(_loginState.value.username)
-        val password = loginValidation.validatePassword(_loginState.value.password)
+    fun drawQRCode(authSession: QrAuthSession) {
+        val challengeURL: String = authSession.challengeUrl
 
-        val isError = listOf(username, password).any { !it.isSuccessful }
+        // TODO make sure our login message updates
+
+        Timber.d("New challege URL: $challengeURL")
+        _qrCodeStateFlow.value = QRCode(challengeURL).render().nativeImage() as Bitmap
+    }
+
+    fun doLoginQR() {
+        _loginState.update { it.copy(isLoading = true, isSigningInViaQR = true) }
+        viewModelScope.launch {
+            val event = ValidationEvent.StartService
+            loginEventChannel.send(event)
+        }
+    }
+
+    fun cancelLoginQR() {
+        _loginState.update { it.copy(isLoading = false, isSigningInViaQR = false) }
+        viewModelScope.launch {
+            val event = ValidationEvent.CancelService
+            loginEventChannel.send(event)
+        }
+    }
+
+    fun doLogin() {
+        val usernameValidation = loginValidation.validateUsername(_loginState.value.username)
+        val passwordValidation = loginValidation.validatePassword(_loginState.value.password)
+
+        val isError = listOf(usernameValidation, passwordValidation).any { !it.isSuccessful }
         if (isError) {
             _loginState.update {
                 it.copy(
-                    usernameError = username.errorMessage,
-                    passwordError = password.errorMessage
+                    usernameError = usernameValidation.errorMessage,
+                    passwordError = passwordValidation.errorMessage
                 )
             }
 
             return
-        }
-
-        logOnDetails.apply {
-            this.username = _loginState.value.username
-            this.password = _loginState.value.password
-            this.loginKey = null
         }
 
         if (_loginState.value.expectSteamGuard) {
@@ -164,12 +165,6 @@ class LoginViewModel @Inject constructor(
                 }
 
                 return
-            }
-
-            if (_loginState.value.is2Fa) {
-                logOnDetails.twoFactorCode = _loginState.value.steamGuard
-            } else {
-                logOnDetails.authCode = _loginState.value.steamGuard
             }
         }
 

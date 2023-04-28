@@ -40,6 +40,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServ
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.SteamNotifications
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.callback.OfflineMessageNotificationCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamscreenshots.SteamScreenshots
+import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnifiedMessages
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodNotification
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodResponse
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
@@ -126,6 +127,8 @@ class SteamService : Service() {
 
     val disconnectedSubs = mutableSetOf<(DisconnectedCallback) -> Unit>()
 
+    lateinit var unifiedMessages: SteamUnifiedMessages
+
     private var retryCount = 0
 
     private var unifiedChat: Chat? = null
@@ -194,6 +197,7 @@ class SteamService : Service() {
         }
 
         callbackMgr = CallbackManager(steamClient)
+        unifiedMessages = steamClient.getHandler(SteamUnifiedMessages::class.java)
 
         subscriptions.apply {
             add(callbackMgr.subscribe(ConnectedCallback::class.java, onConnected))
