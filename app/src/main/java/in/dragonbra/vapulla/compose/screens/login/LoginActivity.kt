@@ -73,6 +73,13 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (steamService?.isLoggedIn == true) {
+            onLoginSuccess()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         viewModel.onDestroy()
@@ -142,6 +149,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         val logonDetails = LogOnDetails().apply {
             username = accountUsername
             accessToken = accountRefreshToken
+            loginID = 149
         }
 
         steamService?.logOn(logonDetails)
@@ -161,39 +169,17 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
     override fun onLoggedOn(callback: LoggedOnCallback) {
         super.onLoggedOn(callback)
+        Timber.d("WERE LOGGED ON! ${callback.result}")
         if (callback.result != EResult.OK) {
-            val eResult = listOf(
-                EResult.AccountLogonDenied,
-                EResult.AccountLoginDeniedNeedTwoFactor
-            )
+            val errorMessage = getErrorMessage(callback.result, callback.extendedResult)
 
-            if (eResult.any { callback.result == it }) {
-                if (callback.result == EResult.AccountLoginDeniedNeedTwoFactor) {
-                    val is2Fa = callback.result == EResult.AccountLoginDeniedNeedTwoFactor
-                    viewModel.onShowSteamGuard(true, "", is2Fa)
-                }
-            } else {
-                Timber.w("Failed to log in ${callback.result} / ${callback.extendedResult}")
-                viewModel.onShowSteamGuard(false, "", false)
+            Timber.w("Unable to logon to Steam: ${callback.result} / ${callback.extendedResult}")
 
-                // SnackBar this?
-                val errorMessage = getErrorMessage(callback.result, callback.extendedResult)
-                val authEResult = listOf(
-                    EResult.TwoFactorCodeMismatch,
-                    EResult.InvalidLoginAuthCode
-                )
+            viewModel.onShowMessage(errorMessage)
 
-                if (authEResult.any { callback.result == it }) {
-                    viewModel.onShowSteamGuard(true, errorMessage, true)
-                } else {
-                    viewModel.onShowMessage(errorMessage)
-                }
-            }
             steamService?.disconnect()
             return
         }
-
-        viewModel.onShowSteamGuard(false, "", false)
 
         scope.launch(Dispatchers.IO) {
             val friends: SteamFriends? = getHandler()
@@ -249,8 +235,11 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
     }
 
     override fun getDeviceCode(previousCodeWasIncorrect: Boolean): CompletableFuture<String> {
-        Timber.i("STEAM GUARD! Please enter your 2-factor auth code from your authenticator app.")
-        viewModel.onShowMessage("Please enter your 2-factor auth code from your authenticator app.")
+        Timber.i("Steam Guard, use code on app")
+        viewModel.onShowSteamGuard(
+            expectSteamGuard = true,
+            error = "Please enter your 2-factor auth code from your authenticator app."
+        )
 
         if (previousCodeWasIncorrect) {
             Timber.i("The previous 2-factor auth code you have provided is incorrect.")
@@ -266,17 +255,21 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         email: String?,
         previousCodeWasIncorrect: Boolean
     ): CompletableFuture<String> {
-        Timber.i("STEAM GUARD! Please enter the auth code sent to the email at $email.")
-        viewModel.onShowMessage("Please enter the auth code sent to the email at $email.")
+        Timber.i("Steam Guard, use code sent to $email.")
+        viewModel.onShowSteamGuard(
+            expectSteamGuard = true,
+            error = "Please enter the auth code sent to the email at $email."
+        )
 
         if (previousCodeWasIncorrect) {
-            Timber.i("The previous 2-factor auth code you have provided is incorrect.")
+            Timber.i("Previous code was incorrect")
             viewModel.onShowMessage(
                 "The previous 2-factor auth code you have provided is incorrect."
             )
         }
 
-        TODO("Not yet implemented")
+        val code = viewModel.twoFactorFuture.get()
+        return CompletableFuture.completedFuture(code)
     }
 
     override fun onChanged(qrAuthSession: QrAuthSession) {

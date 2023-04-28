@@ -4,14 +4,9 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -153,7 +148,7 @@ fun LoginScreen(
                     viewModel.doLoginQR()
                 }
             },
-            onRetry = viewModel::doRetry,
+            onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
             on2faMessage = { viewModel.onShowMessage(it) }
         )
     }
@@ -169,7 +164,7 @@ private fun LoginScreenContent(
     onPasswordVisible: (Boolean) -> Unit,
     onLogin: () -> Unit,
     onLoginQR: () -> Unit,
-    onRetry: () -> Unit,
+    onTwoFactorSubmit: () -> Unit,
     on2faMessage: (string: String) -> Unit
 ) {
     Column(
@@ -194,24 +189,61 @@ private fun LoginScreenContent(
             color = MaterialTheme.colorScheme.error
         )
 
-        /* Login TextFields */
-        LoginTextFields(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            loginState = loginState,
-            onUsername = onUsername,
-            onPassword = onPassword,
-            onSteamGuard = onSteamGuard,
-            onPasswordVisible = onPasswordVisible,
-            on2faMessage = on2faMessage
-        )
+        /* Login fields */
+        AnimatedVisibility(visible = !loginState.expectSteamGuard) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                LoginTextFields(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    loginState = loginState,
+                    onUsername = onUsername,
+                    onPassword = onPassword,
+                    onPasswordVisible = onPasswordVisible
+                )
 
-        /* Login Button */
-        LoginButtons(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            onLogin = onLogin,
-            onLoginQR = onLoginQR,
-            onRetry = onRetry
-        )
+                /* Login Button */
+                LoginButtons(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    onLogin = onLogin,
+                    onLoginQR = onLoginQR
+                )
+            }
+        }
+
+        /* Two Factor */
+        AnimatedVisibility(visible = loginState.expectSteamGuard) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                val focusManager = LocalFocusManager.current
+                LoginTextField(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    label = R.string.textLabelSteamGuard,
+                    isEnabled = !loginState.isLoading,
+                    isError = loginState.steamGuardError.isNotEmpty(),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.clearFocus() }
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                    ),
+                    onValueChange = onSteamGuard,
+                    supportingText = loginState.steamGuardError,
+                    value = loginState.steamGuard
+                )
+
+                Button(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    onClick = onTwoFactorSubmit,
+                    content = { Text(text = "Submit") }
+                )
+            }
+        }
     }
 }
 
@@ -261,9 +293,7 @@ private fun LoginTextFields(
     loginState: LoginState,
     onUsername: (String) -> Unit,
     onPassword: (String) -> Unit,
-    onSteamGuard: (String) -> Unit,
-    onPasswordVisible: (Boolean) -> Unit,
-    on2faMessage: (String) -> Unit
+    onPasswordVisible: (Boolean) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -353,48 +383,13 @@ private fun LoginTextFields(
             PasswordVisualTransformation()
         }
     )
-
-    /* SteamGuard */
-    AnimatedVisibility(
-        visible = loginState.expectSteamGuard,
-        enter = slideInHorizontally() + fadeIn(),
-        exit = slideOutHorizontally() + fadeOut()
-    ) {
-        if (loginState.expectSteamGuard) {
-            val string = if (loginState.is2Fa) {
-                stringResource(id = R.string.errorMessageSteamGuardMobile)
-            } else {
-                stringResource(id = R.string.errorMessageSteamGuardEmail)
-            }
-            on2faMessage(string) // I don't like this
-        }
-
-        LoginTextField(
-            modifier = modifier,
-            label = R.string.textLabelSteamGuard,
-            isEnabled = !loginState.isLoading,
-            isError = loginState.steamGuardError.isNotEmpty(),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            ),
-            keyboardOptions = KeyboardOptions(
-                autoCorrect = false,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Done
-            ),
-            onValueChange = onSteamGuard,
-            supportingText = loginState.steamGuardError,
-            value = loginState.steamGuard
-        )
-    }
 }
 
 @Composable
 private fun LoginButtons(
     modifier: Modifier = Modifier,
     onLogin: () -> Unit,
-    onLoginQR: () -> Unit,
-    onRetry: () -> Unit
+    onLoginQR: () -> Unit
 ) {
     Button(
         modifier = modifier
@@ -411,22 +406,6 @@ private fun LoginButtons(
         onClick = onLoginQR,
         content = { Text(text = "Sign in via QR") }
     )
-
-    // TODO merge with login button
-//    AnimatedVisibility(
-//        visible = isRetryVisible,
-//        enter = fadeIn() + expandIn(),
-//        exit = scaleOut() + fadeOut()
-//    ) {
-//        OutlinedButton(
-//            modifier = modifier.padding(vertical = 12.dp),
-//            colors = ButtonDefaults.outlinedButtonColors(
-//                contentColor = Color.White
-//            ),
-//            onClick = onRetry,
-//            content = { Text(text = stringResource(id = R.string.retry)) }
-//        )
-//    }
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
@@ -435,7 +414,6 @@ private fun Preview_LoginScreenContent() {
     val string = stringResource(id = R.string.errorMessageSteamGuardMobile)
     val loginState = LoginState(
         generalMessage = string,
-        is2Fa = true,
         isPasswordVisible = true,
         expectSteamGuard = true,
         password = "Password",
@@ -454,7 +432,7 @@ private fun Preview_LoginScreenContent() {
             onPasswordVisible = {},
             onLogin = {},
             onLoginQR = {},
-            onRetry = {},
+            onTwoFactorSubmit = {},
             on2faMessage = {}
         )
     }

@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
 import `in`.dragonbra.vapulla.manager.AccountManager
 import io.github.g0dkar.qrcode.QRCode
+import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,9 @@ class LoginViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val loginValidation: LoginValidation = LoginValidation()
+
+    var twoFactorFuture: CompletableFuture<String> = CompletableFuture()
+        private set
 
     private val _loginState = MutableStateFlow(LoginState())
     val loginState = _loginState.asStateFlow()
@@ -84,12 +88,11 @@ class LoginViewModel @Inject constructor(
         _loginState.update { it.copy(isLoading = isLoading, generalMessage = "Loading") }
     }
 
-    fun onShowSteamGuard(expectSteamGuard: Boolean, error: String, is2fa: Boolean) {
+    fun onShowSteamGuard(expectSteamGuard: Boolean, error: String) {
         _loginState.update {
             it.copy(
                 expectSteamGuard = expectSteamGuard,
                 generalMessage = error,
-                is2Fa = is2fa,
                 isLoading = false
             )
         }
@@ -97,6 +100,11 @@ class LoginViewModel @Inject constructor(
 
     fun onShowMessage(error: String) {
         _loginState.update { it.copy(generalMessage = error) }
+    }
+
+    fun onTwoFactorSubmit() {
+        val code = _loginState.value.steamGuard
+        twoFactorFuture.complete(code)
     }
 
     fun showFailedScreen() {
