@@ -38,7 +38,11 @@ fun LoginTextField(
         label = { Text(text = stringResource(id = label)) },
         onValueChange = { onValueChange(it) },
         singleLine = true,
-        supportingText = { Text(supportingText) },
+        supportingText = if (isError) {
+            { Text(supportingText) }
+        } else {
+            null
+        },
         trailingIcon = trailingIcon,
         value = value,
         visualTransformation = visualTransformation

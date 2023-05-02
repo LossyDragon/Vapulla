@@ -49,10 +49,12 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            @Suppress("UnstableApiUsage")
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
     }
 
+    @Suppress("UnstableApiUsage")
     buildFeatures {
         compose = true
     }
@@ -105,6 +107,7 @@ dependencies {
     val accompanist = "0.31.1-alpha"
     implementation("com.google.accompanist:accompanist-permissions:$accompanist")
     implementation("com.google.accompanist:accompanist-systemuicontroller:$accompanist")
+    implementation("com.google.accompanist:accompanist-navigation-material:$accompanist")
 
     // Coil-Kt:
     // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil

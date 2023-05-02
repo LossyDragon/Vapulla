@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector as Animation
@@ -14,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,8 +25,9 @@ import androidx.compose.ui.autofill.AutofillNode
 import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
@@ -39,9 +42,20 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
+import com.google.accompanist.navigation.material.ModalBottomSheetLayout
+import com.google.accompanist.navigation.material.bottomSheet
+import com.google.accompanist.navigation.material.rememberBottomSheetNavigator
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.compose.NavDestinations
+import `in`.dragonbra.vapulla.compose.components.BottomSheetLayout
 import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -49,7 +63,11 @@ import `in`.dragonbra.vapulla.core.Constants
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalPermissionsApi::class,
+    ExperimentalMaterialNavigationApi::class,
+    ExperimentalMaterial3Api::class
+)
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
@@ -89,68 +107,101 @@ fun LoginScreen(
     )
 
     /* Content */
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberStandardBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            skipHiddenState = false
-        )
-    )
-    BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        sheetContent = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("Sign in using your Steam App authenticator")
+    val bottomSheetNavigator = rememberBottomSheetNavigator()
+    val navController = rememberNavController(bottomSheetNavigator)
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val bitmapStateFlow = viewModel.qrCodeStateFlow.collectAsState(initial = null)
-                val bitmap = bitmapStateFlow.value
-
-                if (bitmap != null) {
-                    Image(bitmap = bitmap.asImageBitmap(), contentDescription = null)
-                } else {
-                    CircularProgressIndicator(modifier = Modifier.size(128.dp))
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
+    ModalBottomSheetLayout(bottomSheetNavigator = bottomSheetNavigator) {
+        NavHost(navController, NavDestinations.LOGIN_SCREEN) {
+            composable(NavDestinations.LOGIN_SCREEN) {
+                LoginScreenContent(
+                    modifier = Modifier,
+                    loginState = state,
+                    onUsername = viewModel::onUsernameUpdate,
+                    onPassword = viewModel::onPasswordUpdate,
+                    onSteamGuard = viewModel::onSteamGuardUpdate,
+                    onPasswordVisible = viewModel::onPasswordVisible,
+                    onLogin = viewModel::doLogin,
+                    onLoginQR = {
                         scope.launch {
-                            scaffoldState.bottomSheetState.hide()
-                            viewModel.cancelLoginQR()
+                            navController.navigate(NavDestinations.LOGIN_SHEET)
+                            viewModel.doLoginQR()
                         }
                     },
-                    content = { Text(text = stringResource(id = R.string.cancel)) }
+                    onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
+                    on2faMessage = { viewModel.onShowMessage(it) }
                 )
+            }
+            bottomSheet(NavDestinations.LOGIN_SHEET) {
+                // TODO: bottomSheet not yet un-draggable, waiting on upstream.
+                Surface {
+                    BottomSheetLayout(
+                        title = { stringResource(id = R.string.bottomSheetLoginQRTitle) }
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .size(200.dp)
+                                .align(Alignment.CenterHorizontally)
+                                .padding(16.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        ) {
+                            when (val qrState = viewModel.qrCodeState) {
+                                is QrState.Ready -> {
+                                    val qrCodeBackground = MaterialTheme.colorScheme.surfaceVariant
+                                    val qrCodeColor = MaterialTheme.colorScheme.secondary
+                                    CoilImage(
+                                        imageModel = {
+                                            qrState.qrCode.render(
+                                                margin = 75,
+                                                brightColor = qrCodeBackground.toArgb(),
+                                                marginColor = qrCodeBackground.toArgb(),
+                                                darkColor = qrCodeColor.toArgb()
+                                            ).nativeImage()
+                                        },
+                                        imageOptions = ImageOptions(
+                                            alignment = Alignment.Center,
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    )
+                                }
+                                else -> {
+                                    Box(Modifier.fillMaxSize()) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.align(Alignment.Center)
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(id = R.string.bottomSheetLoginQRMessage),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+
+                        FilledTonalButton(
+                            onClick = {
+                                navController.popBackStack()
+                                viewModel.cancelLoginQR()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentPadding = PaddingValues(16.dp),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Icon(imageVector = Icons.Rounded.Cancel, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = stringResource(id = R.string.cancel))
+                        }
+                    }
+                }
             }
         }
-    ) { paddingValues ->
-        LoginScreenContent(
-            modifier = Modifier.padding(paddingValues),
-            loginState = state,
-            onUsername = viewModel::onUsernameUpdate,
-            onPassword = viewModel::onPasswordUpdate,
-            onSteamGuard = viewModel::onSteamGuardUpdate,
-            onPasswordVisible = viewModel::onPasswordVisible,
-            onLogin = viewModel::doLogin,
-            onLoginQR = {
-                scope.launch {
-                    scaffoldState.bottomSheetState.expand()
-                    viewModel.doLoginQR()
-                }
-            },
-            onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
-            on2faMessage = { viewModel.onShowMessage(it) }
-        )
     }
 }
 
@@ -223,7 +274,7 @@ private fun LoginScreenContent(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     label = R.string.textLabelSteamGuard,
                     isEnabled = !loginState.isLoading,
-                    isError = loginState.steamGuardError.isNotEmpty(),
+                    isError = loginState.isSteamGuardValid.not(),
                     keyboardActions = KeyboardActions(
                         onDone = { focusManager.clearFocus() }
                     ),
@@ -233,7 +284,7 @@ private fun LoginScreenContent(
                         imeAction = ImeAction.Done
                     ),
                     onValueChange = onSteamGuard,
-                    supportingText = loginState.steamGuardError,
+                    supportingText = "Steam Guard code is not valid.",
                     value = loginState.steamGuard
                 )
 
@@ -320,7 +371,7 @@ private fun LoginTextFields(
                 }
             },
         label = R.string.textLabelUsername,
-        isError = loginState.usernameError.isNotEmpty(),
+        isError = loginState.isUsernameValid.not(),
         isEnabled = !loginState.isLoading,
         keyboardActions = KeyboardActions(
             onNext = { focusManager.moveFocus(FocusDirection.Down) }
@@ -331,7 +382,7 @@ private fun LoginTextFields(
             imeAction = ImeAction.Next
         ),
         onValueChange = onUsername,
-        supportingText = loginState.usernameError,
+        supportingText = "Username is not valid.",
         value = loginState.username
     )
 
@@ -372,10 +423,10 @@ private fun LoginTextFields(
             }
         },
         isEnabled = !loginState.isLoading,
-        isError = loginState.passwordError.isNotEmpty(),
+        isError = loginState.isPasswordValid != PasswordValidation.Valid,
         label = R.string.textLabelPassword,
         onValueChange = onPassword,
-        supportingText = loginState.passwordError,
+        supportingText = "Password is not Valid.",
         value = loginState.password,
         visualTransformation = if (loginState.isPasswordVisible) {
             VisualTransformation.None
@@ -413,15 +464,15 @@ private fun LoginButtons(
 private fun Preview_LoginScreenContent() {
     val string = stringResource(id = R.string.errorMessageSteamGuardMobile)
     val loginState = LoginState(
-        generalMessage = string,
-        isPasswordVisible = true,
         expectSteamGuard = true,
+        generalMessage = string,
+        isPasswordValid = PasswordValidation.LetterOrDigit,
+        isPasswordVisible = true,
+        isSteamGuardValid = false,
+        isUsernameValid = false,
         password = "Password",
-        passwordError = "Password Error",
         steamGuard = "1A2B3C",
-        steamGuardError = "SteamGuard Error",
-        username = "Username",
-        usernameError = "Username Error"
+        username = "Username"
     )
     VapullaTheme {
         LoginScreenContent(

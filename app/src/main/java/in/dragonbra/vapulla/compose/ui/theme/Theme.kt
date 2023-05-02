@@ -81,7 +81,7 @@ private val darkColors = darkColorScheme(
 @Composable
 fun VapullaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val isAtLeastS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S

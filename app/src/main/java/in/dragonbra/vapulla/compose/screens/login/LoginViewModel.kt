@@ -1,6 +1,8 @@
 package `in`.dragonbra.vapulla.compose.screens.login
 
-import android.graphics.Bitmap
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,12 +19,28 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+sealed class ValidationEvent {
+    object BindService : ValidationEvent()
+    object CancelService : ValidationEvent()
+    object StartService : ValidationEvent()
+}
+
+sealed class PasswordValidation {
+    object Valid : PasswordValidation()
+    object Empty : PasswordValidation()
+    object Length : PasswordValidation()
+    object LetterOrDigit : PasswordValidation()
+}
+
+sealed class QrState {
+    object Loading : QrState()
+    class Ready(val qrCode: QRCode) : QrState()
+}
+
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     val accountManager: AccountManager
 ) : ViewModel() {
-
-    private val loginValidation: LoginValidation = LoginValidation()
 
     var twoFactorFuture: CompletableFuture<String> = CompletableFuture()
         private set
@@ -33,8 +51,11 @@ class LoginViewModel @Inject constructor(
     private val loginEventChannel = Channel<ValidationEvent>()
     val loginEvents = loginEventChannel.receiveAsFlow()
 
-    private val _qrCodeStateFlow = MutableStateFlow<Bitmap?>(null)
-    val qrCodeStateFlow = _qrCodeStateFlow.asStateFlow()
+    var qrCodeState by mutableStateOf<QrState>(QrState.Loading)
+        private set
+
+    private val state: LoginState
+        get() = loginState.value
 
     fun prefillInputs() {
         val username = accountManager.username ?: return
@@ -60,22 +81,22 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onUsernameUpdate(username: String) {
-        if (_loginState.value.usernameError.isNotEmpty()) {
-            _loginState.update { it.copy(usernameError = "") }
+        if (state.isUsernameValid.not()) {
+            _loginState.update { it.copy(isUsernameValid = true) }
         }
         _loginState.update { it.copy(username = username) }
     }
 
     fun onPasswordUpdate(password: String) {
-        if (_loginState.value.passwordError.isNotEmpty()) {
-            _loginState.update { it.copy(passwordError = "") }
+        if (state.isPasswordValid != PasswordValidation.Valid) {
+            _loginState.update { it.copy(isPasswordValid = PasswordValidation.Valid) }
         }
         _loginState.update { it.copy(password = password) }
     }
 
     fun onSteamGuardUpdate(steamGuard: String) {
-        if (_loginState.value.steamGuardError.isNotEmpty()) {
-            _loginState.update { it.copy(steamGuardError = "") }
+        if (state.isSteamGuardValid.not()) {
+            _loginState.update { it.copy(isSteamGuardValid = true) }
         }
         _loginState.update { it.copy(steamGuard = steamGuard) }
     }
@@ -88,7 +109,8 @@ class LoginViewModel @Inject constructor(
         _loginState.update { it.copy(isLoading = isLoading, generalMessage = "Loading") }
     }
 
-    fun onShowSteamGuard(expectSteamGuard: Boolean, error: String) {
+    fun onShowSteamGuard(expectSteamGuard: Boolean, useAppSignIn: Boolean = false, error: String) {
+        // TODO useAppSignIn
         _loginState.update {
             it.copy(
                 expectSteamGuard = expectSteamGuard,
@@ -130,7 +152,8 @@ class LoginViewModel @Inject constructor(
         // TODO make sure our login message updates
 
         Timber.d("New challege URL: $challengeURL")
-        _qrCodeStateFlow.value = QRCode(challengeURL).render().nativeImage() as Bitmap
+        val qrCode = QRCode(challengeURL)
+        qrCodeState = QrState.Ready(qrCode)
     }
 
     fun doLoginQR() {
@@ -150,28 +173,31 @@ class LoginViewModel @Inject constructor(
     }
 
     fun doLogin() {
-        val usernameValidation = loginValidation.validateUsername(_loginState.value.username)
-        val passwordValidation = loginValidation.validatePassword(_loginState.value.password)
+        val isValidGuardCode = state.steamGuard.length > 5
+        val isValidUsername = state.username.isNotBlank()
+        val isValidPassword = when {
+            state.password.isBlank() -> PasswordValidation.Empty
+            state.password.length < 6 -> PasswordValidation.Length
+            !state.password.any { it.isLetterOrDigit() } -> PasswordValidation.LetterOrDigit
+            else -> PasswordValidation.Valid
+        }
 
-        val isError = listOf(usernameValidation, passwordValidation).any { !it.isSuccessful }
-        if (isError) {
-            _loginState.update {
-                it.copy(
-                    usernameError = usernameValidation.errorMessage,
-                    passwordError = passwordValidation.errorMessage
-                )
-            }
+        _loginState.update {
+            it.copy(
+                isUsernameValid = isValidUsername,
+                isPasswordValid = isValidPassword,
+                isSteamGuardValid = isValidGuardCode
+            )
+        }
 
+        if (isValidUsername.not() && isValidPassword != PasswordValidation.Valid) {
+            Timber.w("Username or Password wasn't valid")
             return
         }
 
-        if (_loginState.value.expectSteamGuard) {
-            val steamGuard = loginValidation.validateSteamGuard(_loginState.value.steamGuard)
-            if (!steamGuard.isSuccessful) {
-                _loginState.update {
-                    it.copy(steamGuardError = steamGuard.errorMessage, isLoading = false)
-                }
-
+        if (state.expectSteamGuard) {
+            if (isValidGuardCode.not()) {
+                Timber.w("Steam Guard code wasn't valid")
                 return
             }
         }

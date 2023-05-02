@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -62,10 +63,14 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun onPostCreate(owner: LifecycleOwner, steamID: SteamID) {
+        Timber.d("onPostCreate($owner, $steamID)")
+
         _state.update { it.copy(steamID = steamID) }
 
         friendData = steamFriendDao.findLive(steamID.convertToUInt64())
         friendData.observe(owner, friendObserver)
+
+        Timber.d("Friend Data ${friendData.value}")
 
         friendData.value?.let {
             if (it.gameAppId > 0) schemaManager.touch(it.gameAppId)

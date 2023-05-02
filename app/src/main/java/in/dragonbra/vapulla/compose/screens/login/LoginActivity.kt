@@ -28,6 +28,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.getErrorMessage
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.service.Notifications
+import java.lang.IllegalArgumentException
 import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -134,15 +135,19 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
                 val steamClient = steamService!!.steamClient
                 val unifiedMessages = steamService!!.unifiedMessages
                 val auth = SteamAuthentication(steamClient, unifiedMessages)
-                val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
 
-                val authPollResult = authSession.pollingWaitForResult()
+                try {
+                    val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
+                    val authPollResult = authSession.pollingWaitForResult()
 
-                // Save our results (username and refresh token) to account manager.
-                viewModel.accountManager.username = authPollResult.accountName
-                viewModel.accountManager.loginKey = authPollResult.refreshToken
-                accountUsername = authPollResult.accountName
-                accountRefreshToken = authPollResult.refreshToken
+                    // Save our results (username and refresh token) to account manager.
+                    viewModel.accountManager.username = authPollResult.accountName
+                    viewModel.accountManager.loginKey = authPollResult.refreshToken
+                    accountUsername = authPollResult.accountName
+                    accountRefreshToken = authPollResult.refreshToken
+                } catch (e: IllegalArgumentException) {
+                    Timber.e("WOAH!", e)
+                }
             }
         }
 
@@ -230,7 +235,11 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
     override fun acceptDeviceConfirmation(): CompletableFuture<Boolean> {
         Timber.i("STEAM GUARD! Use the Steam Mobile App to confirm your sign in...")
-        viewModel.onShowMessage("Use the Steam Mobile App to confirm your sign in...")
+        viewModel.onShowSteamGuard(
+            expectSteamGuard = true,
+            useAppSignIn = true,
+            error = "Use the Steam Mobile App to confirm your sign in..."
+        )
         return CompletableFuture.completedFuture(true)
     }
 
