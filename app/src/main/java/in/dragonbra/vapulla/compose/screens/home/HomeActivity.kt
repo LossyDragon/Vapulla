@@ -50,11 +50,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        onServiceStart()
-    }
-
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
         accountManager.addListener(this@HomeActivity)

@@ -14,6 +14,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistor
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
+import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.service.SteamService
 import java.io.Closeable
 import java.util.LinkedList
@@ -61,11 +62,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         }
     }
 
-    open fun onServiceStart() {
-        val intent = Intent(this, SteamService::class.java)
-        bindService(intent, connection, Context.BIND_AUTO_CREATE)
-    }
-
     open fun onServiceCancel() {
         steamService?.disconnect()
     }
@@ -73,17 +69,13 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val filter = IntentFilter(STOP_INTENT)
-        registerReceiver(stopReceiver, filter)
-    }
 
-    override fun onStop() {
-        super.onStop()
-        if (isBound) {
-            unbindService(connection)
-            subs.forEach { it?.close() }
-            subs.clear()
+        if (Constants.isAtLeastT) {
+            registerReceiver(stopReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(stopReceiver, filter)
         }
-        isBound = false
     }
 
     override fun onPause() {
@@ -95,6 +87,9 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        val intent = Intent(this, SteamService::class.java)
+        bindService(intent, connection, Context.BIND_AUTO_CREATE)
+
         if (isBound) {
             steamService?.isActivityRunning = true
         }
@@ -103,6 +98,12 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(stopReceiver)
+
+        unbindService(connection)
+        subs.forEach { it?.close() }
+        subs.clear()
+
+        isBound = false
         steamService = null
     }
 

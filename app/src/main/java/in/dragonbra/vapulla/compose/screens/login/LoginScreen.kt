@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -65,18 +66,17 @@ import kotlinx.coroutines.launch
 
 @OptIn(
     ExperimentalPermissionsApi::class,
-    ExperimentalMaterialNavigationApi::class,
-    ExperimentalMaterial3Api::class
+    ExperimentalMaterialNavigationApi::class
 )
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
     onStartService: () -> Unit,
     onCancelService: () -> Unit,
-    onBindService: () -> Unit,
+    onPermissionsGranted: () -> Unit,
     onSettings: () -> Unit
 ) {
-    val state by viewModel.loginState.collectAsState()
+    val state by viewModel.loginState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     @SuppressLint("InlinedApi")
@@ -89,7 +89,6 @@ fun LoginScreen(
 
         viewModel.loginEvents.collect { event ->
             when (event) {
-                is ValidationEvent.BindService -> onBindService()
                 is ValidationEvent.CancelService -> onCancelService()
                 is ValidationEvent.StartService -> {
                     viewModel.onLoadingVisible(true)
@@ -102,7 +101,7 @@ fun LoginScreen(
     /* Notifications Permissions Dialog */
     PermissionsDialog(
         permissionState = permissionState,
-        onPermGranted = onBindService,
+        onPermGranted = onPermissionsGranted,
         onSettings = onSettings
     )
 
@@ -274,7 +273,7 @@ private fun LoginScreenContent(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     label = R.string.textLabelSteamGuard,
                     isEnabled = !loginState.isLoading,
-                    isError = loginState.isSteamGuardValid.not(),
+                    isError = !loginState.isSteamGuardValid,
                     keyboardActions = KeyboardActions(
                         onDone = { focusManager.clearFocus() }
                     ),
@@ -371,7 +370,7 @@ private fun LoginTextFields(
                 }
             },
         label = R.string.textLabelUsername,
-        isError = loginState.isUsernameValid.not(),
+        isError = !loginState.isUsernameValid,
         isEnabled = !loginState.isLoading,
         keyboardActions = KeyboardActions(
             onNext = { focusManager.moveFocus(FocusDirection.Down) }
@@ -464,7 +463,7 @@ private fun LoginButtons(
 private fun Preview_LoginScreenContent() {
     val string = stringResource(id = R.string.errorMessageSteamGuardMobile)
     val loginState = LoginState(
-        expectSteamGuard = true,
+        expectSteamGuard = false,
         generalMessage = string,
         isPasswordValid = PasswordValidation.LetterOrDigit,
         isPasswordVisible = true,

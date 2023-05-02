@@ -20,7 +20,6 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 sealed class ValidationEvent {
-    object BindService : ValidationEvent()
     object CancelService : ValidationEvent()
     object StartService : ValidationEvent()
 }
@@ -81,7 +80,7 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onUsernameUpdate(username: String) {
-        if (state.isUsernameValid.not()) {
+        if (!state.isUsernameValid) {
             _loginState.update { it.copy(isUsernameValid = true) }
         }
         _loginState.update { it.copy(username = username) }
@@ -95,7 +94,7 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onSteamGuardUpdate(steamGuard: String) {
-        if (state.isSteamGuardValid.not()) {
+        if (!state.isSteamGuardValid) {
             _loginState.update { it.copy(isSteamGuardValid = true) }
         }
         _loginState.update { it.copy(steamGuard = steamGuard) }
@@ -149,9 +148,8 @@ class LoginViewModel @Inject constructor(
     fun drawQRCode(authSession: QrAuthSession) {
         val challengeURL: String = authSession.challengeUrl
 
-        // TODO make sure our login message updates
+        Timber.d("New challenge URL: $challengeURL")
 
-        Timber.d("New challege URL: $challengeURL")
         val qrCode = QRCode(challengeURL)
         qrCodeState = QrState.Ready(qrCode)
     }
@@ -165,7 +163,13 @@ class LoginViewModel @Inject constructor(
     }
 
     fun cancelLoginQR() {
-        _loginState.update { it.copy(isLoading = false, isSigningInViaQR = false) }
+        _loginState.update {
+            it.copy(
+                isLoading = false,
+                isSigningInViaQR = false,
+                generalMessage = ""
+            )
+        }
         viewModelScope.launch {
             val event = ValidationEvent.CancelService
             loginEventChannel.send(event)
@@ -190,13 +194,13 @@ class LoginViewModel @Inject constructor(
             )
         }
 
-        if (isValidUsername.not() && isValidPassword != PasswordValidation.Valid) {
+        if (!isValidUsername || isValidPassword != PasswordValidation.Valid) {
             Timber.w("Username or Password wasn't valid")
             return
         }
 
         if (state.expectSteamGuard) {
-            if (isValidGuardCode.not()) {
+            if (!isValidGuardCode) {
                 Timber.w("Steam Guard code wasn't valid")
                 return
             }

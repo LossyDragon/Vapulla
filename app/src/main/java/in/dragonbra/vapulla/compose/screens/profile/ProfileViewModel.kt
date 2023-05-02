@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 @HiltViewModel
@@ -36,45 +37,42 @@ class ProfileViewModel @Inject constructor(
     private val _state = MutableStateFlow(ProfileState())
     val state = _state.asStateFlow()
 
-    private val profileExec by lazy {
-        viewModelScope.launch(Dispatchers.IO) {
-            val level = levelManager.getLevel(state.value.steamID!!)
-            val games = levelManager.getGames(state.value.steamID!!)
-            _state.update {
-                it.copy(
-                    levelCount = level,
-                    gamesCount = games.count,
-                    gamesList = games.list,
-                    isLoading = false
-                )
-            }
-        }
-    }
-
     private lateinit var friendData: LiveData<FriendListItem>
     private val friendObserver = Observer<FriendListItem> { friend ->
+        Timber.d("friendObserver update: $friend")
         if (friend.relation == EFriendRelationship.Friend.code()) {
-            _state.update { it.copy(friend = friend) }
-            state.value.steamID?.let { profileExec }
+            viewModelScope.launch {
+                withContext(Dispatchers.IO) {
+                    val level = levelManager.getLevel(state.value.steamID!!)
+                    val games = levelManager.getGames(state.value.steamID!!)
+                    schemaManager.touch(friend.gameAppId)
+
+                    _state.update {
+                        it.copy(
+                            friend = friend,
+                            levelCount = level,
+                            gamesCount = games.count,
+                            gamesList = games.list,
+                            isLoading = false
+                        )
+                    }
+                }
+            }
             return@Observer
         }
 
+        // No longer a friend while viewing profile, go back.
         emit(ProfileUiEvent.NavigateBack)
     }
 
-    fun onPostCreate(owner: LifecycleOwner, steamID: SteamID) {
+    fun onPostCreate(owner: LifecycleOwner) {
+        val steamID = state.value.steamID!!
         Timber.d("onPostCreate($owner, $steamID)")
 
         _state.update { it.copy(steamID = steamID) }
 
         friendData = steamFriendDao.findLive(steamID.convertToUInt64())
         friendData.observe(owner, friendObserver)
-
-        Timber.d("Friend Data ${friendData.value}")
-
-        friendData.value?.let {
-            if (it.gameAppId > 0) schemaManager.touch(it.gameAppId)
-        }
 
         _state.update { it.copy(friend = friendData.value) }
     }
@@ -87,6 +85,10 @@ class ProfileViewModel @Inject constructor(
         val list = callback.responses[0].names.toList().sortedByDescending { it.nameSince }
         val nickNames = list.map { it.name }
         _state.update { it.copy(aliasHistory = nickNames) }
+    }
+
+    fun setSteamID(steamID: SteamID) {
+        _state.update { it.copy(steamID = steamID) }
     }
 
     fun setNickname(nickName: String) {

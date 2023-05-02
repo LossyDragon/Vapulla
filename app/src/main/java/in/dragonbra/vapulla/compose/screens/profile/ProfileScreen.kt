@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla.compose.screens.profile
 import android.content.Intent
 import android.os.Bundle
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -44,7 +43,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
@@ -90,7 +89,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     val uriHandler = LocalUriHandler.current
     val activity = LocalActivity.current
     val context = LocalContext.current
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     /* Set Nickname Dialog */
     var showNicknameDialog by remember { mutableStateOf(false) }
@@ -298,7 +297,7 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         val borderStroke = BorderStroke(4.dp, getStatusColor(state.friend))
-        val avatarUrl = remember { getAvatarUrl(state.friend?.avatar) }
+        val avatarUrl = remember(state.friend?.avatar) { getAvatarUrl(state.friend?.avatar) }
         StaticImage(
             modifier = Modifier
                 .size(150.dp)
@@ -312,10 +311,10 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
 @Composable
 private fun ProfileScreenNameAndStatus(state: ProfileState) {
     val context = LocalContext.current
-    val friendName = remember { getFriendName(friend = state.friend) }
-    val status = remember { context.getStatusText(state.friend) }
-    val statusColor = remember { getStatusColor(state.friend) }
-    val statusIcon = remember { getStatusIcon(state.friend) }
+    val friendName = remember(state.friend) { getFriendName(friend = state.friend) }
+    val status = remember(state.friend) { context.getStatusText(state.friend) }
+    val statusColor = remember(state.friend) { getStatusColor(state.friend) }
+    val statusIcon = remember(state.friend) { getStatusIcon(state.friend) }
 
     Text(
         text = friendName,
@@ -387,7 +386,6 @@ private fun ProfileScreenInfo(state: ProfileState) {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun ProfileLevelLayout(
     modifier: Modifier,
@@ -448,7 +446,7 @@ private fun ProfileScreenButtons(
     ) {
         Button(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
+            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .7f)),
             onClick = onChatClick
         ) {
             Text(

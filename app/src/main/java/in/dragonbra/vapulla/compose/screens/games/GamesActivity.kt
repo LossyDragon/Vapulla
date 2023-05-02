@@ -50,11 +50,6 @@ class GamesActivity : VapullaBaseActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        onServiceStart()
-    }
-
     private fun gotoGameStore(appid: Int) {
         val url = String.format(Constants.STORE_PAGE_URL, appid)
         val intent = Intent(Intent.ACTION_VIEW).apply {

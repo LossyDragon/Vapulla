@@ -17,6 +17,10 @@ class GameSchemaManager(
     private val fetchingIds: MutableSet<Int> = mutableSetOf()
 
     fun touch(id: Int) {
+        if (id <= 0) {
+            return
+        }
+
         if (fetchingIds.contains(id)) {
             return
         }

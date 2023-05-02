@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +31,7 @@ fun GamesListItem(
     gameName: String,
     hoursTwoWeeks: Int?,
     hoursAllTime: Int,
-    onOverflowClick: () -> Unit
+    onItemClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -74,8 +74,8 @@ fun GamesListItem(
                 }
             },
             trailingContent = {
-                IconButton(onClick = onOverflowClick) {
-                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = null)
+                IconButton(onClick = onItemClick) {
+                    Icon(imageVector = Icons.Default.Storefront, contentDescription = null)
                 }
             }
         )
@@ -96,7 +96,7 @@ private fun Preview_GamesListItem() {
             gameName = "Team Fortress 2",
             hoursTwoWeeks = 60,
             hoursAllTime = 4140,
-            onOverflowClick = {}
+            onItemClick = {}
         )
     }
 }

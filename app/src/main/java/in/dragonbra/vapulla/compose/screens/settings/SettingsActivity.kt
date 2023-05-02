@@ -65,11 +65,6 @@ class SettingsActivity : VapullaBaseActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        onServiceStart()
-    }
-
     override fun onDisconnected() {
         super.onDisconnected()
         val loginIntent = Intent(this, LoginActivity::class.java).apply {

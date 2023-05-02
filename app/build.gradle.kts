@@ -99,7 +99,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.runtime:runtime-livedata")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.ui:ui:1.5.0-alpha03")
+    implementation("androidx.compose.ui:ui")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Accompanist:
@@ -129,12 +129,13 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.7.1")
     implementation("androidx.compose.material3:material3:1.1.0-rc01")
     implementation("androidx.core:core-ktx:1.10.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
     implementation("androidx.paging:paging-compose:1.0.0-alpha18")
     implementation("androidx.paging:paging-runtime-ktx:3.1.1")
     implementation("androidx.palette:palette-ktx:1.0.0")
-    implementation("androidx.room:room-paging:2.5.1")
-    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.preference:preference-ktx:1.2.0")
+    implementation("androidx.room:room-paging:2.5.1")
 
     // Room:
     // https://mvnrepository.com/artifact/androidx.room/room-runtime

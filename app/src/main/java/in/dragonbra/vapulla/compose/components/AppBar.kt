@@ -6,6 +6,7 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
@@ -29,19 +30,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
@@ -83,6 +84,7 @@ private val slideUp = {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VapullaAppbar(
+    scrollState: ScrollState? = null,
     drawerState: DrawerState? = null,
     onBackPressed: (() -> Unit)? = null,
     toolbarText: String = stringResource(id = R.string.app_name),
@@ -91,11 +93,26 @@ fun VapullaAppbar(
     isSearching: Boolean = false,
     onSearchClose: (() -> Unit)? = null
 ) {
-    val scope = rememberCoroutineScope()
+    val isScrolled = remember {
+        derivedStateOf {
+            if (scrollState == null) false else scrollState.value > 0
+        }
+    }
+    val topBarContainerColor = if (isScrolled.value) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .5f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
 
     Box {
         TopAppBar(
-            modifier = Modifier.shadow(elevation = 3.dp),
+            // modifier = Modifier.shadow(elevation = 3.dp),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = topBarContainerColor,
+                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface
+            ),
             title = {
                 Text(
                     text = toolbarText,
@@ -107,6 +124,8 @@ fun VapullaAppbar(
                 if (onBackPressed != null && drawerState != null) {
                     throw RuntimeException("Navigation Icon can only have one item")
                 }
+
+                val scope = rememberCoroutineScope()
 
                 onBackPressed?.let {
                     IconButton(onClick = onBackPressed) {
@@ -194,10 +213,7 @@ private fun SearchView(
                         contentDescription = null
                     )
                 }
-            },
-            colors = TextFieldDefaults.textFieldColors(
-                containerColor = backgroundColor
-            )
+            }
         )
     }
 }

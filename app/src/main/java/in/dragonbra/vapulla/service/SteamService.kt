@@ -756,7 +756,6 @@ class SteamService : Service() {
                     CFriendMessages_GetRecentMessages_Response::class.java
                 ).also { cb ->
                     cb.messagesList.forEachIndexed { index, friendMessage ->
-
                         if (chatFriendId == null) {
                             throw NullPointerException("chatFriendId null in onMethodResponse")
                         }
@@ -766,7 +765,7 @@ class SteamService : Service() {
                             friendMessage.accountid.toLong(),
                             EUniverse.Public,
                             EAccountType.Individual
-                        )
+                        ) // Also sus for TO-DO below
 
                         val fromLocal = account.steamId == steamID.convertToUInt64()
                         val timestamp = friendMessage.timestamp.toLong()
@@ -778,7 +777,7 @@ class SteamService : Service() {
                             message = friendMessage.message,
                             timestamp = timestamp,
                             accountid = chatFriendId!!,
-                            fromLocal = fromLocal
+                            fromLocal = fromLocal // Most likely the culprit
                         ).also { msg ->
                             if (msg != null) {
                                 Timber.d("Skipping Msg History: ${friendMessage.message}")

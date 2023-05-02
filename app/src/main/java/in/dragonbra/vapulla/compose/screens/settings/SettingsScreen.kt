@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -137,9 +137,11 @@ private fun SettingsContent(
         negativeText = stringResource(id = R.string.cancel)
     )
 
+    val scrollState = rememberScrollState()
     Scaffold(
         topBar = {
             VapullaAppbar(
+                scrollState = scrollState,
                 toolbarText = stringResource(id = R.string.title_activity_settings),
                 onBackPressed = onBackPressed
             )
@@ -149,14 +151,13 @@ private fun SettingsContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
             /* Account */
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.textSettingsAccount),
-                        color = Color.White
+                        text = stringResource(id = R.string.textSettingsAccount)
                     )
                 }
             ) {
@@ -187,8 +188,7 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.textSettingsFriends),
-                        color = Color.White
+                        text = stringResource(id = R.string.textSettingsFriends)
                     )
                 }
             ) {
@@ -223,8 +223,7 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.textSettingsOther),
-                        color = Color.White
+                        text = stringResource(id = R.string.textSettingsOther)
                     )
                 }
             ) {
@@ -262,8 +261,7 @@ private fun SettingsContent(
             SettingsGroup(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.textSettingsAbout),
-                        color = Color.White
+                        text = stringResource(id = R.string.textSettingsAbout)
                     )
                 }
             ) {
@@ -311,12 +309,14 @@ private fun SettingsContent(
 @Composable
 private fun Preview_SettingsScreen() {
     VapullaTheme {
-        SettingsContent(
-            accountManager = AccountManager(LocalContext.current),
-            onBackPressed = {},
-            onChangeUser = {},
-            onChangeName = {},
-            onClearDatabase = {}
-        )
+        Surface {
+            SettingsContent(
+                accountManager = AccountManager(LocalContext.current),
+                onBackPressed = {},
+                onChangeUser = {},
+                onChangeName = {},
+                onClearDatabase = {}
+            )
+        }
     }
 }

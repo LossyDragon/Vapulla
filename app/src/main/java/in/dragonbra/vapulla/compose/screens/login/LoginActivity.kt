@@ -65,7 +65,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
             VapullaTheme {
                 LoginScreen(
                     viewModel = viewModel,
-                    onBindService = ::onServiceStart,
+                    onPermissionsGranted = {},
                     onCancelService = ::onServiceCancel,
                     onStartService = ::startSteamService,
                     onSettings = ::onSettings
@@ -126,7 +126,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         } else {
             if (accountUsername.isNullOrEmpty() && accountRefreshToken.isNullOrEmpty()) {
                 val authSessionDetails = AuthSessionDetails().apply {
-                    username = viewModel.loginState.value.username
+                    username = viewModel.loginState.value.username.trim()
                     password = viewModel.loginState.value.password
                     persistentSession = true
                     authenticator = this@LoginActivity
@@ -257,7 +257,8 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
             )
         }
 
-        TODO("Not yet implemented")
+        val code = viewModel.twoFactorFuture.get()
+        return CompletableFuture.completedFuture(code)
     }
 
     override fun getEmailCode(

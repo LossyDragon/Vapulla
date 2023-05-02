@@ -30,21 +30,19 @@ class ProfileActivity : VapullaBaseActivity() {
 
     private val viewModel: ProfileViewModel by viewModels()
 
-    private lateinit var steamID: SteamID
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         Timber.d("onCreate")
 
-        onServiceStart()
-        steamID = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
+        val steamID = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
+        viewModel.setSteamID(steamID)
 
         setContent {
             LaunchedEffect(Unit) {
                 viewModel.uiEvent.collectLatest { event ->
-                    onProfileEvent(event, steamID)
+                    onProfileEvent(event)
                 }
             }
 
@@ -58,7 +56,7 @@ class ProfileActivity : VapullaBaseActivity() {
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
-        viewModel.onPostCreate(this@ProfileActivity, steamID)
+        viewModel.onPostCreate(this)
     }
 
     override fun onDestroy() {
@@ -82,7 +80,8 @@ class ProfileActivity : VapullaBaseActivity() {
         viewModel.onAliasHistory(callback)
     }
 
-    private fun onProfileEvent(event: ProfileUiEvent, steamID: SteamID) {
+    private fun onProfileEvent(event: ProfileUiEvent) {
+        val steamID = viewModel.state.value.steamID
         scope.launch(Dispatchers.IO) {
             when (event) {
                 ProfileUiEvent.NavigateBack -> finish()

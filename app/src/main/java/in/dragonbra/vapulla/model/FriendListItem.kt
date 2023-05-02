@@ -113,4 +113,23 @@ data class FriendListItem(
         val msgTime = lastMessageTime?.let { it >= updateTime - recentsTimeout }
         return recentsTimeout == 0L || (recentsTimeout > 0L && msgTime == true)
     }
+
+    override fun toString(): String {
+        return "FriendListItem(" +
+            "id=$id, " +
+            "name=$name, " +
+            "avatar=$avatar, " +
+            "relation=$relation, " +
+            "state=$state, " +
+            "gameAppId=$gameAppId, " +
+            "gameName=$gameName, " +
+            "lastLogOn=$lastLogOn, " +
+            "lastLogOff=$lastLogOff, " +
+            "stateFlags=$stateFlags, " +
+            "typingTs=$typingTs, " +
+            "lastMessage=$lastMessage, " +
+            "lastMessageTime=$lastMessageTime, " +
+            "newMessageCount=$newMessageCount, " +
+            "nickname=$nickname)"
+    }
 }

@@ -53,11 +53,6 @@ class ChatActivity : VapullaBaseActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        onServiceStart()
-    }
-
     override fun onResume() {
         super.onResume()
         if (isBound) {

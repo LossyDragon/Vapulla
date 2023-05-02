@@ -109,7 +109,7 @@ private fun GamesScreenContent(
                         gameName = it.name,
                         hoursTwoWeeks = it.playtime_2weeks,
                         hoursAllTime = it.playtime_forever,
-                        onOverflowClick = { onItemClick(it.appid) }
+                        onItemClick = { onItemClick(it.appid) }
                     )
                 }
             }
