@@ -112,23 +112,25 @@ fun LoginScreen(
     ModalBottomSheetLayout(bottomSheetNavigator = bottomSheetNavigator) {
         NavHost(navController, NavDestinations.LOGIN_SCREEN) {
             composable(NavDestinations.LOGIN_SCREEN) {
-                LoginScreenContent(
-                    modifier = Modifier,
-                    loginState = state,
-                    onUsername = viewModel::onUsernameUpdate,
-                    onPassword = viewModel::onPasswordUpdate,
-                    onSteamGuard = viewModel::onSteamGuardUpdate,
-                    onPasswordVisible = viewModel::onPasswordVisible,
-                    onLogin = viewModel::doLogin,
-                    onLoginQR = {
-                        scope.launch {
-                            navController.navigate(NavDestinations.LOGIN_SHEET)
-                            viewModel.doLoginQR()
-                        }
-                    },
-                    onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
-                    on2faMessage = { viewModel.onShowMessage(it) }
-                )
+                Surface {
+                    LoginScreenContent(
+                        modifier = Modifier,
+                        loginState = state,
+                        onUsername = viewModel::onUsernameUpdate,
+                        onPassword = viewModel::onPasswordUpdate,
+                        onSteamGuard = viewModel::onSteamGuardUpdate,
+                        onPasswordVisible = viewModel::onPasswordVisible,
+                        onLogin = viewModel::doLogin,
+                        onLoginQR = {
+                            scope.launch {
+                                navController.navigate(NavDestinations.LOGIN_SHEET)
+                                viewModel.doLoginQR()
+                            }
+                        },
+                        onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
+                        on2faMessage = { viewModel.onShowMessage(it) }
+                    )
+                }
             }
             bottomSheet(NavDestinations.LOGIN_SHEET) {
                 // TODO: bottomSheet not yet un-draggable, waiting on upstream.

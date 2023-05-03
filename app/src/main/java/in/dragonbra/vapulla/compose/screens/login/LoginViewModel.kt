@@ -128,11 +128,11 @@ class LoginViewModel @Inject constructor(
         twoFactorFuture.complete(code)
     }
 
-    fun showFailedScreen() {
+    fun showFailedScreen(message: String) {
         _loginState.update {
             it.copy(
                 expectSteamGuard = false,
-                generalMessage = "Failed to connect to steam",
+                generalMessage = message,
                 isLoading = false
             )
         }
@@ -170,6 +170,7 @@ class LoginViewModel @Inject constructor(
                 generalMessage = ""
             )
         }
+        qrCodeState = QrState.Loading
         viewModelScope.launch {
             val event = ValidationEvent.CancelService
             loginEventChannel.send(event)

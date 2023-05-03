@@ -62,10 +62,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         }
     }
 
-    open fun onServiceCancel() {
-        steamService?.disconnect()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val filter = IntentFilter(STOP_INTENT)

@@ -6,7 +6,6 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
@@ -35,6 +34,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -84,7 +84,7 @@ private val slideUp = {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VapullaAppbar(
-    scrollState: ScrollState? = null,
+    isScrolled: State<Boolean> = derivedStateOf { false },
     drawerState: DrawerState? = null,
     onBackPressed: (() -> Unit)? = null,
     toolbarText: String = stringResource(id = R.string.app_name),
@@ -93,11 +93,6 @@ fun VapullaAppbar(
     isSearching: Boolean = false,
     onSearchClose: (() -> Unit)? = null
 ) {
-    val isScrolled = remember {
-        derivedStateOf {
-            if (scrollState == null) false else scrollState.value > 0
-        }
-    }
     val topBarContainerColor = if (isScrolled.value) {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .5f)
     } else {

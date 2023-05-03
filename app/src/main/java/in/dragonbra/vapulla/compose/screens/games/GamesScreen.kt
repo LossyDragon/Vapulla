@@ -64,9 +64,17 @@ private fun GamesScreenContent(
     onSearchClosed: () -> Unit
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
+    val listState = rememberLazyListState()
+    val isScrolled = remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0
+        }
+    }
+
     Scaffold(
         topBar = {
             VapullaAppbar(
+                isScrolled = isScrolled,
                 toolbarText = stringResource(id = R.string.title_activity_games, state.name),
                 onBackPressed = {
                     onBackPressed()
@@ -90,7 +98,6 @@ private fun GamesScreenContent(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
-            val listState = rememberLazyListState()
             val scope = rememberCoroutineScope()
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),

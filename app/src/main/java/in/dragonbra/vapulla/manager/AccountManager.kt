@@ -97,13 +97,13 @@ class AccountManager(private val context: Context) {
 
     fun clear() {
         prefs.edit {
-            remove(KEY_LOGIN_KEY)
-            remove(KEY_UNIQUE_ID)
-            remove(KEY_USERNAME)
-            remove(KEY_STEAM_ID)
             remove(KEY_AVATAR_HASH)
+            remove(KEY_LOGIN_KEY)
             remove(KEY_NICKNAME)
             remove(KEY_STATE)
+            remove(KEY_STEAM_ID)
+            remove(KEY_UNIQUE_ID)
+            remove(KEY_USERNAME)
         }
     }
 

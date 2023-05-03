@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -138,10 +139,15 @@ private fun SettingsContent(
     )
 
     val scrollState = rememberScrollState()
+    val isScrolled = remember {
+        derivedStateOf {
+            scrollState.value > 0
+        }
+    }
     Scaffold(
         topBar = {
             VapullaAppbar(
-                scrollState = scrollState,
+                isScrolled = isScrolled,
                 toolbarText = stringResource(id = R.string.title_activity_settings),
                 onBackPressed = onBackPressed
             )

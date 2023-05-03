@@ -49,7 +49,6 @@ import `in`.dragonbra.javasteam.steam.handlers.steamuser.OTPDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoginKeyCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.SteamUserStats
 import `in`.dragonbra.javasteam.steam.handlers.steamworkshop.SteamWorkshop
@@ -207,7 +206,6 @@ class SteamService : Service() {
             add(callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList))
             add(callbackMgr.subscribe(LoggedOffCallback::class.java, onLoggedOff))
             add(callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn))
-            add(callbackMgr.subscribe(LoginKeyCallback::class.java, onNewLoginKey))
             add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
             add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
             add(callbackMgr.subscribe(ServiceMethodResponse::class.java, onMethodResponse))
@@ -535,24 +533,9 @@ class SteamService : Service() {
     }
 
     private val onConnected = Consumer<ConnectedCallback> {
-        Timber.i("connected to steam")
+        Timber.i("(onConnected) connected to steam")
         retryCount = 0
         setNotification(R.string.notificationConnected)
-
-        if (isLoggedIn) {
-            val details = LogOnDetails().apply {
-                username = account.username
-                loginKey = account.loginKey
-                isShouldRememberPassword = true
-                loginID = 121212
-
-                if (account.hasSentryFile) {
-                    sentryFileHash = account.readSentryFile()
-                }
-            }
-
-            getHandler<SteamUser>().logOn(details)
-        }
     }
 
     private val onLoggedOn = Consumer<LoggedOnCallback> {
@@ -584,14 +567,6 @@ class SteamService : Service() {
 
     private val onLoggedOff = Consumer<LoggedOffCallback> {
         steamClient.disconnect()
-    }
-
-    private val onNewLoginKey = Consumer<LoginKeyCallback> {
-        Timber.i("received login key")
-        account.loginKey = it.loginKey
-        account.uniqueId = it.uniqueID
-
-        getHandler<SteamUser>().acceptNewLoginKey(it)
     }
 
     private val onUpdateMachineAuth = Consumer<UpdateMachineAuthCallback> {
@@ -840,6 +815,16 @@ class SteamService : Service() {
                         }
                     }
                 }
+            }
+            is CFriendMessages_AckMessage_Notification -> {
+                println(
+                    "SteamID Partner: ${callbackObject.steamidPartner} -> ${
+                    SteamID(
+                        callbackObject.steamidPartner
+                    )
+                    }"
+                )
+                println("TimeStamp: ${callbackObject.timestamp}")
             }
             else -> Timber.w("Could not process ${it.rpcName}")
         }

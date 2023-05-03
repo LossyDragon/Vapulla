@@ -29,9 +29,14 @@ import `in`.dragonbra.vapulla.compose.util.getErrorMessage
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.service.Notifications
 import java.lang.IllegalArgumentException
+import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -46,6 +51,61 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
     lateinit var notificationManager: NotificationManagerCompat
 
     private val viewModel: LoginViewModel by viewModels()
+
+    private val loginScope = CoroutineScope(Dispatchers.IO + Job())
+
+    private suspend fun qrLogin(coroutineScope: CoroutineScope): Pair<String, String> {
+        val steamClient = steamService?.steamClient
+        val unifiedMessages = steamService?.unifiedMessages
+
+        val auth = SteamAuthentication(steamClient!!, unifiedMessages!!)
+
+        val authSessionDetails = AuthSessionDetails().apply {
+            deviceFriendlyName = "Vapulla - Android"
+            persistentSession = true
+        }
+
+        val authSession: QrAuthSession = auth.beginAuthSessionViaQR(authSessionDetails)
+
+        authSession.challengeUrlChanged = this@LoginActivity
+
+        viewModel.drawQRCode(authSession)
+
+        val pollResponse = authSession.pollingWaitForResult(coroutineScope)
+
+        Timber.i("Connected to Steam! Logging in " + pollResponse.accountName + "...")
+
+        return Pair(pollResponse.accountName, pollResponse.refreshToken)
+    }
+
+    private suspend fun accountLogin(coroutineScope: CoroutineScope): Pair<String, String>? {
+        val accountUsername = viewModel.accountManager.username
+        val accountRefreshToken = viewModel.accountManager.loginKey
+        if (accountUsername.isNullOrEmpty() && accountRefreshToken.isNullOrEmpty()) {
+            val authSessionDetails = AuthSessionDetails().apply {
+                username = viewModel.loginState.value.username.trim()
+                password = viewModel.loginState.value.password
+                persistentSession = true
+                authenticator = this@LoginActivity
+            }
+            val steamClient = steamService!!.steamClient
+            val unifiedMessages = steamService!!.unifiedMessages
+            val auth = SteamAuthentication(steamClient, unifiedMessages)
+            return try {
+                val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
+
+                val authPollResult = authSession.pollingWaitForResult(coroutineScope)
+
+                // Save our results (username and refresh token) to account manager.
+                Pair(authPollResult.accountName, authPollResult.refreshToken)
+            } catch (e: IllegalArgumentException) {
+                Timber.e("WOAH!", e)
+                null
+            }
+        }
+
+        return Pair(accountUsername!!, accountRefreshToken!!)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +134,13 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         }
     }
 
+    private fun onServiceCancel() {
+        val cancellationException = CancellationException("Cancel button clicked")
+        loginScope.cancel(cancellationException)
+
+        steamService?.disconnect()
+    }
+
     override fun onResume() {
         super.onResume()
         if (steamService?.isLoggedIn == true) {
@@ -94,70 +161,42 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
         viewModel.onLoadingVisible(true)
 
-        var accountUsername = viewModel.accountManager.username
-        var accountRefreshToken = viewModel.accountManager.loginKey
-
-        if (viewModel.loginState.value.isSigningInViaQR) {
-            val steamClient = steamService!!.steamClient
-            val unifiedMessages = steamService!!.unifiedMessages
-
-            val auth = SteamAuthentication(steamClient, unifiedMessages)
-
-            val authSessionDetails = AuthSessionDetails().apply {
-                deviceFriendlyName = "Vapulla - Android"
-                persistentSession = true
-            }
-
-            val authSession: QrAuthSession = auth.beginAuthSessionViaQR(authSessionDetails)
-
-            authSession.challengeUrlChanged = this
-
-            viewModel.drawQRCode(authSession)
-
-            val pollResponse = authSession.pollingWaitForResult()
-
-            Timber.i("Connected to Steam! Logging in " + pollResponse.accountName + "...")
-
-            // Save our results (username and refresh token) to account manager.
-            viewModel.accountManager.username = pollResponse.accountName
-            viewModel.accountManager.loginKey = pollResponse.refreshToken
-            accountUsername = pollResponse.accountName
-            accountRefreshToken = pollResponse.refreshToken
-        } else {
-            if (accountUsername.isNullOrEmpty() && accountRefreshToken.isNullOrEmpty()) {
-                val authSessionDetails = AuthSessionDetails().apply {
-                    username = viewModel.loginState.value.username.trim()
-                    password = viewModel.loginState.value.password
-                    persistentSession = true
-                    authenticator = this@LoginActivity
+        try {
+            // TODO should 'really' let the service handle this
+            // TODO scope not re-usable! 😱
+            // TODO What happens after CM kick after ~60 sec?
+            loginScope.launch {
+                val deferredLogin = async {
+                    if (viewModel.loginState.value.isSigningInViaQR) {
+                        qrLogin(this)
+                    } else {
+                        accountLogin(this)
+                    }
                 }
 
-                val steamClient = steamService!!.steamClient
-                val unifiedMessages = steamService!!.unifiedMessages
-                val auth = SteamAuthentication(steamClient, unifiedMessages)
+                // We wait patiently until completion or cancel.
+                val response = deferredLogin.await()
 
-                try {
-                    val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
-                    val authPollResult = authSession.pollingWaitForResult()
-
-                    // Save our results (username and refresh token) to account manager.
-                    viewModel.accountManager.username = authPollResult.accountName
-                    viewModel.accountManager.loginKey = authPollResult.refreshToken
-                    accountUsername = authPollResult.accountName
-                    accountRefreshToken = authPollResult.refreshToken
-                } catch (e: IllegalArgumentException) {
-                    Timber.e("WOAH!", e)
+                if (response == null) {
+                    Timber.w("Login response was null")
+                    viewModel.showFailedScreen("Login response received no data")
+                    return@launch
                 }
+
+                viewModel.accountManager.username = response.first
+                viewModel.accountManager.loginKey = response.second
+
+                val logonDetails = LogOnDetails().apply {
+                    username = viewModel.accountManager.username
+                    accessToken = viewModel.accountManager.loginKey
+                    loginID = 149
+                }
+
+                steamService?.logOn(logonDetails)
             }
+        } catch (e: Exception) {
+            Timber.w("Aye yo wth")
         }
-
-        val logonDetails = LogOnDetails().apply {
-            username = accountUsername
-            accessToken = accountRefreshToken
-            loginID = 149
-        }
-
-        steamService?.logOn(logonDetails)
     }
 
     override fun onDisconnected() {
@@ -166,7 +205,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         with(viewModel.loginState.value) {
             if (!expectSteamGuard) {
                 if (refreshToken.isNotEmpty()) {
-                    viewModel.showFailedScreen()
+                    viewModel.showFailedScreen("Failed to connect to steam!")
                 }
             }
         }

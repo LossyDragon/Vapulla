@@ -166,9 +166,15 @@ private fun HomeScreenContent(
             )
         }
     ) {
+        val listState = rememberLazyListState()
+        val isScrolled = remember {
+            derivedStateOf { listState.firstVisibleItemIndex > 0 }
+        }
+
         Scaffold(
             topBar = {
                 VapullaAppbar(
+                    isScrolled = isScrolled,
                     drawerState = drawerState,
                     actions = {
                         IconButton(onClick = onSearchOpened) {
@@ -194,8 +200,6 @@ private fun HomeScreenContent(
                     .pullRefresh(pullRefreshState)
                     .padding(paddingValues)
             ) {
-                val listState = rememberLazyListState()
-
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
