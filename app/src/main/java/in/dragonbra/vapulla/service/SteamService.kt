@@ -100,8 +100,6 @@ class SteamService : Service() {
         const val EXTRA_ACTION = "action"
         const val EXTRA_MESSAGE = "message"
         const val EXTRA_ID = "id"
-
-        const val SERVERS_FILE = "servers.bin"
     }
 
     lateinit var callbackMgr: CallbackManager
@@ -121,8 +119,6 @@ class SteamService : Service() {
     private val requestsToNotify = mutableSetOf<SteamID>()
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
-
-    private val subscriptions = mutableSetOf<Closeable?>()
 
     val disconnectedSubs = mutableSetOf<(DisconnectedCallback) -> Unit>()
 
@@ -178,11 +174,7 @@ class SteamService : Service() {
 
         stateBuffer = PersonaStateBuffer(db.steamFriendDao())
 
-        val config = SteamConfiguration.create {
-            it.withServerListProvider(FileServerListProvider(File(filesDir, SERVERS_FILE)))
-        }
-
-        steamClient = SteamClient(config).apply {
+        steamClient = SteamClient().apply {
             addHandler(VapullaHandler())
 
             removeHandler(SteamApps::class.java)
@@ -198,26 +190,22 @@ class SteamService : Service() {
         callbackMgr = CallbackManager(steamClient)
         unifiedMessages = steamClient.getHandler(SteamUnifiedMessages::class.java)
 
-        subscriptions.apply {
-            add(callbackMgr.subscribe(ConnectedCallback::class.java, onConnected))
-            add(callbackMgr.subscribe(DisconnectedCallback::class.java, onDisconnected))
-            add(callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList))
-            add(callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho))
-            add(callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList))
-            add(callbackMgr.subscribe(LoggedOffCallback::class.java, onLoggedOff))
-            add(callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn))
-            add(callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList))
-            add(callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState))
-            add(callbackMgr.subscribe(ServiceMethodResponse::class.java, onMethodResponse))
-            add(callbackMgr.subscribe(ServiceMethodNotification::class.java, onMethodNotification))
-            add(callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth))
-            add(
-                callbackMgr.subscribe(
-                    OfflineMessageNotificationCallback::class.java,
-                    onOfflineMessageNotification
-                )
-            )
-        }
+        callbackMgr.subscribe(ConnectedCallback::class.java, onConnected)
+        callbackMgr.subscribe(DisconnectedCallback::class.java, onDisconnected)
+        callbackMgr.subscribe(EmoticonListCallback::class.java, onEmoticonList)
+        callbackMgr.subscribe(FriendMsgEchoCallback::class.java, onFriendMsgEcho)
+        callbackMgr.subscribe(FriendsListCallback::class.java, onFriendsList)
+        callbackMgr.subscribe(LoggedOffCallback::class.java, onLoggedOff)
+        callbackMgr.subscribe(LoggedOnCallback::class.java, onLoggedOn)
+        callbackMgr.subscribe(NicknameListCallback::class.java, onNicknameList)
+        callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState)
+        callbackMgr.subscribe(ServiceMethodResponse::class.java, onMethodResponse)
+        callbackMgr.subscribe(ServiceMethodNotification::class.java, onMethodNotification)
+        callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth)
+        callbackMgr.subscribe(
+            OfflineMessageNotificationCallback::class.java,
+            onOfflineMessageNotification
+        )
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -391,6 +379,7 @@ class SteamService : Service() {
     fun setChatFriendId(id: SteamID) {
         chatFriendId = id.convertToUInt64()
         clearMessageNotifications(id)
+        ackMessage(id)
     }
 
     fun removeChatFriendId() {
@@ -410,7 +399,7 @@ class SteamService : Service() {
     /**
      * Acknowledge a message that was unread
      */
-    fun ackMessage(steamID: SteamID) {
+    private fun ackMessage(steamID: SteamID) {
         Timber.d("ackMessage($steamID)")
         val msgNotification = CFriendMessages_AckMessage_Notification.newBuilder().apply {
             steamidPartner = steamID.convertToUInt64()
@@ -483,7 +472,7 @@ class SteamService : Service() {
     }
 
     inline fun <reified T : ICallbackMsg>
-    subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
+        subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
         return when (T::class) {
             DisconnectedCallback::class -> {
                 @Suppress("UNCHECKED_CAST")
@@ -819,9 +808,9 @@ class SteamService : Service() {
             is CFriendMessages_AckMessage_Notification -> {
                 println(
                     "SteamID Partner: ${callbackObject.steamidPartner} -> ${
-                    SteamID(
-                        callbackObject.steamidPartner
-                    )
+                        SteamID(
+                            callbackObject.steamidPartner
+                        )
                     }"
                 )
                 println("TimeStamp: ${callbackObject.timestamp}")

@@ -1,3 +1,4 @@
+// https://plugins.gradle.org/plugin/org.jlleitschuh.gradle.ktlint
 plugins {
     id("com.android.application")
     id("com.google.devtools.ksp") version "1.8.20-1.0.11"
@@ -90,7 +91,7 @@ dependencies {
 
     // Jetpack Compose:
     // https://developer.android.com/jetpack/androidx/releases/compose
-    val composeBom = platform("androidx.compose:compose-bom:2023.04.01")
+    val composeBom = platform("androidx.compose:compose-bom:2023.05.00")
     implementation(composeBom)
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.animation:animation-graphics")
@@ -111,7 +112,7 @@ dependencies {
 
     // Coil-Kt:
     // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
-    implementation("com.github.skydoves:landscapist-coil:2.1.11")
+    implementation("com.github.skydoves:landscapist-coil:2.1.12")
 
     // Preferences:
     // https://mvnrepository.com/artifact/com.github.alorma/compose-settings-storage-preferences
@@ -148,9 +149,9 @@ dependencies {
     // https://mvnrepository.com/artifact/androidx.hilt/hilt-navigation-compose
     // https://mvnrepository.com/artifact/com.google.dagger/hilt-android
     // implementation "androidx.hilt:hilt-navigation-compose:1.0.0"
-    implementation("com.google.dagger:hilt-android:2.45")
+    implementation("com.google.dagger:hilt-android:2.46")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
-    kapt("com.google.dagger:hilt-compiler:2.45")
+    kapt("com.google.dagger:hilt-compiler:2.46")
 
     // APNG:
     // https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
@@ -168,7 +169,7 @@ dependencies {
 
     // Jsoup:
     // https://mvnrepository.com/artifact/org.jsoup/jsoup
-    implementation("org.jsoup:jsoup:1.15.4")
+    implementation("org.jsoup:jsoup:1.16.1")
 
     // Timber:
     // https://mvnrepository.com/artifact/com.jakewharton.timber/timber

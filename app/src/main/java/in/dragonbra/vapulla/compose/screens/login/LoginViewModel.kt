@@ -129,6 +129,7 @@ class LoginViewModel @Inject constructor(
     }
 
     fun showFailedScreen(message: String) {
+        accountManager.lastLoginSuccessful = false
         _loginState.update {
             it.copy(
                 expectSteamGuard = false,

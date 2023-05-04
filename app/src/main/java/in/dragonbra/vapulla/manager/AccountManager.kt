@@ -20,6 +20,7 @@ class AccountManager(private val context: Context) {
 
     companion object {
         private const val KEY_AVATAR_HASH = "account_avatar_hash"
+        private const val KEY_LAST_LOGIN_SUCCESSFUL = "last_login_successful"
         private const val KEY_LOGIN_KEY = "account_login_key"
         private const val KEY_NICKNAME = "account_nickname"
         private const val KEY_STATE = "account_state"
@@ -37,6 +38,10 @@ class AccountManager(private val context: Context) {
 
     val hasSentryFile: Boolean
         get() = File(context.filesDir, SENTRY_FILE_NAME).exists()
+
+    var lastLoginSuccessful: Boolean
+        get() = prefs.getBoolean(KEY_LAST_LOGIN_SUCCESSFUL, false)
+        set(value) = prefs.edit { putBoolean(KEY_LAST_LOGIN_SUCCESSFUL, value) }
 
     /* Pref Item */
     var prefClearNotifications: Boolean
@@ -98,6 +103,7 @@ class AccountManager(private val context: Context) {
     fun clear() {
         prefs.edit {
             remove(KEY_AVATAR_HASH)
+            remove(KEY_LAST_LOGIN_SUCCESSFUL)
             remove(KEY_LOGIN_KEY)
             remove(KEY_NICKNAME)
             remove(KEY_STATE)
