@@ -51,10 +51,9 @@ class GamesActivity : VapullaBaseActivity() {
     }
 
     private fun gotoGameStore(appid: Int) {
-        val url = String.format(Constants.STORE_PAGE_URL, appid)
-        val intent = Intent(Intent.ACTION_VIEW).apply {
+        Intent(Intent.ACTION_VIEW).apply {
+            val url = String.format(Constants.STORE_PAGE_URL, appid)
             data = Uri.parse(url)
-        }
-        startActivity(intent)
+        }.also(::startActivity)
     }
 }

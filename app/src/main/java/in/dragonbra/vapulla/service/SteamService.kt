@@ -28,7 +28,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamcl
 import `in`.dragonbra.javasteam.rpc.service.Chat
 import `in`.dragonbra.javasteam.rpc.service.FriendMessages
 import `in`.dragonbra.javasteam.rpc.service.Player
-import `in`.dragonbra.javasteam.steam.discovery.FileServerListProvider
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
@@ -57,7 +56,6 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.ICallbackMsg
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
-import `in`.dragonbra.javasteam.steam.steamclient.configuration.SteamConfiguration
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.R
@@ -73,7 +71,6 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import java.io.Closeable
-import java.io.File
 import java.util.*
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -472,7 +469,7 @@ class SteamService : Service() {
     }
 
     inline fun <reified T : ICallbackMsg>
-        subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
+    subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
         return when (T::class) {
             DisconnectedCallback::class -> {
                 @Suppress("UNCHECKED_CAST")
@@ -806,11 +803,12 @@ class SteamService : Service() {
                 }
             }
             is CFriendMessages_AckMessage_Notification -> {
+                // TODO ack messages
                 println(
                     "SteamID Partner: ${callbackObject.steamidPartner} -> ${
-                        SteamID(
-                            callbackObject.steamidPartner
-                        )
+                    SteamID(
+                        callbackObject.steamidPartner
+                    )
                     }"
                 )
                 println("TimeStamp: ${callbackObject.timestamp}")

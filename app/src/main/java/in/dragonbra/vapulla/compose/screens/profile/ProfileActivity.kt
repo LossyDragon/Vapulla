@@ -69,9 +69,7 @@ class ProfileActivity : VapullaBaseActivity() {
         Intent(Intent.ACTION_MAIN).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
             addCategory(Intent.CATEGORY_HOME)
-        }.also {
-            startActivity(it)
-        }
+        }.also(::startActivity)
         finish()
     }
 
@@ -84,19 +82,14 @@ class ProfileActivity : VapullaBaseActivity() {
         val steamID = viewModel.state.value.steamID
         scope.launch(Dispatchers.IO) {
             when (event) {
+                ProfileUiEvent.BlockFriend -> getHandler<SteamFriends>()?.ignoreFriend(steamID)
+                ProfileUiEvent.GetAliases -> getHandler<SteamFriends>()?.requestAliasHistory(
+                    steamID
+                )
                 ProfileUiEvent.NavigateBack -> finish()
-                is ProfileUiEvent.GetAliases -> {
-                    getHandler<SteamFriends>()?.requestAliasHistory(event.steamID)
-                }
-                is ProfileUiEvent.SetNickName -> {
-                    getHandler<SteamFriends>()?.setFriendNickname(event.steamID, event.nickName)
-                }
-                is ProfileUiEvent.BlockFriend -> {
-                    getHandler<SteamFriends>()?.ignoreFriend(steamID)
-                }
-                is ProfileUiEvent.RemoveFriend -> {
-                    getHandler<SteamFriends>()?.removeFriend(steamID)
-                }
+                ProfileUiEvent.RemoveFriend -> getHandler<SteamFriends>()?.removeFriend(steamID)
+                is ProfileUiEvent.SetNickName ->
+                    getHandler<SteamFriends>()?.setFriendNickname(steamID, event.nickName)
             }
         }
     }

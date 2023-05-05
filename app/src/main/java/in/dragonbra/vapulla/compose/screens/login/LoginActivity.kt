@@ -38,6 +38,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import timber.log.Timber
 
 // TODO: Using the mobile steam app, we cannot view this Authorized Device info.
@@ -105,7 +106,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
             // Save our results (username and refresh token) to account manager.
             Pair(authPollResult.accountName, authPollResult.refreshToken)
         } catch (e: IllegalArgumentException) {
-            Timber.e("WOAH!", e.printStackTrace())
+            coroutineScope.cancel(CancellationException(e.message))
             null
         }
     }
@@ -164,40 +165,46 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
         viewModel.onLoadingVisible(true)
 
-        try {
-            // TODO should 'really' let the service handle this
-            // TODO scope not re-usable! 😱
-            // TODO What happens after CM kick after ~60 sec?
-            loginScope.launch {
-                val deferredLogin = async {
-                    if (viewModel.loginState.value.isSigningInViaQR) {
-                        qrLogin(this)
-                    } else {
-                        accountLogin(this)
+        loginScope.launch {
+            supervisorScope {
+                try {
+                    // TODO should 'really' let the service handle this
+                    // TODO scope not re-usable! 😱
+                    // TODO What happens after CM kick after ~60 sec?
+                    val deferredLogin = async {
+                        if (viewModel.loginState.value.isSigningInViaQR) {
+                            qrLogin(this)
+                        } else {
+                            accountLogin(this)
+                        }
                     }
+
+                    // We wait patiently until completion or cancel.
+                    val response = deferredLogin.await()
+
+                    if (response == null) {
+                        viewModel.showFailedScreen("Login response received no data")
+                        return@supervisorScope
+                    }
+
+                    viewModel.accountManager.username = response.first
+                    viewModel.accountManager.loginKey = response.second
+
+                    val logonDetails = LogOnDetails().apply {
+                        username = viewModel.accountManager.username
+                        accessToken = viewModel.accountManager.loginKey
+                        loginID = 149
+                    }
+
+                    steamService?.logOn(logonDetails)
+                } catch (e: Exception) {
+                    Timber.e("Something happened, failed to login")
+                    viewModel.showFailedScreen(e.message ?: "Failed to login")
+                    steamService?.disconnect()
+                    loginScope.cancel()
+                    e.printStackTrace()
                 }
-
-                // We wait patiently until completion or cancel.
-                val response = deferredLogin.await()
-
-                if (response == null) {
-                    viewModel.showFailedScreen("Login response received no data")
-                    return@launch
-                }
-
-                viewModel.accountManager.username = response.first
-                viewModel.accountManager.loginKey = response.second
-
-                val logonDetails = LogOnDetails().apply {
-                    username = viewModel.accountManager.username
-                    accessToken = viewModel.accountManager.loginKey
-                    loginID = 149
-                }
-
-                steamService?.logOn(logonDetails)
             }
-        } catch (e: Exception) {
-            Timber.w("Aye yo wth")
         }
     }
 
@@ -239,9 +246,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         viewModel.accountManager.lastLoginSuccessful = true
         Intent(this, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }.also {
-            startActivity(it)
-        }
+        }.also(::startActivity)
         finish()
     }
 
@@ -256,6 +261,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         }
 
         viewModel.onServiceBoundVerifyLoginDetails {
+            // TODO can just login automatically if we have valid info.
             startSteamService()
         }
 

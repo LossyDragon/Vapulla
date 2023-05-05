@@ -39,7 +39,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +57,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
@@ -84,7 +84,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(Unit) {

@@ -25,6 +25,10 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.GameImage
 import `in`.dragonbra.vapulla.compose.util.formatPlayTime
 
+// TODO: Make this into a more M3-like card.
+//  Rounded corners
+//  Game image as background
+//  Foreground gradient to a dark color for Title and game play text
 @Composable
 fun GamesListItem(
     appId: Int,

@@ -72,7 +72,7 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     }
 
     override fun onAccountUpdate(account: AccountManager) {
-        Timber.d("unAccountUpdate")
+        Timber.d("onAccountUpdate")
         val name = account.nickname.orEmpty()
         val state = account.state
         val avatarHash = account.avatarHash.orEmpty()
@@ -84,16 +84,13 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         Intent(Intent.ACTION_MAIN).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
             addCategory(Intent.CATEGORY_HOME)
-        }.also {
-            startActivity(it)
-        }
+        }.also(::startActivity)
         finish()
     }
 
     private fun onSettings() {
         Timber.d("onSettings")
-        val intent = Intent(this, SettingsActivity::class.java)
-        startActivity(intent)
+        Intent(this, SettingsActivity::class.java).also(::startActivity)
     }
 
     private fun onFriendAction(event: HomeUiEvent) {

@@ -35,7 +35,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
 import java.lang.RuntimeException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -158,7 +158,6 @@ fun VapullaAppbar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchView(
     backgroundColor: Color,
@@ -166,6 +165,7 @@ private fun SearchView(
     onClose: () -> Unit
 ) {
     Box(Modifier.background(backgroundColor)) {
+        val search = state.collectAsStateWithLifecycle()
         TextField(
             modifier = Modifier
                 .windowInsetsPadding(
@@ -179,7 +179,7 @@ private fun SearchView(
             textStyle = TextStyle(fontSize = 18.sp),
             singleLine = true,
             shape = RectangleShape,
-            value = state.collectAsState().value,
+            value = search.value,
             onValueChange = { value ->
                 state.value = value
             },

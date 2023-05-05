@@ -19,7 +19,7 @@ import `in`.dragonbra.vapulla.model.FriendListItem
 
 @Composable
 fun StickyHeaderItem(header: String, count: Int) {
-    val headerText = remember { "$header ($count)" }
+    val headerText = remember(header, count) { "$header ($count)" }
     Column {
         Text(
             text = headerText,

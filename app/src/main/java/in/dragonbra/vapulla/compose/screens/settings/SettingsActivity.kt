@@ -38,27 +38,9 @@ class SettingsActivity : VapullaBaseActivity() {
                 CompositionLocalProvider(LocalActivity provides this) {
                     SettingsScreen(
                         accountManager = accountManager,
-                        onChangeName = { name ->
-                            if (name.isEmpty()) {
-                                return@SettingsScreen
-                            }
-
-                            scope.launch(Dispatchers.IO) {
-                                steamService?.getHandler<SteamFriends>()?.setPersonaName(name).let {
-                                    accountManager.nickname = name
-                                }
-                            }
-                        },
-                        onChangeUser = {
-                            scope.launch(Dispatchers.IO) {
-                                steamService?.disconnect()
-                                clearData()
-                            }
-                        },
-                        onClearDatabase = {
-                            clearDatabase()
-                            steamService?.disconnect()
-                        }
+                        onChangeName = ::changeName,
+                        onChangeUser = ::changeUser,
+                        onClearDatabase = ::clearDatabase
                     )
                 }
             }
@@ -67,21 +49,40 @@ class SettingsActivity : VapullaBaseActivity() {
 
     override fun onDisconnected() {
         super.onDisconnected()
-        val loginIntent = Intent(this, LoginActivity::class.java).apply {
+        Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }.also(::startActivity)
+    }
+
+    private fun changeName(name: String) {
+        if (name.isEmpty()) {
+            return
         }
-        startActivity(loginIntent)
+
+        scope.launch(Dispatchers.IO) {
+            steamService?.getHandler<SteamFriends>()?.setPersonaName(name).let {
+                accountManager.nickname = name
+            }
+        }
+    }
+
+    private fun changeUser() {
+        scope.launch(Dispatchers.IO) {
+            steamService?.disconnect()
+            clearData()
+        }
     }
 
     private fun clearData() {
         scope.launch(Dispatchers.IO) {
             accountManager.clear()
             clearDatabase()
-            accountManager.prefs.edit().clear().apply()
         }
     }
 
     private fun clearDatabase() {
+        steamService?.disconnect()
+
         scope.launch(Dispatchers.IO) {
             db.steamFriendDao().delete()
             db.chatMessageDao().delete()

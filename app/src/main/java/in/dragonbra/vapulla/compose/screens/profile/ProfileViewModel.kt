@@ -40,29 +40,30 @@ class ProfileViewModel @Inject constructor(
     private lateinit var friendData: LiveData<FriendListItem>
     private val friendObserver = Observer<FriendListItem> { friend ->
         Timber.d("friendObserver update: $friend")
-        if (friend.relation == EFriendRelationship.Friend.code()) {
-            viewModelScope.launch {
-                withContext(Dispatchers.IO) {
-                    val level = levelManager.getLevel(state.value.steamID!!)
-                    val games = levelManager.getGames(state.value.steamID!!)
-                    schemaManager.touch(friend.gameAppId)
 
-                    _state.update {
-                        it.copy(
-                            friend = friend,
-                            levelCount = level,
-                            gamesCount = games.count,
-                            gamesList = games.list,
-                            isLoading = false
-                        )
-                    }
-                }
-            }
+        if (friend.relation != EFriendRelationship.Friend.code()) {
+            // No longer a friend while viewing profile, go back.
+            emit(ProfileUiEvent.NavigateBack)
             return@Observer
         }
 
-        // No longer a friend while viewing profile, go back.
-        emit(ProfileUiEvent.NavigateBack)
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val level = levelManager.getLevel(state.value.steamID!!)
+                val games = levelManager.getGames(state.value.steamID!!)
+                schemaManager.touch(friend.gameAppId)
+
+                _state.update {
+                    it.copy(
+                        friend = friend,
+                        levelCount = level,
+                        gamesCount = games.count,
+                        gamesList = games.list,
+                        isLoading = false
+                    )
+                }
+            }
+        }
     }
 
     fun onPostCreate(owner: LifecycleOwner) {
@@ -97,10 +98,9 @@ class ProfileViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            emit(ProfileUiEvent.SetNickName(_state.value.steamID!!, nickName))
+            emit(ProfileUiEvent.SetNickName(nickName))
 
-            val friend = steamFriendDao.find(_state.value.steamID!!.convertToUInt64())
-            if (friend != null) {
+            steamFriendDao.find(_state.value.steamID!!.convertToUInt64())?.let { friend ->
                 friend.nickname = nickName
                 steamFriendDao.update(friend)
             }
@@ -108,15 +108,15 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun removeFriend() {
-        emit(ProfileUiEvent.RemoveFriend(_state.value.steamID!!))
+        emit(ProfileUiEvent.RemoveFriend)
     }
 
     fun blockFriend() {
-        emit(ProfileUiEvent.BlockFriend(_state.value.steamID!!))
+        emit(ProfileUiEvent.BlockFriend)
     }
 
     fun getAlias() {
-        emit(ProfileUiEvent.GetAliases(_state.value.steamID!!))
+        emit(ProfileUiEvent.GetAliases)
     }
 
     private fun emit(event: ProfileUiEvent) {

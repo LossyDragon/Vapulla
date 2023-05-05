@@ -114,9 +114,7 @@ class ChatActivity : VapullaBaseActivity() {
         Intent(Intent.ACTION_MAIN).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
             addCategory(Intent.CATEGORY_HOME)
-        }.also {
-            startActivity(intent)
-        }
+        }.also(::startActivity)
         finish()
     }
 
