@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -55,9 +54,12 @@ class ChatViewModel @Inject constructor(
     private val _message = MutableStateFlow(TextFieldValue(""))
     val message: MutableStateFlow<TextFieldValue> = _message
 
+    private val _chatMessages = MutableStateFlow<PagingData<ChatMessage>>(PagingData.empty())
+    val chatMessages: Flow<PagingData<ChatMessage>> = _chatMessages.asSharedFlow()
+
     private lateinit var chatData: Flow<PagingData<ChatMessage>>
     private val chatObserver = Observer<PagingData<ChatMessage>> { list ->
-        _state.update { it.copy(messages = flowOf(list)) }
+        _chatMessages.value = list
     }
 
     private lateinit var emoticonData: LiveData<List<Emoticon>>
@@ -78,16 +80,17 @@ class ChatViewModel @Inject constructor(
     fun onPostCreate(lifecycleOwner: LifecycleOwner) {
         Timber.d("onPostCreate")
 
-        val steamID = _state.value.currentChatSteamID
+        val steamID = _state.value.currentChatSteamID?.convertToUInt64()
             ?: throw IllegalArgumentException("SteamID null no onPostCreate")
 
-        val chatDao = chatMessageDao.findLivePaged(steamID.convertToUInt64())
-        val pagingConfig = PagingConfig(50)
-        val pagingFactory = chatDao.asPagingSourceFactory(Dispatchers.IO)
-        chatData = Pager(pagingConfig, null, pagingFactory).flow.cachedIn(viewModelScope)
+        chatData = Pager(
+            PagingConfig(50),
+            null,
+            chatMessageDao.findLivePaged(steamID).asPagingSourceFactory(Dispatchers.IO)
+        ).flow.cachedIn(viewModelScope)
         chatData.asLiveData().observe(lifecycleOwner, chatObserver)
 
-        friendData = steamFriendDao.findLive(steamID.convertToUInt64())
+        friendData = steamFriendDao.findLive(steamID)
         friendData.observe(lifecycleOwner, friendObserver)
         val friendGameID = friendData.value?.gameAppId
         if (friendGameID != null) {
@@ -101,7 +104,7 @@ class ChatViewModel @Inject constructor(
 
         _state.update {
             it.copy(
-                messages = chatData,
+                // messages = chatData,
                 friend = friendData.value,
                 emoticonData = emoticonData.value ?: listOf()
             )

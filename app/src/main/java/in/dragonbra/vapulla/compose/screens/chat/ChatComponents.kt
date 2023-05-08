@@ -54,6 +54,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
@@ -64,8 +65,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
+import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.compose.util.StickerImage
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.entity.Emoticon
@@ -445,6 +450,21 @@ fun EmojiTable(
     val size: Dp
     val baseUrl: String
 
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.components {
+            add(AnimatedPngDecoder.Factory())
+        }.build()
+
     if (isSticker) {
         // Stickers
         baseUrl = Constants.STICKER_URL
@@ -473,6 +493,7 @@ fun EmojiTable(
                         .clickable { onTextAdded(it.name) }
                         .size(size)
                         .padding(4.dp),
+                    imageLoader = imageLoader,
                     url = baseUrl + it.name
                 )
             }

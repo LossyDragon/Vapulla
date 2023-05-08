@@ -60,6 +60,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
@@ -90,6 +93,18 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     val activity = LocalActivity.current
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.build()
 
     /* Set Nickname Dialog */
     var showNicknameDialog by remember { mutableStateOf(false) }
@@ -188,6 +203,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
 
     ProfileScreenContent(
         state = state,
+        imageLoader = imageLoader,
         onBackPressed = { activity.finish() },
         onChatClick = onChatClick,
         onAccountClick = onAccountClick,
@@ -202,6 +218,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
 @Composable
 private fun ProfileScreenContent(
     state: ProfileState,
+    imageLoader: ImageLoader,
     onBackPressed: () -> Unit,
     onChatClick: () -> Unit,
     onAccountClick: () -> Unit,
@@ -262,7 +279,7 @@ private fun ProfileScreenContent(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ProfileScreenProfileIcon(state = state)
+                ProfileScreenProfileIcon(state = state, imageLoader = imageLoader)
 
                 ProfileScreenNameAndStatus(state = state)
 
@@ -290,7 +307,7 @@ private fun ProfileScreenContent(
 }
 
 @Composable
-private fun ProfileScreenProfileIcon(state: ProfileState) {
+private fun ProfileScreenProfileIcon(state: ProfileState, imageLoader: ImageLoader) {
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -303,6 +320,7 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
                 .size(150.dp)
                 .border(borderStroke, iconCornerShape)
                 .clip(iconCornerShape),
+            imageLoader = imageLoader,
             url = avatarUrl
         )
     }
@@ -559,6 +577,19 @@ private fun ProfileExpandedButtons(
 @Preview(showBackground = true)
 @Composable
 private fun Preview_ProfileScreenContent() {
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.build()
+
     val friend = FriendListItem(
         avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
         gameAppId = 100,
@@ -585,6 +616,7 @@ private fun Preview_ProfileScreenContent() {
                 gamesCount = 888,
                 levelCount = 100
             ),
+            imageLoader = imageLoader,
             onBackPressed = {},
             onChatClick = {},
             onAccountClick = {},

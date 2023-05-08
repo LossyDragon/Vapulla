@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -51,16 +54,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.compose.components.ScrollToButton
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
+import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
@@ -69,14 +76,12 @@ import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.model.FriendListItem
 import kotlin.random.Random
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 @Composable
-fun ChatScreen(
-    viewModel: ChatViewModel
-) {
+fun ChatScreen(viewModel: ChatViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val messages = viewModel.chatMessages.collectAsLazyPagingItems()
     val activity = LocalActivity.current
     val context = LocalContext.current
 
@@ -91,6 +96,7 @@ fun ChatScreen(
 
     ChatScreenContent(
         state = state,
+        messages = messages.itemSnapshotList.items,
         onBackPressed = { activity.finish() },
         onProfileClicked = onProfileClicked,
         onChatMessage = viewModel::sendMessage
@@ -101,15 +107,42 @@ fun ChatScreen(
 @Composable
 private fun ChatScreenContent(
     state: ChatState,
+    messages: List<ChatMessage>,
     onBackPressed: () -> Unit,
     onProfileClicked: () -> Unit,
     onChatMessage: (String) -> Unit
 ) {
-    val messages = state.messages.collectAsLazyPagingItems().itemSnapshotList.items
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
+
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.components {
+            add(AnimatedPngDecoder.Factory())
+        }.build()
+
+    val showDownButton by remember {
+        derivedStateOf { scrollState.firstVisibleItemIndex > 10 }
+    }
+
+    LaunchedEffect(messages.size) {
+        if (!showDownButton) {
+            scope.launch {
+                scrollState.animateScrollToItem(0)
+            }
+        }
+    }
 
     Surface(
         modifier = Modifier.windowInsetsPadding(
@@ -124,27 +157,43 @@ private fun ChatScreenContent(
                     .fillMaxSize()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
             ) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    reverseLayout = true,
-                    state = scrollState,
-                    contentPadding = WindowInsets.statusBars.add(WindowInsets(top = 90.dp))
-                        .asPaddingValues()
-                ) {
-                    // TODO: This should be in the VM, but some refacoring will be needed.
-                    val groupedMessages = messages.groupBy { it.formattedTs }
+                Box(modifier = Modifier.weight(1f)) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        reverseLayout = true,
+                        state = scrollState,
+                        contentPadding = WindowInsets.statusBars.add(WindowInsets(top = 90.dp))
+                            .asPaddingValues()
+                    ) {
+                        // TODO: This should be in the VM, but some refacoring will be needed.
+                        val groupedMessages = messages.groupBy { it.formattedTs }
 
-                    groupedMessages.forEach { (header, items) ->
-                        items(items, key = { it.id }) { msg ->
-                            ChatMessageItem(
-                                modifier = Modifier.animateItemPlacement(),
-                                chatMessage = msg
-                            )
-                        }
-                        stickyHeader(contentType = header) {
-                            ChatMessageDateHeader(dateStamp = header)
+                        groupedMessages.forEach { (header, items) ->
+                            items(items, key = { it.id }) { msg ->
+                                ChatMessageItem(
+                                    modifier = Modifier.animateItemPlacement(),
+                                    imageLoader = imageLoader,
+                                    chatMessage = msg
+                                )
+                            }
+                            stickyHeader(contentType = header) {
+                                ChatMessageDateHeader(dateStamp = header)
+                            }
                         }
                     }
+
+                    ScrollToButton(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        label = "Scroll Down",
+                        buttonIcon = Icons.Default.ArrowDownward,
+                        buttonText = "Scroll down",
+                        enabled = showDownButton,
+                        onClicked = {
+                            scope.launch {
+                                scrollState.animateScrollToItem(0)
+                            }
+                        }
+                    )
                 }
 
                 UserInput(
@@ -205,6 +254,7 @@ private fun ChatScreenContent(
                                 .size(48.dp)
                                 .border(borderStroke, iconSmallCornerShape)
                                 .clip(iconSmallCornerShape),
+                            imageLoader = imageLoader,
                             url = getAvatarUrl(state.friend?.avatar)
                         )
 
@@ -234,7 +284,6 @@ private fun ChatScreenContent(
                                     val gameName = state.friend?.gameName ?: "a game."
                                     stringResource(id = R.string.statusPlaying, gameName)
                                 } else {
-                                    val context = LocalContext.current
                                     context.getStatusText(state.friend)
                                 }
                             }
@@ -272,7 +321,6 @@ private fun Preview_ChatScreenContent() {
     }
 
     val state = ChatState(
-        messages = flowOf(PagingData.from(messages)),
         friend = FriendListItem(
             avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
             gameAppId = 100,
@@ -288,6 +336,7 @@ private fun Preview_ChatScreenContent() {
     VapullaTheme {
         ChatScreenContent(
             state = state,
+            messages = messages,
             onBackPressed = {},
             onProfileClicked = {},
             onChatMessage = {}

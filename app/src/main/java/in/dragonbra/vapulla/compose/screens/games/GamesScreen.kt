@@ -8,10 +8,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -20,18 +23,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
+import `in`.dragonbra.vapulla.compose.components.ScrollToButton
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
-import `in`.dragonbra.vapulla.retrofit.response.Games
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -63,13 +70,27 @@ private fun GamesScreenContent(
     onSearchOpened: () -> Unit,
     onSearchClosed: () -> Unit
 ) {
+    val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val isScrolled = remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0
         }
     }
+
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.build()
 
     Scaffold(
         topBar = {
@@ -78,10 +99,15 @@ private fun GamesScreenContent(
                 toolbarText = stringResource(id = R.string.title_activity_games, state.name),
                 onBackPressed = {
                     onBackPressed()
-                    keyboard?.show()
+                    keyboard?.hide()
                 },
                 actions = {
-                    IconButton(onClick = onSearchOpened) {
+                    IconButton(onClick = {
+                        onSearchOpened()
+                        scope.launch {
+                            listState.scrollToItem(0)
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Filled.Search,
                             contentDescription = "Search"
@@ -98,24 +124,28 @@ private fun GamesScreenContent(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
-            val scope = rememberCoroutineScope()
+            if (state.filteredGamesList.isEmpty()) {
+                Card(modifier = Modifier.align(Alignment.Center)) {
+                    Text(
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center,
+                        text = "No games to display"
+                    )
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                if (state.isSearching) {
-                    scope.launch {
-                        listState.scrollToItem(0)
-                    }
-                }
-
                 items(state.filteredGamesList, key = { it.appid }) {
-                    GamesListItem(
-                        appId = it.appid,
-                        gameName = it.name,
-                        hoursTwoWeeks = it.playtime_2weeks,
-                        hoursAllTime = it.playtime_forever,
+                    GameCardItem(
+                        imageLoader = imageLoader,
+                        appID = it.appid,
+                        title = it.name,
+                        recentPlayTime = it.playtime_2weeks,
+                        totalPlayTime = it.playtime_forever,
                         onItemClick = { onItemClick(it.appid) }
                     )
                 }
@@ -124,8 +154,11 @@ private fun GamesScreenContent(
             val showUpButton by remember {
                 derivedStateOf { listState.firstVisibleItemIndex > 5 }
             }
-            ScrollBackUp(
+            ScrollToButton(
                 modifier = Modifier.align(Alignment.BottomCenter),
+                label = "Scroll Up",
+                buttonIcon = Icons.Default.ArrowUpward,
+                buttonText = "Scroll Up",
                 enabled = showUpButton,
                 onClicked = {
                     scope.launch {
@@ -140,17 +173,7 @@ private fun GamesScreenContent(
 @Preview
 @Composable
 private fun Preview_GamesScreenContent() {
-    val gamesList = (0..12).map {
-        Games(
-            appid = it,
-            img_icon_url = null,
-            name = "Game Name: $it",
-            playtime_2weeks = (0..4000).random(),
-            playtime_forever = (0..4000).random()
-        )
-    }
-
-    val state = GamesState(name = "Mr. Friendly", gamesList = gamesList)
+    val state = GamesState(name = "Mr. Friendly", filteredGamesList = listOf())
     VapullaTheme {
         GamesScreenContent(
             state,

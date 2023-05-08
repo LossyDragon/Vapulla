@@ -37,7 +37,7 @@ android {
 
         kapt {
             arguments {
-                arg("room.schemaLocation", "$projectDir/schemas".toString())
+                arg("room.schemaLocation", "$projectDir/schemas")
             }
         }
     }
@@ -108,7 +108,6 @@ dependencies {
     val accompanist = "0.31.1-alpha"
     implementation("com.google.accompanist:accompanist-permissions:$accompanist")
     implementation("com.google.accompanist:accompanist-systemuicontroller:$accompanist")
-    implementation("com.google.accompanist:accompanist-navigation-material:$accompanist")
 
     // Coil-Kt:
     // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
@@ -120,19 +119,13 @@ dependencies {
     implementation("com.github.alorma:compose-settings-storage-preferences:$settings")
     implementation("com.github.alorma:compose-settings-ui-m3:$settings")
 
-    // RaamCosta Navigation:
-    // https://mvnrepository.com/artifact/io.github.raamcosta.compose-destinations/core
-    // def destinations = "1.8.36-beta"
-    // implementation "io.github.raamcosta.compose-destinations:core:$destinations"
-    // ksp "io.github.raamcosta.compose-destinations:ksp:$destinations"
-
     // Android Support Libs
     implementation("androidx.activity:activity-compose:1.7.1")
     implementation("androidx.compose.material3:material3:1.1.0-rc01")
     implementation("androidx.core:core-ktx:1.10.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
-    implementation("androidx.paging:paging-compose:1.0.0-alpha18")
+    implementation("androidx.paging:paging-compose:1.0.0-alpha19")
     implementation("androidx.paging:paging-runtime-ktx:3.1.1")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("androidx.preference:preference-ktx:1.2.0")
@@ -141,6 +134,7 @@ dependencies {
     // Room:
     // https://mvnrepository.com/artifact/androidx.room/room-runtime
     val room = "2.5.1"
+    implementation("androidx.room:room-ktx:$room")
     implementation("androidx.room:room-runtime:$room")
     ksp("androidx.room:room-compiler:$room")
 

@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -42,21 +43,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
-import com.google.accompanist.navigation.material.ModalBottomSheetLayout
-import com.google.accompanist.navigation.material.bottomSheet
-import com.google.accompanist.navigation.material.rememberBottomSheetNavigator
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.compose.NavDestinations
-import `in`.dragonbra.vapulla.compose.components.BottomSheetLayout
 import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -66,7 +59,8 @@ import kotlinx.coroutines.launch
 
 @OptIn(
     ExperimentalPermissionsApi::class,
-    ExperimentalMaterialNavigationApi::class
+    ExperimentalMaterial3Api::class,
+    ExperimentalComposeUiApi::class
 )
 @Composable
 fun LoginScreen(
@@ -106,103 +100,113 @@ fun LoginScreen(
     )
 
     /* Content */
-    val bottomSheetNavigator = rememberBottomSheetNavigator()
-    val navController = rememberNavController(bottomSheetNavigator)
+    val sheetState = rememberStandardBottomSheetState(skipHiddenState = false)
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = sheetState
+    )
 
-    ModalBottomSheetLayout(bottomSheetNavigator = bottomSheetNavigator) {
-        NavHost(navController, NavDestinations.LOGIN_SCREEN) {
-            composable(NavDestinations.LOGIN_SCREEN) {
-                Surface {
-                    LoginScreenContent(
-                        modifier = Modifier,
-                        loginState = state,
-                        onUsername = viewModel::onUsernameUpdate,
-                        onPassword = viewModel::onPasswordUpdate,
-                        onSteamGuard = viewModel::onSteamGuardUpdate,
-                        onPasswordVisible = viewModel::onPasswordVisible,
-                        onLogin = viewModel::doLogin,
-                        onLoginQR = {
-                            scope.launch {
-                                navController.navigate(NavDestinations.LOGIN_SHEET)
-                                viewModel.doLoginQR()
-                            }
-                        },
-                        onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
-                        on2faMessage = { viewModel.onShowMessage(it) }
-                    )
-                }
-            }
-            bottomSheet(NavDestinations.LOGIN_SHEET) {
-                // TODO: bottomSheet not yet un-draggable, waiting on upstream.
-                Surface {
-                    BottomSheetLayout(
-                        title = { stringResource(id = R.string.bottomSheetLoginQRTitle) }
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .size(200.dp)
-                                .align(Alignment.CenterHorizontally)
-                                .padding(16.dp),
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
-                            when (val qrState = viewModel.qrCodeState) {
-                                is QrState.Ready -> {
-                                    val qrCodeBackground = MaterialTheme.colorScheme.surfaceVariant
-                                    val qrCodeColor = MaterialTheme.colorScheme.secondary
-                                    CoilImage(
-                                        imageModel = {
-                                            qrState.qrCode.render(
-                                                margin = 75,
-                                                brightColor = qrCodeBackground.toArgb(),
-                                                marginColor = qrCodeBackground.toArgb(),
-                                                darkColor = qrCodeColor.toArgb()
-                                            ).nativeImage()
-                                        },
-                                        imageOptions = ImageOptions(
-                                            alignment = Alignment.Center,
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    )
-                                }
-                                else -> {
-                                    Box(Modifier.fillMaxSize()) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.align(Alignment.Center)
-                                        )
-                                    }
-                                }
-                            }
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        sheetPeekHeight = 0.dp,
+        sheetSwipeEnabled = false,
+        sheetContent = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+            ) {
+                Text(
+                    text = stringResource(id = R.string.bottomSheetLoginQRTitle),
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .size(200.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .padding(16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    when (val qrState = viewModel.qrCodeState) {
+                        is QrState.Ready -> {
+                            val qrCodeBackground = MaterialTheme.colorScheme.surfaceVariant
+                            val qrCodeColor = MaterialTheme.colorScheme.secondary
+                            CoilImage(
+                                imageModel = {
+                                    qrState.qrCode.render(
+                                        margin = 75,
+                                        brightColor = qrCodeBackground.toArgb(),
+                                        marginColor = qrCodeBackground.toArgb(),
+                                        darkColor = qrCodeColor.toArgb()
+                                    ).nativeImage()
+                                },
+                                imageOptions = ImageOptions(
+                                    alignment = Alignment.Center,
+                                    contentScale = ContentScale.Fit
+                                )
+                            )
                         }
-
-                        Text(
-                            text = stringResource(id = R.string.bottomSheetLoginQRMessage),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-
-                        FilledTonalButton(
-                            onClick = {
-                                navController.popBackStack()
-                                viewModel.cancelLoginQR()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentPadding = PaddingValues(16.dp),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Icon(imageVector = Icons.Rounded.Cancel, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = stringResource(id = R.string.cancel))
+                        else -> {
+                            Box(Modifier.fillMaxSize()) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
                         }
                     }
                 }
+
+                Text(
+                    text = stringResource(id = R.string.bottomSheetLoginQRMessage),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                FilledTonalButton(
+                    onClick = {
+                        scope.launch {
+                            sheetState.hide()
+                            viewModel.cancelLoginQR()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentPadding = PaddingValues(16.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(imageVector = Icons.Rounded.Cancel, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(id = R.string.cancel))
+                }
             }
         }
+    ) {
+        val keyboard = LocalSoftwareKeyboardController.current
+        LoginScreenContent(
+            modifier = Modifier,
+            loginState = state,
+            onUsername = viewModel::onUsernameUpdate,
+            onPassword = viewModel::onPasswordUpdate,
+            onSteamGuard = viewModel::onSteamGuardUpdate,
+            onPasswordVisible = viewModel::onPasswordVisible,
+            onLogin = viewModel::doLogin,
+            onLoginQR = {
+                scope.launch {
+                    keyboard?.hide()
+                    sheetState.expand()
+                    viewModel.doLoginQR()
+                }
+            },
+            onTwoFactorSubmit = viewModel::onTwoFactorSubmit
+        )
     }
 }
 
@@ -216,8 +220,7 @@ private fun LoginScreenContent(
     onPasswordVisible: (Boolean) -> Unit,
     onLogin: () -> Unit,
     onLoginQR: () -> Unit,
-    onTwoFactorSubmit: () -> Unit,
-    on2faMessage: (string: String) -> Unit
+    onTwoFactorSubmit: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -242,7 +245,9 @@ private fun LoginScreenContent(
         )
 
         /* Login fields */
-        AnimatedVisibility(visible = !loginState.expectSteamGuard) {
+        AnimatedVisibility(
+            visible = !loginState.expectSteamGuardApp || !loginState.expectSteamGuardCode
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -265,7 +270,7 @@ private fun LoginScreenContent(
         }
 
         /* Two Factor */
-        AnimatedVisibility(visible = loginState.expectSteamGuard) {
+        AnimatedVisibility(visible = loginState.expectSteamGuardCode) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -409,7 +414,7 @@ private fun LoginTextFields(
         keyboardOptions = KeyboardOptions(
             autoCorrect = false,
             keyboardType = KeyboardType.Password,
-            imeAction = if (!loginState.expectSteamGuard) ImeAction.Done else ImeAction.Next
+            imeAction = if (!loginState.expectSteamGuardCode) ImeAction.Done else ImeAction.Next
         ),
         trailingIcon = {
             IconButton(onClick = { onPasswordVisible(!loginState.isPasswordVisible) }) {
@@ -465,7 +470,6 @@ private fun LoginButtons(
 private fun Preview_LoginScreenContent() {
     val string = stringResource(id = R.string.errorMessageSteamGuardMobile)
     val loginState = LoginState(
-        expectSteamGuard = false,
         generalMessage = string,
         isPasswordValid = PasswordValidation.LetterOrDigit,
         isPasswordVisible = true,
@@ -484,8 +488,7 @@ private fun Preview_LoginScreenContent() {
             onPasswordVisible = {},
             onLogin = {},
             onLoginQR = {},
-            onTwoFactorSubmit = {},
-            on2faMessage = {}
+            onTwoFactorSubmit = {}
         )
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -38,8 +39,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
+import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.StickerImage
 import `in`.dragonbra.vapulla.core.Constants
@@ -81,6 +86,7 @@ fun parseOpenGraphData(url: String, html: String?): OpenGraphData? {
 @Composable
 fun PaperPlane(
     modifier: Modifier = Modifier,
+    imageLoader: ImageLoader,
     text: String,
     isPreviewMode: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
@@ -102,6 +108,7 @@ fun PaperPlane(
         val (sticker) = stickerPattern.find(text)!!.destructured
         StickerImage(
             modifier = Modifier.size(150.dp),
+            imageLoader = imageLoader,
             url = Constants.STICKER_URL + sticker
         )
         return
@@ -165,6 +172,7 @@ fun PaperPlane(
                     it.ogImage?.let {
                         StaticImage(
                             modifier = Modifier.size(height = 126.dp, width = 240.dp),
+                            imageLoader = imageLoader,
                             contentScale = ContentScale.Fit,
                             url = it
                         )
@@ -200,6 +208,7 @@ fun PaperPlane(
                 InlineTextContent(Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.Center)) {
                     StaticImage(
                         modifier = Modifier.size(20.dp),
+                        imageLoader = imageLoader,
                         url = Constants.EMOTE_URL + emoticonName
                     )
                 }
@@ -226,6 +235,21 @@ fun PaperPlane(
 @Composable
 private fun Preview_PaperPlane() {
     val input = "https://github.com/Longi94/Vapulla"
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.components {
+            add(AnimatedPngDecoder.Factory())
+        }.build()
+
     VapullaTheme {
         Column(
             Modifier
@@ -233,6 +257,7 @@ private fun Preview_PaperPlane() {
                 .verticalScroll(rememberScrollState())
         ) {
             PaperPlane(
+                imageLoader = imageLoader,
                 text = "Left [emoticon]health[/emoticon] 4 [emoticon]missing[/emoticon] Dead 2!"
             )
             Spacer(
@@ -240,19 +265,26 @@ private fun Preview_PaperPlane() {
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            PaperPlane(text = "No Emojis, but Left 4 Dead 2!")
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+            PaperPlane(
+                imageLoader = imageLoader,
+                text = "No Emojis, but Left 4 Dead 2!"
             )
-            PaperPlane(text = "[sticker type=\"Winter2019HappyFire\" limit=\"0\"][/sticker]")
             Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
             PaperPlane(
+                imageLoader = imageLoader,
+                text = "[sticker type=\"Winter2019HappyFire\" limit=\"0\"][/sticker]"
+            )
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            )
+            PaperPlane(
+                imageLoader = imageLoader,
                 isPreviewMode = false,
                 text = "[sticker type=\"Steam Pal\" limit=\"0\"][/sticker]"
             )
@@ -262,6 +294,7 @@ private fun Preview_PaperPlane() {
                     .height(56.dp)
             )
             PaperPlane(
+                imageLoader = imageLoader,
                 isPreviewMode = true,
                 text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]"
             )
@@ -270,13 +303,13 @@ private fun Preview_PaperPlane() {
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            PaperPlane(isPreviewMode = true, text = input)
+            PaperPlane(imageLoader = imageLoader, isPreviewMode = true, text = input)
             Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
-            PaperPlane(isPreviewMode = false, text = input)
+            PaperPlane(imageLoader = imageLoader, isPreviewMode = false, text = input)
         }
     }
 }

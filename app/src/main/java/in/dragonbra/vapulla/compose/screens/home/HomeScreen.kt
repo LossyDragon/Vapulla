@@ -18,11 +18,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -51,16 +53,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
-import `in`.dragonbra.vapulla.compose.components.ScrollBackUp
+import `in`.dragonbra.vapulla.compose.components.ScrollToButton
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
 import `in`.dragonbra.vapulla.compose.components.contrastAgainst
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.ExperimentalMaterialApi
@@ -85,11 +90,6 @@ import kotlinx.coroutines.launch
 fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(Unit) {
-        viewModel.onPostCreate(lifecycleOwner)
-    }
 
     val onChatSelected = remember<(FriendListItem) -> Unit> {
         {
@@ -153,11 +153,25 @@ private fun HomeScreenContent(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val keyboard = LocalSoftwareKeyboardController.current
 
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.build()
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             HomeScreenDrawer(
                 state = state,
+                imageLoader = imageLoader,
                 drawerState = drawerState,
                 onStatusChange = onStatusChange,
                 onPersonAdd = onPersonAdd,
@@ -169,6 +183,14 @@ private fun HomeScreenContent(
         val listState = rememberLazyListState()
         val isScrolled = remember {
             derivedStateOf { listState.firstVisibleItemIndex > 0 }
+        }
+
+        LaunchedEffect(state.isSearching) {
+            if (state.isSearching) {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            }
         }
 
         Scaffold(
@@ -200,17 +222,21 @@ private fun HomeScreenContent(
                     .pullRefresh(pullRefreshState)
                     .padding(paddingValues)
             ) {
+                if (state.filteredFriendsList.isEmpty()) {
+                    Card(modifier = Modifier.align(Alignment.Center)) {
+                        Text(
+                            modifier = Modifier.padding(16.dp),
+                            textAlign = TextAlign.Center,
+                            text = "No friends to display"
+                        )
+                    }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    if (state.isSearching) {
-                        scope.launch {
-                            listState.animateScrollToItem(0)
-                        }
-                    }
-
                     state.filteredFriendsList.forEach { (header, friends) ->
                         stickyHeader(contentType = header) {
                             StickyHeaderItem(header, friends.size)
@@ -219,6 +245,7 @@ private fun HomeScreenContent(
                         items(friends, key = { it.id }) { friend ->
                             FriendItem(
                                 modifier = Modifier.animateItemPlacement(),
+                                imageLoader = imageLoader,
                                 friend = friend,
                                 onClickChat = { onChatSelected(friend) },
                                 onClickProfile = { onProfileSelected(friend) },
@@ -232,8 +259,11 @@ private fun HomeScreenContent(
                 val showUpButton by remember {
                     derivedStateOf { listState.firstVisibleItemIndex > 5 }
                 }
-                ScrollBackUp(
+                ScrollToButton(
                     modifier = Modifier.align(Alignment.BottomCenter),
+                    label = "Scroll Up",
+                    buttonIcon = Icons.Default.ArrowUpward,
+                    buttonText = "Scroll Up",
                     enabled = showUpButton,
                     onClicked = {
                         scope.launch {
@@ -256,6 +286,7 @@ private fun HomeScreenContent(
 private fun HomeScreenDrawer(
     state: HomeState,
     drawerState: DrawerState,
+    imageLoader: ImageLoader,
     onStatusChange: (EPersonaState) -> Unit,
     onPersonAdd: () -> Unit,
     onSettings: () -> Unit,
@@ -270,7 +301,8 @@ private fun HomeScreenDrawer(
     )
 
     LaunchedEffect(state.avatarHash) {
-        dominantColorState.updateColorsFromImageUrl(getAvatarUrl(state.avatarHash))
+        val avatarUrl = getAvatarUrl(state.avatarHash)
+        dominantColorState.updateColorsFromImageUrl(avatarUrl)
     }
 
     ModalDrawerSheet(modifier = Modifier.fillMaxHeight()) {
@@ -290,7 +322,7 @@ private fun HomeScreenDrawer(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                DrawerAccountInfo(state = state)
+                DrawerAccountInfo(state = state, imageLoader = imageLoader)
                 DrawerStatusButtons(
                     drawerState = drawerState,
                     onStatusChange = onStatusChange
@@ -311,7 +343,7 @@ private fun HomeScreenDrawer(
 }
 
 @Composable
-private fun DrawerAccountInfo(state: HomeState) {
+private fun DrawerAccountInfo(state: HomeState, imageLoader: ImageLoader) {
     val borderStroke = BorderStroke(4.dp, getAccountStatusColor(state.status))
     val cornerShape = RoundedCornerShape(16.dp)
 
@@ -326,6 +358,7 @@ private fun DrawerAccountInfo(state: HomeState) {
                 .size(150.dp)
                 .border(borderStroke, cornerShape)
                 .clip(cornerShape),
+            imageLoader = imageLoader,
             url = getAvatarUrl(state.avatarHash)
         )
 
@@ -462,9 +495,23 @@ private fun Preview_HomeScreenContent() {
 private fun Preview_HomeScreenDrawer() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
     val state = HomeState(nickname = "Some Cool Name")
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.build()
+
     VapullaTheme {
         HomeScreenDrawer(
             state = state,
+            imageLoader = imageLoader,
             drawerState = drawerState,
             onStatusChange = {},
             onPersonAdd = {},

@@ -31,12 +31,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
+import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getFriendName
@@ -50,6 +54,7 @@ import `in`.dragonbra.vapulla.model.FriendListItem
 @Composable
 fun FriendItem(
     modifier: Modifier = Modifier,
+    imageLoader: ImageLoader,
     friend: FriendListItem,
     onClickChat: () -> Unit,
     onClickProfile: () -> Unit,
@@ -118,6 +123,7 @@ fun FriendItem(
 
                     if (friend.lastMessage != null && !friend.isRequestRecipient()) {
                         PaperPlane(
+                            imageLoader = imageLoader,
                             text = friend.lastMessage!!,
                             isPreviewMode = true,
                             maxLines = 1,
@@ -182,6 +188,7 @@ fun FriendItem(
                             .padding(1.dp)
                             .clip(iconSmallCornerShape)
                             .size(58.dp),
+                        imageLoader = imageLoader,
                         url = avatarUrl
                     )
                 }
@@ -201,9 +208,25 @@ private fun Preview_FriendListItem() {
         "Friend In Game" to EPersonaState.Online,
         "Friend Away In Game" to EPersonaState.Away
     )
+    val context = LocalContext.current
+    val imageLoader = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.25)
+                .build()
+        }.diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("image_cache"))
+                .maxSizePercent(1.0)
+                .build()
+        }.components {
+            add(AnimatedPngDecoder.Factory())
+        }.build()
+
     VapullaTheme {
         Column {
             FriendItem(
+                imageLoader = imageLoader,
                 friend = FriendListItem(
                     avatar = null,
                     gameAppId = 0,
@@ -229,6 +252,7 @@ private fun Preview_FriendListItem() {
 
             friendData.onEachIndexed { index, entry ->
                 FriendItem(
+                    imageLoader = imageLoader,
                     friend = FriendListItem(
                         avatar = null,
                         gameAppId = index - 2,

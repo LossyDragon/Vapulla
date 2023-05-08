@@ -1,31 +1,22 @@
 package `in`.dragonbra.vapulla.compose.util
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Web
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import coil.ImageLoader
 import coil.decode.DecodeResult
 import coil.decode.Decoder
 import coil.decode.ImageSource
-import coil.disk.DiskCache
 import coil.fetch.SourceResult
-import coil.memory.MemoryCache
 import coil.request.ImageRequest
 import coil.request.Options
 import com.github.penfeizhou.animation.apng.APNGDrawable
@@ -36,7 +27,6 @@ import com.skydoves.landscapist.coil.LocalCoilImageLoader
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.icons.VR
-import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.model.FriendListItem
 
 /**
@@ -58,21 +48,11 @@ fun getStatusIcon(friend: FriendListItem?): ImageVector? {
 @Composable
 fun StaticImage(
     modifier: Modifier,
+    imageLoader: ImageLoader,
     contentScale: ContentScale = ContentScale.Fit,
     url: String
 ) {
     val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
     CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
         CoilImage(
             modifier = modifier,
@@ -93,22 +73,11 @@ fun StaticImage(
 @Composable
 fun StickerImage(
     modifier: Modifier = Modifier,
+    imageLoader: ImageLoader,
     url: String
 ) {
     val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.components {
-            add(AnimatedPngDecoder.Factory())
-        }.build()
+
     CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
         CoilImage(
             modifier = modifier,
@@ -121,61 +90,6 @@ fun StickerImage(
             },
             previewPlaceholder = R.mipmap.ic_launcher_foreground,
             imageOptions = ImageOptions(contentScale = ContentScale.Fit)
-        )
-    }
-}
-
-@Composable
-fun GameImage(appId: Int) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val height = with(density) { 215.toDp() }
-    val width = with(density) { 460.toDp() }
-
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
-    CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
-        CoilImage(
-            modifier = Modifier.size(width, height),
-            imageLoader = { imageLoader },
-            imageRequest = {
-                ImageRequest.Builder(context)
-                    .data(String.format(Constants.GAME_LOGO_URL, appId))
-                    .crossfade(true)
-                    .build()
-            },
-            imageOptions = ImageOptions(
-                contentScale = ContentScale.Fit
-            ),
-            previewPlaceholder = R.mipmap.ic_launcher_foreground,
-            loading = {
-                Box(
-                    modifier = Modifier.size(width, height),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            },
-            failure = {
-                Box(
-                    modifier = Modifier.size(width, height),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null
-                    )
-                }
-            }
         )
     }
 }

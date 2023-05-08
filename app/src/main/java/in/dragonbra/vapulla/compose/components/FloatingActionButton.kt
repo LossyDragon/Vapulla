@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -26,17 +27,21 @@ private enum class Visibility {
 }
 
 @Composable
-fun ScrollBackUp(
-    enabled: Boolean,
+fun ScrollToButton(
     modifier: Modifier = Modifier,
+    label: String,
+    buttonIcon: ImageVector,
+    buttonIconDescription: String? = null,
+    buttonText: String,
+    enabled: Boolean,
     onClicked: () -> Unit
 ) {
     val transition = updateTransition(
         if (enabled) Visibility.Visible else Visibility.Gone,
-        label = "ScrollBackUp Transition"
+        label = "$label Transition"
     )
 
-    val bottomOffset by transition.animateDp(label = "ScrollBackUp offset") {
+    val bottomOffset by transition.animateDp(label = "$label offset") {
         if (it == Visibility.Gone) (-24).dp else 24.dp
     }
 
@@ -49,13 +54,13 @@ fun ScrollBackUp(
             contentColor = Color.White,
             icon = {
                 Icon(
-                    imageVector = Icons.Filled.ArrowUpward,
+                    imageVector = buttonIcon,
                     modifier = Modifier.height(18.dp),
-                    contentDescription = null
+                    contentDescription = buttonIconDescription
                 )
             },
             onClick = onClicked,
-            text = { Text(text = "Scroll Up") }
+            text = { Text(text = buttonText) }
         )
     }
 }
@@ -65,8 +70,11 @@ fun ScrollBackUp(
 private fun Preview_ScrollBackUp() {
     VapullaTheme {
         Box(Modifier.height(100.dp)) {
-            ScrollBackUp(
+            ScrollToButton(
                 modifier = Modifier.align(Alignment.BottomCenter),
+                label = "Scroll Up",
+                buttonIcon = Icons.Default.ArrowUpward,
+                buttonText = "Scroll Up",
                 enabled = true,
                 onClicked = {}
             )

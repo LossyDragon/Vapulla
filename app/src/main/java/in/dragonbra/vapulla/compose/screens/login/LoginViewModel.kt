@@ -76,7 +76,9 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onDestroy() {
-        _loginState.update { it.copy(expectSteamGuard = false) }
+        _loginState.update {
+            it.copy(expectSteamGuardCode = false, expectSteamGuardApp = false)
+        }
     }
 
     fun onUsernameUpdate(username: String) {
@@ -108,11 +110,15 @@ class LoginViewModel @Inject constructor(
         _loginState.update { it.copy(isLoading = isLoading, generalMessage = "Loading") }
     }
 
-    fun onShowSteamGuard(expectSteamGuard: Boolean, useAppSignIn: Boolean = false, error: String) {
-        // TODO useAppSignIn
+    fun onShowSteamGuard(
+        expectSteamGuardCode: Boolean = false,
+        expectSteamGuardApp: Boolean = false,
+        error: String
+    ) {
         _loginState.update {
             it.copy(
-                expectSteamGuard = expectSteamGuard,
+                expectSteamGuardCode = expectSteamGuardCode,
+                expectSteamGuardApp = expectSteamGuardApp,
                 generalMessage = error,
                 isLoading = false
             )
@@ -132,7 +138,8 @@ class LoginViewModel @Inject constructor(
         accountManager.lastLoginSuccessful = false
         _loginState.update {
             it.copy(
-                expectSteamGuard = false,
+                expectSteamGuardCode = false,
+                expectSteamGuardApp = false,
                 generalMessage = message,
                 isLoading = false
             )
@@ -201,7 +208,7 @@ class LoginViewModel @Inject constructor(
             return
         }
 
-        if (state.expectSteamGuard) {
+        if (state.expectSteamGuardCode) {
             if (!isValidGuardCode) {
                 Timber.w("Steam Guard code wasn't valid")
                 return

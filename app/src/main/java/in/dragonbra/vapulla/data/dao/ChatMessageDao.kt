@@ -23,8 +23,8 @@ interface ChatMessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg messages: ChatMessage)
 
-    @Query("SELECT * FROM chat_message WHERE account_id = :accountid ORDER BY timestamp DESC")
-    fun findLivePaged(accountid: Long): DataSource.Factory<Int, ChatMessage>
+    @Query("SELECT * FROM chat_message WHERE account_id = :friendId ORDER BY timestamp DESC")
+    fun findLivePaged(friendId: Long): DataSource.Factory<Int, ChatMessage>
 
     @Update
     fun update(vararg messages: ChatMessage)

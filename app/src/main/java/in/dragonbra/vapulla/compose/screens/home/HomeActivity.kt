@@ -53,6 +53,9 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
         accountManager.addListener(this@HomeActivity)
+
+        viewModel.onPostCreate(this)
+        onAccountUpdate(accountManager)
     }
 
     override fun onDisconnected() {

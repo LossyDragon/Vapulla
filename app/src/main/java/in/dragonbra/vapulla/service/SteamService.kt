@@ -398,12 +398,14 @@ class SteamService : Service() {
      */
     private fun ackMessage(steamID: SteamID) {
         Timber.d("ackMessage($steamID)")
-        val msgNotification = CFriendMessages_AckMessage_Notification.newBuilder().apply {
-            steamidPartner = steamID.convertToUInt64()
-            timestamp = System.currentTimeMillis().div(1000).toInt()
-        }.build()
+        scope.launch {
+            val msgNotification = CFriendMessages_AckMessage_Notification.newBuilder().apply {
+                steamidPartner = steamID.convertToUInt64()
+                timestamp = System.currentTimeMillis().div(1000).toInt()
+            }.build()
 
-        unifiedFriendMessages?.AckMessage(msgNotification)
+            unifiedFriendMessages?.AckMessage(msgNotification)
+        }
     }
 
     /**

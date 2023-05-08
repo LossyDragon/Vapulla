@@ -212,7 +212,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
         super.onDisconnected()
         Timber.d("onDisconnected")
         with(viewModel.loginState.value) {
-            if (!expectSteamGuard) {
+            if (!expectSteamGuardCode && !expectSteamGuardApp) {
                 if (refreshToken.isNotEmpty()) {
                     viewModel.showFailedScreen("Failed to connect to steam!")
                 }
@@ -283,8 +283,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
     override fun acceptDeviceConfirmation(): CompletableFuture<Boolean> {
         Timber.i("STEAM GUARD! Use the Steam Mobile App to confirm your sign in...")
         viewModel.onShowSteamGuard(
-            expectSteamGuard = true,
-            useAppSignIn = true,
+            expectSteamGuardApp = true,
             error = "Use the Steam Mobile App to confirm your sign in..."
         )
         return CompletableFuture.completedFuture(true)
@@ -293,7 +292,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
     override fun getDeviceCode(previousCodeWasIncorrect: Boolean): CompletableFuture<String> {
         Timber.i("Steam Guard, use code on app")
         viewModel.onShowSteamGuard(
-            expectSteamGuard = true,
+            expectSteamGuardCode = true,
             error = "Please enter your 2-factor auth code from your authenticator app."
         )
 
@@ -314,7 +313,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
     ): CompletableFuture<String> {
         Timber.i("Steam Guard, use code sent to $email.")
         viewModel.onShowSteamGuard(
-            expectSteamGuard = true,
+            expectSteamGuardCode = true,
             error = "Please enter the auth code sent to the email at $email."
         )
 
