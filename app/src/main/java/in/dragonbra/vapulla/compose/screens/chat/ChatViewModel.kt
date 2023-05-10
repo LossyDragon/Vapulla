@@ -6,12 +6,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.types.SteamID
@@ -24,7 +19,6 @@ import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.model.FriendListItem
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -54,12 +48,10 @@ class ChatViewModel @Inject constructor(
     private val _message = MutableStateFlow(TextFieldValue(""))
     val message: MutableStateFlow<TextFieldValue> = _message
 
-    private val _chatMessages = MutableStateFlow<PagingData<ChatMessage>>(PagingData.empty())
-    val chatMessages: Flow<PagingData<ChatMessage>> = _chatMessages.asSharedFlow()
-
-    private lateinit var chatData: Flow<PagingData<ChatMessage>>
-    private val chatObserver = Observer<PagingData<ChatMessage>> { list ->
-        _chatMessages.value = list
+    private lateinit var chatData: LiveData<List<ChatMessage>>
+    private val chatObserver = Observer<List<ChatMessage>> { list ->
+        val formattedList = list.groupBy { it.formattedTs }
+        _state.update { it.copy(chatMessages = formattedList) }
     }
 
     private lateinit var emoticonData: LiveData<List<Emoticon>>
@@ -83,12 +75,8 @@ class ChatViewModel @Inject constructor(
         val steamID = _state.value.currentChatSteamID?.convertToUInt64()
             ?: throw IllegalArgumentException("SteamID null no onPostCreate")
 
-        chatData = Pager(
-            PagingConfig(50),
-            null,
-            chatMessageDao.findLivePaged(steamID).asPagingSourceFactory(Dispatchers.IO)
-        ).flow.cachedIn(viewModelScope)
-        chatData.asLiveData().observe(lifecycleOwner, chatObserver)
+        chatData = chatMessageDao.findLivePaged(steamID)
+        chatData.observe(lifecycleOwner, chatObserver)
 
         friendData = steamFriendDao.findLive(steamID)
         friendData.observe(lifecycleOwner, friendObserver)
@@ -101,14 +89,6 @@ class ChatViewModel @Inject constructor(
 
         emoticonData = emoticonDao.getLive()
         emoticonData.observe(lifecycleOwner, emoteObserver)
-
-        _state.update {
-            it.copy(
-                // messages = chatData,
-                friend = friendData.value,
-                emoticonData = emoticonData.value ?: listOf()
-            )
-        }
     }
 
     fun onResume() {
@@ -121,7 +101,7 @@ class ChatViewModel @Inject constructor(
     }
 
     fun onDestroy() {
-        chatData.asLiveData().removeObserver(chatObserver)
+        chatData.removeObserver(chatObserver)
         friendData.removeObserver(friendObserver)
         emoticonData.removeObserver(emoteObserver)
     }

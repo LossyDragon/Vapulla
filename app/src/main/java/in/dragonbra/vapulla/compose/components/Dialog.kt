@@ -1,33 +1,23 @@
 package `in`.dragonbra.vapulla.compose.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -44,16 +34,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 
@@ -77,47 +62,52 @@ fun VapullaSelectionDialog(
         mutableStateOf(items.values.find { it == currentSelection }!!)
     }
 
-    Dialog(onDismissRequest = onNegative) {
-        DialogLayoutUI(
-            icon = icon,
-            title = title,
-            content = {
-                LazyColumn(
-                    modifier = Modifier
-                        .heightIn(100.dp, 250.dp)
-                        .fillMaxWidth()
-                ) {
-                    items.forEach { (key, value) ->
-                        item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .selectable(
-                                        selected = (selectedItem == value),
-                                        onClick = { selectedItem = value },
-                                        role = Role.RadioButton
-                                    )
-                                    .padding(horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    modifier = Modifier.padding(end = 16.dp),
+    AlertDialog(
+        onDismissRequest = onNegative,
+        icon = { icon?.let { Icon(imageVector = it, contentDescription = null) } },
+        title = { Text(text = title) },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .heightIn(100.dp, 250.dp)
+                    .fillMaxWidth()
+            ) {
+                items.forEach { (key, value) ->
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .selectable(
                                     selected = (selectedItem == value),
-                                    onClick = null
+                                    onClick = { selectedItem = value },
+                                    role = Role.RadioButton
                                 )
-                                Text(text = key)
-                            }
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                modifier = Modifier.padding(end = 16.dp),
+                                selected = (selectedItem == value),
+                                onClick = null
+                            )
+                            Text(text = key)
                         }
                     }
                 }
-            },
-            positiveText = positiveText,
-            onPositive = { onPositive(selectedItem) },
-            negativeText = negativeText,
-            onNegative = onNegative
-        )
-    }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onPositive(selectedItem) }) {
+                Text(text = positiveText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onNegative) {
+                Text(text = negativeText)
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -138,33 +128,38 @@ fun VapullaEditDialog(
     val keyboard = LocalSoftwareKeyboardController.current
     var newName by remember { mutableStateOf(TextFieldValue(currentName ?: "")) }
 
-    Dialog(onDismissRequest = onDismiss) {
-        DialogLayoutUI(
-            icon = icon,
-            title = title,
-            content = {
-                OutlinedTextField(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    value = newName,
-                    onValueChange = { newName = it },
-                    singleLine = true,
-                    label = { Text(text = editTextLabel) },
-                    keyboardActions = KeyboardActions(
-                        onDone = { keyboard?.hide() }
-                    ),
-                    keyboardOptions = KeyboardOptions(
-                        autoCorrect = false,
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Done
-                    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { icon?.let { Icon(imageVector = it, contentDescription = null) } },
+        title = { Text(text = title) },
+        text = {
+            OutlinedTextField(
+                modifier = Modifier.padding(vertical = 12.dp),
+                value = newName,
+                onValueChange = { newName = it },
+                singleLine = true,
+                label = { Text(text = editTextLabel) },
+                keyboardActions = KeyboardActions(
+                    onDone = { keyboard?.hide() }
+                ),
+                keyboardOptions = KeyboardOptions(
+                    autoCorrect = false,
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Done
                 )
-            },
-            positiveText = stringResource(id = R.string.change),
-            onPositive = { onConfirm(newName.text) },
-            negativeText = stringResource(id = R.string.cancel),
-            onNegative = onDismiss
-        )
-    }
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(newName.text) }) {
+                Text(text = stringResource(id = R.string.change))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -179,30 +174,29 @@ fun VapullaListDialog(
         return
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        DialogLayoutUI(
-            icon = icon,
-            title = title,
-            content = {
-                Divider(Modifier.fillMaxWidth())
-                LazyColumn(
-                    modifier = Modifier
-                        .heightIn(100.dp, 250.dp)
-                        .fillMaxWidth()
-                ) {
-                    items(list) {
-                        Text(text = it.toString())
-                    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { icon?.let { Icon(imageVector = it, contentDescription = null) } },
+        title = { Text(text = title) },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .heightIn(100.dp, 250.dp)
+                    .fillMaxWidth()
+            ) {
+                items(list) {
+                    Text(text = it.toString())
                 }
-                Divider(Modifier.fillMaxWidth())
-            },
-            positiveText = stringResource(id = R.string.close),
-            onPositive = onDismiss
-        )
-    }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.close))
+            }
+        }
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VapullaMessageDialog(
     icon: ImageVector? = null,
@@ -220,121 +214,48 @@ fun VapullaMessageDialog(
 
     AlertDialog(
         modifier = Modifier.wrapContentHeight(),
-        onDismissRequest = onNegative
-    ) {
-        DialogLayoutUI(
-            icon = icon,
-            title = title,
-            message = message,
-            positiveText = positiveText,
-            onPositive = onPositive,
-            negativeText = negativeText,
-            onNegative = onNegative
-        )
-    }
-}
-
-// Referenced from https://stackoverflow.com/a/70588212/13225929
-// The 2 Compose Dialog Libraries aren't maintained as often
-@Composable
-fun DialogLayoutUI(
-    modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
-    title: String,
-    message: String? = null,
-    onPositive: () -> Unit,
-    positiveText: String,
-    onNegative: (() -> Unit)? = null,
-    negativeText: String? = null,
-    content: (@Composable () -> Unit)? = null
-) {
-    Card(
-        modifier = Modifier
-            .padding(10.dp, 5.dp, 10.dp, 10.dp)
-            .widthIn(280.dp, 560.dp)
-            .wrapContentHeight(unbounded = true),
-        shape = RoundedCornerShape(10.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-        Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
-            Spacer(modifier = Modifier.height(24.dp))
-            icon?.let {
-                Icon(
-                    modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .height(24.dp)
-                        .fillMaxWidth(),
-                    imageVector = it,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = null
-                )
+        onDismissRequest = onNegative,
+        icon = { icon?.let { Icon(imageVector = it, contentDescription = null) } },
+        title = { Text(text = title) },
+        text = { Text(text = message) },
+        confirmButton = {
+            TextButton(onClick = onPositive) {
+                Text(text = positiveText)
             }
-
-            if (message == null && content == null) {
-                throw IllegalArgumentException("Message or Content is null")
-            }
-
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Text(
-                    text = title,
-                    textAlign = TextAlign.Center,
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                message?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        modifier = Modifier
-                            .wrapContentHeight()
-                            .fillMaxWidth(),
-                        text = it,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-
-                content?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    it.invoke()
-                }
-            }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp)
-                    .background(MaterialTheme.colorScheme.secondary),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                TextButton(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    onClick = onPositive
-                ) {
-                    Text(
-                        text = positiveText,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-
-                    )
-                }
-                if (onNegative != null && negativeText != null) {
-                    TextButton(
-                        modifier = Modifier.padding(vertical = 4.dp),
-                        onClick = onNegative
-                    ) {
-                        Text(
-                            text = negativeText,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
+        },
+        dismissButton = {
+            TextButton(onClick = onNegative) {
+                Text(text = negativeText)
             }
         }
+    )
+}
+
+@Preview
+@Composable
+private fun Preview_DialogSelectionContent() {
+    val recentsMap = mapOf(
+        "Disable" to -1L,
+        "1 day" to 86400000L,
+        "3 days" to 259200000L,
+        "1 week" to 604800000L,
+        "2 weeks" to 1209600000L,
+        "1 month" to 2592000000L,
+        "Forever" to 0L
+    )
+
+    VapullaTheme {
+        VapullaSelectionDialog(
+            icon = Icons.Default.Badge,
+            title = stringResource(id = R.string.dialogTitleRecentFriendChats),
+            currentSelection = 86400000L,
+            items = recentsMap,
+            openDialog = true,
+            onPositive = {},
+            positiveText = "Confirm",
+            onNegative = {},
+            negativeText = "Cancel"
+        )
     }
 }
 
@@ -342,8 +263,8 @@ fun DialogLayoutUI(
 @Composable
 private fun Preview_DialogListContent() {
     val list = mutableListOf<String>()
-    repeat(20) {
-        list.add("Cool name: $it")
+    repeat(25) {
+        list.add("Cool name: ${it + 1}")
     }
     VapullaTheme {
         VapullaListDialog(

@@ -54,7 +54,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.compose.collectAsLazyPagingItems
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
@@ -81,7 +80,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(viewModel: ChatViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val messages = viewModel.chatMessages.collectAsLazyPagingItems()
     val activity = LocalActivity.current
     val context = LocalContext.current
 
@@ -96,7 +94,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
     ChatScreenContent(
         state = state,
-        messages = messages.itemSnapshotList.items,
         onBackPressed = { activity.finish() },
         onProfileClicked = onProfileClicked,
         onChatMessage = viewModel::sendMessage
@@ -107,7 +104,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
 @Composable
 private fun ChatScreenContent(
     state: ChatState,
-    messages: List<ChatMessage>,
     onBackPressed: () -> Unit,
     onProfileClicked: () -> Unit,
     onChatMessage: (String) -> Unit
@@ -136,7 +132,7 @@ private fun ChatScreenContent(
         derivedStateOf { scrollState.firstVisibleItemIndex > 10 }
     }
 
-    LaunchedEffect(messages.size) {
+    LaunchedEffect(state.chatMessages) {
         if (!showDownButton) {
             scope.launch {
                 scrollState.animateScrollToItem(0)
@@ -165,10 +161,7 @@ private fun ChatScreenContent(
                         contentPadding = WindowInsets.statusBars.add(WindowInsets(top = 90.dp))
                             .asPaddingValues()
                     ) {
-                        // TODO: This should be in the VM, but some refacoring will be needed.
-                        val groupedMessages = messages.groupBy { it.formattedTs }
-
-                        groupedMessages.forEach { (header, items) ->
+                        state.chatMessages.forEach { (header, items) ->
                             items(items, key = { it.id }) { msg ->
                                 ChatMessageItem(
                                     modifier = Modifier.animateItemPlacement(),
@@ -211,7 +204,7 @@ private fun ChatScreenContent(
             }
 
             // Empty Conversation Text
-            if (messages.isEmpty()) {
+            if (state.chatMessages.isEmpty()) {
                 val name = state.friend?.friendName ?: "this friend."
                 Text(
                     modifier = Modifier
@@ -306,14 +299,12 @@ private fun ChatScreenContent(
 @Preview
 @Composable
 private fun Preview_ChatScreenContent() {
-    val messages = (0..20).map {
+    val messages = (0..7).map {
         val currentTime = System.currentTimeMillis()
-        val randomTime = currentTime - Random.nextLong(currentTime)
-        val time = if (it < 10) randomTime else if (it < 15) 1677647978791 else 1699999998791
         ChatMessage(
             id = it.toLong(),
             message = "Sup\nBro $it",
-            timestamp = time,
+            timestamp = currentTime - Random.nextLong(currentTime),
             accountid = 1,
             fromLocal = it.mod(2) == 0,
             isUnread = false
@@ -321,6 +312,7 @@ private fun Preview_ChatScreenContent() {
     }
 
     val state = ChatState(
+        chatMessages = messages.groupBy { it.formattedTs },
         friend = FriendListItem(
             avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
             gameAppId = 100,
@@ -336,7 +328,6 @@ private fun Preview_ChatScreenContent() {
     VapullaTheme {
         ChatScreenContent(
             state = state,
-            messages = messages,
             onBackPressed = {},
             onProfileClicked = {},
             onChatMessage = {}

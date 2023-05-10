@@ -1,7 +1,5 @@
 package `in`.dragonbra.vapulla.compose.screens.games
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -43,19 +41,9 @@ class GamesActivity : VapullaBaseActivity() {
         setContent {
             VapullaTheme {
                 CompositionLocalProvider(LocalActivity provides this) {
-                    GamesScreen(
-                        viewModel = viewModel,
-                        onItemClick = ::gotoGameStore
-                    )
+                    GamesScreen(viewModel = viewModel)
                 }
             }
         }
-    }
-
-    private fun gotoGameStore(appid: Int) {
-        Intent(Intent.ACTION_VIEW).apply {
-            val url = String.format(Constants.STORE_PAGE_URL, appid)
-            data = Uri.parse(url)
-        }.also(::startActivity)
     }
 }

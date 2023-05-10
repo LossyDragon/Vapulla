@@ -1,5 +1,7 @@
 package `in`.dragonbra.vapulla.compose.screens.games
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,15 +39,18 @@ import coil.memory.MemoryCache
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.ScrollToButton
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
+import `in`.dragonbra.vapulla.compose.ui.icons.SortAlpha
+import `in`.dragonbra.vapulla.compose.ui.icons.SortNumeric
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
+import `in`.dragonbra.vapulla.core.Constants
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun GamesScreen(
-    viewModel: GamesViewModel,
-    onItemClick: (Int) -> Unit
+    viewModel: GamesViewModel
 ) {
     val activity = LocalActivity.current
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -54,7 +59,13 @@ fun GamesScreen(
         state = state,
         searchTextState = viewModel.searchText,
         onBackPressed = { activity.finish() },
-        onItemClick = onItemClick,
+        onSortPressed = viewModel::onSortMethod,
+        onItemClick = {
+            Intent(Intent.ACTION_VIEW).apply {
+                val url = String.format(Constants.STORE_PAGE_URL, it)
+                data = Uri.parse(url)
+            }.also { activity.startActivity(it) }
+        },
         onSearchClosed = viewModel::isNotSearching,
         onSearchOpened = viewModel::isSearching
     )
@@ -66,6 +77,7 @@ private fun GamesScreenContent(
     state: GamesState,
     searchTextState: MutableStateFlow<TextFieldValue>,
     onBackPressed: () -> Unit,
+    onSortPressed: () -> Unit,
     onItemClick: (Int) -> Unit,
     onSearchOpened: () -> Unit,
     onSearchClosed: () -> Unit
@@ -77,6 +89,12 @@ private fun GamesScreenContent(
     val isScrolled = remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0
+        }
+    }
+    val iconState = remember(state.sortMethod) {
+        when (state.sortMethod) {
+            SortOptions.SortAlphabetical -> Icons.SortAlpha
+            SortOptions.SortPlaytime -> Icons.SortNumeric
         }
     }
 
@@ -113,6 +131,18 @@ private fun GamesScreenContent(
                             contentDescription = "Search"
                         )
                     }
+                    IconButton(
+                        onClick = {
+                            // TODO, pressing sort doesn't work the 1st time
+                            onSortPressed()
+                            scope.launch {
+                                delay(500L)
+                                listState.animateScrollToItem(0)
+                            }
+                        }
+                    ) {
+                        Icon(imageVector = iconState, contentDescription = null)
+                    }
                 },
                 searchTextState = searchTextState,
                 isSearching = state.isSearching,
@@ -139,7 +169,7 @@ private fun GamesScreenContent(
                 state = listState,
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(state.filteredGamesList, key = { it.appid }) {
+                items(state.filteredGamesList /*key = { it.appid }*/) {
                     GameCardItem(
                         imageLoader = imageLoader,
                         appID = it.appid,
@@ -179,6 +209,7 @@ private fun Preview_GamesScreenContent() {
             state,
             onItemClick = {},
             onBackPressed = {},
+            onSortPressed = {},
             searchTextState = MutableStateFlow(TextFieldValue("")),
             onSearchOpened = {},
             onSearchClosed = {}

@@ -14,11 +14,7 @@ import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
-import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
-import `in`.dragonbra.javasteam.steam.authentication.OnChallengeUrlChanged
-import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
-import `in`.dragonbra.javasteam.steam.authentication.SteamAuthentication
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
@@ -28,15 +24,13 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.getErrorMessage
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.service.Notifications
-import java.lang.IllegalArgumentException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import timber.log.Timber
@@ -46,70 +40,18 @@ import timber.log.Timber
 //  displays: "something went wrong loading this page" error.
 
 @AndroidEntryPoint
-class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChanged {
+class LoginActivity : VapullaBaseActivity(), IAuthenticator {
 
     @Inject
     lateinit var notificationManager: NotificationManagerCompat
 
     private val viewModel: LoginViewModel by viewModels()
 
-    private val loginScope = CoroutineScope(Dispatchers.IO + Job())
-
-    private suspend fun qrLogin(coroutineScope: CoroutineScope): Pair<String, String> {
-        val steamClient = steamService?.steamClient
-        val unifiedMessages = steamService?.unifiedMessages
-
-        val auth = SteamAuthentication(steamClient!!, unifiedMessages!!)
-
-        val authSessionDetails = AuthSessionDetails().apply {
-            deviceFriendlyName = "Vapulla - Android"
-            persistentSession = true
+    private var job = Job()
+        get() {
+            if (field.isCancelled) field = Job()
+            return field
         }
-
-        val authSession: QrAuthSession = auth.beginAuthSessionViaQR(authSessionDetails)
-
-        authSession.challengeUrlChanged = this@LoginActivity
-
-        viewModel.drawQRCode(authSession)
-
-        val pollResponse = authSession.pollingWaitForResult(coroutineScope)
-
-        Timber.i("Connected to Steam! Logging in " + pollResponse.accountName + "...")
-
-        return Pair(pollResponse.accountName, pollResponse.refreshToken)
-    }
-
-    private suspend fun accountLogin(coroutineScope: CoroutineScope): Pair<String, String>? {
-        if (!viewModel.accountManager.username.isNullOrEmpty() &&
-            !viewModel.accountManager.loginKey.isNullOrEmpty() &&
-            viewModel.accountManager.lastLoginSuccessful
-        ) {
-            val username = viewModel.accountManager.username
-            val refreshKey = viewModel.accountManager.loginKey
-            return Pair(username!!, refreshKey!!)
-        }
-
-        val authSessionDetails = AuthSessionDetails().apply {
-            username = viewModel.loginState.value.username.trim()
-            password = viewModel.loginState.value.password
-            persistentSession = true
-            authenticator = this@LoginActivity
-        }
-        val steamClient = steamService!!.steamClient
-        val unifiedMessages = steamService!!.unifiedMessages
-        val auth = SteamAuthentication(steamClient, unifiedMessages)
-        return try {
-            val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
-
-            val authPollResult = authSession.pollingWaitForResult(coroutineScope)
-
-            // Save our results (username and refresh token) to account manager.
-            Pair(authPollResult.accountName, authPollResult.refreshToken)
-        } catch (e: IllegalArgumentException) {
-            coroutineScope.cancel(CancellationException(e.message))
-            null
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,7 +82,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
     private fun onServiceCancel() {
         val cancellationException = CancellationException("Cancel button clicked")
-        loginScope.cancel(cancellationException)
+        job.cancelChildren(cancellationException)
 
         steamService?.disconnect()
     }
@@ -165,17 +107,23 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
         viewModel.onLoadingVisible(true)
 
-        loginScope.launch {
+        scope.launch(job) {
             supervisorScope {
                 try {
                     // TODO should 'really' let the service handle this
-                    // TODO scope not re-usable! 😱
-                    // TODO What happens after CM kick after ~60 sec?
                     val deferredLogin = async {
                         if (viewModel.loginState.value.isSigningInViaQR) {
-                            qrLogin(this)
+                            steamService?.signInViaQR(
+                                coroutineScope = this,
+                                onDrawQRCode = viewModel::drawQRCode
+                            )
                         } else {
-                            accountLogin(this)
+                            steamService?.signInViaCredentials(
+                                coroutineScope = this,
+                                iAuthenticator = this@LoginActivity,
+                                accountName = viewModel.loginState.value.username.trim(),
+                                accountPassword = viewModel.loginState.value.password
+                            )
                         }
                     }
 
@@ -201,7 +149,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
                     Timber.e("Something happened, failed to login")
                     viewModel.showFailedScreen(e.message ?: "Failed to login")
                     steamService?.disconnect()
-                    loginScope.cancel()
+                    job.cancelChildren()
                     e.printStackTrace()
                 }
             }
@@ -326,9 +274,5 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator, OnChallengeUrlChang
 
         val code = viewModel.twoFactorFuture.get()
         return CompletableFuture.completedFuture(code)
-    }
-
-    override fun onChanged(qrAuthSession: QrAuthSession) {
-        viewModel.drawQRCode(qrAuthSession)
     }
 }

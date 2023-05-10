@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class GamesViewModel : ViewModel() {
 
@@ -32,6 +33,35 @@ class GamesViewModel : ViewModel() {
 
     fun isNotSearching() {
         _state.update { it.copy(isSearching = false) }
+    }
+
+    fun onSortMethod() {
+        Timber.d("onSortMethod()")
+        when (_state.value.sortMethod) {
+            SortOptions.SortAlphabetical -> {
+                val sorted = _state.value.filteredGamesList.sortedBy { it.name.lowercase() }
+                _state.update {
+                    it.copy(
+                        filteredGamesList = sorted,
+                        sortMethod = SortOptions.SortPlaytime
+                    )
+                }
+            }
+            SortOptions.SortPlaytime -> {
+                val sorted = _state.value.filteredGamesList.sortedWith(
+                    compareBy(
+                        { it.playtime_2weeks },
+                        { it.playtime_forever }
+                    )
+                ).reversed()
+                _state.update {
+                    it.copy(
+                        filteredGamesList = sorted,
+                        sortMethod = SortOptions.SortAlphabetical
+                    )
+                }
+            }
+        }
     }
 
     private fun search(query: String) {

@@ -28,6 +28,11 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamcl
 import `in`.dragonbra.javasteam.rpc.service.Chat
 import `in`.dragonbra.javasteam.rpc.service.FriendMessages
 import `in`.dragonbra.javasteam.rpc.service.Player
+import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
+import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
+import `in`.dragonbra.javasteam.steam.authentication.OnChallengeUrlChanged
+import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
+import `in`.dragonbra.javasteam.steam.authentication.SteamAuthentication
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
@@ -71,11 +76,14 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import java.io.Closeable
+import java.lang.IllegalArgumentException
 import java.util.*
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -138,7 +146,7 @@ class SteamService : Service() {
     lateinit var db: VapullaDatabase
 
     @Inject
-    lateinit var account: AccountManager
+    lateinit var accountManager: AccountManager
 
     @Inject
     lateinit var notificationManager: NotificationManagerCompat
@@ -317,8 +325,8 @@ class SteamService : Service() {
 
         details.isShouldRememberPassword = true
 
-        if (account.hasSentryFile) {
-            details.sentryFileHash = account.readSentryFile()
+        if (accountManager.hasSentryFile) {
+            details.sentryFileHash = accountManager.readSentryFile()
         }
 
         getHandler<SteamUser>().logOn(details)
@@ -350,7 +358,7 @@ class SteamService : Service() {
             }
         }
 
-        if (isActivityRunning && account.prefClearNotifications) {
+        if (isActivityRunning && accountManager.prefClearNotifications) {
             notificationManager.cancelAll()
         }
     }
@@ -414,7 +422,7 @@ class SteamService : Service() {
     fun getMessageHistory(steamID2: SteamID) {
         Timber.d("getMessageHistory($steamID2)")
         val msgHistory = CFriendMessages_GetRecentMessages_Request.newBuilder().apply {
-            steamid1 = account.steamId
+            steamid1 = accountManager.steamId
             steamid2 = steamID2.convertToUInt64()
             count = 50
             rtime32StartTime = 0
@@ -468,6 +476,68 @@ class SteamService : Service() {
         db.chatMessageDao().insert(chatMessage)
 
         clearMessageNotifications(id)
+    }
+
+    suspend fun signInViaCredentials(
+        coroutineScope: CoroutineScope,
+        iAuthenticator: IAuthenticator,
+        accountName: String,
+        accountPassword: String
+    ): Pair<String, String>? {
+        if (!accountManager.username.isNullOrEmpty() &&
+            !accountManager.loginKey.isNullOrEmpty() &&
+            accountManager.lastLoginSuccessful
+        ) {
+            return Pair(accountManager.username!!, accountManager.loginKey!!)
+        }
+
+        val authSessionDetails = AuthSessionDetails().apply {
+            username = accountName.trim()
+            password = accountPassword
+            persistentSession = true
+            authenticator = iAuthenticator
+        }
+
+        val auth = SteamAuthentication(steamClient, unifiedMessages)
+        return try {
+            val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
+
+            val authPollResult = authSession.pollingWaitForResult(coroutineScope)
+
+            // Save our results (username and refresh token) to account manager.
+            Pair(authPollResult.accountName, authPollResult.refreshToken)
+        } catch (e: IllegalArgumentException) {
+            coroutineScope.cancel(CancellationException(e.message))
+            null
+        }
+    }
+
+    suspend fun signInViaQR(
+        coroutineScope: CoroutineScope,
+        onDrawQRCode: (QrAuthSession) -> Unit
+    ): Pair<String, String> {
+        val auth = SteamAuthentication(steamClient, unifiedMessages)
+
+        val authSessionDetails = AuthSessionDetails().apply {
+            deviceFriendlyName = "Vapulla - Android"
+            persistentSession = true
+        }
+
+        val authSession: QrAuthSession = auth.beginAuthSessionViaQR(authSessionDetails)
+
+        authSession.challengeUrlChanged = object : OnChallengeUrlChanged {
+            override fun onChanged(qrAuthSession: QrAuthSession) {
+                onDrawQRCode(qrAuthSession)
+            }
+        }
+
+        onDrawQRCode(authSession)
+
+        val pollResponse = authSession.pollingWaitForResult(coroutineScope)
+
+        Timber.i("Connected to Steam! Logging in as ${pollResponse.accountName}...")
+
+        return Pair(pollResponse.accountName, pollResponse.refreshToken)
     }
 
     inline fun <reified T : ICallbackMsg>
@@ -548,7 +618,7 @@ class SteamService : Service() {
                 unifiedFriendMessages = FriendMessages(getHandler())
             }
 
-            EResult.InvalidPassword -> account.loginKey = null
+            EResult.InvalidPassword -> accountManager.loginKey = null
             else -> Unit /* no-op */
         }
     }
@@ -559,7 +629,7 @@ class SteamService : Service() {
 
     private val onUpdateMachineAuth = Consumer<UpdateMachineAuthCallback> {
         Timber.i("received sentry file called ${it.fileName}")
-        account.updateSentryFile(it)
+        accountManager.updateSentryFile(it)
 
         val otp = OTPDetails().apply {
             identifier = it.oneTimePassword.identifier
@@ -570,12 +640,12 @@ class SteamService : Service() {
             bytesWritten = it.bytesToWrite
             eResult = EResult.OK
             fileName = it.fileName
-            fileSize = account.sentrySize.toInt()
+            fileSize = accountManager.sentrySize.toInt()
             jobID = it.jobID
             lastError = 0
             offset = it.offset
             oneTimePassword = otp
-            sentryFileHash = account.readSentryFile()
+            sentryFileHash = accountManager.readSentryFile()
         }
 
         getHandler<SteamUser>().sendMachineAuthResponse(details)
@@ -589,7 +659,7 @@ class SteamService : Service() {
             }
 
             if (state.friendID == steamClient.steamID) {
-                account.saveLocalUser(state)
+                accountManager.saveLocalUser(state)
                 return@forEach
             }
 
@@ -730,7 +800,7 @@ class SteamService : Service() {
                             EAccountType.Individual
                         ) // Also sus for TO-DO below
 
-                        val fromLocal = account.steamId == steamID.convertToUInt64()
+                        val fromLocal = accountManager.steamId == steamID.convertToUInt64()
                         val timestamp = friendMessage.timestamp.toLong()
 
                         // TODO we're still duping messages when getting history
