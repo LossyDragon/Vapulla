@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,14 +45,11 @@ import `in`.dragonbra.vapulla.compose.ui.icons.SortNumeric
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.core.Constants
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
-fun GamesScreen(
-    viewModel: GamesViewModel
-) {
+fun GamesScreen(viewModel: GamesViewModel) {
     val activity = LocalActivity.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -91,10 +89,10 @@ private fun GamesScreenContent(
             listState.firstVisibleItemIndex > 0
         }
     }
-    val iconState = remember(state.sortMethod) {
-        when (state.sortMethod) {
-            SortOptions.SortAlphabetical -> Icons.SortAlpha
-            SortOptions.SortPlaytime -> Icons.SortNumeric
+
+    LaunchedEffect(state.sortMethod, state.isSearching) {
+        scope.launch {
+            listState.animateScrollToItem(0)
         }
     }
 
@@ -120,28 +118,20 @@ private fun GamesScreenContent(
                     keyboard?.hide()
                 },
                 actions = {
-                    IconButton(onClick = {
-                        onSearchOpened()
-                        scope.launch {
-                            listState.scrollToItem(0)
-                        }
-                    }) {
+                    IconButton(onClick = onSearchOpened) {
                         Icon(
                             imageVector = Icons.Filled.Search,
                             contentDescription = "Search"
                         )
                     }
-                    IconButton(
-                        onClick = {
-                            // TODO, pressing sort doesn't work the 1st time
-                            onSortPressed()
-                            scope.launch {
-                                delay(500L)
-                                listState.animateScrollToItem(0)
-                            }
-                        }
-                    ) {
-                        Icon(imageVector = iconState, contentDescription = null)
+                    IconButton(onClick = onSortPressed) {
+                        Icon(
+                            imageVector = when (state.sortMethod) {
+                                SortOptions.Alphabetical -> Icons.SortAlpha
+                                SortOptions.Playtime -> Icons.SortNumeric
+                            },
+                            contentDescription = null
+                        )
                     }
                 },
                 searchTextState = searchTextState,
@@ -169,7 +159,7 @@ private fun GamesScreenContent(
                 state = listState,
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(state.filteredGamesList /*key = { it.appid }*/) {
+                items(state.filteredGamesList, key = { it.appid }) {
                     GameCardItem(
                         imageLoader = imageLoader,
                         appID = it.appid,

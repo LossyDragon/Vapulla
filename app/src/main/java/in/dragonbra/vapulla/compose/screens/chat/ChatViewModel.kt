@@ -1,7 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
 import android.text.format.DateUtils
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
@@ -45,8 +44,8 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableSharedFlow<ChatUiEvent>()
     val uiState = _uiState.asSharedFlow()
 
-    private val _message = MutableStateFlow(TextFieldValue(""))
-    val message: MutableStateFlow<TextFieldValue> = _message
+//    private val _message = MutableStateFlow(TextFieldValue(""))
+//    val message: MutableStateFlow<TextFieldValue> = _message
 
     private lateinit var chatData: LiveData<List<ChatMessage>>
     private val chatObserver = Observer<List<ChatMessage>> { list ->

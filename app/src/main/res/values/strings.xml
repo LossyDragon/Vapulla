@@ -10,6 +10,10 @@
     <string name="textProfileGames">Games</string>
     <string name="textProfileLevel">Level</string>
 
+    <!-- Bottom Sheet Login -->
+    <string name="bottomSheetLoginQRTitle">Sign in with QR</string>
+    <string name="bottomSheetLoginQRMessage">Scan this QR code from another device running your Steam authenticator</string>
+
     <!-- Activity Settings -->
     <string name="textSettingsAbout">About</string>
     <string name="textSettingsAccount">Account</string>
@@ -103,8 +107,4 @@
     <string name="dialogTitleNickname">Change Nickname</string>
     <string name="dialogTitleRemoveFriend">Remove Friend</string>
     <string name="dialogTitleRecentFriendChats">Show Recent Chats Limit</string>
-
-    <!-- TODO sort -->
-    <string name="bottomSheetLoginQRTitle">Sign in with QR</string>
-    <string name="bottomSheetLoginQRMessage">Scan this QR code from another device running your Steam authenticator</string>
 </resources>

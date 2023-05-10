@@ -12,8 +12,6 @@ import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.retrofit.response.Games
 import timber.log.Timber
 
-// TODO: Sort by A-Z and Playtime (recents then total)
-
 class GamesActivity : VapullaBaseActivity() {
 
     companion object {

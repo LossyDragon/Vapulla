@@ -95,6 +95,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
     ChatScreenContent(
         state = state,
         onBackPressed = { activity.finish() },
+        onTextChanged = {
+            // TODO explore flow debounce
+        },
         onProfileClicked = onProfileClicked,
         onChatMessage = viewModel::sendMessage
     )
@@ -104,6 +107,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
 @Composable
 private fun ChatScreenContent(
     state: ChatState,
+    onTextChanged: () -> Unit,
     onBackPressed: () -> Unit,
     onProfileClicked: () -> Unit,
     onChatMessage: (String) -> Unit
@@ -194,6 +198,7 @@ private fun ChatScreenContent(
                         .navigationBarsPadding()
                         .imePadding(),
                     emoticonList = state.emoticonData,
+                    onTextChanged = onTextChanged,
                     onMessageSent = onChatMessage,
                     onResetScroll = {
                         scope.launch {
@@ -328,6 +333,7 @@ private fun Preview_ChatScreenContent() {
     VapullaTheme {
         ChatScreenContent(
             state = state,
+            onTextChanged = {},
             onBackPressed = {},
             onProfileClicked = {},
             onChatMessage = {}

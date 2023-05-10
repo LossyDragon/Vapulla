@@ -37,31 +37,13 @@ class GamesViewModel : ViewModel() {
 
     fun onSortMethod() {
         Timber.d("onSortMethod()")
-        when (_state.value.sortMethod) {
-            SortOptions.SortAlphabetical -> {
-                val sorted = _state.value.filteredGamesList.sortedBy { it.name.lowercase() }
-                _state.update {
-                    it.copy(
-                        filteredGamesList = sorted,
-                        sortMethod = SortOptions.SortPlaytime
-                    )
-                }
-            }
-            SortOptions.SortPlaytime -> {
-                val sorted = _state.value.filteredGamesList.sortedWith(
-                    compareBy(
-                        { it.playtime_2weeks },
-                        { it.playtime_forever }
-                    )
-                ).reversed()
-                _state.update {
-                    it.copy(
-                        filteredGamesList = sorted,
-                        sortMethod = SortOptions.SortAlphabetical
-                    )
-                }
-            }
+        if (_state.value.sortMethod == SortOptions.Alphabetical) {
+            _state.update { it.copy(sortMethod = SortOptions.Playtime) }
+        } else {
+            _state.update { it.copy(sortMethod = SortOptions.Alphabetical) }
         }
+
+        search(searchText.value.text)
     }
 
     private fun search(query: String) {
@@ -69,13 +51,25 @@ class GamesViewModel : ViewModel() {
         val list = if (isSearching) {
             state.value.gamesList.filter {
                 it.name.lowercase().contains(query.trim().lowercase())
-            }
+            }.sortedWith(
+                when (state.value.sortMethod) {
+                    SortOptions.Alphabetical -> compareBy { it.name.lowercase() }
+                    SortOptions.Playtime -> compareByDescending<Games> {
+                        it.playtime_2weeks ?: 0
+                    }.thenByDescending { it.playtime_forever }.thenBy { it.name }
+                }
+            )
         } else {
-            state.value.gamesList
+            state.value.gamesList.sortedWith(
+                when (state.value.sortMethod) {
+                    SortOptions.Alphabetical -> compareBy { it.name.lowercase() }
+                    SortOptions.Playtime -> compareByDescending<Games> {
+                        it.playtime_2weeks ?: 0
+                    }.thenByDescending { it.playtime_forever }.thenBy { it.name }
+                }
+            )
         }
-
-        val sortedList = list.sortedBy { it.name.lowercase() }
-        _state.update { it.copy(filteredGamesList = sortedList) }
+        _state.update { it.copy(filteredGamesList = list) }
     }
 
     fun setContents(name: String, items: ArrayList<Games>) {

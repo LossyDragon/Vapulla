@@ -91,6 +91,7 @@ var SemanticsPropertyReceiver.keyboardShownProperty by KeyboardShownKey
 fun UserInput(
     modifier: Modifier = Modifier,
     onMessageSent: (String) -> Unit,
+    onTextChanged: () -> Unit,
     onResetScroll: () -> Unit = {},
     emoticonList: List<Emoticon>
 ) {
@@ -126,7 +127,10 @@ fun UserInput(
                     dismissKeyboard()
                 },
                 textFieldValue = textState,
-                onTextChanged = { textState = it },
+                onTextChanged = {
+                    textState = it
+                    onTextChanged()
+                },
                 keyboardShown = currentInputSelector == InputSelector.NONE && textFieldFocusState,
                 onTextFieldFocused = { focused ->
                     if (focused) {
@@ -509,7 +513,12 @@ fun Preview_ChatInputBox() {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter
         ) {
-            UserInput(onMessageSent = {}, onResetScroll = {}, emoticonList = listOf())
+            UserInput(
+                onTextChanged = {},
+                onMessageSent = {},
+                onResetScroll = {},
+                emoticonList = listOf()
+            )
         }
     }
 }
