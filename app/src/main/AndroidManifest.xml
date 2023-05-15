@@ -24,7 +24,6 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.Starting"
             android:windowSoftInputMode="adjustResize"
             tools:ignore="LockedOrientationActivity">
             <intent-filter>
@@ -58,6 +57,18 @@
         <!-- Profile -->
         <activity
             android:name=".compose.screens.profile.ProfileActivity"
+            android:launchMode="singleTop"
+            android:parentActivityName=".compose.screens.home.HomeActivity"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".compose.screens.home.HomeActivity" />
+        </activity>
+
+        <!-- Invites -->
+        <activity
+            android:name=".compose.screens.invites.InvitesActivity"
             android:launchMode="singleTop"
             android:parentActivityName=".compose.screens.home.HomeActivity"
             android:theme="@style/AppTheme"
@@ -110,10 +121,6 @@
         <!-- Receivers -->
         <receiver
             android:name=".broadcastreceiver.ReplyReceiver"
-            android:enabled="true"
-            android:exported="false" />
-        <receiver
-            android:name=".broadcastreceiver.LogOutReceiver"
             android:enabled="true"
             android:exported="false" />
 

@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.IBinder
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +12,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
+import `in`.dragonbra.vapulla.compose.screens.invites.InvitesActivity
 import `in`.dragonbra.vapulla.compose.screens.settings.SettingsActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
@@ -96,21 +96,16 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         Intent(this, SettingsActivity::class.java).also(::startActivity)
     }
 
+    private fun onInvites() {
+        Timber.d("onInvites")
+        Intent(this, InvitesActivity::class.java).also(::startActivity)
+    }
+
     private fun onFriendAction(event: HomeUiEvent) {
         Timber.d("onFriendAction ${event.javaClass}")
         scope.launch(Dispatchers.IO) {
             when (event) {
-                HomeUiEvent.AddFriend -> {
-                    // TODO there is a protobuf to create/get an invite token,
-                    //  but is it possible to figure out a way to construct the s.team url?
-                    runOnUiThread {
-                        Toast.makeText(
-                            this@HomeActivity,
-                            "Not Available",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
+                HomeUiEvent.AddFriend -> onInvites()
                 HomeUiEvent.Disconnect -> steamService?.disconnect()
                 HomeUiEvent.LogOut -> steamService?.disconnect()
                 HomeUiEvent.Settings -> onSettings()

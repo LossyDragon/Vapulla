@@ -1,7 +1,8 @@
 // https://plugins.gradle.org/plugin/org.jlleitschuh.gradle.ktlint
+// https://github.com/google/ksp/releases
 plugins {
     id("com.android.application")
-    id("com.google.devtools.ksp") version "1.8.20-1.0.11"
+    id("com.google.devtools.ksp") version "1.8.21-1.0.11"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
     id("com.google.dagger.hilt.android")
     id("dagger.hilt.android.plugin")
@@ -50,12 +51,10 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            @Suppress("UnstableApiUsage")
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
     }
 
-    @Suppress("UnstableApiUsage")
     buildFeatures {
         compose = true
     }
@@ -73,7 +72,7 @@ android {
     }
     composeOptions {
         // https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
-        kotlinCompilerExtensionVersion = "1.4.6"
+        kotlinCompilerExtensionVersion = "1.4.7"
     }
     packaging {
         resources {
@@ -87,11 +86,11 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21")
 
     // Jetpack Compose:
     // https://developer.android.com/jetpack/androidx/releases/compose
-    val composeBom = platform("androidx.compose:compose-bom:2023.05.00")
+    val composeBom = platform("androidx.compose:compose-bom:2023.05.01")
     implementation(composeBom)
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.animation:animation-graphics")
@@ -105,13 +104,13 @@ dependencies {
 
     // Accompanist:
     // https://mvnrepository.com/artifact/com.google.accompanist/accompanist-systemuicontroller
-    val accompanist = "0.31.1-alpha"
+    val accompanist = "0.31.2-alpha"
     implementation("com.google.accompanist:accompanist-permissions:$accompanist")
     implementation("com.google.accompanist:accompanist-systemuicontroller:$accompanist")
 
     // Coil-Kt:
     // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
-    implementation("com.github.skydoves:landscapist-coil:2.1.12")
+    implementation("com.github.skydoves:landscapist-coil:2.1.13")
 
     // Preferences:
     // https://mvnrepository.com/artifact/com.github.alorma/compose-settings-storage-preferences
@@ -121,8 +120,8 @@ dependencies {
 
     // Android Support Libs
     implementation("androidx.activity:activity-compose:1.7.1")
-    implementation("androidx.compose.material3:material3:1.1.0-rc01")
-    implementation("androidx.core:core-ktx:1.10.0")
+    implementation("androidx.compose.material3:material3:1.1.0")
+    implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
     implementation("androidx.paging:paging-compose:1.0.0-alpha19")
@@ -140,9 +139,7 @@ dependencies {
 
     // Google Dagger/Hilt:
     // https://mvnrepository.com/artifact/androidx.hilt/hilt-compiler
-    // https://mvnrepository.com/artifact/androidx.hilt/hilt-navigation-compose
     // https://mvnrepository.com/artifact/com.google.dagger/hilt-android
-    // implementation "androidx.hilt:hilt-navigation-compose:1.0.0"
     implementation("com.google.dagger:hilt-android:2.46")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
     kapt("com.google.dagger:hilt-compiler:2.46")

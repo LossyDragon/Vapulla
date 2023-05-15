@@ -21,8 +21,9 @@ object Constants {
     // Steam URLs
     const val BASE_STEAM_API_URL = "https://api.steampowered.com/"
     const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/api/"
+    const val COMMUNITY_BASE_URL = "https://steamcommunity.com/"
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
-    const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+    const val PROFILE_URL = COMMUNITY_BASE_URL + "profiles/"
     const val STEAM_CDN = "https://cdn.akamai.steamstatic.com"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     const val STORE_PAGE_URL = "https://store.steampowered.com/app/%d/"

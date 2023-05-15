@@ -12,6 +12,7 @@ import android.text.format.DateUtils
 import androidx.annotation.StringRes
 import androidx.core.app.*
 import androidx.core.app.NotificationCompat.MessagingStyle
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
 import `in`.dragonbra.javasteam.enums.EAccountType
@@ -25,9 +26,11 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclie
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2.CMsgClientUIMode
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.*
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.*
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.*
 import `in`.dragonbra.javasteam.rpc.service.Chat
 import `in`.dragonbra.javasteam.rpc.service.FriendMessages
 import `in`.dragonbra.javasteam.rpc.service.Player
+import `in`.dragonbra.javasteam.rpc.service.UserAccount
 import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.javasteam.steam.authentication.OnChallengeUrlChanged
@@ -73,6 +76,7 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.model.InviteTokenItem
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import java.io.Closeable
@@ -80,6 +84,7 @@ import java.lang.IllegalArgumentException
 import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -95,6 +100,8 @@ class SteamService : Service() {
     companion object {
         private const val ONGOING_NOTIFICATION_ID = 100
         private const val MAX_RETRY_COUNT = 5
+
+        const val BROADCAST_INVITES_LIST = "in.dragonbra.vapulla.service.INVITES_LIST"
 
         /**
          * Time to back off when we receive an echo message because it means that the user is
@@ -127,13 +134,15 @@ class SteamService : Service() {
 
     val disconnectedSubs = mutableSetOf<(DisconnectedCallback) -> Unit>()
 
-    lateinit var unifiedMessages: SteamUnifiedMessages
+    private lateinit var unifiedMessages: SteamUnifiedMessages
 
     private var retryCount = 0
 
     private var unifiedChat: Chat? = null
 
     private var unifiedPlayer: Player? = null
+
+    private var userAccount: UserAccount? = null
 
     private var unifiedFriendMessages: FriendMessages? = null
 
@@ -540,6 +549,22 @@ class SteamService : Service() {
         return Pair(pollResponse.accountName, pollResponse.refreshToken)
     }
 
+    fun createFriendInviteToken() {
+        val request = CUserAccount_CreateFriendInviteToken_Request.newBuilder()
+        userAccount?.CreateFriendInviteToken(request.build())
+    }
+
+    fun getFriendInviteTokens() {
+        val request = CUserAccount_GetFriendInviteTokens_Request.newBuilder()
+        userAccount?.GetFriendInviteTokens(request.build())
+    }
+
+    fun revokeFriendInviteToken(token: String) {
+        val request = CUserAccount_RevokeFriendInviteToken_Request.newBuilder()
+        request.inviteToken = token
+        userAccount?.RevokeFriendInviteToken(request.build())
+    }
+
     inline fun <reified T : ICallbackMsg>
     subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
         return when (T::class) {
@@ -613,6 +638,7 @@ class SteamService : Service() {
                 }
                 steamClient.send(uiMode)
 
+                userAccount = UserAccount(getHandler())
                 unifiedChat = Chat(getHandler())
                 unifiedPlayer = Player(getHandler())
                 unifiedFriendMessages = FriendMessages(getHandler())
@@ -783,6 +809,36 @@ class SteamService : Service() {
             return@Consumer
         }
 
+        if (resp.serviceName == UserAccount::class.simpleName) {
+            if (resp.rpcName == "GetFriendInviteTokens") {
+                resp.getDeserializedResponse<CUserAccount_GetFriendInviteTokens_Response.Builder>(
+                    CUserAccount_GetFriendInviteTokens_Response::class.java
+                ).also { cb ->
+                    val inviteTokens = cb.tokensList.map { token ->
+                        InviteTokenItem(
+                            token.inviteToken,
+                            token.inviteLimit,
+                            token.inviteDuration,
+                            token.timeCreated.toLong(),
+                            token.valid
+                        )
+                    }
+
+                    val intent = Intent(BROADCAST_INVITES_LIST)
+                    intent.putExtra("invites_list", ArrayList(inviteTokens))
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+                }
+            }
+            if (resp.rpcName == "RevokeFriendInviteToken") {
+                // There is no data in the response, so we'll just refresh the list.
+                getFriendInviteTokens()
+            }
+            if (resp.rpcName == "CreateFriendInviteToken") {
+                // We do get a Token, so we'll just refresh the list since it will be the latest.
+                getFriendInviteTokens()
+            }
+        }
+
         if (resp.serviceName == FriendMessages::class.simpleName) {
             if (resp.rpcName == "GetRecentMessages") {
                 resp.getDeserializedResponse<CFriendMessages_GetRecentMessages_Response.Builder>(
@@ -877,11 +933,8 @@ class SteamService : Service() {
             is CFriendMessages_AckMessage_Notification -> {
                 // TODO ack messages
                 println(
-                    "SteamID Partner: ${callbackObject.steamidPartner} -> ${
-                    SteamID(
-                        callbackObject.steamidPartner
-                    )
-                    }"
+                    "SteamID Partner: ${callbackObject.steamidPartner} -> " +
+                        "${SteamID(callbackObject.steamidPartner)}"
                 )
                 println("TimeStamp: ${callbackObject.timestamp}")
             }

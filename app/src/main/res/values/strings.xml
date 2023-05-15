@@ -5,6 +5,7 @@
     <!-- Activity Titles -->
     <string name="title_activity_games">%1$s\'s games</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="title_activity_invites">Invites</string>
 
     <!-- Activity Profiles -->
     <string name="textProfileGames">Games</string>
@@ -53,9 +54,13 @@
     <string name="cancel">Cancel</string>
     <string name="change">Change</string>
     <string name="close">Close</string>
+    <string name="confirm">Confirm</string>
+    <string name="copy">Copy</string>
+    <string name="generate">Generate</string>
     <string name="login">Login</string>
     <string name="remove">Remove</string>
     <string name="retry">Retry</string>
+    <string name="share">Share</string>
 
     <!-- Button Actions -->
     <string name="buttonAddNickname">Add Nickname</string>
@@ -105,6 +110,15 @@
     <string name="dialogTitleChangeUser">Change Account</string>
     <string name="dialogTitleClearDatabase">Clear Databases</string>
     <string name="dialogTitleNickname">Change Nickname</string>
-    <string name="dialogTitleRemoveFriend">Remove Friend</string>
     <string name="dialogTitleRecentFriendChats">Show Recent Chats Limit</string>
+    <string name="dialogTitleRemoveFriend">Remove Friend</string>
+
+    <string name="quick_invite_generate_title">Generate a link you can drop into a text message or email.</string>
+    <string name="quick_invite_generate_message">When someone clicks on the link, you\'ll be added to each other\'s friends list</string>
+    <string name="quick_invite_created">Created on %s</string>
+    <string name="quick_invite_expire_info">Links are single use and may expire after 30 days.</string>
+    <string name="quick_invite_no_items">No quick links available, press Generate to create one.</string>
+    <string name="snackbar_create_invite_link">Generating invite link.</string>
+    <string name="invites_tab_pending">Pending Invites</string>
+    <string name="invites_tab_quick">Quick Invites</string>
 </resources>

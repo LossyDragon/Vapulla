@@ -22,7 +22,6 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver
-import `in`.dragonbra.vapulla.broadcastreceiver.LogOutReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
@@ -57,25 +56,31 @@ private fun Context.getMessageReplyIntent(id: Long): Intent {
     return intent
 }
 
-inline fun Context.serviceNotification(
+fun Context.serviceNotification(
     text: String,
     block: (builder: NotificationCompat.Builder) -> Unit
 ) {
-    val logOutIntent = Intent(this, LogOutReceiver::class.java)
-    val pendingIntent = PendingIntent.getActivity(
-        applicationContext,
-        0,
-        logOutIntent,
-        0 or PendingIntent.FLAG_IMMUTABLE
-    )
+    fun logoutIntent(): PendingIntent? {
+        val intent = Intent(this, SteamService::class.java).apply {
+            putExtra(SteamService.EXTRA_ACTION, "stop")
+        }
+        return PendingIntent.getService(
+            /* context = */ this,
+            /* requestCode = */ 0,
+            /* intent = */ intent,
+            /* flags = */ 0 or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
 
-    val homeIntent = Intent(this, HomeActivity::class.java)
-    val contentIntent = PendingIntent.getActivity(
-        this,
-        0,
-        homeIntent,
-        0 or PendingIntent.FLAG_IMMUTABLE
-    )
+    fun homeIntent(): PendingIntent? {
+        val intent = Intent(this, HomeActivity::class.java)
+        return PendingIntent.getActivity(
+            /* context = */ this,
+            /* requestCode = */ 0,
+            /* intent = */ intent,
+            /* flags = */ 0 or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
 
     // Note: DI now
     val builder = NotificationCompat.Builder(this, "vapulla-service")
@@ -83,14 +88,14 @@ inline fun Context.serviceNotification(
         .setShowWhen(false)
         .setContentTitle("Vapulla")
         .setContentText(text)
-        .setContentIntent(contentIntent)
+        .setContentIntent(homeIntent())
         .setSmallIcon(R.drawable.ic_vapulla)
         .setVibrate(longArrayOf(-1L))
         .setSound(null)
         .addAction(
             R.drawable.ic_exit_to_app,
             getString(R.string.notificationActionLogOut),
-            pendingIntent
+            logoutIntent()
         )
 
     builder.priority = NotificationManager.IMPORTANCE_LOW
