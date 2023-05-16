@@ -10,7 +10,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
@@ -22,8 +21,7 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.getErrorMessage
-import `in`.dragonbra.vapulla.core.Constants
-import `in`.dragonbra.vapulla.service.Notifications
+import `in`.dragonbra.vapulla.service.Notifications.createChannels
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
@@ -55,9 +53,6 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        Timber.d("onCreate")
 
         viewModel.prefillInputs()
 
@@ -158,7 +153,6 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
 
     override fun onDisconnected() {
         super.onDisconnected()
-        Timber.d("onDisconnected")
         with(viewModel.loginState.value) {
             if (!expectSteamGuardCode && !expectSteamGuardApp) {
                 if (refreshToken.isNotEmpty()) {
@@ -202,11 +196,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
         super.onServiceConnected(name, service)
 
         // Create our notification channels when the service is bound.
-        if (Constants.isAtLeastO) {
-            Notifications.createMessagesNotificationChannel(notificationManager)
-            Notifications.createRequestNotificationChannel(notificationManager)
-            Notifications.createServiceNotificationChannel(notificationManager)
-        }
+        notificationManager.createChannels()
 
         viewModel.onServiceBoundVerifyLoginDetails {
             // TODO can just login automatically if we have valid info.

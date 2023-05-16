@@ -3,19 +3,20 @@ package `in`.dragonbra.vapulla.service
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.text.format.DateUtils
+import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import androidx.core.app.TaskStackBuilder
 import androidx.core.graphics.drawable.IconCompat
-import coil.Coil
+import coil.imageLoader
+import coil.request.ErrorResult
 import coil.request.ImageRequest
-import coil.transform.CircleCropTransformation
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
@@ -47,6 +48,15 @@ private val flagUpdateCurrent =
  * Time to back off when we receive a new message to prevent spam
  */
 private const val NEW_MESSAGE_BACKOFF = DateUtils.MINUTE_IN_MILLIS
+
+private const val ONGOING_NOTIFICATION_ID = 100
+
+fun Service.setNotification(@StringRes string: Int) {
+    val text = getString(string)
+    serviceNotification(text) { builder ->
+        startForeground(ONGOING_NOTIFICATION_ID, builder.build())
+    }
+}
 
 private fun Context.getMessageReplyIntent(id: Long): Intent {
     val intent = Intent(this, ReplyReceiver::class.java).apply {
@@ -114,25 +124,25 @@ suspend fun Context.serviceMessageNotification(
     val backoff = messages.isNotEmpty() &&
         currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
 
-    var bitmap: Bitmap? = null
-    val imageLoader = Coil.imageLoader(this)
+    var icon: IconCompat? = null
     val request = ImageRequest.Builder(this)
         .data(getAvatarUrl(friend.avatar))
         .target { drawable ->
-            bitmap = (drawable as BitmapDrawable).bitmap
+            icon = (IconCompat.createWithBitmap((drawable as BitmapDrawable).bitmap))
         }
-        .fallback(R.drawable.vapulla)
-        .error(R.drawable.vapulla)
-        .transformations(CircleCropTransformation())
+        .listener(object : ImageRequest.Listener {
+            override fun onError(request: ImageRequest, result: ErrorResult) {
+                icon = null
+            }
+        })
         .build()
-    imageLoader.execute(request)
 
-    val iconBitmap = IconCompat.createWithBitmap(bitmap!!)
-    val steamUser = Person
-        .Builder()
-        .setName(friend.name ?: "")
-        .setIcon(iconBitmap)
-        .build()
+    imageLoader.enqueue(request)
+
+    val steamUser = Person.Builder().apply {
+        setName(friend.name)
+        setIcon(icon)
+    }.build()
 
     val newMessage = NotificationCompat.MessagingStyle.Message(message, currentTs, steamUser)
     messages.add(newMessage)
@@ -172,7 +182,7 @@ suspend fun Context.serviceMessageNotification(
         .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
         .setStyle(style)
         .setSmallIcon(R.drawable.ic_message)
-        .setLargeIcon(bitmap)
+        .setLargeIcon(icon?.toIcon(this))
         .setAutoCancel(true)
         .setContentIntent(pendingIntent)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -188,18 +198,20 @@ suspend fun Context.serviceRequestNotification(
 ) {
     val steamId = state.friendID.convertToUInt64().toInt()
 
-    var bitmap: Bitmap? = null
-    val imageLoader = Coil.imageLoader(this)
+    var icon: IconCompat? = null
     val request = ImageRequest.Builder(this)
         .data(getAvatarUrl(Hex.toHexString(state.avatarHash)))
         .target { drawable ->
-            bitmap = (drawable as BitmapDrawable).bitmap
+            icon = (IconCompat.createWithBitmap((drawable as BitmapDrawable).bitmap))
         }
-        .fallback(R.drawable.vapulla)
-        .error(R.drawable.vapulla)
-        .transformations(CircleCropTransformation())
+        .listener(object : ImageRequest.Listener {
+            override fun onError(request: ImageRequest, result: ErrorResult) {
+                icon = null
+            }
+        })
         .build()
-    imageLoader.execute(request)
+
+    imageLoader.enqueue(request)
 
     val acceptReceiver = Intent(this, AcceptRequestReceiver::class.java).apply {
         putExtra(AcceptRequestReceiver.EXTRA_ID, state.friendID.convertToUInt64())
@@ -234,7 +246,7 @@ suspend fun Context.serviceRequestNotification(
     val notification = NotificationCompat.Builder(this, "vapulla-friend-request")
         .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
         .setSmallIcon(R.drawable.ic_add_friend)
-        .setLargeIcon(bitmap)
+        .setLargeIcon(icon?.toIcon(this))
         .setContentText(getString(R.string.notificationMessageFriendRequest, state.name))
         .setContentTitle(getString(R.string.notificationTitleFriendRequest))
         .setAutoCancel(true)

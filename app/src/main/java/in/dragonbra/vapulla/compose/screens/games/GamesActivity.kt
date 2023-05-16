@@ -4,13 +4,11 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.core.view.WindowCompat
 import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.retrofit.response.Games
-import timber.log.Timber
 
 class GamesActivity : VapullaBaseActivity() {
 
@@ -22,9 +20,6 @@ class GamesActivity : VapullaBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        Timber.d("onCreate")
 
         val items = if (Constants.isAtLeastT) {
             intent.extras?.getParcelableArrayList(INTENT_GAMES, Games::class.java) ?: arrayListOf()

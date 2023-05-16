@@ -164,8 +164,8 @@ private fun GamesScreenContent(
                         imageLoader = imageLoader,
                         appID = it.appid,
                         title = it.name,
-                        recentPlayTime = it.playtime_2weeks,
-                        totalPlayTime = it.playtime_forever,
+                        recentPlayTime = it.playtimeTwoWeeks,
+                        totalPlayTime = it.playtimeForever,
                         onItemClick = { onItemClick(it.appid) }
                     )
                 }

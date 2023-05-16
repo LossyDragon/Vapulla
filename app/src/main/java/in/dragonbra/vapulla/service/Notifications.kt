@@ -5,11 +5,20 @@ import android.app.NotificationManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationManagerCompat
+import `in`.dragonbra.vapulla.core.Constants
 
 object Notifications {
 
+    fun NotificationManagerCompat.createChannels() {
+        if (Constants.isAtLeastO) {
+            createMessagesNotificationChannel(this)
+            createRequestNotificationChannel(this)
+            createServiceNotificationChannel(this)
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
-    fun createServiceNotificationChannel(notificationManager: NotificationManagerCompat) {
+    private fun createServiceNotificationChannel(notificationManager: NotificationManagerCompat) {
         val notificationChannel = NotificationChannel(
             "vapulla-service",
             "Vapulla Service",
@@ -19,7 +28,7 @@ object Notifications {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun createRequestNotificationChannel(notificationManager: NotificationManagerCompat) {
+    private fun createRequestNotificationChannel(notificationManager: NotificationManagerCompat) {
         val notificationChannel = NotificationChannel(
             "vapulla-friend-request",
             "Vapulla Friend Requests",
@@ -29,7 +38,7 @@ object Notifications {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun createMessagesNotificationChannel(notificationManager: NotificationManagerCompat) {
+    private fun createMessagesNotificationChannel(notificationManager: NotificationManagerCompat) {
         val notificationChannel = NotificationChannel(
             "vapulla-messages",
             "Vapulla Chat Messages",

@@ -55,8 +55,8 @@ class GamesViewModel : ViewModel() {
                 when (state.value.sortMethod) {
                     SortOptions.Alphabetical -> compareBy { it.name.lowercase() }
                     SortOptions.Playtime -> compareByDescending<Games> {
-                        it.playtime_2weeks ?: 0
-                    }.thenByDescending { it.playtime_forever }.thenBy { it.name }
+                        it.playtimeTwoWeeks ?: 0
+                    }.thenByDescending { it.playtimeForever }.thenBy { it.name }
                 }
             )
         } else {
@@ -64,8 +64,8 @@ class GamesViewModel : ViewModel() {
                 when (state.value.sortMethod) {
                     SortOptions.Alphabetical -> compareBy { it.name.lowercase() }
                     SortOptions.Playtime -> compareByDescending<Games> {
-                        it.playtime_2weeks ?: 0
-                    }.thenByDescending { it.playtime_forever }.thenBy { it.name }
+                        it.playtimeTwoWeeks ?: 0
+                    }.thenByDescending { it.playtimeForever }.thenBy { it.name }
                 }
             )
         }

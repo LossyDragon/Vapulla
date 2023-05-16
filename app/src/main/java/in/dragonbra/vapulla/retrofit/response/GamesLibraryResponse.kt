@@ -21,7 +21,10 @@ class GamesResponse {
 data class Games(
     val appid: Int,
     val name: String,
-    val playtime_2weeks: Int?,
-    val playtime_forever: Int,
-    val img_icon_url: String?
+    @SerializedName("playtime_2weeks")
+    val playtimeTwoWeeks: Int?,
+    @SerializedName("playtime_forever")
+    val playtimeForever: Int,
+    @SerializedName("img_icon_url")
+    val imgIconUrl: String?
 ) : Parcelable

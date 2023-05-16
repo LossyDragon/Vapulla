@@ -4,12 +4,10 @@ import android.Manifest
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.text.format.DateUtils
-import androidx.annotation.StringRes
 import androidx.core.app.*
 import androidx.core.app.NotificationCompat.MessagingStyle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -98,7 +96,6 @@ import timber.log.Timber
 class SteamService : Service() {
 
     companion object {
-        private const val ONGOING_NOTIFICATION_ID = 100
         private const val MAX_RETRY_COUNT = 5
 
         const val BROADCAST_INVITES_LIST = "in.dragonbra.vapulla.service.INVITES_LIST"
@@ -122,7 +119,7 @@ class SteamService : Service() {
 
     private lateinit var stateBuffer: PersonaStateBuffer
 
-    private val binder: SteamBinder = SteamBinder()
+    private val binder: SteamServiceBinder = SteamServiceBinder(this)
 
     private val handlerThread = HandlerThread("SteamService Handler")
 
@@ -222,10 +219,7 @@ class SteamService : Service() {
         )
     }
 
-    override fun onBind(intent: Intent): IBinder {
-        Timber.i("onBind")
-        return binder
-    }
+    override fun onBind(intent: Intent): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -252,8 +246,7 @@ class SteamService : Service() {
                 }
 
                 "stop" -> {
-                    val stopIntent = Intent(VapullaBaseActivity.STOP_INTENT)
-                    sendBroadcast(stopIntent)
+                    Intent(VapullaBaseActivity.STOP_INTENT).also(::sendBroadcast)
                     stopSelf()
                 }
 
@@ -294,24 +287,14 @@ class SteamService : Service() {
 
     private fun checkNotificationPermission(onGranted: () -> Unit) {
         if (Constants.isAtLeastT) {
-            val isGranted = ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-
-            if (isGranted) onGranted()
-
-            return
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            val checkPermission = ActivityCompat.checkSelfPermission(this, permission)
+            if (checkPermission == PackageManager.PERMISSION_GRANTED) {
+                onGranted()
+            }
         }
 
         onGranted()
-    }
-
-    private fun setNotification(@StringRes string: Int) {
-        val text = getString(string)
-        serviceNotification(text) { builder ->
-            startForeground(ONGOING_NOTIFICATION_ID, builder.build())
-        }
     }
 
     fun connect() {
@@ -590,10 +573,6 @@ class SteamService : Service() {
         Timber.i("Steam thread stopped")
     }
 
-    inner class SteamBinder : Binder() {
-        fun getService(): SteamService = this@SteamService
-    }
-
     inline fun <reified T : ClientMsgHandler> getHandler(): T {
         return steamClient.getHandler(T::class.java)
     }
@@ -824,9 +803,11 @@ class SteamService : Service() {
                         )
                     }
 
-                    val intent = Intent(BROADCAST_INVITES_LIST)
-                    intent.putExtra("invites_list", ArrayList(inviteTokens))
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+                    Intent(BROADCAST_INVITES_LIST).apply {
+                        putExtra("invites_list", ArrayList(inviteTokens))
+                    }.also {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(it)
+                    }
                 }
             }
             if (resp.rpcName == "RevokeFriendInviteToken") {

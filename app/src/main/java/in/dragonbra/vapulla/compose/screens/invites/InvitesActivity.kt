@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.core.view.WindowCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
@@ -18,7 +17,6 @@ import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.model.InviteTokenItem
 import `in`.dragonbra.vapulla.service.SteamService
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 class InvitesActivity : VapullaBaseActivity() {
 
@@ -28,9 +26,6 @@ class InvitesActivity : VapullaBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        Timber.d("onCreate")
 
         receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
