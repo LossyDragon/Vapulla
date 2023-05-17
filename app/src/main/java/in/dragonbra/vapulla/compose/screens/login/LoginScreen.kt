@@ -311,6 +311,16 @@ private fun LoginAnimatedLogo(
     loginState: LoginState
 ) {
     var atEnd by remember { mutableStateOf(false) }
+    val pumperMiddle = Animation.animatedVectorResource(R.drawable.animated_vapulla_middle)
+    val pumperBottom = Animation.animatedVectorResource(R.drawable.animated_vapulla_bottom)
+
+    val image: @Composable (painter: Painter) -> Unit = {
+        Image(
+            modifier = modifier.size(150.dp),
+            painter = it,
+            contentDescription = null
+        )
+    }
 
     LaunchedEffect(loginState.isLoading) {
         // NOTE: animation isn't quite right. Not "Pumping" like the original
@@ -321,22 +331,7 @@ private fun LoginAnimatedLogo(
         }
     }
 
-    Box(
-        modifier = modifier
-            .size(150.dp)
-            .padding(vertical = 12.dp)
-    ) {
-        val pumperMiddle = Animation.animatedVectorResource(R.drawable.animated_vapulla_middle)
-        val pumperBottom = Animation.animatedVectorResource(R.drawable.animated_vapulla_bottom)
-
-        val image: @Composable (painter: Painter) -> Unit = {
-            Image(
-                modifier = modifier.size(150.dp),
-                painter = it,
-                contentDescription = null
-            )
-        }
-
+    Box(modifier = modifier.size(150.dp)) {
         image(rememberAnimatedVectorPainter(pumperBottom, atEnd))
         image(rememberAnimatedVectorPainter(pumperMiddle, !atEnd))
         image(painterResource(id = R.drawable.vapulla_top))
@@ -456,7 +451,7 @@ private fun LoginButtons(
         content = { Text(text = stringResource(id = R.string.login)) }
     )
 
-    OutlinedButton(
+    TextButton(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 12.dp),

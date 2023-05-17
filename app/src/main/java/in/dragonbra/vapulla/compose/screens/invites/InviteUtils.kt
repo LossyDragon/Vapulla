@@ -2,8 +2,14 @@ package `in`.dragonbra.vapulla.compose.screens.invites
 
 import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.core.Constants.COMMUNITY_BASE_URL
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
@@ -62,10 +68,18 @@ object InviteUtils {
     }
 
     fun getCreatedTime(time: Long): String {
-        val calendar = Calendar.getInstance(TimeZone.getDefault())
-        calendar.timeInMillis = time.times(1000)
+        return if (Constants.isAtLeastO) {
+            val timeMillis = Instant.ofEpochMilli(time.times(1000))
+            val zoneTime = ZonedDateTime.ofInstant(timeMillis, ZoneId.systemDefault())
+            DateTimeFormatter
+                .ofLocalizedDate(FormatStyle.MEDIUM)
+                .format(zoneTime)
+        } else {
+            val calendar = Calendar.getInstance(TimeZone.getDefault())
+            calendar.timeInMillis = time.times(1000)
 
-        val formatter = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
-        return formatter.format(calendar.time)
+            val formatter = SimpleDateFormat("MM/dd/yyyy", Locale.getDefault())
+            return formatter.format(calendar.time)
+        }
     }
 }
