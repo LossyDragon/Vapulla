@@ -12,10 +12,10 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -246,7 +246,7 @@ private fun Preview_DialogSelectionContent() {
 
     VapullaTheme {
         VapullaSelectionDialog(
-            icon = Icons.Default.Badge,
+            icon = Icons.Default.Message,
             title = stringResource(id = R.string.dialogTitleRecentFriendChats),
             currentSelection = 86400000L,
             items = recentsMap,
@@ -283,9 +283,9 @@ private fun Preview_DialogEditContent() {
     VapullaTheme {
         VapullaEditDialog(
             icon = Icons.Default.Edit,
-            title = stringResource(id = R.string.dialogTitleNickname, "Blackhole Comet"),
+            title = stringResource(id = R.string.dialogTitleNickname),
             editTextLabel = stringResource(id = R.string.textLabelNickname),
-            currentName = "Google Assistant",
+            currentName = "Gamer Nickname",
             openDialog = true,
             onConfirm = {},
             onDismiss = {}
@@ -297,10 +297,10 @@ private fun Preview_DialogEditContent() {
 @Composable
 private fun Preview_DialogMessageContent() {
     VapullaTheme {
-        val name = "Blackhole Comet"
+        val name = "Gamer Name"
         VapullaMessageDialog(
             icon = Icons.Default.Block,
-            title = stringResource(id = R.string.dialogTitleBlockFriend, name),
+            title = stringResource(id = R.string.dialogTitleBlockFriend),
             message = stringResource(id = R.string.dialogMessageBlockFriend, name).repeat(2),
             openDialog = true,
             onPositive = {},

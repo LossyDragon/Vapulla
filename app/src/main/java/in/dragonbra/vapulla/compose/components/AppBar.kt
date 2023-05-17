@@ -101,7 +101,6 @@ fun VapullaAppbar(
 
     Box {
         TopAppBar(
-            // modifier = Modifier.shadow(elevation = 3.dp),
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = topBarContainerColor,
                 navigationIconContentColor = MaterialTheme.colorScheme.onSurface,

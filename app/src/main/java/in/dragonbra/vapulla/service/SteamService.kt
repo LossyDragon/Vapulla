@@ -548,8 +548,9 @@ class SteamService : Service() {
         userAccount?.RevokeFriendInviteToken(request.build())
     }
 
-    inline fun <reified T : ICallbackMsg>
-    subscribe(noinline callbackFunc: (T) -> Unit): Closeable? {
+    inline fun <reified T : ICallbackMsg> subscribe(
+        noinline callbackFunc: (T) -> Unit
+    ): Closeable? {
         return when (T::class) {
             DisconnectedCallback::class -> {
                 @Suppress("UNCHECKED_CAST")
@@ -657,7 +658,7 @@ class SteamService : Service() {
     }
 
     private val onPersonaState = Consumer<PersonaStatesCallback> {
-        Timber.d("onPersonaState")
+        Timber.d("onPersonaState: ${it.personaStates.size}")
         it.personaStates.forEach { state ->
             if (!state.friendID.isIndividualAccount) {
                 return@forEach
@@ -877,7 +878,7 @@ class SteamService : Service() {
     }
 
     private val onMethodNotification = Consumer<ServiceMethodNotification> {
-        Timber.d("onMethodNotification")
+        Timber.d("onMethodNotification: ${it.rpcName}")
 
         when (val callbackObject = it.body) {
             is CFriendMessages_IncomingMessage_Notification -> {
@@ -912,12 +913,7 @@ class SteamService : Service() {
                 }
             }
             is CFriendMessages_AckMessage_Notification -> {
-                // TODO ack messages
-                println(
-                    "SteamID Partner: ${callbackObject.steamidPartner} -> " +
-                        "${SteamID(callbackObject.steamidPartner)}"
-                )
-                println("TimeStamp: ${callbackObject.timestamp}")
+                db.chatMessageDao().markRead(callbackObject.steamidPartner)
             }
             else -> Timber.w("Could not process ${it.rpcName}")
         }
