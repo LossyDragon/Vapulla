@@ -468,13 +468,6 @@ class SteamService : Service() {
         accountName: String,
         accountPassword: String
     ): Pair<String, String>? {
-        if (!accountManager.username.isNullOrEmpty() &&
-            !accountManager.loginKey.isNullOrEmpty() &&
-            accountManager.lastLoginSuccessful
-        ) {
-            return Pair(accountManager.username!!, accountManager.loginKey!!)
-        }
-
         val authSessionDetails = AuthSessionDetails().apply {
             username = accountName.trim()
             password = accountPassword

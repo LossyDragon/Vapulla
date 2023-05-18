@@ -62,7 +62,10 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onServiceBoundVerifyLoginDetails(hasInfo: () -> Unit) {
-        if (!accountManager.loginKey.isNullOrEmpty() && !accountManager.username.isNullOrEmpty()) {
+        if (!accountManager.loginKey.isNullOrEmpty() &&
+            !accountManager.username.isNullOrEmpty() &&
+            accountManager.lastLoginSuccessful
+        ) {
             onLoadingVisible(true)
             hasInfo()
         }

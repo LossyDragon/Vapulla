@@ -100,52 +100,68 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
             return
         }
 
-        viewModel.onLoadingVisible(true)
+        with(viewModel) {
+            onLoadingVisible(true)
 
-        scope.launch(job) {
-            supervisorScope {
-                try {
-                    // TODO should 'really' let the service handle this
-                    val deferredLogin = async {
-                        if (viewModel.loginState.value.isSigningInViaQR) {
-                            steamService?.signInViaQR(
-                                coroutineScope = this,
-                                onDrawQRCode = viewModel::drawQRCode
-                            )
-                        } else {
-                            steamService?.signInViaCredentials(
-                                coroutineScope = this,
-                                iAuthenticator = this@LoginActivity,
-                                accountName = viewModel.loginState.value.username.trim(),
-                                accountPassword = viewModel.loginState.value.password
-                            )
+            if (!accountManager.username.isNullOrEmpty() &&
+                !accountManager.loginKey.isNullOrEmpty() &&
+                accountManager.lastLoginSuccessful
+            ) {
+                val logonDetails = LogOnDetails().apply {
+                    username = accountManager.username
+                    accessToken = accountManager.loginKey
+                    loginID = 149
+                }
+
+                steamService?.logOn(logonDetails)
+
+                return
+            }
+
+            scope.launch(job) {
+                supervisorScope {
+                    try {
+                        val deferredLogin = async {
+                            if (loginState.value.isSigningInViaQR) {
+                                steamService?.signInViaQR(
+                                    coroutineScope = this,
+                                    onDrawQRCode = viewModel::drawQRCode
+                                )
+                            } else {
+                                steamService?.signInViaCredentials(
+                                    coroutineScope = this,
+                                    iAuthenticator = this@LoginActivity,
+                                    accountName = loginState.value.username.trim(),
+                                    accountPassword = loginState.value.password
+                                )
+                            }
                         }
+
+                        // We wait patiently until completion or cancel.
+                        val response = deferredLogin.await()
+
+                        if (response == null) {
+                            showFailedScreen("Login response received no data")
+                            return@supervisorScope
+                        }
+
+                        accountManager.username = response.first
+                        accountManager.loginKey = response.second
+
+                        val logonDetails = LogOnDetails().apply {
+                            username = accountManager.username
+                            accessToken = accountManager.loginKey
+                            loginID = 149
+                        }
+
+                        steamService?.logOn(logonDetails)
+                    } catch (e: Exception) {
+                        Timber.e("Something happened, failed to login")
+                        showFailedScreen(e.message ?: "Failed to login")
+                        steamService?.disconnect()
+                        job.cancelChildren()
+                        e.printStackTrace()
                     }
-
-                    // We wait patiently until completion or cancel.
-                    val response = deferredLogin.await()
-
-                    if (response == null) {
-                        viewModel.showFailedScreen("Login response received no data")
-                        return@supervisorScope
-                    }
-
-                    viewModel.accountManager.username = response.first
-                    viewModel.accountManager.loginKey = response.second
-
-                    val logonDetails = LogOnDetails().apply {
-                        username = viewModel.accountManager.username
-                        accessToken = viewModel.accountManager.loginKey
-                        loginID = 149
-                    }
-
-                    steamService?.logOn(logonDetails)
-                } catch (e: Exception) {
-                    Timber.e("Something happened, failed to login")
-                    viewModel.showFailedScreen(e.message ?: "Failed to login")
-                    steamService?.disconnect()
-                    job.cancelChildren()
-                    e.printStackTrace()
                 }
             }
         }
@@ -199,7 +215,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
         notificationManager.createChannels()
 
         viewModel.onServiceBoundVerifyLoginDetails {
-            // TODO can just login automatically if we have valid info.
+            // Login automatically if we have username, refreshToken, and we last connected ok.
             startSteamService()
         }
 
