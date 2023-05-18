@@ -1,32 +1,24 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.waterfallPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,75 +27,49 @@ import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import `in`.dragonbra.vapulla.compose.components.PaperPlane
-import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleFriendShape
-import `in`.dragonbra.vapulla.compose.ui.theme.ChatBubbleMeShape
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatMessageItem(
     modifier: Modifier = Modifier,
     imageLoader: ImageLoader,
     chatMessage: ChatMessage
 ) {
-    val message = remember { chatMessage }
-
-    var bubbleColor = MaterialTheme.colorScheme.primary
-    var bubbleShape = remember { ChatBubbleFriendShape }
-    var bubbleSide = remember { Alignment.CenterEnd }
-    var bubbleTimeSide = remember { Alignment.End }
-
-    if (!message.fromLocal) {
-        bubbleColor = MaterialTheme.colorScheme.surfaceVariant
-        bubbleShape = ChatBubbleMeShape
-        bubbleSide = Alignment.CenterStart
-        bubbleTimeSide = Alignment.Start
-    }
-
-    val clipboard = LocalClipboardManager.current
-    val configuration = LocalConfiguration.current
-    val haptics = LocalHapticFeedback.current
-    val maxWidth = configuration.screenWidthDp
-    Box(
+    Column(
         modifier = modifier
-            .waterfallPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth()
-            .padding(8.dp)
-            .combinedClickable(
-                onClick = {},
-                onLongClick = {
-                    clipboard.setText(AnnotatedString(message.message))
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
-            ),
-        contentAlignment = bubbleSide
+            .wrapContentHeight(align = CenterVertically),
+        horizontalAlignment = if (chatMessage.fromLocal) Alignment.End else Alignment.Start
     ) {
-        Surface(
+        Card(
             modifier = Modifier
-                .widthIn(max = maxWidth.times(.85).dp)
-                .width(IntrinsicSize.Max),
-            color = bubbleColor,
-            shape = bubbleShape
+                .widthIn(max = 256.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (chatMessage.fromLocal) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.secondaryContainer
+                }
+            )
         ) {
-            Column(
-                modifier = Modifier.padding(6.dp),
-                horizontalAlignment = bubbleTimeSide
-            ) {
-                PaperPlane(
-                    modifier = Modifier.widthIn(64.dp),
-                    imageLoader = imageLoader,
-                    text = message.message
-                )
+            PaperPlane(
+                modifier = Modifier.padding(8.dp),
+                imageLoader = imageLoader,
+                text = chatMessage.message
+            )
 
-                Text(
-                    text = message.formattedChatTime(),
-                    fontSize = 8.sp,
-                    color = friendOffline
-                )
-            }
+            Text(
+                modifier = Modifier
+                    .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                    .align(if (chatMessage.fromLocal) Alignment.End else Alignment.Start),
+                text = chatMessage.formattedChatTime(),
+                fontSize = 10.sp,
+                color = friendOffline
+            )
         }
     }
 }
@@ -124,7 +90,7 @@ fun ChatMessageDateHeader(
                 modifier = Modifier
                     .weight(.4f)
                     .padding(horizontal = 8.dp)
-                    .align(Alignment.CenterVertically),
+                    .align(CenterVertically),
                 color = friendOffline.copy(alpha = 0.60f)
             )
         }

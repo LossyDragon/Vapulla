@@ -6,17 +6,3 @@ import androidx.compose.ui.unit.dp
 /* Jetpack Compose Shapes */
 val iconSmallCornerShape = RoundedCornerShape(8.dp)
 val iconCornerShape = RoundedCornerShape(16.dp)
-
-val ChatBubbleFriendShape = RoundedCornerShape(
-    topStart = 10.dp,
-    topEnd = 10.dp,
-    bottomEnd = 2.dp,
-    bottomStart = 10.dp
-)
-
-val ChatBubbleMeShape = RoundedCornerShape(
-    topStart = 10.dp,
-    topEnd = 10.dp,
-    bottomEnd = 10.dp,
-    bottomStart = 2.dp
-)
