@@ -25,7 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import timber.log.Timber
 
-// TODO: better way to use timber? tag?
 abstract class VapullaBaseActivity : ComponentActivity() {
 
     companion object {
@@ -68,7 +67,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        Timber.d("[${this::class.java.simpleName}] onCreate")
+        Timber.tag(this::class.java.simpleName).d("onCreate")
 
         val filter = IntentFilter(STOP_INTENT)
 
@@ -82,7 +81,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        Timber.d("[${this::class.java.simpleName}] onPause")
+        Timber.tag(this::class.java.simpleName).d("onPause")
 
         if (isBound) {
             steamService?.isActivityRunning = false
@@ -91,7 +90,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        Timber.d("[${this::class.java.simpleName}] onResume")
+        Timber.tag(this::class.java.simpleName).d("onResume")
 
         Intent(this, SteamService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
@@ -104,7 +103,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Timber.d("[${this::class.java.simpleName}] onDestroy")
+        Timber.tag(this::class.java.simpleName).d("onDestroy")
 
         unregisterReceiver(stopReceiver)
 
@@ -117,38 +116,38 @@ abstract class VapullaBaseActivity : ComponentActivity() {
     }
 
     open fun onConnected() {
-        Timber.d("[${this::class.java.simpleName}] onConnected")
+        Timber.tag(this::class.java.simpleName).d("onConnected")
     }
 
     open fun onDisconnected() {
-        Timber.d("[${this::class.java.simpleName}] onDisconnected")
+        Timber.tag(this::class.java.simpleName).d("onDisconnected")
     }
 
     open fun onLoginSuccess() {
-        Timber.d("[${this::class.java.simpleName}] onLoginSuccess")
+        Timber.tag(this::class.java.simpleName).d("onLoginSuccess")
     }
 
     open fun onLoggedOn(callback: LoggedOnCallback) {
-        Timber.d("[${this::class.java.simpleName}] onLoggedOn")
+        Timber.tag(this::class.java.simpleName).d("onLoggedOn")
     }
 
     open fun onAliasHistory(callback: AliasHistoryCallback) {
-        Timber.d("[${this::class.java.simpleName}] onAliasHistory")
+        Timber.tag(this::class.java.simpleName).d("onAliasHistory")
     }
 
     open fun onServiceConnected(name: ComponentName, service: IBinder) {
-        Timber.d("[${this::class.java.simpleName}] Bound to Steam service")
+        Timber.tag(this::class.java.simpleName).d("Bound to Steam service")
         if (isBound) {
             steamService?.isActivityRunning = true
         }
     }
 
     open fun onServiceDisconnected(name: ComponentName) {
-        Timber.d("[${this::class.java.simpleName}] Unbound from Steam service")
+        Timber.tag(this::class.java.simpleName).d("Unbound from Steam service")
     }
 
     fun startSteamService() {
-        Timber.d("[${this::class.java.simpleName}] Starting steam service...")
+        Timber.tag(this::class.java.simpleName).d("Starting steam service...")
 
         Intent(this, SteamService::class.java).also(::startService)
 

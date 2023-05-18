@@ -4,8 +4,6 @@ import android.Manifest
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.HandlerThread
 import android.os.IBinder
 import android.text.format.DateUtils
 import androidx.core.app.*
@@ -83,10 +81,12 @@ import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.collections.ArrayList
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -115,13 +115,9 @@ class SteamService : Service() {
 
     lateinit var steamClient: SteamClient
 
-    private lateinit var handler: Handler
-
     private lateinit var stateBuffer: PersonaStateBuffer
 
     private val binder: SteamServiceBinder = SteamServiceBinder(this)
-
-    private val handlerThread = HandlerThread("SteamService Handler")
 
     private val newMessages = mutableMapOf<SteamID, MutableList<MessagingStyle.Message>>()
 
@@ -179,9 +175,6 @@ class SteamService : Service() {
         super.onCreate()
 
         Timber.i("onCreate")
-
-        handlerThread.start()
-        handler = Handler(handlerThread.looper)
 
         stateBuffer = PersonaStateBuffer(db.steamFriendDao())
 
@@ -280,7 +273,6 @@ class SteamService : Service() {
         super.onDestroy()
         Timber.i("onDestroy")
         disconnect()
-        handlerThread.quit()
         val stopIntent = Intent(VapullaBaseActivity.STOP_INTENT)
         sendBroadcast(stopIntent)
     }
@@ -590,7 +582,10 @@ class SteamService : Service() {
             disconnectedSubs.forEach { it.invoke(cb) }
         } else {
             Timber.i("failed to connect to steam ${++retryCount} times, trying again...")
-            handler.postDelayed({ steamClient.connect() }, 1000L)
+            scope.launch {
+                delay(1.seconds)
+                steamClient.connect()
+            }
             setNotification(R.string.notificationLostConnection)
         }
     }
