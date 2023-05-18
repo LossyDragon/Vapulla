@@ -95,9 +95,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     ChatScreenContent(
         state = state,
         onBackPressed = { activity.finish() },
-        onTextChanged = {
-            // TODO explore flow debounce
-        },
+        onTextChanged = viewModel::isTyping,
         onProfileClicked = onProfileClicked,
         onChatMessage = viewModel::sendMessage
     )
@@ -267,7 +265,8 @@ private fun ChatScreenContent(
                             )
 
                             // Get Game or Status
-                            // TODO should make a timer to do the "is typing" work, timeout ~20 unless we're notified again
+                            // TODO should make a timer to do the "is typing" work,
+                            //  timeout ~10sec unless we're notified again
                             val lastMsg = state.friend?.lastMessage == null
                             val typingTs =
                                 (state.friend?.typingTs ?: 0) > (state.friend?.lastMessageTime ?: 0)

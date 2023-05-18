@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
-import android.text.format.DateUtils
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
@@ -17,15 +16,24 @@ import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.model.FriendListItem
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatMessageDao: ChatMessageDao,
@@ -34,18 +42,14 @@ class ChatViewModel @Inject constructor(
     private val schemaManager: GameSchemaManager
 ) : ViewModel() {
 
-    companion object {
-        const val TYPING_INTERVAL = DateUtils.SECOND_IN_MILLIS * 20
-    }
+    private var typingFlow = MutableSharedFlow<Unit>()
+    private var typingJob: Job? = null
 
     private val _state = MutableStateFlow(ChatState())
     val state = _state.asStateFlow()
 
     private val _uiState = MutableSharedFlow<ChatUiEvent>()
     val uiState = _uiState.asSharedFlow()
-
-//    private val _message = MutableStateFlow(TextFieldValue(""))
-//    val message: MutableStateFlow<TextFieldValue> = _message
 
     private lateinit var chatData: LiveData<List<ChatMessage>>
     private val chatObserver = Observer<List<ChatMessage>> { list ->
@@ -65,6 +69,17 @@ class ChatViewModel @Inject constructor(
             _state.update { it.copy(friend = friend) }
         } else {
             emit(ChatUiEvent.NavigateUp)
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            typingFlow
+                .debounce(10.seconds)
+                .collectLatest {
+                    Timber.d("Cancelling: Emitting isTyping")
+                    typingJob?.cancel()
+                }
         }
     }
 
@@ -109,24 +124,17 @@ class ChatViewModel @Inject constructor(
         _state.update { it.copy(currentChatSteamID = steamID) }
     }
 
-    // TODO isTyping
     fun isTyping() {
-        if (_state.value.lastTypingMessage < System.currentTimeMillis() - TYPING_INTERVAL) {
-            _state.update { it.copy(lastTypingMessage = System.currentTimeMillis()) }
-
-            val steamID = _state.value.currentChatSteamID
-                ?: throw IllegalArgumentException(
-                    "SteamID was null trying to send a message status"
-                )
-
-            emit(ChatUiEvent.SendTypingStatus(steamID))
+        viewModelScope.launch {
+            if (typingJob?.isActive != true) {
+                typingJob = typingJob()
+            }
+            typingFlow.emit(Unit)
         }
     }
 
     fun sendMessage(message: String) {
         if (message.isEmpty()) return
-
-        _state.update { it.copy(lastTypingMessage = 0L) }
 
         val steamID = _state.value.currentChatSteamID
             ?: throw IllegalArgumentException("SteamID was null trying to send a message")
@@ -138,6 +146,26 @@ class ChatViewModel @Inject constructor(
     private fun emit(event: ChatUiEvent) {
         viewModelScope.launch {
             _uiState.emit(event)
+        }
+    }
+
+    private fun CoroutineScope.typingJob() = launch {
+        val steamID = _state.value.currentChatSteamID
+            ?: throw IllegalArgumentException(
+                "SteamID was null trying to send a message status"
+            )
+
+        emit(ChatUiEvent.SendTypingStatus(steamID))
+
+        while (isActive) {
+            delay(10.seconds)
+
+            if (!isActive) {
+                // TODO still sends out Typing Status if we're cancelled.
+                return@launch
+            }
+
+            emit(ChatUiEvent.SendTypingStatus(steamID))
         }
     }
 }
