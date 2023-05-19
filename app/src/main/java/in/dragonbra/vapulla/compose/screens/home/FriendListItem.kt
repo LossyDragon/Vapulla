@@ -83,16 +83,12 @@ fun FriendItem(
                 onLongClick = onLongClick
             )
     ) {
-        val context = LocalContext.current
-
-        val avatarUrl = remember(friend) { getAvatarUrl(friend.avatar) }
-        val friendName = remember(friend) { getFriendName(friend = friend) }
         val statusColor = remember(friend) { getStatusColor(friend) }
-        val statusIcon = remember(friend) { getStatusIcon(friend) }
-        val statusText = remember(friend) { context.getStatusText(friend) }
 
         ListItem(
             headlineContent = {
+                val friendName = remember(friend) { getFriendName(friend = friend) }
+                val statusIcon = remember(friend) { getStatusIcon(friend) }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         modifier = Modifier.weight(1f, false),
@@ -113,6 +109,8 @@ fun FriendItem(
             },
             supportingContent = {
                 Column {
+                    val context = LocalContext.current
+                    val statusText = remember(friend) { context.getStatusText(friend) }
                     Text(
                         text = statusText,
                         color = statusColor,
@@ -183,6 +181,7 @@ fun FriendItem(
                     shape = iconSmallCornerShape,
                     color = statusColor
                 ) {
+                    val avatarUrl = remember(friend) { getAvatarUrl(friend.avatar) }
                     StaticImage(
                         modifier = Modifier
                             .padding(1.dp)

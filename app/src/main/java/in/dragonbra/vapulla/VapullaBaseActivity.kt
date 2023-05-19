@@ -163,7 +163,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         onConnected()
     }
 
-    inline fun <reified T : ClientMsgHandler> getHandler(): T? = steamService?.getHandler()
+    internal inline fun <reified T : ClientMsgHandler> getHandler(): T? = steamService?.getHandler()
 
     inner class StopReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {

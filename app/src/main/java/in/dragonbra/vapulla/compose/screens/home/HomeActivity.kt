@@ -35,7 +35,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         setContent {
             LaunchedEffect(Unit) {
                 viewModel.uiEvent.collectLatest { event ->
-                    Timber.d("FLOWING: ${event.javaClass}")
                     onFriendAction(event)
                 }
             }
@@ -71,10 +70,9 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
     override fun onAccountUpdate(account: AccountManager) {
         Timber.d("onAccountUpdate")
-        val name = account.nickname.orEmpty()
-        val state = account.state
-        val avatarHash = account.avatarHash.orEmpty()
-        viewModel.onUpdateAccount(name, state, avatarHash)
+        with(account) {
+            viewModel.onUpdateAccount(nickname.orEmpty(), state, avatarHash.orEmpty())
+        }
     }
 
     private fun closeApplication() {
@@ -111,21 +109,21 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
 
                 is HomeUiEvent.AcceptRequest -> {
                     val friend = SteamID(event.friend.id)
-                    steamService?.getHandler<SteamFriends>()?.addFriend(friend)
+                    getHandler<SteamFriends>()?.addFriend(friend)
                 }
 
                 is HomeUiEvent.BlockFriend -> {
                     val friend = SteamID(event.friend.id)
-                    steamService?.getHandler<SteamFriends>()?.ignoreFriend(friend)
+                    getHandler<SteamFriends>()?.ignoreFriend(friend)
                 }
 
                 is HomeUiEvent.ChangeStatus -> {
-                    steamService?.getHandler<SteamFriends>()?.setPersonaState(event.state)
+                    getHandler<SteamFriends>()?.setPersonaState(event.state)
                 }
 
                 is HomeUiEvent.IgnoreRequest -> {
                     val friend = SteamID(event.friend.id)
-                    steamService?.getHandler<SteamFriends>()?.removeFriend(friend)
+                    getHandler<SteamFriends>()?.removeFriend(friend)
                 }
             }
         }

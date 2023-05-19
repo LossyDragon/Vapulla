@@ -87,6 +87,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -111,39 +112,6 @@ class SteamService : Service() {
         const val EXTRA_ID = "id"
     }
 
-    lateinit var callbackMgr: CallbackManager
-
-    lateinit var steamClient: SteamClient
-
-    private lateinit var stateBuffer: PersonaStateBuffer
-
-    private val binder: SteamServiceBinder = SteamServiceBinder(this)
-
-    private val newMessages = mutableMapOf<SteamID, MutableList<MessagingStyle.Message>>()
-
-    private val requestsToNotify = mutableSetOf<SteamID>()
-
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
-
-    val disconnectedSubs = mutableSetOf<(DisconnectedCallback) -> Unit>()
-
-    private lateinit var unifiedMessages: SteamUnifiedMessages
-
-    private var retryCount = 0
-
-    private var unifiedChat: Chat? = null
-
-    private var unifiedPlayer: Player? = null
-
-    private var userAccount: UserAccount? = null
-
-    private var unifiedFriendMessages: FriendMessages? = null
-
-    /**
-     * Time of the last echo used for notification back off
-     */
-    private var lastEcho = 0L
-
     @Inject
     lateinit var db: VapullaDatabase
 
@@ -155,9 +123,11 @@ class SteamService : Service() {
 
     @Volatile
     var isRunning: Boolean = false
+        private set
 
     @Volatile
     var isLoggedIn: Boolean = false
+        private set
 
     @Volatile
     var isActivityRunning: Boolean = false
@@ -170,6 +140,40 @@ class SteamService : Service() {
      */
     @Volatile
     private var chatFriendId: Long? = null
+
+    private lateinit var stateBuffer: PersonaStateBuffer
+
+    private lateinit var steamClient: SteamClient
+
+    private lateinit var unifiedMessages: SteamUnifiedMessages
+
+    private val binder: SteamServiceBinder = SteamServiceBinder(this)
+
+    private val newMessages = mutableMapOf<SteamID, MutableList<MessagingStyle.Message>>()
+
+    private val requestsToNotify = mutableSetOf<SteamID>()
+
+    private val scope = CoroutineScope(Dispatchers.Default + Job())
+
+    private val steamJob = Job()
+
+    private val steamScope = CoroutineScope(Dispatchers.IO + steamJob)
+
+    private var lastEcho = 0L // Time of the last echo used for notification back off
+
+    private var retryCount = 0
+
+    private var unifiedChat: Chat? = null
+
+    private var unifiedFriendMessages: FriendMessages? = null
+
+    private var unifiedPlayer: Player? = null
+
+    private var userAccount: UserAccount? = null
+
+    lateinit var callbackMgr: CallbackManager
+
+    val disconnectedSubs = mutableSetOf<(DisconnectedCallback) -> Unit>()
 
     override fun onCreate() {
         super.onCreate()
@@ -273,8 +277,7 @@ class SteamService : Service() {
         super.onDestroy()
         Timber.i("onDestroy")
         disconnect()
-        val stopIntent = Intent(VapullaBaseActivity.STOP_INTENT)
-        sendBroadcast(stopIntent)
+        Intent(VapullaBaseActivity.STOP_INTENT).also(::sendBroadcast)
     }
 
     private fun checkNotificationPermission(onGranted: () -> Unit) {
@@ -282,10 +285,13 @@ class SteamService : Service() {
             val permission = Manifest.permission.POST_NOTIFICATIONS
             val checkPermission = ActivityCompat.checkSelfPermission(this, permission)
             if (checkPermission == PackageManager.PERMISSION_GRANTED) {
+                Timber.d("Notification perms granted")
                 onGranted()
+                return
             }
         }
 
+        Timber.d("Notification perms granted")
         onGranted()
     }
 
@@ -294,7 +300,7 @@ class SteamService : Service() {
             expectDisconnect = false
             retryCount = 0
             stateBuffer.start()
-            Thread(steamThread, "Steam Thread").start()
+            steamThread()
             setNotification(R.string.notificationConnecting)
         }
     }
@@ -319,8 +325,11 @@ class SteamService : Service() {
     private fun postMessageNotification(friendId: SteamID, message: String) {
         if (System.currentTimeMillis() <= lastEcho + ECHO_BACKOFF) {
             // User is still chatting on another device
+            Timber.d("Skipping chat notification")
             return
         }
+
+        Timber.d("Posting chat notification")
 
         val friend = db.steamFriendDao().find(friendId.convertToUInt64()) ?: return
 
@@ -547,19 +556,21 @@ class SteamService : Service() {
         }
     }
 
-    private val steamThread: Runnable = Runnable {
-        Timber.i("Connecting to steam...")
-        isRunning = true
-        steamClient.connect()
+    private fun steamThread() {
+        steamScope.launch {
+            Timber.i("Connecting to steam...")
+            isRunning = true
+            steamClient.connect()
 
-        while (isRunning) {
-            callbackMgr.runWaitCallbacks(1000)
+            while (isRunning && isActive) {
+                callbackMgr.runWaitCallbacks(1000)
+            }
+
+            Timber.i("Steam thread stopped")
         }
-
-        Timber.i("Steam thread stopped")
     }
 
-    inline fun <reified T : ClientMsgHandler> getHandler(): T {
+    internal inline fun <reified T : ClientMsgHandler> getHandler(): T {
         return steamClient.getHandler(T::class.java)
     }
 
@@ -569,6 +580,7 @@ class SteamService : Service() {
             Timber.i("disconnected from steam")
             stopForeground(STOP_FOREGROUND_REMOVE)
             isRunning = false
+            steamJob.cancel()
             isLoggedIn = false
             expectDisconnect = false
             stateBuffer.stop()

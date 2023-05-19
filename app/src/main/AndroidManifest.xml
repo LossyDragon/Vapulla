@@ -119,25 +119,13 @@
             android:exported="false" />
 
         <!-- Receivers -->
-        <receiver
-            android:name=".broadcastreceiver.ReplyReceiver"
-            android:enabled="true"
-            android:exported="false" />
+        <receiver android:name=".broadcastreceiver.ReplyReceiver" />
 
-        <receiver
-            android:name=".broadcastreceiver.AcceptRequestReceiver"
-            android:enabled="true"
-            android:exported="false" />
+        <receiver android:name=".broadcastreceiver.AcceptRequestReceiver" />
 
-        <receiver
-            android:name=".broadcastreceiver.BlockRequestReceiver"
-            android:enabled="true"
-            android:exported="false" />
+        <receiver android:name=".broadcastreceiver.BlockRequestReceiver" />
 
-        <receiver
-            android:name=".broadcastreceiver.IgnoreRequestReceiver"
-            android:enabled="true"
-            android:exported="false" />
+        <receiver android:name=".broadcastreceiver.IgnoreRequestReceiver" />
     </application>
 
 </manifest>

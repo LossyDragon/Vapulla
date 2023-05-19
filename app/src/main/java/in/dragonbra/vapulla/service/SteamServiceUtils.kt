@@ -7,7 +7,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.BitmapDrawable
-import android.text.format.DateUtils
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
@@ -24,30 +23,19 @@ import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver
-import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import kotlinx.coroutines.runBlocking
 import org.spongycastle.util.encoders.Hex
 
-private var remoteInput: RemoteInput =
-    RemoteInput.Builder(KEY_TEXT_REPLY)
-        .setLabel("Reply")
-        .build()
-
-private val flagUpdateCurrent =
-    if (Constants.isAtLeastS) {
-        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    } else {
-        PendingIntent.FLAG_UPDATE_CURRENT
-    }
-
-/**
- * Time to back off when we receive a new message to prevent spam
- */
-private const val NEW_MESSAGE_BACKOFF = DateUtils.MINUTE_IN_MILLIS
+private val flagUpdateCurrent = if (Constants.isAtLeastS) {
+    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+} else {
+    PendingIntent.FLAG_UPDATE_CURRENT
+}
 
 private const val ONGOING_NOTIFICATION_ID = 100
 
@@ -58,13 +46,10 @@ fun Service.setNotification(@StringRes string: Int) {
     }
 }
 
-private fun Context.getMessageReplyIntent(id: Long): Intent {
-    val intent = Intent(this, ReplyReceiver::class.java).apply {
+private fun Context.getMessageReplyIntent(id: Long): Intent =
+    Intent(this, ReplyReceiver::class.java).apply {
         putExtra(ReplyReceiver.EXTRA_ID, id)
     }
-
-    return intent
-}
 
 fun Context.serviceNotification(
     text: String,
@@ -113,17 +98,14 @@ fun Context.serviceNotification(
     block(builder)
 }
 
-suspend fun Context.serviceMessageNotification(
+// TODO: Person/You messaging isn't working right.
+fun Context.serviceMessageNotification(
     friendId: SteamID,
     friend: SteamFriend,
     message: String,
     messages: MutableList<NotificationCompat.MessagingStyle.Message>,
-    block: (builder: NotificationCompat.Builder) -> Unit
+    onPost: (builder: NotificationCompat.Builder) -> Unit
 ) {
-    val currentTs = System.currentTimeMillis()
-    val backoff = messages.isNotEmpty() &&
-        currentTs < messages[messages.size - 1].timestamp + NEW_MESSAGE_BACKOFF
-
     var icon: IconCompat? = null
     val request = ImageRequest.Builder(this)
         .data(getAvatarUrl(friend.avatar))
@@ -137,25 +119,23 @@ suspend fun Context.serviceMessageNotification(
         })
         .build()
 
-    imageLoader.enqueue(request)
-
-    val steamUser = Person.Builder().apply {
-        setName(friend.name)
-        setIcon(icon)
-    }.build()
-
-    val newMessage = NotificationCompat.MessagingStyle.Message(message, currentTs, steamUser)
-    messages.add(newMessage)
-
-    val style = NotificationCompat.MessagingStyle(steamUser)
-
-    messages.forEach {
-        style.addMessage(it)
+    val chatScreenIntent = Intent(this, ChatActivity::class.java).apply {
+        putExtra(ChatActivity.INTENT_STEAM_ID, friendId.convertToUInt64())
     }
+    val pendingIntent = TaskStackBuilder.create(this)
+        .addNextIntentWithParentStack(chatScreenIntent)
+        .getPendingIntent(
+            friendId.convertToUInt64().toInt(),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+    val remoteInput = RemoteInput.Builder(ReplyReceiver.RESULT_KEY)
+        .setLabel(getString(R.string.notificationActionReply))
+        .build()
 
     val replyPendingIntent = PendingIntent.getBroadcast(
-        applicationContext,
-        friendId.convertToUInt64().toInt(),
+        this,
+        1,
         getMessageReplyIntent(friendId.convertToUInt64()),
         flagUpdateCurrent
     )
@@ -166,30 +146,35 @@ suspend fun Context.serviceMessageNotification(
         replyPendingIntent
     ).addRemoteInput(remoteInput).build()
 
-    val intent = Intent(this, ChatActivity::class.java).apply {
-        putExtra(ChatActivity.INTENT_STEAM_ID, friendId.convertToUInt64())
+    val notification = runBlocking {
+        imageLoader.execute(request).drawable
+
+        val steamPerson = Person.Builder().apply {
+            setName(friend.name)
+            setIcon(icon)
+        }.build()
+
+        val style = NotificationCompat.MessagingStyle(steamPerson)
+        val msg = NotificationCompat.MessagingStyle.Message(
+            message,
+            System.currentTimeMillis(),
+            steamPerson
+        )
+        style.addMessage(msg)
+
+        NotificationCompat.Builder(this@serviceMessageNotification, "vapulla-message")
+            .addAction(replyAction)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
+            .setLargeIcon(icon?.toIcon(this@serviceMessageNotification))
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setSmallIcon(R.drawable.ic_message)
+            .setStyle(style)
     }
 
-    val pendingIntent = TaskStackBuilder.create(this)
-        .addNextIntentWithParentStack(intent)
-        .getPendingIntent(
-            friendId.convertToUInt64().toInt(),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-    // Note: DI now
-    val notification = NotificationCompat.Builder(this, "vapulla-message")
-        .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
-        .setStyle(style)
-        .setSmallIcon(R.drawable.ic_message)
-        .setLargeIcon(icon?.toIcon(this))
-        .setAutoCancel(true)
-        .setContentIntent(pendingIntent)
-        .setPriority(NotificationCompat.PRIORITY_HIGH)
-        .setOnlyAlertOnce(backoff)
-        .addAction(replyAction)
-
-    block(notification)
+    onPost(notification)
 }
 
 suspend fun Context.serviceRequestNotification(

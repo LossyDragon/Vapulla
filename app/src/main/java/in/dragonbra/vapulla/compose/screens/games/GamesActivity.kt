@@ -21,15 +21,17 @@ class GamesActivity : VapullaBaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val items = if (Constants.isAtLeastT) {
-            intent.extras?.getParcelableArrayList(INTENT_GAMES, Games::class.java) ?: arrayListOf()
-        } else {
-            @Suppress("DEPRECATION")
-            intent.extras?.getParcelableArrayList(INTENT_GAMES) ?: arrayListOf()
-        }
+        with(intent.extras!!) {
+            val items = if (Constants.isAtLeastT) {
+                getParcelableArrayList(INTENT_GAMES, Games::class.java) ?: arrayListOf()
+            } else {
+                @Suppress("DEPRECATION")
+                getParcelableArrayList(INTENT_GAMES) ?: arrayListOf()
+            }
 
-        val name = intent.extras?.getString("name")!!
-        viewModel.setContents(name, items)
+            val name = getString("name")!!
+            viewModel.setContents(name, items)
+        }
 
         setContent {
             VapullaTheme {

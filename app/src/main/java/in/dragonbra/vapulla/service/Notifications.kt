@@ -40,7 +40,7 @@ object Notifications {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createMessagesNotificationChannel(notificationManager: NotificationManagerCompat) {
         val notificationChannel = NotificationChannel(
-            "vapulla-messages",
+            "vapulla-message",
             "Vapulla Chat Messages",
             NotificationManager.IMPORTANCE_HIGH
         )

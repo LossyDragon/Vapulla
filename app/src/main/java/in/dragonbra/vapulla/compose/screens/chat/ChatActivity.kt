@@ -94,7 +94,7 @@ class ChatActivity : VapullaBaseActivity() {
 
         scope.launch(Dispatchers.IO) {
             steamService?.getMessageHistory(steamID)
-            steamService?.getHandler<VapullaHandler>()?.getEmoticonList()
+            getHandler<VapullaHandler>()?.getEmoticonList()
         }
 
         viewModel.onPostCreate(this)

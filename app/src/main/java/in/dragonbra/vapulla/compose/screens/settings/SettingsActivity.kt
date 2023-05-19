@@ -55,7 +55,7 @@ class SettingsActivity : VapullaBaseActivity() {
         }
 
         scope.launch(Dispatchers.IO) {
-            steamService?.getHandler<SteamFriends>()?.setPersonaName(name).let {
+            getHandler<SteamFriends>()?.setPersonaName(name).let {
                 accountManager.nickname = name
             }
         }
