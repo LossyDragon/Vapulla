@@ -110,11 +110,11 @@ dependencies {
 
     // Coil-Kt:
     // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
-    implementation("com.github.skydoves:landscapist-coil:2.1.13")
+    implementation("com.github.skydoves:landscapist-coil:2.2.0")
 
     // Preferences:
     // https://mvnrepository.com/artifact/com.github.alorma/compose-settings-storage-preferences
-    val settings = "0.26.0"
+    val settings = "0.27.0"
     implementation("com.github.alorma:compose-settings-storage-preferences:$settings")
     implementation("com.github.alorma:compose-settings-ui-m3:$settings")
 
@@ -142,7 +142,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.dagger/hilt-android
     implementation("com.google.dagger:hilt-android:2.46")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
-    kapt("com.google.dagger:hilt-compiler:2.46")
+    kapt("com.google.dagger:hilt-compiler:2.46.1")
 
     // APNG:
     // https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
@@ -174,7 +174,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
     implementation("com.madgag.spongycastle:prov:1.58.0.0")
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation("com.google.protobuf:protobuf-java:3.22.3") // For protobuf builders
+    implementation("com.google.protobuf:protobuf-java:3.23.1") // For protobuf builders
 
     // QR:
     // https://search.maven.org/artifact/io.github.g0dkar/qrcode-kotlin
@@ -182,7 +182,7 @@ dependencies {
 
     // LeakCanary:
     // https://mvnrepository.com/artifact/com.squareup.leakcanary/leakcanary-android
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.10")
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.11")
 }
 
 /**

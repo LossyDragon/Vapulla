@@ -231,10 +231,9 @@ class SteamService : Service() {
 
             when (intent.getStringExtra(EXTRA_ACTION)) {
                 "reply" -> {
-                    // TODO: Make reply intents proper with messaging style
-                    val message = intent.getStringExtra(EXTRA_MESSAGE)!!
                     scope.launch(Dispatchers.IO) {
                         // TODO emotes?
+                        val message = intent.getStringExtra(EXTRA_MESSAGE)!!
                         val emotes = db.emoticonDao().find()
                         val emoteSet = emotes.map { it.name }.toSet()
                         sendMessage(id, message, emoteSet)
@@ -342,12 +341,10 @@ class SteamService : Service() {
                 newMessages[friendId]!!
             }
 
-        scope.launch {
-            serviceMessageNotification(friendId, friend, message, messages) { builder ->
-                checkNotificationPermission {
-                    val steamId = friendId.convertToUInt64().toInt()
-                    notificationManager.notify(steamId, builder.build())
-                }
+        serviceMessageNotification(friendId, friend, message, messages) { builder ->
+            checkNotificationPermission {
+                val steamId = friendId.convertToUInt64().toInt()
+                notificationManager.notify(steamId, builder.build())
             }
         }
 
@@ -357,12 +354,10 @@ class SteamService : Service() {
     }
 
     private fun postFriendRequestNotification(state: PersonaState) {
-        scope.launch {
-            serviceRequestNotification(state) { builder ->
-                checkNotificationPermission {
-                    val steamId = state.friendID.convertToUInt64().toInt()
-                    notificationManager.notify(steamId, builder.build())
-                }
+        serviceRequestNotification(state) { builder ->
+            checkNotificationPermission {
+                val steamId = state.friendID.convertToUInt64().toInt()
+                notificationManager.notify(steamId, builder.build())
             }
         }
     }
@@ -885,12 +880,9 @@ class SteamService : Service() {
                 when (callbackObject.chatEntryType) {
                     EChatEntryType.Typing.code() -> {
                         val steamID = SteamID(callbackObject.steamidFriend)
-                        db.steamFriendDao().run {
-                            find(steamID.convertToUInt64())?.apply {
-                                typingTs = System.currentTimeMillis()
-                            }?.also { friend ->
-                                update(friend)
-                            }
+                        db.steamFriendDao().find(steamID.convertToUInt64())?.let { friend ->
+                            friend.typingTs = System.currentTimeMillis()
+                            db.steamFriendDao().update(friend)
                         }
                     }
                     EChatEntryType.ChatMsg.code() -> {

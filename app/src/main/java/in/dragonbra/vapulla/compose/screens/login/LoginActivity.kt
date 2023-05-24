@@ -21,7 +21,7 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.screens.home.HomeActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.getErrorMessage
-import `in`.dragonbra.vapulla.service.Notifications.createChannels
+import `in`.dragonbra.vapulla.service.createChannels
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import javax.inject.Inject

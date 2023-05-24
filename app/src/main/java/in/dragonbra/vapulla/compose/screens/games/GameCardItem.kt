@@ -12,10 +12,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,18 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
@@ -47,6 +41,7 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.formatPlayTime
 import `in`.dragonbra.vapulla.core.Constants
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameCardItem(
     imageLoader: ImageLoader,
@@ -59,15 +54,17 @@ fun GameCardItem(
     val context = LocalContext.current
 
     Card(
-        modifier = Modifier
-            .clip(shape = RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors()
+        colors = CardDefaults.cardColors(),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        onClick = onItemClick,
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column {
             CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
                 CoilImage(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
                     imageLoader = { imageLoader },
                     imageRequest = {
                         ImageRequest.Builder(context)
@@ -98,60 +95,30 @@ fun GameCardItem(
                     }
                 )
             }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 16.dp)
-            ) {
-                Text(
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.W500,
-                    lineHeight = 32.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    text = title.trimStart() // Thanks Dead Space
-                )
-                Spacer(modifier = Modifier.height(height = 12.dp))
-                Text(
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(fontSize = 14.sp),
-                    text = stringResource(
-                        id = R.string.textPlayedRecent,
-                        formatPlayTime(recentPlayTime ?: 0)
+            Box(modifier = Modifier.padding(16.dp)) {
+                Column {
+                    Text(
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineMedium,
+                        text = title.trimStart()
                     )
-                )
-                Text(
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(fontSize = 14.sp),
-                    text = stringResource(
-                        id = R.string.textPlayedForever,
-                        formatPlayTime(totalPlayTime)
-                    )
-                )
-                Spacer(modifier = Modifier.height(height = 16.dp))
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterEnd
-                ) {
-                    Button(onClick = onItemClick) {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                            color = Color.White,
-                            lineHeight = 16.sp,
-                            style = MaterialTheme.typography.labelLarge,
-                            text = "Visit Store",
-                            textAlign = TextAlign.Center
+                    Text(
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        text = stringResource(
+                            id = R.string.textPlayedRecent,
+                            formatPlayTime(recentPlayTime ?: 0)
                         )
-                    }
+                    )
+                    Text(
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        text = stringResource(
+                            id = R.string.textPlayedForever,
+                            formatPlayTime(totalPlayTime)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(0.dp))
                 }
             }
         }
