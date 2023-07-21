@@ -2,8 +2,8 @@
 // https://github.com/google/ksp/releases
 plugins {
     id("com.android.application")
-    id("com.google.devtools.ksp") version "1.8.21-1.0.11"
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.2"
+    id("com.google.devtools.ksp") version "1.9.0-1.0.12"
+    id("org.jlleitschuh.gradle.ktlint") version "11.5.0"
     id("com.google.dagger.hilt.android")
     id("dagger.hilt.android.plugin")
     id("kotlin-kapt")
@@ -72,7 +72,7 @@ android {
     }
     composeOptions {
         // https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
-        kotlinCompilerExtensionVersion = "1.4.7"
+        kotlinCompilerExtensionVersion = "1.5.0"
     }
     packaging {
         resources {
@@ -86,31 +86,32 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
 
     // Jetpack Compose:
     // https://developer.android.com/jetpack/androidx/releases/compose
-    val composeBom = platform("androidx.compose:compose-bom:2023.05.01")
+    val composeBom = platform("androidx.compose:compose-bom:2023.06.01")
     implementation(composeBom)
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.animation:animation-graphics")
     implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.runtime:runtime-livedata")
-    implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Accompanist:
     // https://mvnrepository.com/artifact/com.google.accompanist/accompanist-systemuicontroller
-    val accompanist = "0.31.2-alpha"
+    val accompanist = "0.31.5-beta"
     implementation("com.google.accompanist:accompanist-permissions:$accompanist")
     implementation("com.google.accompanist:accompanist-systemuicontroller:$accompanist")
 
     // Coil-Kt:
     // https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
-    implementation("com.github.skydoves:landscapist-coil:2.2.0")
+    implementation("com.github.skydoves:landscapist-coil:2.2.3")
 
     // Preferences:
     // https://mvnrepository.com/artifact/com.github.alorma/compose-settings-storage-preferences
@@ -119,20 +120,19 @@ dependencies {
     implementation("com.github.alorma:compose-settings-ui-m3:$settings")
 
     // Android Support Libs
-    implementation("androidx.activity:activity-compose:1.7.1")
-    implementation("androidx.compose.material3:material3:1.1.0")
+    implementation("androidx.activity:activity-compose:1.7.2")
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
-    implementation("androidx.paging:paging-compose:1.0.0-alpha19")
+    implementation("androidx.paging:paging-compose:3.2.0-rc01")
     implementation("androidx.paging:paging-runtime-ktx:3.1.1")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("androidx.preference:preference-ktx:1.2.0")
-    implementation("androidx.room:room-paging:2.5.1")
+    implementation("androidx.room:room-paging:2.5.2")
 
     // Room:
     // https://mvnrepository.com/artifact/androidx.room/room-runtime
-    val room = "2.5.1"
+    val room = "2.5.2"
     implementation("androidx.room:room-ktx:$room")
     implementation("androidx.room:room-runtime:$room")
     ksp("androidx.room:room-compiler:$room")
@@ -140,9 +140,10 @@ dependencies {
     // Google Dagger/Hilt:
     // https://mvnrepository.com/artifact/androidx.hilt/hilt-compiler
     // https://mvnrepository.com/artifact/com.google.dagger/hilt-android
-    implementation("com.google.dagger:hilt-android:2.46")
+    val hilt = "2.46.1"
+    implementation("com.google.dagger:hilt-android:$hilt")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
-    kapt("com.google.dagger:hilt-compiler:2.46.1")
+    kapt("com.google.dagger:hilt-compiler:$hilt")
 
     // APNG:
     // https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
@@ -174,15 +175,15 @@ dependencies {
     // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
     implementation("com.madgag.spongycastle:prov:1.58.0.0")
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-    implementation("com.google.protobuf:protobuf-java:3.23.1") // For protobuf builders
+    implementation("com.google.protobuf:protobuf-java:3.23.4") // For protobuf builders
 
     // QR:
-    // https://search.maven.org/artifact/io.github.g0dkar/qrcode-kotlin
+    // https://mvnrepository.com/artifact/io.github.g0dkar/qrcode-kotlin
     implementation("io.github.g0dkar:qrcode-kotlin:3.3.0")
 
     // LeakCanary:
     // https://mvnrepository.com/artifact/com.squareup.leakcanary/leakcanary-android
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.11")
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.12")
 }
 
 /**

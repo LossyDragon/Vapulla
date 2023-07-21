@@ -3,6 +3,7 @@ package `in`.dragonbra.vapulla.compose.components
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.Icons
@@ -69,7 +70,10 @@ fun ScrollToButton(
 @Composable
 private fun Preview_ScrollBackUp() {
     VapullaTheme {
-        Box(Modifier.height(100.dp)) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .height(75.dp)
+        ) {
             ScrollToButton(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 label = "Scroll Up",

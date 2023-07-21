@@ -11,7 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 
 @Composable
 fun LoginTextField(
@@ -47,4 +50,20 @@ fun LoginTextField(
         value = value,
         visualTransformation = visualTransformation
     )
+}
+
+@Preview
+@Composable
+private fun LoginTextField_Preview() {
+    VapullaTheme {
+        LoginTextField(
+            label = R.string.textLabelUsername,
+            isError = true,
+            keyboardActions = KeyboardActions(),
+            keyboardOptions = KeyboardOptions(),
+            onValueChange = { },
+            supportingText = "Username is not valid.",
+            value = "Sample Text"
+        )
+    }
 }

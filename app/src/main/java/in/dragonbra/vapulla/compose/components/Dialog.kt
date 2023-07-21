@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,7 +60,7 @@ fun VapullaSelectionDialog(
     }
 
     var selectedItem by remember {
-        mutableStateOf(items.values.find { it == currentSelection }!!)
+        mutableLongStateOf(items.values.find { it == currentSelection }!!)
     }
 
     AlertDialog(
@@ -213,7 +214,6 @@ fun VapullaMessageDialog(
     }
 
     AlertDialog(
-        modifier = Modifier.wrapContentHeight(),
         onDismissRequest = onNegative,
         icon = { icon?.let { Icon(imageVector = it, contentDescription = null) } },
         title = { Text(text = title) },
@@ -301,7 +301,7 @@ private fun Preview_DialogMessageContent() {
         VapullaMessageDialog(
             icon = Icons.Default.Block,
             title = stringResource(id = R.string.dialogTitleBlockFriend),
-            message = stringResource(id = R.string.dialogMessageBlockFriend, name).repeat(2),
+            message = stringResource(id = R.string.dialogMessageBlockFriend, name),
             openDialog = true,
             onPositive = {},
             positiveText = stringResource(id = R.string.block),
