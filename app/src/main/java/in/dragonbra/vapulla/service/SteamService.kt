@@ -93,8 +93,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-// TODO friend requests don't get a name or avatar, PersonaStateBuffer doesn't allow it.
-
 @AndroidEntryPoint
 class SteamService : Service() {
 
