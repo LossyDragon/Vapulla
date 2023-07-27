@@ -67,6 +67,8 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.*
 import `in`.dragonbra.vapulla.compose.util.findEmotes
 import `in`.dragonbra.vapulla.core.Constants
+import `in`.dragonbra.vapulla.core.isFriend
+import `in`.dragonbra.vapulla.core.isRequest
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
@@ -689,16 +691,16 @@ class SteamService : Service() {
 
             var friend = db.steamFriendDao().find(currentFriend.steamID.convertToUInt64())
             if (friend == null) {
-                if (currentFriend.relationship == EFriendRelationship.Friend ||
-                    currentFriend.relationship == EFriendRelationship.RequestRecipient
+                if (currentFriend.relationship.isFriend() ||
+                    currentFriend.relationship.isRequest()
                 ) {
                     friend = SteamFriend(currentFriend.steamID.convertToUInt64())
                     friend.relation = currentFriend.relationship.code()
                     friendsToAdd.add(friend)
                 }
             } else {
-                if (currentFriend.relationship == EFriendRelationship.Friend ||
-                    currentFriend.relationship == EFriendRelationship.RequestRecipient
+                if (currentFriend.relationship.isFriend() ||
+                    currentFriend.relationship.isRequest()
                 ) {
                     friend.relation = currentFriend.relationship.code()
                     friendsToUpdate.add(friend)

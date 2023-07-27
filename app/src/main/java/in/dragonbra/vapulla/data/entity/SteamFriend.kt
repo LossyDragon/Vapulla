@@ -21,5 +21,18 @@ data class SteamFriend(
     @ColumnInfo(name = "nickname") var nickname: String?
 ) {
     @Ignore
-    constructor(id: Long) : this(id, null, null, 0, null, 0, null, 0, 0, 0, 0L, null)
+    constructor(id: Long) : this(
+        id = id,
+        name = null,
+        avatar = null,
+        relation = 0,
+        state = null,
+        gameAppId = 0,
+        gameName = null,
+        lastLogOn = 0,
+        lastLogOff = 0,
+        stateFlags = 0,
+        typingTs = 0L,
+        nickname = null
+    )
 }
