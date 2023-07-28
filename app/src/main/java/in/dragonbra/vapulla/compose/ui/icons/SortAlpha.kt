@@ -1,4 +1,4 @@
-@file:Suppress("UnusedReceiverParameter", "ObjectPropertyName")
+@file:Suppress("UnusedReceiverParameter")
 
 package `in`.dragonbra.vapulla.compose.ui.icons
 

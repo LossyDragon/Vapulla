@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -135,7 +135,7 @@ fun InviteLinkCard(
                 trailingIcon = {
                     IconButton(onClick = { onDeleteInvite(token.inviteToken) }) {
                         Icon(
-                            imageVector = Icons.Default.Remove,
+                            imageVector = Icons.Default.DeleteOutline,
                             contentDescription = null
                         )
                     }

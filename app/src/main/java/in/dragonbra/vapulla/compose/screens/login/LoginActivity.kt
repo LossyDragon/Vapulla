@@ -185,7 +185,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
 
             Timber.w("Unable to logon to Steam: ${callback.result} / ${callback.extendedResult}")
 
-            viewModel.onShowMessage(errorMessage)
+            viewModel.onShowMessage(errorMessage, true)
 
             steamService?.disconnect()
             return

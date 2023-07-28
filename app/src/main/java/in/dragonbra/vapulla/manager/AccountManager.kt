@@ -31,8 +31,7 @@ class AccountManager(private val context: Context) {
         private const val SENTRY_FILE_NAME = "sentry.bin"
     }
 
-    var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        private set
+    private var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     private val listeners = mutableSetOf<AccountManagerListener>()
 

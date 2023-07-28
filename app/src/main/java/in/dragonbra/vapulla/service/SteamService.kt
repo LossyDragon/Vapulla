@@ -220,7 +220,7 @@ class SteamService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        Timber.i("onStartCommand")
+        Timber.d("onStartCommand")
 
         if (isRunning && intent != null && intent.hasExtra(EXTRA_ACTION)) {
             val id = SteamID(intent.getLongExtra(EXTRA_ID, 0L))
@@ -274,7 +274,7 @@ class SteamService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Timber.i("onDestroy")
+        Timber.d("onDestroy")
         disconnect()
         Intent(VapullaBaseActivity.STOP_INTENT).also(::sendBroadcast)
     }
