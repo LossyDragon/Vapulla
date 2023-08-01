@@ -8,7 +8,5 @@ fun Context.shareLink(url: String) {
         putExtra(Intent.EXTRA_TEXT, url)
         type = "text/plain"
     }
-    Intent.createChooser(sendIntent, null).also {
-        startActivity(it)
-    }
+    Intent.createChooser(sendIntent, null).also(::startActivity)
 }

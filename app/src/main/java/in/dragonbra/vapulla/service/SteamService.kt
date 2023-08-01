@@ -537,20 +537,6 @@ class SteamService : Service() {
         userAccount?.RevokeFriendInviteToken(request.build())
     }
 
-    inline fun <reified T : ICallbackMsg> subscribe(
-        noinline callbackFunc: (T) -> Unit
-    ): Closeable? {
-        return when (T::class) {
-            DisconnectedCallback::class -> {
-                @Suppress("UNCHECKED_CAST")
-                disconnectedSubs.add(callbackFunc as (DisconnectedCallback) -> Unit)
-                Closeable { disconnectedSubs.remove(callbackFunc) }
-            }
-
-            else -> callbackMgr.subscribe(T::class.java) { callbackFunc(it) }
-        }
-    }
-
     private fun steamThread() {
         steamScope.launch {
             Timber.i("Connecting to steam...")
@@ -565,9 +551,20 @@ class SteamService : Service() {
         }
     }
 
-    internal inline fun <reified T : ClientMsgHandler> getHandler(): T {
-        return steamClient.getHandler(T::class.java)
+    inline fun <reified T : ICallbackMsg> subscribe(
+        noinline callbackFunc: (T) -> Unit
+    ): Closeable? = when (T::class) {
+        DisconnectedCallback::class -> {
+            @Suppress("UNCHECKED_CAST")
+            disconnectedSubs.add(callbackFunc as (DisconnectedCallback) -> Unit)
+            Closeable { disconnectedSubs.remove(callbackFunc) }
+        }
+
+        else -> callbackMgr.subscribe(T::class.java) { callbackFunc(it) }
     }
+
+    internal inline fun <reified T : ClientMsgHandler> getHandler(): T =
+        steamClient.getHandler(T::class.java)
 
     //region Callback handlers
     private val onDisconnected = Consumer<DisconnectedCallback> { cb ->
@@ -885,6 +882,7 @@ class SteamService : Service() {
                             db.steamFriendDao().update(friend)
                         }
                     }
+
                     EChatEntryType.ChatMsg.code() -> {
                         Timber.d("Message: ${callbackObject.message}")
                         val steamID = SteamID(callbackObject.steamidFriend)
@@ -904,9 +902,11 @@ class SteamService : Service() {
                     }
                 }
             }
+
             is CFriendMessages_AckMessage_Notification -> {
                 db.chatMessageDao().markRead(callbackObject.steamidPartner)
             }
+
             else -> Timber.w("Could not process ${it.rpcName}")
         }
     }

@@ -70,9 +70,10 @@ fun ScrollToButton(
 @Composable
 private fun Preview_ScrollBackUp() {
     VapullaTheme {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(75.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(75.dp)
         ) {
             ScrollToButton(
                 modifier = Modifier.align(Alignment.BottomCenter),

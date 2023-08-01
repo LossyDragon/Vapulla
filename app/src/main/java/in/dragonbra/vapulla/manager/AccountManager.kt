@@ -91,9 +91,10 @@ class AccountManager(private val context: Context) {
 
     fun updateSentryFile(callback: UpdateMachineAuthCallback) {
         val sentryFile = File(context.filesDir, SENTRY_FILE_NAME)
+        val byteBuffer = ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite)
+
         FileOutputStream(sentryFile).use { fos ->
-            val byteBuffer = ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite)
-            fos.channel.run {
+            fos.channel.apply {
                 position(callback.offset.toLong())
                 write(byteBuffer)
             }
@@ -115,23 +116,8 @@ class AccountManager(private val context: Context) {
 
     fun readSentryFile(): ByteArray {
         val file = File(context.filesDir, SENTRY_FILE_NAME)
-
         val digest = MessageDigest.getInstance("SHA-1")
-
-        val buffer = ByteArray(8192)
-        var n = 0
-
-        FileInputStream(file).use {
-            while (n != -1) {
-                n = it.read(buffer)
-
-                if (n > 0) {
-                    digest.update(buffer, 0, n)
-                }
-            }
-        }
-
-        return digest.digest()
+        return digest.digest(file.readBytes())
     }
 
     fun saveLocalUser(personaState: PersonaState) {

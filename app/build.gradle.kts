@@ -12,14 +12,14 @@ plugins {
 }
 
 android {
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         namespace = "in.dragonbra.vapulla"
         applicationId = "in.dragonbra.vapulla"
 
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 34
 
         versionCode = 4
         versionName = "1.0.0"
@@ -72,7 +72,7 @@ android {
     }
     composeOptions {
         // https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
-        kotlinCompilerExtensionVersion = "1.5.0"
+        kotlinCompilerExtensionVersion = "1.5.1"
     }
     packaging {
         resources {
@@ -105,7 +105,7 @@ dependencies {
 
     // Accompanist:
     // https://mvnrepository.com/artifact/com.google.accompanist/accompanist-systemuicontroller
-    val accompanist = "0.31.5-beta"
+    val accompanist = "0.31.6-rc"
     implementation("com.google.accompanist:accompanist-permissions:$accompanist")
     implementation("com.google.accompanist:accompanist-systemuicontroller:$accompanist")
 
@@ -124,8 +124,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
-    implementation("androidx.paging:paging-compose:3.2.0-rc01")
-    implementation("androidx.paging:paging-runtime-ktx:3.1.1")
+    implementation("androidx.paging:paging-compose:3.2.0")
+    implementation("androidx.paging:paging-runtime-ktx:3.2.0")
     implementation("androidx.palette:palette-ktx:1.0.0")
     implementation("androidx.preference:preference-ktx:1.2.0")
     implementation("androidx.room:room-paging:2.5.2")
@@ -169,7 +169,7 @@ dependencies {
 
     // Java-Steam:
     // https://mvnrepository.com/artifact/in.dragonbra/javasteam
-    implementation("in.dragonbra:javasteam:1.3.0-SNAPSHOT") {
+    implementation("in.dragonbra:javasteam:1.3.0") {
         isChanging = version?.contains("SNAPSHOT") ?: false
     }
     // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov

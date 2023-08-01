@@ -45,8 +45,8 @@
     <string name="statusTyping">Typing…</string>
 
     <!-- Steam Game Play Time -->
-    <string name="textPlayedForever">%.0f hrs on record</string>
-    <string name="textPlayedRecent">%.1f hrs past two weeks</string>
+    <string name="textPlayedForever">%.0s hrs on record</string>
+    <string name="textPlayedRecent">%.1s hrs past two weeks</string>
 
     <!-- Single Word Actions -->
     <string name="apply">Apply</string>

@@ -5,8 +5,8 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 
 class EmoticonListCallback(private val msg: CMsgClientEmoticonList.Builder) : CallbackMsg() {
     fun getEmoteList(): List<Emoticon> {
-        val emoticons: List<Emoticon> = msg.emoticonsList.map { Emoticon(it) }
-        val stickers: List<Emoticon> = msg.stickersList.map { Emoticon(it) }
+        val emoticons = msg.emoticonsList.map { Emoticon(it) }
+        val stickers = msg.stickersList.map { Emoticon(it) }
         return emoticons.plus(stickers)
     }
 }

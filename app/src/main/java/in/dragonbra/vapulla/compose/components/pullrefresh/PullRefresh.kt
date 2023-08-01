@@ -29,6 +29,10 @@ import androidx.compose.ui.platform.inspectable
 import androidx.compose.ui.unit.Velocity
 
 /**
+ * https://issuetracker.google.com/issues/261760718
+ */
+
+/**
  * A nested scroll modifier that provides scroll events to [state].
  *
  * Note that this modifier must be added above a scrolling container, such as a lazy column, in

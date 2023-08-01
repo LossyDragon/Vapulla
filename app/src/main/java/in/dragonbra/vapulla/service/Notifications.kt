@@ -17,6 +17,7 @@ import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import androidx.core.app.TaskStackBuilder
 import androidx.core.graphics.drawable.IconCompat
+import androidx.core.graphics.drawable.toBitmap
 import coil.imageLoader
 import coil.request.ErrorResult
 import coil.request.ImageRequest
@@ -171,7 +172,7 @@ fun Context.serviceMessageNotification(
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
-            .setLargeIcon(icon?.toIcon(this@serviceMessageNotification))
+            .setLargeIcon(icon?.loadDrawable(this@serviceMessageNotification)?.toBitmap())
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setSmallIcon(R.drawable.ic_message)
@@ -235,7 +236,7 @@ fun Context.serviceRequestNotification(
     val notification = NotificationCompat.Builder(this, "vapulla-friend-request")
         .setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
         .setSmallIcon(R.drawable.ic_add_friend)
-        .setLargeIcon(icon?.toIcon(this))
+        .setLargeIcon(icon?.loadDrawable(this@serviceRequestNotification)?.toBitmap())
         .setContentText(getString(R.string.notificationMessageFriendRequest, state.name))
         .setContentTitle(getString(R.string.notificationTitleFriendRequest))
         .setAutoCancel(true)

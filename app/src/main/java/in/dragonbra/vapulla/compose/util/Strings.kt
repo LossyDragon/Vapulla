@@ -40,12 +40,13 @@ fun getLastMessageTime(friend: FriendListItem?): CharSequence? {
  * @return The
  */
 fun getLastSeenText(friend: FriendListItem?): CharSequence {
-    if (friend == null) return "some time ago"
-    return DateUtils.getRelativeTimeSpanString(
-        friend.lastLogOff,
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS
-    )
+    return friend?.let {
+        DateUtils.getRelativeTimeSpanString(
+            it.lastLogOff,
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS
+        )
+    } ?: "some time ago"
 }
 
 /**
@@ -54,11 +55,9 @@ fun getLastSeenText(friend: FriendListItem?): CharSequence {
  * @return The steam url of the hash, or default avatar if null
  */
 fun getAvatarUrl(avatar: String?): String {
-    if (avatar.isNullOrEmpty() || avatar == Constants.ALL_ZEROS) {
-        return Constants.DEFAULT_AVATAR
-    }
-
-    return "${Constants.AVATAR_URL}${avatar.substring(0, 2)}/${avatar}_full.jpg"
+    return avatar?.takeIf { it.isNotEmpty() && it != Constants.ALL_ZEROS }
+        ?.let { "${Constants.AVATAR_URL}${it.substring(0, 2)}/${it}_full.jpg" }
+        ?: Constants.DEFAULT_AVATAR
 }
 
 /**
@@ -67,11 +66,11 @@ fun getAvatarUrl(avatar: String?): String {
  * @param time The time a friend has played a game
  * @return A double representing how many hours were played, ie: 1.5 hrs
  */
-fun formatPlayTime(time: Int): Double {
-    return DecimalFormat("#.#").run {
+fun formatPlayTime(time: Int): String {
+    val df = DecimalFormat("#.#").apply {
         roundingMode = RoundingMode.CEILING
-        return@run time.div(60f).toDouble()
     }
+    return df.format(time / 60.0)
 }
 
 /**
@@ -81,8 +80,7 @@ fun formatPlayTime(time: Int): Double {
  * @return The number of unread messages as a string, capped at 99
  */
 fun getUnreadMessageCount(number: Int?): String {
-    val unreadMsg = number ?: 0
-    return if (unreadMsg > 99) "99+" else unreadMsg.toString()
+    return number?.let { if (it > 99) "99+" else it.toString() } ?: "0"
 }
 
 /**
@@ -127,6 +125,7 @@ fun Context.getStatusText(friend: FriendListItem?): String {
         EPersonaState.Busy,
         EPersonaState.Away,
         EPersonaState.Snooze -> getString(R.string.statusAway)
+
         else -> getString(R.string.statusOffline, relativeDate)
     }
 }
@@ -186,38 +185,35 @@ fun Context.getErrorMessage(eResult: EResult, extendedResult: EResult? = null): 
  * Goes through a message text from chat and transforms anything with an emote or sticker.
  */
 fun findEmotes(message: String, emoteSet: Set<String>): String {
-    val matcher = Constants.EMOTE_PATTERN.matcher(message)
-    val matcher2 = Constants.STICKER_PATTERN.matcher(message)
+    val stickerMatcher = Constants.STICKER_PATTERN.matcher(message)
 
     Timber.d("Emote Set: $emoteSet")
 
-    if (matcher2.find()) {
-        val result = matcher2.toMatchResult()
-        val emote = result.group(1)
+    // Handling Stickers
+    if (stickerMatcher.find()) {
+        val emote = stickerMatcher.group(1)
 
-        if (emoteSet.contains(emote)) {
+        if (emoteSet.contains(emote!!)) {
             Timber.d("Matched Sticker: $message")
             return "[sticker type=\"$emote\" limit=\"0\"][/sticker]"
         }
     }
 
-    if (matcher.find()) {
-        val result = matcher.toMatchResult()
+    // Handling Emotes
+    val emoteMatcher = Constants.EMOTE_PATTERN.matcher(message)
+    var resultMessage = message
 
-        val emote = result.group(1)
+    while (emoteMatcher.find()) {
+        val emote = emoteMatcher.group(1)
 
-        if (emoteSet.contains(emote)) {
-            val builder = StringBuilder(message)
-            builder.setCharAt(result.start(), '\u02D0')
-            builder.setCharAt(result.end() - 1, '\u02D0')
-
-            return findEmotes(builder.toString(), emoteSet)
+        if (emoteSet.contains(emote!!)) {
+            val builder = StringBuilder(resultMessage)
+            builder.setCharAt(emoteMatcher.start(), '\u02D0')
+            builder.setCharAt(emoteMatcher.end() - 1, '\u02D0')
+            resultMessage = builder.toString()
         }
-
-        return message.substring(0, result.end() - 1) +
-            findEmotes(message.substring(result.end() - 1), emoteSet)
     }
 
-    Timber.d("Matched Emotes: $message")
-    return message
+    Timber.d("Matched Emotes: $resultMessage")
+    return resultMessage
 }
