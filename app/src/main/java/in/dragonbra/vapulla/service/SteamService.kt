@@ -67,6 +67,8 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.*
 import `in`.dragonbra.vapulla.compose.util.findEmotes
 import `in`.dragonbra.vapulla.core.Constants
+import `in`.dragonbra.vapulla.core.isFriend
+import `in`.dragonbra.vapulla.core.isRequest
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
@@ -90,8 +92,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-
-// TODO friend requests don't get a name or avatar, PersonaStateBuffer doesn't allow it.
 
 @AndroidEntryPoint
 class SteamService : Service() {
@@ -220,7 +220,7 @@ class SteamService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        Timber.i("onStartCommand")
+        Timber.d("onStartCommand")
 
         if (isRunning && intent != null && intent.hasExtra(EXTRA_ACTION)) {
             val id = SteamID(intent.getLongExtra(EXTRA_ID, 0L))
@@ -274,7 +274,7 @@ class SteamService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Timber.i("onDestroy")
+        Timber.d("onDestroy")
         disconnect()
         Intent(VapullaBaseActivity.STOP_INTENT).also(::sendBroadcast)
     }
@@ -686,16 +686,16 @@ class SteamService : Service() {
 
             var friend = db.steamFriendDao().find(currentFriend.steamID.convertToUInt64())
             if (friend == null) {
-                if (currentFriend.relationship == EFriendRelationship.Friend ||
-                    currentFriend.relationship == EFriendRelationship.RequestRecipient
+                if (currentFriend.relationship.isFriend() ||
+                    currentFriend.relationship.isRequest()
                 ) {
                     friend = SteamFriend(currentFriend.steamID.convertToUInt64())
                     friend.relation = currentFriend.relationship.code()
                     friendsToAdd.add(friend)
                 }
             } else {
-                if (currentFriend.relationship == EFriendRelationship.Friend ||
-                    currentFriend.relationship == EFriendRelationship.RequestRecipient
+                if (currentFriend.relationship.isFriend() ||
+                    currentFriend.relationship.isRequest()
                 ) {
                     friend.relation = currentFriend.relationship.code()
                     friendsToUpdate.add(friend)

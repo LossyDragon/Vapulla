@@ -3,8 +3,8 @@ package `in`.dragonbra.vapulla.compose.screens.games
 import `in`.dragonbra.vapulla.retrofit.response.Games
 
 sealed class SortOptions {
-    object Alphabetical : SortOptions()
-    object Playtime : SortOptions()
+    data object Alphabetical : SortOptions()
+    data object Playtime : SortOptions()
 }
 
 data class GamesState(

@@ -21,8 +21,7 @@ class VapullaHandler : ClientMsgHandler() {
     }
 
     override fun handleMsg(packetMsg: IPacketMsg) {
-        val dispatcher = dispatchMap[packetMsg.msgType]
-        dispatcher?.accept(packetMsg)
+        dispatchMap[packetMsg.msgType]?.accept(packetMsg)
     }
 
     fun getEmoticonList() {

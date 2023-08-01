@@ -20,19 +20,19 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 sealed class ValidationEvent {
-    object CancelService : ValidationEvent()
-    object StartService : ValidationEvent()
+    data object CancelService : ValidationEvent()
+    data object StartService : ValidationEvent()
 }
 
 sealed class PasswordValidation {
-    object Valid : PasswordValidation()
-    object Empty : PasswordValidation()
-    object Length : PasswordValidation()
-    object LetterOrDigit : PasswordValidation()
+    data object Valid : PasswordValidation()
+    data object Empty : PasswordValidation()
+    data object Length : PasswordValidation()
+    data object LetterOrDigit : PasswordValidation()
 }
 
 sealed class QrState {
-    object Loading : QrState()
+    data object Loading : QrState()
     class Ready(val qrCode: QRCode) : QrState()
 }
 
@@ -128,8 +128,8 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    fun onShowMessage(error: String) {
-        _loginState.update { it.copy(generalMessage = error) }
+    fun onShowMessage(error: String, reLogin: Boolean = false) {
+        _loginState.update { it.copy(generalMessage = error, isLoading = !reLogin) }
     }
 
     fun onTwoFactorSubmit() {
