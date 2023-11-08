@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Kinda the best FGS type I can see from the docs,
+            Vapulla does keep in sync with other clients steam is running on -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+
     <application
         android:name=".VapullaApplication"
         android:allowBackup="false"
@@ -116,7 +120,8 @@
         <service
             android:name=".service.SteamService"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="remoteMessaging" />
 
         <!-- Receivers -->
         <receiver android:name=".broadcastreceiver.ReplyReceiver" />

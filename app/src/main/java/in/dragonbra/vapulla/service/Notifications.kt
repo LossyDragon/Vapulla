@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -47,7 +48,15 @@ private const val ONGOING_NOTIFICATION_ID = 100
 fun Service.setNotification(@StringRes string: Int) {
     val text = getString(string)
     serviceNotification(text) { builder ->
-        startForeground(ONGOING_NOTIFICATION_ID, builder.build())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                ONGOING_NOTIFICATION_ID,
+                builder.build(),
+                FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
+            )
+        } else {
+            startForeground(ONGOING_NOTIFICATION_ID, builder.build())
+        }
     }
 }
 
