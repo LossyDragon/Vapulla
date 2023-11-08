@@ -35,7 +35,7 @@ import `in`.dragonbra.vapulla.model.FriendListItem
 fun getStatusIcon(friend: FriendListItem?): ImageVector? {
     val flags = EPersonaStateFlag.from(friend?.stateFlags ?: 0)
     return when {
-        friend?.isRequestRecipient() == true -> Icons.Default.PersonAdd
+        friend?.isRequestRecipient == true -> Icons.Default.PersonAdd
         friend?.isAwayOrSnooze() == true -> Icons.Default.Bedtime
         flags.contains(EPersonaStateFlag.ClientTypeVR) -> Icons.Default.VR
         flags.contains(EPersonaStateFlag.ClientTypeTenfoot) -> Icons.Default.SportsEsports

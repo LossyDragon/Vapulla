@@ -28,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +39,9 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -52,6 +55,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
@@ -91,22 +95,22 @@ fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    val onChatSelected = remember<(FriendListItem) -> Unit> {
-        {
-            Intent(context, ChatActivity::class.java).apply {
-                putExtra(ChatActivity.INTENT_STEAM_ID, it.id)
-            }.also {
-                context.startActivity(it)
-            }
-        }
-    }
-
     val onProfileSelected = remember<(FriendListItem) -> Unit> {
         {
             Intent(context, ProfileActivity::class.java).apply {
                 putExtra(ProfileActivity.INTENT_STEAM_ID, it.id)
-            }.also {
-                context.startActivity(it)
+            }.also(context::startActivity)
+        }
+    }
+
+    val onChatSelected = remember<(FriendListItem) -> Unit> {
+        {
+            if (it.isRequestRecipient) {
+                onProfileSelected(it)
+            } else {
+                Intent(context, ChatActivity::class.java).apply {
+                    putExtra(ChatActivity.INTENT_STEAM_ID, it.id)
+                }.also(context::startActivity)
             }
         }
     }
@@ -115,8 +119,6 @@ fun HomeScreen(viewModel: HomeViewModel) {
         state = state,
         searchTextState = viewModel.searchText,
         onChatSelected = onChatSelected,
-        onClickAccept = viewModel::onFriendAccept,
-        onClickIgnore = viewModel::onFriendIgnore,
         onLogout = viewModel::onLogout,
         onPersonAdd = viewModel::onAddFriend,
         onProfileSelected = onProfileSelected,
@@ -131,7 +133,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
 @OptIn(
     ExperimentalMaterialApi::class,
     ExperimentalFoundationApi::class,
-    ExperimentalComposeUiApi::class
+    ExperimentalMaterial3Api::class
 )
 @Composable
 private fun HomeScreenContent(
@@ -141,8 +143,6 @@ private fun HomeScreenContent(
     onLogout: () -> Unit,
     onPersonAdd: () -> Unit,
     onProfileSelected: (friend: FriendListItem) -> Unit,
-    onClickAccept: (friend: FriendListItem) -> Unit,
-    onClickIgnore: (friend: FriendListItem) -> Unit,
     onRefresh: () -> Unit,
     onSearchClosed: () -> Unit,
     onSearchOpened: () -> Unit,
@@ -180,10 +180,8 @@ private fun HomeScreenContent(
             )
         }
     ) {
+        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
         val listState = rememberLazyListState()
-        val isScrolled = remember {
-            derivedStateOf { listState.firstVisibleItemIndex > 0 }
-        }
 
         LaunchedEffect(state.isSearching) {
             if (state.isSearching) {
@@ -194,9 +192,10 @@ private fun HomeScreenContent(
         }
 
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 VapullaAppbar(
-                    isScrolled = isScrolled,
+                    scrollBehavior = scrollBehavior,
                     drawerState = drawerState,
                     actions = {
                         IconButton(onClick = onSearchOpened) {
@@ -237,23 +236,28 @@ private fun HomeScreenContent(
                     state = listState,
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    state.filteredFriendsList.forEach { (header, friends) ->
-                        stickyHeader(contentType = header) {
-                            StickyHeaderItem(header, friends.size)
-                        }
-
-                        items(friends, key = { it.id }) { friend ->
-                            FriendItem(
-                                modifier = Modifier.animateItemPlacement(),
-                                imageLoader = imageLoader,
-                                friend = friend,
-                                onClickChat = { onChatSelected(friend) },
-                                onClickProfile = { onProfileSelected(friend) },
-                                onClickAccept = { onClickAccept(friend) },
-                                onClickIgnore = { onClickIgnore(friend) }
-                            )
+                    state.filteredFriendsList.forEachIndexed { index, item ->
+                        item(key = "header$index") {
+                            // https://stackoverflow.com/a/68995732/13225929
+                            // TODO make collapsable sticky header groups.
                         }
                     }
+
+//                    state.filteredFriendsList.forEach { (header, friends) ->
+//                        stickyHeader(contentType = header) {
+//                            StickyHeaderItem(header, friends.size)
+//                        }
+//
+//                        items(friends, key = { it.id }) { friend ->
+//                            FriendItem(
+//                                modifier = Modifier.animateItemPlacement(),
+//                                imageLoader = imageLoader,
+//                                friend = friend,
+//                                onClickChat = { onChatSelected(friend) },
+//                                onClickProfile = { onProfileSelected(friend) },
+//                            )
+//                        }
+//                    }
                 }
 
                 val showUpButton by remember {
@@ -461,7 +465,7 @@ private fun Preview_HomeScreenContent() {
         FriendListItem(
             state = EPersonaState.Online.code(),
             gameAppId = 440,
-            gameName = "Team Fortess 2",
+            gameName = "Team Fortress 2",
             lastLogOff = 0L,
             lastLogOn = 0L,
             name = "Name $it",
@@ -479,8 +483,6 @@ private fun Preview_HomeScreenContent() {
             onLogout = {},
             onPersonAdd = {},
             onProfileSelected = {},
-            onClickAccept = {},
-            onClickIgnore = {},
             onRefresh = {},
             onSearchClosed = {},
             onSearchOpened = {},

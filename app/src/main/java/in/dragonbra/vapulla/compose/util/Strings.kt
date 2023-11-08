@@ -96,7 +96,7 @@ fun Context.getStatusText(friend: FriendListItem?): String {
         return getString(R.string.statusOfflineLabel)
     }
 
-    if (friend.isRequestRecipient()) {
+    if (friend.isRequestRecipient) {
         return getString(R.string.statusFriendRequest)
     }
 
@@ -150,7 +150,7 @@ fun getFriendName(friend: FriendListItem?): AnnotatedString {
         return builder.toAnnotatedString()
     }
 
-    if (!friend.hasNickname()) {
+    if (!friend.hasNickname) {
         builder.append(friend.friendName)
         return builder.toAnnotatedString()
     }

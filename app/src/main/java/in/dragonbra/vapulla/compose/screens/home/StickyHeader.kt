@@ -1,19 +1,17 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.waterfallPadding
-import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
@@ -22,19 +20,20 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.model.FriendListItem
 
 @Composable
-fun StickyHeaderItem(header: String, count: Int) {
+fun StickyHeaderItem(isCollapsed: Boolean, header: String, count: Int, onHeaderAction: () -> Unit) {
     val headerText = remember(header, count) { "$header ($count)" }
-    Column {
-        Text(
-            text = headerText,
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = 6.dp, bottom = 6.dp)
-                .waterfallPadding()
-        )
-        Divider(Modifier.fillMaxWidth())
-    }
+    ListItem(
+        headlineContent = { Text(text = headerText) },
+        trailingContent = {
+            val button = when (isCollapsed) {
+                true -> Icons.Outlined.KeyboardArrowDown
+                else -> Icons.Outlined.KeyboardArrowUp
+            }
+            IconButton(onClick = onHeaderAction) {
+                Icon(imageVector = button, contentDescription = null)
+            }
+        }
+    )
 }
 
 @Preview
@@ -72,14 +71,12 @@ private fun Preview_StickyHeaderItem() {
     )
     VapullaTheme {
         Column {
-            StickyHeaderItem("Online", 60)
+            StickyHeaderItem(true, "Online", 60, {})
             FriendItem(
                 imageLoader = imageLoader,
                 friend = friend,
                 onClickChat = {},
                 onClickProfile = {},
-                onClickAccept = {},
-                onClickIgnore = {}
             )
         }
     }

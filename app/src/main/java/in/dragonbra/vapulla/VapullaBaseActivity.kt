@@ -39,6 +39,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
 
     var isBound = false
         private set
+
     var steamService: SteamService? = null
         private set
 

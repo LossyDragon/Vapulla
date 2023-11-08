@@ -8,8 +8,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MarkUnreadChatAlt
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PersonAddAlt1
+import androidx.compose.material.icons.outlined.ChatBubble
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.MarkUnreadChatAlt
+import androidx.compose.material.icons.outlined.PersonAddAlt1
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,14 +66,12 @@ fun FriendItem(
     friend: FriendListItem,
     onClickChat: () -> Unit,
     onClickProfile: () -> Unit,
-    onClickAccept: () -> Unit,
-    onClickIgnore: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
 
     val onClick = remember {
         {
-            if (!friend.isRequestRecipient()) onClickChat()
+            if (!friend.isRequestRecipient) onClickChat()
         }
     }
 
@@ -76,125 +82,84 @@ fun FriendItem(
         }
     }
 
-    Column(
+    val statusColor = remember(friend) { getStatusColor(friend) }
+    ListItem(
         modifier = modifier
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
-            )
-    ) {
-        val statusColor = remember(friend) { getStatusColor(friend) }
-
-        ListItem(
-            headlineContent = {
-                val friendName = remember(friend) { getFriendName(friend = friend) }
-                val statusIcon = remember(friend) { getStatusIcon(friend) }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        modifier = Modifier.weight(1f, false),
-                        text = friendName,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    statusIcon?.let {
-                        Icon(
-                            modifier = Modifier
-                                .padding(horizontal = 2.dp)
-                                .size(12.dp),
-                            imageVector = it,
-                            contentDescription = it.name
-                        )
-                    }
-                }
-            },
-            supportingContent = {
-                Column {
-                    val context = LocalContext.current
-                    val statusText = remember(friend) { context.getStatusText(friend) }
-                    Text(
-                        text = statusText,
-                        color = statusColor,
-                        fontSize = 10.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    if (friend.lastMessage != null && !friend.isRequestRecipient()) {
-                        PaperPlane(
-                            imageLoader = imageLoader,
-                            text = friend.lastMessage!!,
-                            isPreviewMode = true,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            },
-            trailingContent = {
-                if (friend.isRequestRecipient()) {
-                    Row {
-                        IconButton(onClick = onClickAccept) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Accept"
-                            )
-                        }
-                        IconButton(onClick = onClickIgnore) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Ignore"
-                            )
-                        }
-                    }
-                } else if ((friend.newMessageCount ?: 0) > 0) {
-                    // New Messages
-                    val msgCount = remember(friend) {
-                        getUnreadMessageCount(friend.newMessageCount)
-                    }
-
-                    Surface(
-                        modifier = Modifier.minimumInteractiveComponentSize(),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondary
-                    ) {
-                        Text(
-                            modifier = Modifier.padding(8.dp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            text = msgCount,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                } else {
-                    // Read Messages, show last time
-                    val time = remember(friend) { getLastMessageTime(friend = friend).toString() }
-                    Text(
-                        text = time,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            },
-            leadingContent = {
-                Surface(
-                    shape = iconSmallCornerShape,
-                    color = statusColor
-                ) {
-                    val avatarUrl = remember(friend) { getAvatarUrl(friend.avatar) }
-                    StaticImage(
+            ),
+        headlineContent = {
+            val friendName = remember(friend) { getFriendName(friend = friend) }
+            val statusIcon = remember(friend) { getStatusIcon(friend) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier.weight(1f, false),
+                    text = friendName,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                statusIcon?.let {
+                    Icon(
                         modifier = Modifier
-                            .padding(1.dp)
-                            .clip(iconSmallCornerShape)
-                            .size(58.dp),
-                        imageLoader = imageLoader,
-                        url = avatarUrl
+                            .padding(horizontal = 2.dp)
+                            .size(12.dp),
+                        imageVector = it,
+                        contentDescription = it.name
                     )
                 }
             }
-        )
-        Divider()
-    }
+        },
+        supportingContent = {
+            Column {
+                val context = LocalContext.current
+                val statusText = remember(friend) { context.getStatusText(friend) }
+                Text(
+                    text = statusText,
+                    color = statusColor,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (friend.lastMessage != null && !friend.isRequestRecipient) {
+                    PaperPlane(
+                        imageLoader = imageLoader,
+                        text = friend.lastMessage!!,
+                        isPreviewMode = true,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        },
+        leadingContent = {
+            Surface(
+                shape = iconSmallCornerShape,
+                color = statusColor
+            ) {
+                val avatarUrl = remember(friend) { getAvatarUrl(friend.avatar) }
+                StaticImage(
+                    modifier = Modifier
+                        .padding(1.dp)
+                        .clip(iconSmallCornerShape)
+                        .size(58.dp),
+                    imageLoader = imageLoader,
+                    url = avatarUrl
+                )
+            }
+        },
+        trailingContent = {
+            val icon = when {
+                friend.isRequestRecipient -> Icons.Outlined.PersonAddAlt1
+                friend.isUnread -> Icons.Outlined.MarkUnreadChatAlt
+                else -> Icons.Outlined.ChatBubbleOutline
+            }
+
+            IconButton(onClick = onClickChat) {
+                Icon(imageVector = icon, contentDescription = null)
+            }
+        },
+    )
 }
 
 @Preview
@@ -245,8 +210,6 @@ private fun Preview_FriendListItem() {
                 ),
                 onClickChat = {},
                 onClickProfile = {},
-                onClickAccept = {},
-                onClickIgnore = {}
             )
 
             friendData.onEachIndexed { index, entry ->
@@ -262,7 +225,7 @@ private fun Preview_FriendListItem() {
                         lastMessage = "Left 4 Dead 2 is so fun!",
                         lastMessageTime = 0,
                         name = entry.key,
-                        newMessageCount = 27.times(index + 1),
+                        newMessageCount = if (index == 0) 0 else 27.times(index + 1),
                         nickname = entry.key,
                         relation = EFriendRelationship.Friend.code(),
                         state = entry.value.code(),
@@ -271,8 +234,6 @@ private fun Preview_FriendListItem() {
                     ),
                     onClickChat = {},
                     onClickProfile = {},
-                    onClickAccept = {},
-                    onClickIgnore = {}
                 )
             }
         }

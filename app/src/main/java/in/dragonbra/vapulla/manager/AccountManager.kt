@@ -87,6 +87,14 @@ class AccountManager(private val context: Context) {
     val sentrySize: Long
         get() = File(context.filesDir, SENTRY_FILE_NAME).length()
 
+    fun getCollapsedState(pref: String): Boolean {
+        return prefs.getBoolean("is_${pref}_collapsed", false)
+    }
+
+    fun setCollapsedState(pref: String, value: Boolean) {
+        prefs.edit { putBoolean("is_${pref}_collapsed", value) }
+    }
+
     fun updateSentryFile(callback: UpdateMachineAuthCallback) {
         val sentryFile = File(context.filesDir, SENTRY_FILE_NAME)
         val byteBuffer = ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite)

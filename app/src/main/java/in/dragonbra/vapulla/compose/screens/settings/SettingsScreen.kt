@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,6 +68,7 @@ fun SettingsScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsContent(
     accountManager: AccountManager,
@@ -139,15 +141,9 @@ private fun SettingsContent(
     )
 
     val scrollState = rememberScrollState()
-    val isScrolled = remember {
-        derivedStateOf {
-            scrollState.value > 0
-        }
-    }
     Scaffold(
         topBar = {
             VapullaAppbar(
-                isScrolled = isScrolled,
                 toolbarText = stringResource(id = R.string.title_activity_settings),
                 onBackPressed = onBackPressed
             )

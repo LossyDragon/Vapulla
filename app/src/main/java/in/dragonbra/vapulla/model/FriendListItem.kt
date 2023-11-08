@@ -64,40 +64,26 @@ data class FriendListItem(
     val friendName: String
         get() = if (!Strings.isNullOrEmpty(nickname)) nickname!! else name ?: "????"
 
-    fun hasNickname() = !nickname.isNullOrEmpty()
+    val isRequestRecipient: Boolean
+        get() = relation == EFriendRelationship.RequestRecipient.code()
 
-    fun isRequestRecipient(): Boolean {
-        if (relation == EFriendRelationship.RequestRecipient.code()) {
-            return true
-        }
+    val hasNickname: Boolean
+        get() = !nickname.isNullOrEmpty()
 
-        return false
-    }
+    val isInGame: Boolean
+        get() = if (isOnline) gameAppId > 0 || !Strings.isNullOrEmpty(gameName) else false
 
-    fun isInGame(): Boolean {
-        return if (isOnline()) gameAppId > 0 || !Strings.isNullOrEmpty(gameName) else false
-    }
+    val isOnline: Boolean
+        get() = state?.let { it in 1..6 } ?: false
 
-    fun isOnline() = state?.let { it in 1..6 } ?: false
+    val isOffline: Boolean
+        get() = EPersonaState.from(state ?: 0) == EPersonaState.Offline
 
-    fun isOffline(): Boolean {
-        val flags = EPersonaState.from(state ?: 0)
-        if (flags == EPersonaState.Offline) {
-            return true
-        }
+    val isInGameAwayOrSnooze: Boolean
+        get() = isInGame && isAwayOrSnooze()
 
-        return false
-    }
-
-    fun isInGameAwayOrSnooze(): Boolean {
-        val isInGame = isInGame()
-        val isAwayOrSnooze = isAwayOrSnooze()
-        if (isInGame && isAwayOrSnooze) {
-            return true
-        }
-
-        return false
-    }
+    val isUnread: Boolean
+        get() = (newMessageCount ?: 0) > 0
 
     fun isAwayOrSnooze(): Boolean {
         return when (EPersonaState.from(state ?: 0)) {

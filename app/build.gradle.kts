@@ -1,13 +1,12 @@
 // https://plugins.gradle.org/plugin/org.jlleitschuh.gradle.ktlint
 // https://github.com/google/ksp/releases
 plugins {
-    id("com.android.application")
-    id("com.google.devtools.ksp")
-    id("org.jlleitschuh.gradle.ktlint") version "11.6.0"
-    id("com.google.dagger.hilt.android")
-    id("dagger.hilt.android.plugin")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.dagger.hilt)
+    alias(libs.plugins.kotlin)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint)
     id("kotlin-parcelize")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {

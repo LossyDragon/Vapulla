@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -23,12 +24,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +89,7 @@ fun InvitesScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun InvitesContent(
     state: InvitesState,
@@ -96,21 +100,12 @@ private fun InvitesContent(
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var tabIndex by remember { mutableStateOf(0) }
-    val isScrolled = remember {
-        derivedStateOf { scrollState.firstVisibleItemIndex > 0 }
-    }
-    val tabColor = if (isScrolled.value) {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .5f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
+    var tabIndex by remember { mutableIntStateOf(0) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             VapullaAppbar(
-                isScrolled = isScrolled,
                 toolbarText = stringResource(id = R.string.title_activity_invites),
                 onBackPressed = onBackPressed
             )
@@ -119,7 +114,7 @@ private fun InvitesContent(
         Column(modifier = Modifier.padding(paddingValues)) {
             TabRow(
                 selectedTabIndex = tabIndex,
-                containerColor = tabColor
+                containerColor = Color.Transparent //
             ) {
                 Tab(
                     selected = tabIndex == 0,

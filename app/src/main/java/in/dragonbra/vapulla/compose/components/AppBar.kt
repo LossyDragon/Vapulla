@@ -27,10 +27,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -54,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
-import java.lang.RuntimeException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -84,7 +84,7 @@ private val slideUp = {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VapullaAppbar(
-    isScrolled: State<Boolean> = derivedStateOf { false },
+    scrollBehavior: TopAppBarScrollBehavior? = null,
     drawerState: DrawerState? = null,
     onBackPressed: (() -> Unit)? = null,
     toolbarText: String = stringResource(id = R.string.app_name),
@@ -93,16 +93,19 @@ fun VapullaAppbar(
     isSearching: Boolean = false,
     onSearchClose: (() -> Unit)? = null
 ) {
-    val topBarContainerColor = if (isScrolled.value) {
+
+    val topBarContainerColor = if (scrollBehavior?.state?.heightOffsetLimit ?: 0f > .75f) {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .5f)
     } else {
         MaterialTheme.colorScheme.surface
     }
 
     Box {
-        TopAppBar(
+        MediumTopAppBar(
+            scrollBehavior = scrollBehavior,
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = topBarContainerColor,
+                //scrolledContainerColor = Color.Transparent,
                 navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                 actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -212,6 +215,7 @@ private fun SearchView(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 private fun Preview_VapullaToolbar() {

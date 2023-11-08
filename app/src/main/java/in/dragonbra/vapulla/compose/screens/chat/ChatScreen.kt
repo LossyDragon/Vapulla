@@ -275,8 +275,8 @@ private fun ChatScreenContent(
                             val status = if ((lastMsg || typingTs) && currentTs) {
                                 stringResource(id = R.string.statusTyping)
                             } else {
-                                val isOnline = state.friend?.isInGame() == true
-                                val isAway = state.friend?.isInGameAwayOrSnooze() == true
+                                val isOnline = state.friend?.isInGame == true
+                                val isAway = state.friend?.isInGameAwayOrSnooze == true
                                 if (isOnline || isAway) {
                                     val gameName = state.friend?.gameName ?: "a game."
                                     stringResource(id = R.string.statusPlaying, gameName)

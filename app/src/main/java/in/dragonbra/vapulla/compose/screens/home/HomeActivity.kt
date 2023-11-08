@@ -99,9 +99,9 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         scope.launch(Dispatchers.IO) {
             when (event) {
                 HomeUiEvent.AddFriend -> onInvites()
-                HomeUiEvent.Disconnect -> steamService?.disconnect()
-                HomeUiEvent.LogOut -> steamService?.disconnect()
                 HomeUiEvent.Settings -> onSettings()
+                HomeUiEvent.Disconnect,
+                HomeUiEvent.LogOut -> steamService?.disconnect()
                 HomeUiEvent.Refresh -> {
                     viewModel.clearStates()
                     steamService?.getFriendPersonaStates()
