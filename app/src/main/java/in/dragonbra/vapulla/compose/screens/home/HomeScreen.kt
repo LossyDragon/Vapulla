@@ -51,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -126,7 +125,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
         onSearchClosed = viewModel::isNotSearching,
         onSearchOpened = viewModel::isSearching,
         onSettings = viewModel::onSettings,
-        onStatusChange = viewModel::onStatusUpdate
+        onStatusChange = viewModel::onStatusUpdate,
+        onHeaderAction = viewModel::onHeaderAction
     )
 }
 
@@ -147,7 +147,8 @@ private fun HomeScreenContent(
     onSearchClosed: () -> Unit,
     onSearchOpened: () -> Unit,
     onSettings: () -> Unit,
-    onStatusChange: (EPersonaState) -> Unit
+    onStatusChange: (EPersonaState) -> Unit,
+    onHeaderAction: (String, Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -236,28 +237,33 @@ private fun HomeScreenContent(
                     state = listState,
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    state.filteredFriendsList.forEachIndexed { index, item ->
-                        item(key = "header$index") {
-                            // https://stackoverflow.com/a/68995732/13225929
-                            // TODO make collapsable sticky header groups.
+                    state.filteredFriendsList.forEachIndexed { index, group ->
+                        stickyHeader(
+                            key = "header_$index",
+                            contentType = group.headerTitle
+                        ) {
+                            StickyHeaderItem(
+                                isCollapsed = group.collapsed,
+                                header = group.headerTitle,
+                                count = group.headerCount,
+                                onHeaderAction = {
+                                    onHeaderAction(group.headerTitle, group.collapsed)
+                                }
+                            )
+                        }
+
+                        if (!group.collapsed) {
+                            items(group.items, key = { it.id }) { friend ->
+                                FriendItem(
+                                    modifier = Modifier.animateItemPlacement(),
+                                    imageLoader = imageLoader,
+                                    friend = friend,
+                                    onClickChat = { onChatSelected(friend) },
+                                    onClickProfile = { onProfileSelected(friend) },
+                                )
+                            }
                         }
                     }
-
-//                    state.filteredFriendsList.forEach { (header, friends) ->
-//                        stickyHeader(contentType = header) {
-//                            StickyHeaderItem(header, friends.size)
-//                        }
-//
-//                        items(friends, key = { it.id }) { friend ->
-//                            FriendItem(
-//                                modifier = Modifier.animateItemPlacement(),
-//                                imageLoader = imageLoader,
-//                                friend = friend,
-//                                onClickChat = { onChatSelected(friend) },
-//                                onClickProfile = { onProfileSelected(friend) },
-//                            )
-//                        }
-//                    }
                 }
 
                 val showUpButton by remember {
@@ -474,10 +480,16 @@ private fun Preview_HomeScreenContent() {
             typingTs = 0L
         )
     }
+    val group = CollapsableStatusGroup(
+        headerTitle = "Online",
+        headerCount = friendsList.size,
+        items = friendsList,
+        collapsed = false,
+    )
 
     VapullaTheme {
         HomeScreenContent(
-            state = HomeState(friendsList = mapOf("Online" to friendsList)),
+            state = HomeState(filteredFriendsList = listOf(group)),
             searchTextState = MutableStateFlow(TextFieldValue("")),
             onChatSelected = {},
             onLogout = {},
@@ -487,7 +499,8 @@ private fun Preview_HomeScreenContent() {
             onSearchClosed = {},
             onSearchOpened = {},
             onSettings = {},
-            onStatusChange = {}
+            onStatusChange = {},
+            onHeaderAction = { _, _ -> }
         )
     }
 }

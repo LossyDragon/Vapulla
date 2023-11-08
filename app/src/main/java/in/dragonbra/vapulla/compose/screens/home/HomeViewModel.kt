@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import okhttp3.internal.toImmutableList
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -94,43 +93,39 @@ class HomeViewModel @Inject constructor(
         )
 
         // Map friends to their status
-        val request = mutableListOf<FriendListItem>()
-        val recent = mutableListOf<FriendListItem>()
-        val ingame = mutableListOf<FriendListItem>()
-        val online = mutableListOf<FriendListItem>()
-        val offline = mutableListOf<FriendListItem>()
-        sortedList.forEach {
-            when {
-                it.isRequestRecipient -> request.add(it)
-                it.isItemRecentChat(recentTimeout, updateTime) -> recent.add(it)
-                it.isInGame -> ingame.add(it)
-                it.isOnline -> online.add(it)
-                else -> offline.add(it)
+        val groups = sortedList
+            .fold(mutableMapOf<String, MutableList<FriendListItem>>()) { acc, item ->
+                when {
+                    item.isRequestRecipient ->
+                        acc.getOrPut("Friend Request") { mutableListOf() }.add(item)
+
+                    item.isItemRecentChat(recentTimeout, updateTime) ->
+                        acc.getOrPut("Recent Chat") { mutableListOf() }.add(item)
+
+                    item.isInGame || item.isInGameAwayOrSnooze ->
+                        acc.getOrPut("In-Game") { mutableListOf() }.add(item)
+
+                    item.isOnline || item.isAwayOrSnooze() ->
+                        acc.getOrPut("Online") { mutableListOf() }.add(item)
+
+                    else -> acc.getOrPut("Offline") { mutableListOf() }.add(item)
+                }
+                acc
             }
-        }
-        val groupedList = mutableListOf(
-            CollapsableStatusGroup(EStatusGroup.REQUEST, "Request Recipients", request, accountManager.getCollapsedState(EStatusGroup.REQUEST.type)),
-            CollapsableStatusGroup(EStatusGroup.RECENT, "Recent Chats", recent, accountManager.getCollapsedState(EStatusGroup.RECENT.type)),
-            CollapsableStatusGroup(EStatusGroup.IN_GAME, "In Game", ingame, accountManager.getCollapsedState(EStatusGroup.IN_GAME.type)),
-            CollapsableStatusGroup(EStatusGroup.ONLINE, "Online", online, accountManager.getCollapsedState(EStatusGroup.ONLINE.type)),
-            CollapsableStatusGroup(EStatusGroup.OFFLINE, "Offline", offline, accountManager.getCollapsedState(EStatusGroup.OFFLINE.type)),
-        )
 
-
-//        val groupedList = sortedList.groupBy {
-//            when {
-//                it.isRequestRecipient -> "Request Recipients"
-//                it.isItemRecentChat(recentTimeout, updateTime) -> "Recent Chats"
-//                it.isInGame || it.isInGameAwayOrSnooze -> "In Game"
-//                it.isOnline || it.isAwayOrSnooze() -> "Online"
-//                else -> "Offline"
-//            }
-//        }
+        val groupedList = groups.map { (title, items) ->
+            CollapsableStatusGroup(
+                headerTitle = title,
+                headerCount = items.size,
+                items = items,
+                collapsed = accountManager.getCollapsedState(title)
+            )
+        }.toList()
 
         if (state.value.isSearching) {
             _state.update {
                 it.copy(
-                    filteredFriendsList = groupedList.toList(),
+                    filteredFriendsList = groupedList,
                     updateTime = updateTime
                 )
             }
@@ -146,24 +141,18 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun search(query: String) {
-        TODO()
-//        val isSearching = state.value.isSearching && searchText.value.text.isNotEmpty()
-//        val list = if (isSearching) {
-//            val friendsValues = state.value.friendsList.values.flatten()
-//            friendsValues.filter {
-//                val name = it.name
-//                val nickname = it.nickname
-//                val trimmedQuery = query.trim().lowercase()
-//                name?.contains(trimmedQuery, true) ?: false || nickname?.contains(
-//                    trimmedQuery,
-//                    true
-//                ) ?: false
-//            }
-//        } else {
-//            state.value.friendsList.values.flatten()
-//        }
-//
-//        swap(list, System.currentTimeMillis())
+        if (!state.value.isSearching && searchText.value.text.isEmpty()) {
+            val list = state.value.friendsList.flatMap { it.items }
+            swap(list, System.currentTimeMillis())
+            return
+        }
+
+        val list = state.value.friendsList.flatMap { it.items }.filter { item ->
+            item.name.orEmpty().contains(query.trim(), true) ||
+                item.nickname.orEmpty().contains(query.trim(), true)
+        }
+
+        swap(list, System.currentTimeMillis())
     }
 
     fun clearStates() {
@@ -205,6 +194,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _uiEvent.emit(HomeUiEvent.ChangeStatus(status))
         }
+    }
+
+    fun onHeaderAction(header: String, value: Boolean) {
+        accountManager.setCollapsedState(header, value)
     }
 
     fun onFriendAccept(friendListItem: FriendListItem) {
