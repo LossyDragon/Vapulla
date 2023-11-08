@@ -197,7 +197,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onHeaderAction(header: String, value: Boolean) {
-        accountManager.setCollapsedState(header, value)
+        accountManager.setCollapsedState(header, !value)
     }
 
     fun onFriendAccept(friendListItem: FriendListItem) {

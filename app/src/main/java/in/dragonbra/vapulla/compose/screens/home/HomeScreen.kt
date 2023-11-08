@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -232,27 +233,33 @@ private fun HomeScreenContent(
                     }
                 }
 
+                // TODO when swap happens, it seems it forget the collapse status
+                val collapsedState = remember(state.filteredFriendsList) {
+                    state.filteredFriendsList.map { it.collapsed }.toMutableStateList()
+                }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     state.filteredFriendsList.forEachIndexed { index, group ->
+                        val collapsed = collapsedState[index]
                         stickyHeader(
                             key = "header_$index",
                             contentType = group.headerTitle
                         ) {
                             StickyHeaderItem(
-                                isCollapsed = group.collapsed,
+                                isCollapsed = collapsed,
                                 header = group.headerTitle,
                                 count = group.headerCount,
                                 onHeaderAction = {
-                                    onHeaderAction(group.headerTitle, group.collapsed)
+                                    collapsedState[index] = !collapsed
+                                    onHeaderAction(group.headerTitle, !collapsed)
                                 }
                             )
                         }
 
-                        if (!group.collapsed) {
+                        if (!collapsed) {
                             items(group.items, key = { it.id }) { friend ->
                                 FriendItem(
                                     modifier = Modifier.animateItemPlacement(),
