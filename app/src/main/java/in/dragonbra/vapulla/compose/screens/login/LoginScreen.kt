@@ -91,13 +91,14 @@ import `in`.dragonbra.vapulla.compose.components.LoginTextField
 import `in`.dragonbra.vapulla.compose.components.PermissionsDialog
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.fontFamily
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.VectorAnimCompat
 import `in`.dragonbra.vapulla.core.Constants
 import kotlinx.coroutines.launch
+import qrcode.QRCode
 
-// TODO: Pretty up "Mobile App" text
-// TODO: Make sure we're still in a loading state when waiting for mobile app request
 // TODO: QR sign in doesn't want to work after a cancel/time out.
+// TODO: Show frowny face on error
 @OptIn(
     ExperimentalPermissionsApi::class,
     ExperimentalMaterial3Api::class
@@ -135,6 +136,7 @@ fun LoginScreen(
                     viewModel.onLoadingVisible(true)
                     onStartService()
                 }
+
                 is ValidationEvent.Message -> snackbarHostState.showSnackbar(
                     message = event.message
                 )
@@ -198,6 +200,7 @@ private fun LoginScreenContent(
     onTwoFactorSubmit: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             AnimatedVisibility(visible = !loginState.isLoading) {
@@ -252,7 +255,9 @@ private fun LoginScreenContent(
                         verticalArrangement = Arrangement.Center
                     ) {
                         LoginTextFields(
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                                .fillMaxWidth(),
                             loginState = loginState,
                             onUsername = onUsername,
                             onPassword = onPassword,
@@ -260,10 +265,11 @@ private fun LoginScreenContent(
                         )
                         /* Login Button */
                         Button(
-                            modifier = modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 12.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 24.dp, vertical = 16.dp)
+                                .fillMaxWidth(),
                             onClick = onLogin,
+                            shape = iconSmallCornerShape,
                             content = { Text(text = stringResource(id = R.string.login)) }
                         )
                     }
@@ -279,7 +285,7 @@ private fun LoginScreenContent(
                         LoginTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             label = R.string.textLabelSteamGuard,
-                            isEnabled = !loginState.isLoading,
+                            isEnabled = loginState.expectSteamGuardCode,
                             isError = !loginState.isSteamGuardValid,
                             keyboardActions = KeyboardActions(
                                 onDone = { focusManager.clearFocus() }
@@ -306,7 +312,14 @@ private fun LoginScreenContent(
 
                 /* Use Mobile app */
                 AnimatedVisibility(visible = loginState.expectSteamGuardApp) {
-                    Text(text = "Use your Steam mobile app to Approve or Deny the login request")
+                    Text(
+                        modifier = Modifier.padding(
+                            horizontal = 24.dp,
+                            vertical = 12.dp
+                        ),
+                        style = MaterialTheme.typography.headlineSmall,
+                        text = "Use your Steam mobile app to Approve or Deny the login request"
+                    )
                 }
             }
         }
@@ -505,18 +518,18 @@ private fun BottomSheet(
                     shape = MaterialTheme.shapes.medium,
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
+                    val qrCodeBackground = MaterialTheme.colorScheme.surfaceVariant
+                    val qrCodeColor = MaterialTheme.colorScheme.secondary
                     when (qrState) {
                         is QrState.Ready -> {
-                            val qrCodeBackground = MaterialTheme.colorScheme.surfaceVariant
-                            val qrCodeColor = MaterialTheme.colorScheme.secondary
                             CoilImage(
                                 imageModel = {
-                                    qrState.qrCode.render(
-                                        margin = 75,
-                                        brightColor = qrCodeBackground.toArgb(),
-                                        marginColor = qrCodeBackground.toArgb(),
-                                        darkColor = qrCodeColor.toArgb()
-                                    ).nativeImage()
+                                    QRCode.ofRoundedSquares()
+                                        .withColor(qrCodeColor.toArgb())
+                                        .withBackgroundColor(qrCodeBackground.toArgb())
+                                        .build(qrState.code)
+                                        .render()
+                                        .nativeImage()
                                 },
                                 imageOptions = ImageOptions(
                                     alignment = Alignment.Center,
@@ -524,6 +537,7 @@ private fun BottomSheet(
                                 )
                             )
                         }
+
                         else -> {
                             Box(Modifier.fillMaxSize()) {
                                 CircularProgressIndicator(
@@ -595,16 +609,63 @@ private fun Preview_VapullaLoginLogo() {
     }
 }
 
+/**
+ * Previews
+ */
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_LoginScreenContent3() {
+    val loginState = LoginState(
+        isLoading = true,
+        expectSteamGuardCode = true,
+        steamGuard = "1A2B3C"
+    )
+    VapullaTheme {
+        LoginScreenContent(
+            loginState = loginState,
+            snackbarHostState = SnackbarHostState(),
+            onUsername = {},
+            onPassword = {},
+            onSteamGuard = {},
+            onPasswordVisible = {},
+            onLogin = {},
+            onLoginQR = {},
+            onTwoFactorSubmit = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_LoginScreenContent2() {
+    val loginState = LoginState(
+        isLoading = true,
+        expectSteamGuardApp = true
+    )
+    VapullaTheme {
+        LoginScreenContent(
+            loginState = loginState,
+            snackbarHostState = SnackbarHostState(),
+            onUsername = {},
+            onPassword = {},
+            onSteamGuard = {},
+            onPasswordVisible = {},
+            onLogin = {},
+            onLoginQR = {},
+            onTwoFactorSubmit = {}
+        )
+    }
+}
+
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview_LoginScreenContent() {
     val loginState = LoginState(
         isPasswordValid = PasswordValidation.LetterOrDigit,
         isPasswordVisible = true,
-        isSteamGuardValid = false,
         isUsernameValid = false,
         password = "Password",
-        steamGuard = "1A2B3C",
         username = "Username"
     )
     VapullaTheme {

@@ -74,6 +74,7 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.model.AuthResponse
 import `in`.dragonbra.vapulla.model.InviteTokenItem
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
@@ -83,12 +84,10 @@ import java.util.*
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.collections.ArrayList
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -471,7 +470,7 @@ class SteamService : Service() {
         iAuthenticator: IAuthenticator,
         accountName: String,
         accountPassword: String
-    ): Pair<String, String>? {
+    ): AuthResponse? {
         val authSessionDetails = AuthSessionDetails().apply {
             username = accountName.trim()
             password = accountPassword
@@ -486,7 +485,9 @@ class SteamService : Service() {
             val authPollResult = authSession.pollingWaitForResult(coroutineScope)
 
             // Save our results (username and refresh token) to account manager.
-            Pair(authPollResult.accountName, authPollResult.refreshToken)
+            with(authPollResult) {
+                AuthResponse(this.accountName, this.refreshToken)
+            }
         } catch (e: IllegalArgumentException) {
             coroutineScope.cancel(CancellationException(e.message))
             null
@@ -496,7 +497,7 @@ class SteamService : Service() {
     suspend fun signInViaQR(
         coroutineScope: CoroutineScope,
         onDrawQRCode: (QrAuthSession) -> Unit
-    ): Pair<String, String> {
+    ): AuthResponse {
         val auth = SteamAuthentication(steamClient, unifiedMessages)
 
         val authSessionDetails = AuthSessionDetails().apply {
@@ -518,7 +519,7 @@ class SteamService : Service() {
 
         Timber.i("Connected to Steam! Logging in as ${pollResponse.accountName}...")
 
-        return Pair(pollResponse.accountName, pollResponse.refreshToken)
+        return AuthResponse(pollResponse.accountName, pollResponse.refreshToken)
     }
 
     fun createFriendInviteToken() {
@@ -579,10 +580,8 @@ class SteamService : Service() {
             disconnectedSubs.forEach { it.invoke(cb) }
         } else {
             Timber.i("failed to connect to steam ${++retryCount} times, trying again...")
-            scope.launch {
-                delay(1.seconds)
-                steamClient.connect()
-            }
+            Thread.sleep(2000L)
+            steamClient.connect()
             setNotification(R.string.notificationLostConnection)
         }
     }

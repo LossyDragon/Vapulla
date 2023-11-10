@@ -145,8 +145,8 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
                             return@supervisorScope
                         }
 
-                        accountManager.username = response.first
-                        accountManager.loginKey = response.second
+                        accountManager.username = response.accountName
+                        accountManager.loginKey = response.refreshToken
 
                         val logonDetails = LogOnDetails().apply {
                             username = accountManager.username

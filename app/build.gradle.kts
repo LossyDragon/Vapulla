@@ -98,13 +98,12 @@ dependencies {
     implementation(libs.bundles.compose)
     implementation(libs.bundles.compose.utils)
 
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.5.4")
-
     implementation(libs.apng)
     implementation(libs.bundles.retrofit)
     implementation(libs.bundles.room)
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)
+    implementation(libs.google.fonts)
     implementation(libs.hilt.android)
     implementation(libs.jsoup)
     implementation(libs.okhttp)

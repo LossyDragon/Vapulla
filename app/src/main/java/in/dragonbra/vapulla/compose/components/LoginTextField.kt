@@ -1,8 +1,6 @@
 package `in`.dragonbra.vapulla.compose.components
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -12,9 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 
 // TODO redo the styling of this
 @Composable
@@ -32,9 +30,7 @@ fun LoginTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     OutlinedTextField(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 6.dp),
+        modifier = modifier,
         enabled = isEnabled,
         isError = isError,
         keyboardActions = keyboardActions,
@@ -42,6 +38,7 @@ fun LoginTextField(
         label = { Text(text = stringResource(id = label)) },
         onValueChange = { onValueChange(it) },
         singleLine = true,
+        shape = iconSmallCornerShape,
         supportingText = if (isError) {
             { Text(supportingText) }
         } else {

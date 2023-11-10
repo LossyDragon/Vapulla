@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
 import `in`.dragonbra.vapulla.manager.AccountManager
-import io.github.g0dkar.qrcode.QRCode
 import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -34,7 +33,7 @@ sealed class PasswordValidation {
 
 sealed class QrState {
     data object Loading : QrState()
-    data class Ready(val qrCode: QRCode) : QrState()
+    data class Ready(val code: String) : QrState()
 }
 
 @HiltViewModel
@@ -126,7 +125,7 @@ class LoginViewModel @Inject constructor(
             it.copy(
                 expectSteamGuardCode = expectSteamGuardCode,
                 expectSteamGuardApp = expectSteamGuardApp,
-                isLoading = false
+                isLoading = true
             )
         }
         viewModelScope.launch {
@@ -171,9 +170,7 @@ class LoginViewModel @Inject constructor(
         val challengeURL: String = authSession.challengeUrl
 
         Timber.d("New challenge URL: $challengeURL")
-
-        val qrCode = QRCode(challengeURL)
-        qrCodeState = QrState.Ready(qrCode)
+        qrCodeState = QrState.Ready(challengeURL)
     }
 
     fun doLoginQR() {
