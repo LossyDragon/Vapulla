@@ -22,6 +22,7 @@ import timber.log.Timber
 sealed class ValidationEvent {
     data object CancelService : ValidationEvent()
     data object StartService : ValidationEvent()
+    data class Message(val message: String) : ValidationEvent()
 }
 
 sealed class PasswordValidation {
@@ -33,7 +34,7 @@ sealed class PasswordValidation {
 
 sealed class QrState {
     data object Loading : QrState()
-    class Ready(val qrCode: QRCode) : QrState()
+    data class Ready(val qrCode: QRCode) : QrState()
 }
 
 @HiltViewModel
@@ -110,7 +111,10 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onLoadingVisible(isLoading: Boolean) {
-        _loginState.update { it.copy(isLoading = isLoading, generalMessage = "Loading") }
+        _loginState.update { it.copy(isLoading = isLoading) }
+        viewModelScope.launch {
+            loginEventChannel.send(ValidationEvent.Message("Loading"))
+        }
     }
 
     fun onShowSteamGuard(
@@ -122,14 +126,19 @@ class LoginViewModel @Inject constructor(
             it.copy(
                 expectSteamGuardCode = expectSteamGuardCode,
                 expectSteamGuardApp = expectSteamGuardApp,
-                generalMessage = error,
                 isLoading = false
             )
+        }
+        viewModelScope.launch {
+            loginEventChannel.send(ValidationEvent.Message(error))
         }
     }
 
     fun onShowMessage(error: String, reLogin: Boolean = false) {
-        _loginState.update { it.copy(generalMessage = error, isLoading = !reLogin) }
+        _loginState.update { it.copy(isLoading = !reLogin) }
+        viewModelScope.launch {
+            loginEventChannel.send(ValidationEvent.Message(error))
+        }
     }
 
     fun onTwoFactorSubmit() {
@@ -143,9 +152,11 @@ class LoginViewModel @Inject constructor(
             it.copy(
                 expectSteamGuardCode = false,
                 expectSteamGuardApp = false,
-                generalMessage = message,
                 isLoading = false
             )
+        }
+        viewModelScope.launch {
+            loginEventChannel.send(ValidationEvent.Message(message))
         }
     }
 
@@ -177,14 +188,13 @@ class LoginViewModel @Inject constructor(
         _loginState.update {
             it.copy(
                 isLoading = false,
-                isSigningInViaQR = false,
-                generalMessage = ""
+                isSigningInViaQR = false
             )
         }
         qrCodeState = QrState.Loading
         viewModelScope.launch {
-            val event = ValidationEvent.CancelService
-            loginEventChannel.send(event)
+            loginEventChannel.send(ValidationEvent.CancelService)
+            loginEventChannel.send(ValidationEvent.Message("QR login cancelled"))
         }
     }
 

@@ -149,7 +149,7 @@ private fun HomeScreenContent(
     onSearchOpened: () -> Unit,
     onSettings: () -> Unit,
     onStatusChange: (EPersonaState) -> Unit,
-    onHeaderAction: (String, Boolean) -> Unit,
+    onHeaderAction: (String, Boolean) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -266,7 +266,7 @@ private fun HomeScreenContent(
                                     imageLoader = imageLoader,
                                     friend = friend,
                                     onClickChat = { onChatSelected(friend) },
-                                    onClickProfile = { onProfileSelected(friend) },
+                                    onClickProfile = { onProfileSelected(friend) }
                                 )
                             }
                         }
@@ -491,7 +491,7 @@ private fun Preview_HomeScreenContent() {
         headerTitle = "Online",
         headerCount = friendsList.size,
         items = friendsList,
-        collapsed = false,
+        collapsed = false
     )
 
     VapullaTheme {

@@ -35,8 +35,6 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,7 +91,6 @@ fun VapullaAppbar(
     isSearching: Boolean = false,
     onSearchClose: (() -> Unit)? = null
 ) {
-
     val topBarContainerColor = if (scrollBehavior?.state?.heightOffsetLimit ?: 0f > .75f) {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .5f)
     } else {
@@ -105,7 +102,7 @@ fun VapullaAppbar(
             scrollBehavior = scrollBehavior,
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = topBarContainerColor,
-                //scrolledContainerColor = Color.Transparent,
+                // scrolledContainerColor = Color.Transparent,
                 navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                 actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 titleContentColor = MaterialTheme.colorScheme.onSurface

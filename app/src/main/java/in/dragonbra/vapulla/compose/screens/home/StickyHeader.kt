@@ -76,7 +76,7 @@ private fun Preview_StickyHeaderItem() {
                 imageLoader = imageLoader,
                 friend = friend,
                 onClickChat = {},
-                onClickProfile = {},
+                onClickProfile = {}
             )
         }
     }

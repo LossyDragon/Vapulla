@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla.compose.screens.login
 data class LoginState(
     val expectSteamGuardCode: Boolean = false,
     val expectSteamGuardApp: Boolean = false,
-    val generalMessage: String = "",
     val isLoading: Boolean = false,
     val isPasswordValid: PasswordValidation = PasswordValidation.Valid,
     val isPasswordVisible: Boolean = false,

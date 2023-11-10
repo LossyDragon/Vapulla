@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="vapulla_logo_bottom" type="id"/>
+    <item name="vapulla_logo_middle" type="id"/>
+    <item name="vapulla_logo_top" type="id"/>
+</resources>

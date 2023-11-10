@@ -6,26 +6,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MarkUnreadChatAlt
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonAddAlt1
-import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.MarkUnreadChatAlt
 import androidx.compose.material.icons.outlined.PersonAddAlt1
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,7 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,10 +42,8 @@ import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.compose.util.getFriendName
-import `in`.dragonbra.vapulla.compose.util.getLastMessageTime
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
-import `in`.dragonbra.vapulla.compose.util.getUnreadMessageCount
 import `in`.dragonbra.vapulla.model.FriendListItem
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -65,7 +53,7 @@ fun FriendItem(
     imageLoader: ImageLoader,
     friend: FriendListItem,
     onClickChat: () -> Unit,
-    onClickProfile: () -> Unit,
+    onClickProfile: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
 
@@ -158,7 +146,7 @@ fun FriendItem(
             IconButton(onClick = onClickChat) {
                 Icon(imageVector = icon, contentDescription = null)
             }
-        },
+        }
     )
 }
 
@@ -209,7 +197,7 @@ private fun Preview_FriendListItem() {
                     typingTs = 0
                 ),
                 onClickChat = {},
-                onClickProfile = {},
+                onClickProfile = {}
             )
 
             friendData.onEachIndexed { index, entry ->
@@ -233,7 +221,7 @@ private fun Preview_FriendListItem() {
                         typingTs = 0
                     ),
                     onClickChat = {},
-                    onClickProfile = {},
+                    onClickProfile = {}
                 )
             }
         }

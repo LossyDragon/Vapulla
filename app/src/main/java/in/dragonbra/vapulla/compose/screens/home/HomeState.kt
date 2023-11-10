@@ -3,12 +3,11 @@ package `in`.dragonbra.vapulla.compose.screens.home
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.model.FriendListItem
 
-
 data class CollapsableStatusGroup(
     val headerTitle: String,
     val headerCount: Int,
     val items: List<FriendListItem>,
-    val collapsed: Boolean,
+    val collapsed: Boolean
 )
 
 data class HomeState(
