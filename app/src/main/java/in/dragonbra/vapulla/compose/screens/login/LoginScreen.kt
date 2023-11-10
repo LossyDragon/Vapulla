@@ -98,7 +98,8 @@ import kotlinx.coroutines.launch
 import qrcode.QRCode
 
 // TODO: QR sign in doesn't want to work after a cancel/time out.
-// TODO: Show frowny face on error
+// TODO: Implement frowny face to errors
+// TODO splash screen logo too big now
 @OptIn(
     ExperimentalPermissionsApi::class,
     ExperimentalMaterial3Api::class
@@ -324,6 +325,41 @@ private fun LoginScreenContent(
             }
         }
     }
+}
+
+@Composable
+private fun LoginAnimatedLogoError(
+    modifier: Modifier = Modifier,
+    isError: Boolean
+) {
+    val density = LocalDensity.current
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            val sizeInPx = with(density) { 150.dp.toPx().toInt() }
+            fun getDrawable(drawable: Int) = AppCompatResources.getDrawable(context, drawable)
+            FrameLayout(context).apply {
+                ImageView(context).apply {
+                    id = R.id.vapulla_logo_to_face
+                    layoutParams = FrameLayout.LayoutParams(sizeInPx, sizeInPx)
+                    getDrawable(R.drawable.animated_vapulla_to_face).apply(this::setImageDrawable)
+                }.also(this::addView)
+            }
+
+        }, update = { view ->
+            fun getDrawable(drawable: Int) = AppCompatResources.getDrawable(view.context, drawable)
+            val d = view.findViewById<ImageView>(R.id.vapulla_logo_to_face)
+            if (isError) {
+                (d.drawable as Animatable).stop()
+                d.setImageDrawable(getDrawable(R.drawable.animated_vapulla_to_face))
+                (d.drawable as Animatable).start()
+            } else {
+                (d.drawable as Animatable).stop()
+                d.setImageDrawable(getDrawable(R.drawable.animated_vapulla_from_face))
+                (d.drawable as Animatable).start()
+            }
+        }
+    )
 }
 
 @Composable
@@ -575,24 +611,9 @@ private fun BottomSheet(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview
-@Composable
-private fun Preview_BottomSheet() {
-    val sheetState = rememberStandardBottomSheetState(
-        initialValue = SheetValue.Expanded,
-        skipHiddenState = false
-    )
-    VapullaTheme {
-        BottomSheet(
-            modifier = Modifier,
-            scaffoldState = rememberBottomSheetScaffoldState(sheetState),
-            qrState = QrState.Loading,
-            onCancel = { },
-            content = { }
-        )
-    }
-}
+/**
+ * Previews
+ */
 
 @Preview
 @Composable
@@ -609,9 +630,20 @@ private fun Preview_VapullaLoginLogo() {
     }
 }
 
-/**
- * Previews
- */
+@Preview
+@Composable
+private fun Preview_VapullaLoginLogoError() {
+    var isError by remember { mutableStateOf(true) }
+    VapullaTheme {
+        Column {
+            LoginAnimatedLogoError(isError = isError)
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { isError = !isError }) {
+                Text(text = "isError: $isError")
+            }
+        }
+    }
+}
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
@@ -632,6 +664,25 @@ private fun Preview_LoginScreenContent3() {
             onLogin = {},
             onLoginQR = {},
             onTwoFactorSubmit = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun Preview_BottomSheet() {
+    val sheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.Expanded,
+        skipHiddenState = false
+    )
+    VapullaTheme {
+        BottomSheet(
+            modifier = Modifier,
+            scaffoldState = rememberBottomSheetScaffoldState(sheetState),
+            qrState = QrState.Loading,
+            onCancel = { },
+            content = { }
         )
     }
 }
