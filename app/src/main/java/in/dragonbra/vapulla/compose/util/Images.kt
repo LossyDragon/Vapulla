@@ -48,10 +48,10 @@ fun getStatusIcon(friend: FriendListItem?): ImageVector? {
 
 @Composable
 fun StaticImage(
-    modifier: Modifier,
+    url: String,
+    modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     alignment: Alignment = Alignment.Center,
-    url: String,
     loading: @Composable BoxScope.(CoilImageState.Loading) -> Unit = {},
     failure: @Composable BoxScope.(CoilImageState.Failure) -> Unit = {}
 ) {

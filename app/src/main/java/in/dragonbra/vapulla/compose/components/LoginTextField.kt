@@ -14,7 +14,6 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 
-// TODO redo the styling of this
 @Composable
 fun LoginTextField(
     modifier: Modifier = Modifier,

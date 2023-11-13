@@ -4,43 +4,23 @@ import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DrawerState
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +34,6 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -62,25 +41,20 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollToButton
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
-import `in`.dragonbra.vapulla.compose.components.contrastAgainst
+import `in`.dragonbra.vapulla.compose.components.VapullaProfileDialog
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.ExperimentalMaterialApi
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.PullRefreshIndicator
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.pullRefresh
 import `in`.dragonbra.vapulla.compose.components.pullrefresh.rememberPullRefreshState
-import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
-import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.model.FriendListGroup
@@ -88,6 +62,8 @@ import `in`.dragonbra.vapulla.model.FriendListItem
 import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+
+internal val CircularIndicatorDiameter = 48.0.dp - 4.0.dp * 2
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
@@ -150,302 +126,139 @@ private fun HomeScreenContent(
     onStatusChange: (EPersonaState) -> Unit,
     onHeaderAction: (String, Boolean) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val keyboard = LocalSoftwareKeyboardController.current
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            HomeScreenDrawer(
-                state = state,
-                drawerState = drawerState,
-                onStatusChange = onStatusChange,
-                onPersonAdd = onPersonAdd,
-                onSettings = onSettings,
-                onLogout = onLogout
-            )
-        }
-    ) {
-        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-        val listState = rememberLazyListState()
-
-        LaunchedEffect(state.isSearching) {
-            if (state.isSearching) {
-                scope.launch {
-                    listState.animateScrollToItem(0)
-                }
+    LaunchedEffect(state.isSearching) {
+        if (state.isSearching) {
+            scope.launch {
+                listState.animateScrollToItem(0)
             }
         }
+    }
 
-        Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                VapullaAppbar(
-                    scrollBehavior = scrollBehavior,
-                    actions = {
-                        IconButton(onClick = onSearchOpened) {
-                            Icon(
-                                imageVector = Icons.Filled.Search,
-                                contentDescription = "Search"
-                            )
-                        }
-                    },
-                    searchTextState = searchTextState,
-                    isSearching = state.isSearching,
-                    onSearchClose = {
-                        onSearchClosed()
-                        keyboard?.hide()
-                    }
-                )
-            }
-        ) { paddingValues ->
-            val pullRefreshState = rememberPullRefreshState(state.isRefreshing, onRefresh)
+    // Profile + Menu dialogs
+    var subMenuDialog by remember { mutableStateOf(false) }
+    VapullaProfileDialog(
+        openDialog = subMenuDialog,
+        state = state,
+        onStatusChange = onStatusChange,
+        onPersonAdd = onPersonAdd,
+        onSettings = onSettings,
+        onLogout = onLogout,
+        onDismiss = {
+            subMenuDialog = false
+        }
+    )
 
-            Box(
-                modifier = Modifier
-                    .pullRefresh(pullRefreshState)
-                    .padding(paddingValues)
-            ) {
-                if (state.filteredFriendsList.isEmpty()) {
-                    Card(modifier = Modifier.align(Alignment.Center)) {
-                        Text(
-                            modifier = Modifier.padding(16.dp),
-                            textAlign = TextAlign.Center,
-                            text = "No friends to display"
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            VapullaAppbar(
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    IconButton(onClick = onSearchOpened) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "Search"
                         )
                     }
-                }
 
-                // TODO when swap happens, it seems it forget the collapse status
-                val collapsedState = remember(state.filteredFriendsList) {
-                    state.filteredFriendsList.map { it.isCollapsed }.toMutableStateList()
+                    IconButton(onClick = { subMenuDialog = true }) {
+                        val borderStroke = BorderStroke(1.dp, getAccountStatusColor(state.status))
+                        StaticImage(
+                            modifier = Modifier
+                                .border(borderStroke, iconSmallCornerShape)
+                                .clip(iconSmallCornerShape),
+                            url = getAvatarUrl(state.avatarHash)
+                        )
+                    }
+                },
+                searchTextState = searchTextState,
+                isSearching = state.isSearching,
+                onSearchClose = {
+                    onSearchClosed()
+                    keyboard?.hide()
                 }
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = listState,
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    state.filteredFriendsList.forEachIndexed { index, group ->
-                        stickyHeader {
-                            StickyHeaderItem(
-                                isCollapsed = collapsedState[index],
-                                header = group.groupName,
-                                count = group.groupCount,
-                                onHeaderAction = {
-                                    onHeaderAction(group.groupName, !collapsedState[index])
-                                    collapsedState[index] = !collapsedState[index]
-                                }
+            )
+        }
+    ) { paddingValues ->
+        val pullRefreshState = rememberPullRefreshState(state.isRefreshing, onRefresh)
+
+        Box(
+            modifier = Modifier
+                .pullRefresh(pullRefreshState)
+                .padding(paddingValues)
+        ) {
+            if (state.filteredFriendsList.isEmpty()) {
+                Card(modifier = Modifier.align(Alignment.Center)) {
+                    Text(
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center,
+                        text = "No friends to display"
+                    )
+                }
+            }
+
+            val collapsedState = remember(state.filteredFriendsList) {
+                state.filteredFriendsList.map { it.isCollapsed }.toMutableStateList()
+            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                state.filteredFriendsList.forEachIndexed { index, group ->
+                    stickyHeader {
+                        StickyHeaderItem(
+                            isCollapsed = collapsedState[index],
+                            header = group.groupName,
+                            count = group.groupCount,
+                            onHeaderAction = {
+                                onHeaderAction(group.groupName, !collapsedState[index])
+                                collapsedState[index] = !collapsedState[index]
+                            }
+                        )
+                    }
+
+                    if (!collapsedState[index]) {
+                        items(group.groupList, key = { it.id }) { friend ->
+                            FriendItem(
+                                modifier = Modifier.animateItemPlacement(),
+                                friend = friend,
+                                onClickChat = { onChatSelected(friend) },
+                                onClickProfile = { onProfileSelected(friend) }
                             )
                         }
-
-                        if (!collapsedState[index]) {
-                            items(group.groupList, key = { it.id }) { friend ->
-                                FriendItem(
-                                    modifier = Modifier.animateItemPlacement(),
-                                    friend = friend,
-                                    onClickChat = { onChatSelected(friend) },
-                                    onClickProfile = { onProfileSelected(friend) }
-                                )
-                            }
-                        }
                     }
                 }
+            }
 
-                val showUpButton by remember {
-                    derivedStateOf { listState.firstVisibleItemIndex > 5 }
-                }
-                ScrollToButton(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    label = "Scroll Up",
-                    buttonIcon = Icons.Default.ArrowUpward,
-                    buttonText = "Scroll Up",
-                    enabled = showUpButton,
-                    onClicked = {
-                        scope.launch {
-                            listState.animateScrollToItem(0)
-                        }
+            val showUpButton by remember {
+                derivedStateOf { listState.firstVisibleItemIndex > 5 }
+            }
+            ScrollToButton(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                label = "Scroll Up",
+                buttonIcon = Icons.Default.ArrowUpward,
+                buttonText = "Scroll Up",
+                enabled = showUpButton,
+                onClicked = {
+                    scope.launch {
+                        listState.animateScrollToItem(0)
                     }
-                )
-
-                PullRefreshIndicator(
-                    refreshing = state.isRefreshing,
-                    state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeScreenDrawer(
-    state: HomeState,
-    drawerState: DrawerState,
-    onStatusChange: (EPersonaState) -> Unit,
-    onPersonAdd: () -> Unit,
-    onSettings: () -> Unit,
-    onLogout: () -> Unit
-) {
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    val dominantColorState = rememberDominantColorState(
-        defaultColor = MaterialTheme.colorScheme.surface,
-        isColorValid = {
-            it.contrastAgainst(surfaceColor) >= MinContrastOfPrimaryVsSurface
-        }
-    )
-
-    LaunchedEffect(state.avatarHash) {
-        val avatarUrl = getAvatarUrl(state.avatarHash)
-        dominantColorState.updateColorsFromImageUrl(avatarUrl)
-    }
-
-    ModalDrawerSheet(modifier = Modifier.fillMaxHeight()) {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalGradientScrim(
-                    color = dominantColorState.color.copy(alpha = 0.15f),
-                    startYPercentage = 1f,
-                    endYPercentage = 0f
-                ),
-            color = Color.Transparent,
-            shape = MaterialTheme.shapes.extraLarge
-        ) {
-            Column(
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                DrawerAccountInfo(state = state)
-                DrawerStatusButtons(
-                    drawerState = drawerState,
-                    onStatusChange = onStatusChange
-                )
-                Divider(
-                    Modifier
-                        .padding(vertical = 12.dp)
-                        .fillMaxWidth()
-                )
-                DrawerMenuButtons(
-                    onPersonAdd = onPersonAdd,
-                    onSettings = onSettings,
-                    onLogout = onLogout
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DrawerAccountInfo(state: HomeState) {
-    val borderStroke = BorderStroke(4.dp, getAccountStatusColor(state.status))
-    val cornerShape = RoundedCornerShape(16.dp)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 36.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        StaticImage(
-            modifier = Modifier
-                .size(150.dp)
-                .border(borderStroke, cornerShape)
-                .clip(cornerShape),
-            url = getAvatarUrl(state.avatarHash)
-        )
-
-        Text(state.nickname, Modifier.padding(6.dp))
-    }
-}
-
-@Composable
-private fun DrawerStatusButtons(
-    drawerState: DrawerState,
-    onStatusChange: (EPersonaState) -> Unit
-) {
-    val statusButtonColors = NavigationDrawerItemDefaults.colors(
-        unselectedContainerColor = Color.Transparent
-    )
-
-    val scope = rememberCoroutineScope()
-    var selectedItem by remember { mutableStateOf(EPersonaState.Online) }
-
-    NavigationDrawerItem(
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        colors = statusButtonColors,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Circle,
-                contentDescription = null,
-                tint = friendOnline
+                }
             )
-        },
-        label = { Text(EPersonaState.Online.name) },
-        selected = selectedItem == EPersonaState.Online,
-        onClick = {
-            scope.launch { drawerState.close() }
-            selectedItem = EPersonaState.Online
-            onStatusChange(EPersonaState.Online)
-        }
-    )
 
-    NavigationDrawerItem(
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        colors = statusButtonColors,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Circle,
-                contentDescription = null,
-                tint = friendOffline
+            PullRefreshIndicator(
+                refreshing = state.isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
             )
-        },
-        label = { Text(EPersonaState.Invisible.name) },
-        selected = selectedItem == EPersonaState.Invisible,
-        onClick = {
-            scope.launch { drawerState.close() }
-            selectedItem = EPersonaState.Invisible
-            onStatusChange(EPersonaState.Invisible)
         }
-    )
-}
-
-@Composable
-private fun DrawerMenuButtons(
-    onPersonAdd: () -> Unit,
-    onSettings: () -> Unit,
-    onLogout: () -> Unit
-) {
-    val menuButtonColors = NavigationDrawerItemDefaults.colors(
-        unselectedContainerColor = Color.Transparent
-    )
-    NavigationDrawerItem(
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        colors = menuButtonColors,
-        icon = { Icon(Icons.Default.PersonAdd, null) },
-        label = { Text("Add Friend", fontSize = 18.sp) },
-        selected = false,
-        onClick = onPersonAdd
-    )
-
-    NavigationDrawerItem(
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        colors = menuButtonColors,
-        icon = { Icon(Icons.Default.Settings, null) },
-        label = { Text("Settings", fontSize = 18.sp) },
-        selected = false,
-        onClick = onSettings
-    )
-
-    NavigationDrawerItem(
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-        colors = menuButtonColors,
-        icon = { Icon(Icons.Default.Logout, null) },
-        label = { Text("Log Out", fontSize = 18.sp) },
-        selected = false,
-        onClick = onLogout
-    )
+    }
 }
 
 @Preview
@@ -486,23 +299,6 @@ private fun Preview_HomeScreenContent() {
             onSettings = {},
             onStatusChange = {},
             onHeaderAction = { _, _ -> }
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun Preview_HomeScreenDrawer() {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
-    val state = HomeState(nickname = "Some Cool Name")
-    VapullaTheme {
-        HomeScreenDrawer(
-            state = state,
-            drawerState = drawerState,
-            onStatusChange = {},
-            onPersonAdd = {},
-            onSettings = {},
-            onLogout = {}
         )
     }
 }

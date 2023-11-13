@@ -1,5 +1,3 @@
-// https://plugins.gradle.org/plugin/org.jlleitschuh.gradle.ktlint
-// https://github.com/google/ksp/releases
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.android.dagger.hilt)
