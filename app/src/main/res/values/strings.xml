@@ -23,7 +23,7 @@
     <string name="textSettingsChangeProfileName">Profile Name</string>
     <string name="textSettingsClearDatabase">Clear Databases</string>
     <string name="textSettingsClearDatabaseDesc">Clear the database of any data. This will log the app out but still keep account info.</string>
-    <string name="textSettingsClearNotifications">Clear notifications</string>
+    <string name="textSettingsClearNotifications">Clear Notifications</string>
     <string name="textSettingsClearNotificationsDesc">Clear any chat or request notifications once the app is open.</string>
     <string name="textSettingsFriends">Friends</string>
     <string name="textSettingsLicenses">Licenses</string>
@@ -45,8 +45,8 @@
     <string name="statusTyping">Typing…</string>
 
     <!-- Steam Game Play Time -->
-    <string name="textPlayedForever">%.0s hrs on record</string>
-    <string name="textPlayedRecent">%.1s hrs past two weeks</string>
+    <string name="textPlayedForever">%s hrs on record</string>
+    <string name="textPlayedRecent">%s hrs past two weeks</string>
 
     <!-- Single Word Actions -->
     <string name="apply">Apply</string>

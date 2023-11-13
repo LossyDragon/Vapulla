@@ -3,7 +3,6 @@
 package `in`.dragonbra.vapulla.model
 
 import androidx.room.ColumnInfo
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
@@ -11,56 +10,21 @@ import `in`.dragonbra.javasteam.util.Strings
 
 data class FriendListItem(
     @PrimaryKey var id: Long,
-    @ColumnInfo(name = "name") var name: String?,
-    @ColumnInfo(name = "avatar") var avatar: String?,
-    @ColumnInfo(name = "relation") var relation: Int,
-    @ColumnInfo(name = "state") var state: Int?,
-    @ColumnInfo(name = "game_app_id") var gameAppId: Int,
-    @ColumnInfo(name = "playing_game_name") var gameName: String?,
-    @ColumnInfo(name = "last_log_on") var lastLogOn: Long,
-    @ColumnInfo(name = "last_log_off") var lastLogOff: Long,
-    @ColumnInfo(name = "state_flags") var stateFlags: Int,
-    @ColumnInfo(name = "typing_timestamp") var typingTs: Long,
-    @ColumnInfo(name = "last_message") var lastMessage: String?,
-    @ColumnInfo(name = "last_message_time") var lastMessageTime: Long?,
-    @ColumnInfo(name = "new_message_count") var newMessageCount: Int?,
-    @ColumnInfo(name = "nickname") var nickname: String?
+    @ColumnInfo(name = "name") var name: String? = null,
+    @ColumnInfo(name = "avatar") var avatar: String? = null,
+    @ColumnInfo(name = "relation") var relation: Int = 0,
+    @ColumnInfo(name = "state") var state: Int? = null,
+    @ColumnInfo(name = "game_app_id") var gameAppId: Int = 0,
+    @ColumnInfo(name = "playing_game_name") var gameName: String? = null,
+    @ColumnInfo(name = "last_log_on") var lastLogOn: Long = 0L,
+    @ColumnInfo(name = "last_log_off") var lastLogOff: Long = 0L,
+    @ColumnInfo(name = "state_flags") var stateFlags: Int = 0,
+    @ColumnInfo(name = "typing_timestamp") var typingTs: Long = 0L,
+    @ColumnInfo(name = "last_message") var lastMessage: String? = null,
+    @ColumnInfo(name = "last_message_time") var lastMessageTime: Long? = null,
+    @ColumnInfo(name = "new_message_count") var newMessageCount: Int? = null,
+    @ColumnInfo(name = "nickname") var nickname: String? = null
 ) {
-
-    @Ignore
-    constructor(
-        name: String? = null,
-        avatar: String? = null,
-        relation: Int = 0,
-        state: Int? = null,
-        gameAppId: Int,
-        gameName: String? = null,
-        lastLogOn: Long = 0L,
-        lastLogOff: Long = 0L,
-        stateFlags: Int = 0,
-        typingTs: Long = 0L,
-        lastMessage: String? = null,
-        lastMessageTime: Long? = null,
-        newMessageCount: Int? = null,
-        nickname: String? = null
-    ) : this(
-        0,
-        name,
-        avatar,
-        relation,
-        state,
-        gameAppId,
-        gameName,
-        lastLogOn,
-        lastLogOff,
-        stateFlags,
-        typingTs,
-        lastMessage,
-        lastMessageTime,
-        newMessageCount,
-        nickname
-    )
-
     val friendName: String
         get() = if (!Strings.isNullOrEmpty(nickname)) nickname!! else name ?: "????"
 

@@ -41,7 +41,6 @@ fun VapullaTheme(
     content: @Composable () -> Unit
 ) {
     // TODO implement new activity edge-to-edge
-
     MaterialTheme(
         colorScheme = darkColors,
         content = content

@@ -54,9 +54,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
@@ -66,7 +63,6 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
-import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
@@ -110,25 +106,11 @@ private fun ChatScreenContent(
     onProfileClicked: () -> Unit,
     onChatMessage: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
-
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.components {
-            add(AnimatedPngDecoder.Factory())
-        }.build()
 
     val showDownButton by remember {
         derivedStateOf { scrollState.firstVisibleItemIndex > 10 }
@@ -167,7 +149,6 @@ private fun ChatScreenContent(
                             items(items, key = { it.id }) { msg ->
                                 ChatMessageItem(
                                     modifier = Modifier.animateItemPlacement(),
-                                    imageLoader = imageLoader,
                                     chatMessage = msg
                                 )
                             }
@@ -250,7 +231,6 @@ private fun ChatScreenContent(
                                 .size(48.dp)
                                 .border(borderStroke, iconSmallCornerShape)
                                 .clip(iconSmallCornerShape),
-                            imageLoader = imageLoader,
                             url = getAvatarUrl(state.friend?.avatar)
                         )
 
@@ -318,6 +298,7 @@ private fun Preview_ChatScreenContent() {
     val state = ChatState(
         chatMessages = messages.groupBy { it.formattedTs },
         friend = FriendListItem(
+            id = 0,
             avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
             gameAppId = 100,
             gameName = "A Very Long Game Name that Should Ellipse At The End",

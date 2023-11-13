@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.compose.util
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.PersonAdd
@@ -7,7 +8,7 @@ import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Web
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -23,7 +24,7 @@ import com.github.penfeizhou.animation.apng.APNGDrawable
 import com.github.penfeizhou.animation.apng.decode.APNGParser
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
-import com.skydoves.landscapist.coil.LocalCoilImageLoader
+import com.skydoves.landscapist.coil.CoilImageState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.icons.VR
@@ -48,50 +49,48 @@ fun getStatusIcon(friend: FriendListItem?): ImageVector? {
 @Composable
 fun StaticImage(
     modifier: Modifier,
-    imageLoader: ImageLoader,
     contentScale: ContentScale = ContentScale.Fit,
-    url: String
+    alignment: Alignment = Alignment.Center,
+    url: String,
+    loading: @Composable BoxScope.(CoilImageState.Loading) -> Unit = {},
+    failure: @Composable BoxScope.(CoilImageState.Failure) -> Unit = {}
 ) {
     val context = LocalContext.current
-    CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
-        CoilImage(
-            modifier = modifier,
-            imageRequest = {
-                ImageRequest.Builder(context)
-                    .data(url)
-                    .placeholder(R.drawable.vapulla)
-                    .crossfade(true)
-                    .build()
-            },
-            previewPlaceholder = R.mipmap.ic_launcher_foreground,
-            imageOptions = ImageOptions(contentScale = contentScale)
-        )
-    }
+    CoilImage(
+        modifier = modifier,
+        imageRequest = {
+            ImageRequest.Builder(context)
+                .data(url)
+                .placeholder(R.drawable.vapulla)
+                .crossfade(true)
+                .build()
+        },
+        previewPlaceholder = R.mipmap.ic_launcher_foreground,
+        imageOptions = ImageOptions(alignment = alignment, contentScale = contentScale),
+        loading = loading,
+        failure = failure
+    )
 }
 
 // Modifier.size(150.dp)
 @Composable
 fun StickerImage(
     modifier: Modifier = Modifier,
-    imageLoader: ImageLoader,
     url: String
 ) {
     val context = LocalContext.current
-
-    CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
-        CoilImage(
-            modifier = modifier,
-            imageRequest = {
-                ImageRequest.Builder(context)
-                    .data(url)
-                    .placeholder(R.drawable.vapulla)
-                    .crossfade(true)
-                    .build()
-            },
-            previewPlaceholder = R.mipmap.ic_launcher_foreground,
-            imageOptions = ImageOptions(contentScale = ContentScale.Fit)
-        )
-    }
+    CoilImage(
+        modifier = modifier,
+        imageRequest = {
+            ImageRequest.Builder(context)
+                .data(url)
+                .placeholder(R.drawable.vapulla)
+                .crossfade(true)
+                .build()
+        },
+        previewPlaceholder = R.mipmap.ic_launcher_foreground,
+        imageOptions = ImageOptions(contentScale = ContentScale.Fit)
+    )
 }
 
 /**

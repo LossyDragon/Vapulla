@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,11 +30,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -60,9 +63,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
@@ -72,7 +72,6 @@ import `in`.dragonbra.vapulla.compose.components.VapullaListDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
 import `in`.dragonbra.vapulla.compose.components.contrastAgainst
 import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
-import `in`.dragonbra.vapulla.compose.components.verticalGradientScrim
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -93,18 +92,6 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     val activity = LocalActivity.current
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
 
     /* Set Nickname Dialog */
     var showNicknameDialog by remember { mutableStateOf(false) }
@@ -171,19 +158,18 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
         {
             Intent(context, ChatActivity::class.java).apply {
                 putExtra(ProfileActivity.INTENT_STEAM_ID, state.steamID!!.convertToUInt64())
-            }.also { context.startActivity(it) }
+            }.also(context::startActivity)
         }
     }
 
     val onGamesClicked = remember<() -> Unit> {
         {
             Intent(context, GamesActivity::class.java).apply {
-                val bundle = Bundle().apply {
-                    putParcelableArrayList(GamesActivity.INTENT_GAMES, state.gamesList)
-                    putString("name", state.friend!!.friendName)
-                }
-                putExtras(bundle)
-            }.also { context.startActivity(it) }
+                Bundle().apply {
+                    putParcelableArrayList(GamesActivity.INTENT_GAMES, state.gameList)
+                    putString(GamesActivity.INTENT_NAME, state.friend!!.friendName)
+                }.also(this::putExtras)
+            }.also(context::startActivity)
         }
     }
 
@@ -203,8 +189,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
 
     ProfileScreenContent(
         state = state,
-        imageLoader = imageLoader,
-        onBackPressed = { activity.finish() },
+        onBackPressed = activity::finish,
         onChatClick = onChatClick,
         onAccountClick = onAccountClick,
         onGamesClick = onGamesClicked,
@@ -218,7 +203,6 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
 @Composable
 private fun ProfileScreenContent(
     state: ProfileState,
-    imageLoader: ImageLoader,
     onBackPressed: () -> Unit,
     onChatClick: () -> Unit,
     onAccountClick: () -> Unit,
@@ -243,21 +227,19 @@ private fun ProfileScreenContent(
         dominantColorState.updateColorsFromImageUrl(getAvatarUrl(state.friend?.avatar))
     }
 
-    Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalGradientScrim(
-                color = dominantColorState.color.copy(alpha = 0.50f),
-                startYPercentage = 1f,
-                endYPercentage = 0f
-            ),
-        color = Color.Transparent,
-        shape = MaterialTheme.shapes.extraLarge
-    ) {
+    Surface {
         Scaffold(
             modifier = Modifier
                 .statusBarsPadding()
-                .waterfallPadding(),
+                .waterfallPadding()
+                .background(
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            dominantColorState.color,
+                            surfaceColor
+                        )
+                    )
+                ),
             containerColor = Color.Transparent,
             topBar = {
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -279,14 +261,20 @@ private fun ProfileScreenContent(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ProfileScreenProfileIcon(state = state, imageLoader = imageLoader)
+                ProfileScreenProfileIcon(state = state)
 
-                ProfileScreenNameAndStatus(state = state)
+                ProfileScreenNameAndStatus(
+                    color = dominantColorState.color.copy(alpha = .75f),
+                    state = state
+                )
 
-                ProfileScreenInfo(state = state)
+                ProfileScreenInfo(
+                    color = dominantColorState.color.copy(alpha = .75f),
+                    state = state
+                )
 
                 ProfileScreenButtons(
-                    color = dominantColorState.onColor,
+                    color = dominantColorState.color.copy(alpha = .75f),
                     onChatClick = onChatClick,
                     onGamesClick = onGamesClick,
                     onAccountClick = onAccountClick,
@@ -307,7 +295,7 @@ private fun ProfileScreenContent(
 }
 
 @Composable
-private fun ProfileScreenProfileIcon(state: ProfileState, imageLoader: ImageLoader) {
+private fun ProfileScreenProfileIcon(state: ProfileState) {
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -320,60 +308,73 @@ private fun ProfileScreenProfileIcon(state: ProfileState, imageLoader: ImageLoad
                 .size(150.dp)
                 .border(borderStroke, iconCornerShape)
                 .clip(iconCornerShape),
-            imageLoader = imageLoader,
             url = avatarUrl
         )
     }
 }
 
 @Composable
-private fun ProfileScreenNameAndStatus(state: ProfileState) {
+private fun ProfileScreenNameAndStatus(color: Color, state: ProfileState) {
     val context = LocalContext.current
     val friendName = remember(state.friend) { getFriendName(friend = state.friend) }
     val status = remember(state.friend) { context.getStatusText(state.friend) }
     val statusColor = remember(state.friend) { getStatusColor(state.friend) }
     val statusIcon = remember(state.friend) { getStatusIcon(state.friend) }
 
-    Text(
-        text = friendName,
-        modifier = Modifier.padding(5.dp),
-        fontSize = 32.sp,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = status,
-            color = statusColor,
-            fontSize = 16.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+    Card(
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = color
         )
-
-        statusIcon?.let {
-            Icon(
-                modifier = Modifier.size(22.dp),
-                imageVector = it,
-                tint = statusColor,
-                contentDescription = null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = friendName,
+                fontSize = 32.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = status,
+                    color = statusColor,
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                statusIcon?.let {
+                    Icon(
+                        modifier = Modifier.size(22.dp),
+                        imageVector = it,
+                        tint = statusColor,
+                        contentDescription = null
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun ProfileScreenInfo(state: ProfileState) {
+private fun ProfileScreenInfo(color: Color, state: ProfileState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = color
+        )
     ) {
         Row(
             horizontalArrangement = Arrangement.Center,
@@ -462,9 +463,9 @@ private fun ProfileScreenButtons(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        Button(
+        FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .7f)),
+            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onChatClick
         ) {
             Text(
@@ -472,9 +473,9 @@ private fun ProfileScreenButtons(
                 color = Color.White
             )
         }
-        Button(
+        FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
+            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onAccountClick
         ) {
             Text(
@@ -482,9 +483,9 @@ private fun ProfileScreenButtons(
                 color = Color.White
             )
         }
-        Button(
+        FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
+            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onGamesClick
         ) {
             Text(
@@ -492,9 +493,9 @@ private fun ProfileScreenButtons(
                 color = Color.White
             )
         }
-        Button(
+        FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color.copy(alpha = .5f)),
+            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onManageClick
         ) {
             Text(
@@ -577,19 +578,6 @@ private fun ProfileExpandedButtons(
 @Preview(showBackground = true)
 @Composable
 private fun Preview_ProfileScreenContent() {
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
-
     val friend = FriendListItem(
         avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",
         gameAppId = 100,
@@ -616,7 +604,6 @@ private fun Preview_ProfileScreenContent() {
                 gamesCount = 888,
                 levelCount = 100
             ),
-            imageLoader = imageLoader,
             onBackPressed = {},
             onChatClick = {},
             onAccountClick = {},

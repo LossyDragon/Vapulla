@@ -11,6 +11,7 @@ import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
+import `in`.dragonbra.vapulla.model.FriendListGroup
 import `in`.dragonbra.vapulla.model.FriendListItem
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -93,8 +94,8 @@ class HomeViewModel @Inject constructor(
         )
 
         // Map friends to their status
-        val groups = sortedList
-            .fold(mutableMapOf<String, MutableList<FriendListItem>>()) { acc, item ->
+        val groups =
+            sortedList.fold(mutableMapOf<String, MutableList<FriendListItem>>()) { acc, item ->
                 when {
                     item.isRequestRecipient ->
                         acc.getOrPut("Friend Request") { mutableListOf() }.add(item)
@@ -114,11 +115,11 @@ class HomeViewModel @Inject constructor(
             }
 
         val groupedList = groups.map { (title, items) ->
-            CollapsableStatusGroup(
-                headerTitle = title,
-                headerCount = items.size,
-                items = items,
-                collapsed = accountManager.getCollapsedState(title)
+            FriendListGroup(
+                groupName = title,
+                groupCount = items.size,
+                groupList = items,
+                isCollapsed = accountManager.getCollapsedState(title)
             )
         }.toList()
 
@@ -142,12 +143,12 @@ class HomeViewModel @Inject constructor(
 
     private fun search(query: String) {
         if (!state.value.isSearching && searchText.value.text.isEmpty()) {
-            val list = state.value.friendsList.flatMap { it.items }
+            val list = state.value.friendsList.flatMap { it.groupList }
             swap(list, System.currentTimeMillis())
             return
         }
 
-        val list = state.value.friendsList.flatMap { it.items }.filter { item ->
+        val list = state.value.friendsList.flatMap { it.groupList }.filter { item ->
             item.name.orEmpty().contains(query.trim(), true) ||
                 item.nickname.orEmpty().contains(query.trim(), true)
         }
@@ -197,7 +198,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onHeaderAction(header: String, value: Boolean) {
-        accountManager.setCollapsedState(header, !value)
+        accountManager.setCollapsedState(header, value)
     }
 
     fun onFriendAccept(friendListItem: FriendListItem) {

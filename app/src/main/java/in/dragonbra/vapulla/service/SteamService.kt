@@ -6,8 +6,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.text.format.DateUtils
-import androidx.core.app.*
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat.MessagingStyle
+import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
@@ -18,11 +19,19 @@ import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.handlers.ClientMsgHandler
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.*
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChat_RequestFriendPersonaStates_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2.CMsgClientUIMode
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.*
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.*
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.*
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_AckMessage_Notification
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Response
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_Notification
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_SendMessage_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetProfileBackground_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetProfileBackground_Response
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_CreateFriendInviteToken_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_GetFriendInviteTokens_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_GetFriendInviteTokens_Response
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_RevokeFriendInviteToken_Request
 import `in`.dragonbra.javasteam.rpc.service.Chat
 import `in`.dragonbra.javasteam.rpc.service.FriendMessages
 import `in`.dragonbra.javasteam.rpc.service.Player
@@ -36,7 +45,10 @@ import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.*
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgEchoCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendsListCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.NicknameListCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStatesCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamgamecoordinator.SteamGameCoordinator
 import `in`.dragonbra.javasteam.steam.handlers.steamgameserver.SteamGameServer
 import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServer
@@ -64,7 +76,6 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.broadcastreceiver.*
 import `in`.dragonbra.vapulla.compose.util.findEmotes
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.core.isFriend
@@ -79,11 +90,9 @@ import `in`.dragonbra.vapulla.model.InviteTokenItem
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import java.io.Closeable
-import java.lang.IllegalArgumentException
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
-import kotlin.collections.ArrayList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -99,6 +108,7 @@ class SteamService : Service() {
         private const val MAX_RETRY_COUNT = 5
 
         const val BROADCAST_INVITES_LIST = "in.dragonbra.vapulla.service.INVITES_LIST"
+        const val BROADCAST_PROFILE_INFO = "in.dragonbra.vapulla.service.PROFILE_INFO"
 
         /**
          * Time to back off when we receive an echo message because it means that the user is
@@ -465,6 +475,17 @@ class SteamService : Service() {
         clearMessageNotifications(id)
     }
 
+    /**
+     * Gets information about the player's profile background.
+     */
+    fun getProfileInfo(steamID: SteamID) {
+        Timber.d("getProfileBackground")
+        val request = CPlayer_GetProfileBackground_Request.newBuilder().apply {
+            steamid = steamID.convertToUInt64()
+        }.build()
+        unifiedPlayer?.GetProfileBackground(request)
+    }
+
     suspend fun signInViaCredentials(
         coroutineScope: CoroutineScope,
         iAuthenticator: IAuthenticator,
@@ -780,6 +801,22 @@ class SteamService : Service() {
             return@Consumer
         }
 
+        if (resp.serviceName == Player::class.java.simpleName) {
+            if (resp.rpcName == "GetProfileBackground") {
+                resp.getDeserializedResponse<CPlayer_GetProfileBackground_Response.Builder>(
+                    CPlayer_GetProfileBackground_Response::class.java
+                ).also { cb ->
+                    val profileItem = cb.profileBackground
+                    Intent(BROADCAST_PROFILE_INFO).apply {
+                        putExtra("imageLarge", profileItem.imageLarge)
+                        putExtra("movieWebm", profileItem.movieWebm)
+                    }.also {
+                        LocalBroadcastManager.getInstance(this).sendBroadcast(it)
+                    }
+                }
+            }
+        }
+
         if (resp.serviceName == UserAccount::class.simpleName) {
             if (resp.rpcName == "GetFriendInviteTokens") {
                 resp.getDeserializedResponse<CUserAccount_GetFriendInviteTokens_Response.Builder>(
@@ -842,16 +879,9 @@ class SteamService : Service() {
                             fromLocal = fromLocal // Most likely the culprit
                         ).also { msg ->
                             if (msg != null) {
-                                Timber.d("Skipping Msg History: ${friendMessage.message}")
                                 return@forEachIndexed
                             }
                         }
-
-                        Timber.d("Item: $index")
-                        Timber.d("accountid -> ${friendMessage.accountid}")
-                        Timber.d("timestamp -> ${friendMessage.timestamp}")
-                        Timber.d("message -> ${friendMessage.message}")
-                        Timber.d("----\n")
 
                         val chatMsg = ChatMessage(
                             accountid = chatFriendId!!,

@@ -36,6 +36,7 @@ import timber.log.Timber
 // TODO: Using the mobile steam app, we cannot view this Authorized Device info.
 //  ie: we cannot sign out of it remotely
 //  displays: "something went wrong loading this page" error.
+//  MAYBE: fixed now?
 
 @AndroidEntryPoint
 class LoginActivity : VapullaBaseActivity(), IAuthenticator {

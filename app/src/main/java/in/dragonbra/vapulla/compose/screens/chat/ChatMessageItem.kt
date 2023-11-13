@@ -18,24 +18,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import `in`.dragonbra.vapulla.compose.components.PaperPlane
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 
 @Composable
 fun ChatMessageItem(
     modifier: Modifier = Modifier,
-    imageLoader: ImageLoader,
     chatMessage: ChatMessage
 ) {
     Column(
@@ -58,7 +52,6 @@ fun ChatMessageItem(
         ) {
             PaperPlane(
                 modifier = Modifier.padding(8.dp),
-                imageLoader = imageLoader,
                 text = chatMessage.message
             )
 
@@ -118,25 +111,10 @@ private fun Preview_ChatMessageItem() {
         man; that's like saying Jimmy Gibbs is just a driver; that's like saying the girl
         on the bridge is just a little purty―she is an AN-GEL.
     """.trimIndent()
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.components {
-            add(AnimatedPngDecoder.Factory())
-        }.build()
 
     VapullaTheme {
         Column(Modifier.fillMaxWidth()) {
             ChatMessageItem(
-                imageLoader = imageLoader,
                 chatMessage = ChatMessage(
                     accountid = 1,
                     fromLocal = false,
@@ -147,7 +125,6 @@ private fun Preview_ChatMessageItem() {
             )
             Spacer(Modifier.height(8.dp))
             ChatMessageItem(
-                imageLoader = imageLoader,
                 chatMessage = ChatMessage(
                     accountid = 1,
                     fromLocal = true,

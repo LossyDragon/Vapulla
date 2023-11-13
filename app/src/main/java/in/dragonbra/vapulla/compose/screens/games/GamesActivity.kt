@@ -8,12 +8,13 @@ import `in`.dragonbra.vapulla.VapullaBaseActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.core.Constants
-import `in`.dragonbra.vapulla.retrofit.response.Games
+import `in`.dragonbra.vapulla.retrofit.response.Game
 
 class GamesActivity : VapullaBaseActivity() {
 
     companion object {
         const val INTENT_GAMES = "intent_games"
+        const val INTENT_NAME = "intent_name"
     }
 
     private val viewModel: GamesViewModel by viewModels()
@@ -23,13 +24,13 @@ class GamesActivity : VapullaBaseActivity() {
 
         with(intent.extras!!) {
             val items = if (Constants.isAtLeastT) {
-                getParcelableArrayList(INTENT_GAMES, Games::class.java) ?: arrayListOf()
+                getParcelableArrayList(INTENT_GAMES, Game::class.java) ?: arrayListOf()
             } else {
                 @Suppress("DEPRECATION")
                 getParcelableArrayList(INTENT_GAMES) ?: arrayListOf()
             }
 
-            val name = getString("name")!!
+            val name = getString(INTENT_NAME)!!
             viewModel.setContents(name, items)
         }
 

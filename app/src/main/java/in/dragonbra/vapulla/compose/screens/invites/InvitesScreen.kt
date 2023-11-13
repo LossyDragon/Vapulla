@@ -21,6 +21,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -98,13 +101,16 @@ private fun InvitesContent(
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     val snackbarHostState = remember { SnackbarHostState() }
     var tabIndex by remember { mutableIntStateOf(0) }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             VapullaAppbar(
+                scrollBehavior = scrollBehavior,
                 toolbarText = stringResource(id = R.string.title_activity_invites),
                 onBackPressed = onBackPressed
             )
@@ -160,7 +166,7 @@ private fun InvitesContent(
 
 @Composable
 private fun PendingInvitesScreen() {
-    // TODO
+    // TODO invites
     Column(modifier = Modifier.fillMaxSize()) {
         Text(text = "Blep")
     }

@@ -1,6 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.games
 
-import `in`.dragonbra.vapulla.retrofit.response.Games
+import `in`.dragonbra.vapulla.retrofit.response.Game
 
 sealed class SortOptions {
     data object Alphabetical : SortOptions()
@@ -8,8 +8,8 @@ sealed class SortOptions {
 }
 
 data class GamesState(
-    val filteredGamesList: List<Games> = listOf(),
-    val gamesList: List<Games> = listOf(),
+    val filteredGameList: List<Game> = listOf(),
+    val gameList: List<Game> = listOf(),
     val isSearching: Boolean = false,
     val name: String = "",
     val sortMethod: SortOptions = SortOptions.Alphabetical

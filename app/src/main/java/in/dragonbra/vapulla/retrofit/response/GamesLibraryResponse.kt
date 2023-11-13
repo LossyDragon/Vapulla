@@ -14,11 +14,11 @@ class GamesResponse {
     var gameCount: Int = 0
 
     @SerializedName("games")
-    var games: ArrayList<Games> = arrayListOf()
+    var games: ArrayList<Game> = arrayListOf()
 }
 
 @Parcelize
-data class Games(
+data class Game(
     val appid: Int,
     val name: String,
     @SerializedName("playtime_2weeks")

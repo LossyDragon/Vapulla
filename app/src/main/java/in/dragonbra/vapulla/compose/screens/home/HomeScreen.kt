@@ -64,9 +64,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.ScrollToButton
@@ -86,7 +83,9 @@ import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
+import `in`.dragonbra.vapulla.model.FriendListGroup
 import `in`.dragonbra.vapulla.model.FriendListItem
+import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -155,25 +154,11 @@ private fun HomeScreenContent(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val keyboard = LocalSoftwareKeyboardController.current
 
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
-
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             HomeScreenDrawer(
                 state = state,
-                imageLoader = imageLoader,
                 drawerState = drawerState,
                 onStatusChange = onStatusChange,
                 onPersonAdd = onPersonAdd,
@@ -198,7 +183,6 @@ private fun HomeScreenContent(
             topBar = {
                 VapullaAppbar(
                     scrollBehavior = scrollBehavior,
-                    drawerState = drawerState,
                     actions = {
                         IconButton(onClick = onSearchOpened) {
                             Icon(
@@ -235,7 +219,7 @@ private fun HomeScreenContent(
 
                 // TODO when swap happens, it seems it forget the collapse status
                 val collapsedState = remember(state.filteredFriendsList) {
-                    state.filteredFriendsList.map { it.collapsed }.toMutableStateList()
+                    state.filteredFriendsList.map { it.isCollapsed }.toMutableStateList()
                 }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -243,27 +227,22 @@ private fun HomeScreenContent(
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     state.filteredFriendsList.forEachIndexed { index, group ->
-                        val collapsed = collapsedState[index]
-                        stickyHeader(
-                            key = "header_$index",
-                            contentType = group.headerTitle
-                        ) {
+                        stickyHeader {
                             StickyHeaderItem(
-                                isCollapsed = collapsed,
-                                header = group.headerTitle,
-                                count = group.headerCount,
+                                isCollapsed = collapsedState[index],
+                                header = group.groupName,
+                                count = group.groupCount,
                                 onHeaderAction = {
-                                    collapsedState[index] = !collapsed
-                                    onHeaderAction(group.headerTitle, !collapsed)
+                                    onHeaderAction(group.groupName, !collapsedState[index])
+                                    collapsedState[index] = !collapsedState[index]
                                 }
                             )
                         }
 
-                        if (!collapsed) {
-                            items(group.items, key = { it.id }) { friend ->
+                        if (!collapsedState[index]) {
+                            items(group.groupList, key = { it.id }) { friend ->
                                 FriendItem(
                                     modifier = Modifier.animateItemPlacement(),
-                                    imageLoader = imageLoader,
                                     friend = friend,
                                     onClickChat = { onChatSelected(friend) },
                                     onClickProfile = { onProfileSelected(friend) }
@@ -303,7 +282,6 @@ private fun HomeScreenContent(
 private fun HomeScreenDrawer(
     state: HomeState,
     drawerState: DrawerState,
-    imageLoader: ImageLoader,
     onStatusChange: (EPersonaState) -> Unit,
     onPersonAdd: () -> Unit,
     onSettings: () -> Unit,
@@ -339,7 +317,7 @@ private fun HomeScreenDrawer(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                DrawerAccountInfo(state = state, imageLoader = imageLoader)
+                DrawerAccountInfo(state = state)
                 DrawerStatusButtons(
                     drawerState = drawerState,
                     onStatusChange = onStatusChange
@@ -360,7 +338,7 @@ private fun HomeScreenDrawer(
 }
 
 @Composable
-private fun DrawerAccountInfo(state: HomeState, imageLoader: ImageLoader) {
+private fun DrawerAccountInfo(state: HomeState) {
     val borderStroke = BorderStroke(4.dp, getAccountStatusColor(state.status))
     val cornerShape = RoundedCornerShape(16.dp)
 
@@ -375,7 +353,6 @@ private fun DrawerAccountInfo(state: HomeState, imageLoader: ImageLoader) {
                 .size(150.dp)
                 .border(borderStroke, cornerShape)
                 .clip(cornerShape),
-            imageLoader = imageLoader,
             url = getAvatarUrl(state.avatarHash)
         )
 
@@ -476,6 +453,7 @@ private fun DrawerMenuButtons(
 private fun Preview_HomeScreenContent() {
     val friendsList = (0..10).map {
         FriendListItem(
+            id = Random.nextLong(),
             state = EPersonaState.Online.code(),
             gameAppId = 440,
             gameName = "Team Fortress 2",
@@ -487,11 +465,11 @@ private fun Preview_HomeScreenContent() {
             typingTs = 0L
         )
     }
-    val group = CollapsableStatusGroup(
-        headerTitle = "Online",
-        headerCount = friendsList.size,
-        items = friendsList,
-        collapsed = false
+    val group = FriendListGroup(
+        groupName = "Online",
+        groupCount = friendsList.size,
+        groupList = friendsList,
+        isCollapsed = false
     )
 
     VapullaTheme {
@@ -517,23 +495,9 @@ private fun Preview_HomeScreenContent() {
 private fun Preview_HomeScreenDrawer() {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Open)
     val state = HomeState(nickname = "Some Cool Name")
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
-
     VapullaTheme {
         HomeScreenDrawer(
             state = state,
-            imageLoader = imageLoader,
             drawerState = drawerState,
             onStatusChange = {},
             onPersonAdd = {},

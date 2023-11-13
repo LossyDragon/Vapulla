@@ -155,8 +155,8 @@ class DominantColorState(
 ) {
     var color by mutableStateOf(defaultColor)
         private set
-
     var onColor by mutableStateOf(defaultOnColor)
+        private set
 
     private val cache = when {
         cacheSize > 0 -> LruCache<String, DominantColors>(cacheSize)
@@ -191,6 +191,14 @@ class DominantColorState(
             }
             // Cache the resulting [DominantColors]
             ?.also { result -> cache?.put(url, result) }
+    }
+
+    /**
+     * Reset the color values to [defaultColor].
+     */
+    fun reset() {
+        color = defaultColor
+        onColor = defaultColor
     }
 }
 

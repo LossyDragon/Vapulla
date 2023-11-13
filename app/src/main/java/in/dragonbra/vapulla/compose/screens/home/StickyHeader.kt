@@ -10,11 +10,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.model.FriendListItem
@@ -39,19 +35,6 @@ fun StickyHeaderItem(isCollapsed: Boolean, header: String, count: Int, onHeaderA
 @Preview
 @Composable
 private fun Preview_StickyHeaderItem() {
-    val context = LocalContext.current
-    val imageLoader = ImageLoader.Builder(context)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.25)
-                .build()
-        }.diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache"))
-                .maxSizePercent(1.0)
-                .build()
-        }.build()
-
     val friend = FriendListItem(
         id = 0,
         state = EPersonaState.Online.code(),
@@ -73,7 +56,6 @@ private fun Preview_StickyHeaderItem() {
         Column {
             StickyHeaderItem(true, "Online", 60, {})
             FriendItem(
-                imageLoader = imageLoader,
                 friend = friend,
                 onClickChat = {},
                 onClickProfile = {}

@@ -11,6 +11,16 @@ import java.util.regex.Pattern
 
 object Constants {
 
+    val recentsMap = mapOf(
+        "Disable" to -1L,
+        "1 day" to 86400000L,
+        "3 days" to 259200000L,
+        "1 week" to 604800000L,
+        "2 weeks" to 1209600000L,
+        "1 month" to 2592000000L,
+        "Forever" to 0L
+    )
+
     // Room Database
     const val DATABASE_NAME = "vapulla.db"
 
@@ -23,10 +33,11 @@ object Constants {
     const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/api/"
     const val COMMUNITY_BASE_URL = "https://steamcommunity.com/"
     const val EMOTE_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
-    const val PROFILE_URL = COMMUNITY_BASE_URL + "profiles/"
+    const val PROFILE_URL = "${COMMUNITY_BASE_URL}profiles/"
     const val STEAM_CDN = "https://cdn.akamai.steamstatic.com"
     const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     const val STORE_PAGE_URL = "https://store.steampowered.com/app/%d/"
+    const val PROFILE_INFO_URL = "$STEAM_CDN/steamcommunity/public/images/"
 
     // Steam Avatar
     const val ALL_ZEROS = "0000000000000000000000000000000000000000"
@@ -35,6 +46,8 @@ object Constants {
 
     // Steam Games
     const val GAME_LOGO_URL = "$STEAM_CDN/steam/apps/%d/header.jpg"
+
+    fun getProfileBackground(url: String): String = "$PROFILE_INFO_URL$url"
 
     // Android Build Version
     val isAtLeastO

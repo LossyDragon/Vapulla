@@ -68,7 +68,7 @@ fun getAvatarUrl(avatar: String?): String {
  */
 fun formatPlayTime(time: Int): String {
     val df = DecimalFormat("#.#").apply {
-        roundingMode = RoundingMode.CEILING
+        roundingMode = RoundingMode.HALF_UP
     }
     return df.format(time / 60.0)
 }

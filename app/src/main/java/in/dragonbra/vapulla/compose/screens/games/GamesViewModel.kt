@@ -3,7 +3,7 @@ package `in`.dragonbra.vapulla.compose.screens.games
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import `in`.dragonbra.vapulla.retrofit.response.Games
+import `in`.dragonbra.vapulla.retrofit.response.Game
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -27,53 +27,50 @@ class GamesViewModel : ViewModel() {
         }
     }
 
-    fun isSearching() {
-        _state.update { it.copy(isSearching = true) }
-    }
-
-    fun isNotSearching() {
-        _state.update { it.copy(isSearching = false) }
+    fun onSearch(isSearching: Boolean) {
+        Timber.d("isSearching: $isSearching")
+        _state.update { it.copy(isSearching = isSearching) }
     }
 
     fun onSortMethod() {
         Timber.d("onSortMethod()")
-        if (_state.value.sortMethod == SortOptions.Alphabetical) {
-            _state.update { it.copy(sortMethod = SortOptions.Playtime) }
-        } else {
-            _state.update { it.copy(sortMethod = SortOptions.Alphabetical) }
+        _state.update {
+            if (_state.value.sortMethod == SortOptions.Alphabetical) {
+                it.copy(sortMethod = SortOptions.Playtime)
+            } else {
+                it.copy(sortMethod = SortOptions.Alphabetical)
+            }
         }
 
         search(searchText.value.text)
     }
 
     private fun search(query: String) {
+        val trimmedQuery = query.trim().lowercase()
         val isSearching = state.value.isSearching && searchText.value.text.isNotEmpty()
-        val list = if (isSearching) {
-            state.value.gamesList.filter {
-                it.name.lowercase().contains(query.trim().lowercase())
-            }.sortedWith(
+
+        val sortedList = state.value.gameList
+            .let { list ->
+                if (isSearching) {
+                    list.filter { it.name.lowercase().contains(trimmedQuery) }
+                } else {
+                    list
+                }
+            }
+            .sortedWith(
                 when (state.value.sortMethod) {
                     SortOptions.Alphabetical -> compareBy { it.name.lowercase() }
-                    SortOptions.Playtime -> compareByDescending<Games> {
-                        it.playtimeTwoWeeks ?: 0
-                    }.thenByDescending { it.playtimeForever }.thenBy { it.name }
+                    SortOptions.Playtime -> compareByDescending<Game> { it.playtimeTwoWeeks ?: 0 }
+                        .thenByDescending { it.playtimeForever }
+                        .thenBy { it.name }
                 }
             )
-        } else {
-            state.value.gamesList.sortedWith(
-                when (state.value.sortMethod) {
-                    SortOptions.Alphabetical -> compareBy { it.name.lowercase() }
-                    SortOptions.Playtime -> compareByDescending<Games> {
-                        it.playtimeTwoWeeks ?: 0
-                    }.thenByDescending { it.playtimeForever }.thenBy { it.name }
-                }
-            )
-        }
-        _state.update { it.copy(filteredGamesList = list) }
+
+        _state.update { it.copy(filteredGameList = sortedList) }
     }
 
-    fun setContents(name: String, items: ArrayList<Games>) {
+    fun setContents(name: String, items: ArrayList<Game>) {
         val list = items.sortedBy { it.name.lowercase() }
-        _state.update { it.copy(name = name, gamesList = list, filteredGamesList = list) }
+        _state.update { it.copy(name = name, gameList = list, filteredGameList = list) }
     }
 }

@@ -8,7 +8,7 @@
 
     <style name="AppTheme.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#303030</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/vapulla</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/vapulla_splash</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
 
         <item name="android:statusBarColor">@android:color/transparent</item>

@@ -99,7 +99,6 @@ import qrcode.QRCode
 
 // TODO: QR sign in doesn't want to work after a cancel/time out.
 // TODO: Implement frowny face to errors
-// TODO splash screen logo too big now
 @OptIn(
     ExperimentalPermissionsApi::class,
     ExperimentalMaterial3Api::class
@@ -345,8 +344,8 @@ private fun LoginAnimatedLogoError(
                     getDrawable(R.drawable.animated_vapulla_to_face).apply(this::setImageDrawable)
                 }.also(this::addView)
             }
-
-        }, update = { view ->
+        },
+        update = { view ->
             fun getDrawable(drawable: Int) = AppCompatResources.getDrawable(view.context, drawable)
             val d = view.findViewById<ImageView>(R.id.vapulla_logo_to_face)
             if (isError) {
@@ -560,7 +559,7 @@ private fun BottomSheet(
                         is QrState.Ready -> {
                             CoilImage(
                                 imageModel = {
-                                    QRCode.ofRoundedSquares()
+                                    QRCode.ofCircles()
                                         .withColor(qrCodeColor.toArgb())
                                         .withBackgroundColor(qrCodeBackground.toArgb())
                                         .build(qrState.code)

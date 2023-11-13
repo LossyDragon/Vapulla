@@ -15,6 +15,7 @@ import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.model.FriendListItem
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -58,11 +59,18 @@ class ProfileViewModel @Inject constructor(
                         friend = friend,
                         levelCount = level,
                         gamesCount = games.count,
-                        gamesList = games.list,
+                        gameList = games.list,
                         isLoading = false
                     )
                 }
             }
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            delay(500L)
+            getProfileInfo()
         }
     }
 
@@ -86,6 +94,11 @@ class ProfileViewModel @Inject constructor(
         val list = callback.responses[0].names.toList().sortedByDescending { it.nameSince }
         val nickNames = list.map { it.name }
         _state.update { it.copy(aliasHistory = nickNames) }
+    }
+
+    @Suppress("UNUSED_PARAMETER") // webm/mp4 not supported yet
+    fun onProfileBackground(imageLarge: String, movieWebm: String) {
+        _state.update { it.copy(profileBackground = imageLarge) }
     }
 
     fun setSteamID(steamID: SteamID) {
@@ -117,6 +130,10 @@ class ProfileViewModel @Inject constructor(
 
     fun getAlias() {
         emit(ProfileUiEvent.GetAliases)
+    }
+
+    private fun getProfileInfo() {
+        emit(ProfileUiEvent.ProfileInfo)
     }
 
     private fun emit(event: ProfileUiEvent) {

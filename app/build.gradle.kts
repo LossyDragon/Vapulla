@@ -89,7 +89,7 @@ dependencies {
         isChanging = version?.contains("SNAPSHOT") ?: false
     }
 
-    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.leakcanary)
 
     ksp(libs.bundles.compiler)
