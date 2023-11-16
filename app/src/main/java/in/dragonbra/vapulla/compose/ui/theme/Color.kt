@@ -63,7 +63,7 @@ fun getStatusColor(friend: FriendListItem?): Color {
     return when {
         friend.isOffline -> friendOffline
         friend.isInGameAwayOrSnooze -> friendInGameAwayOrSnooze
-        friend.isAwayOrSnooze() -> friendAwayOrSnooze
+        friend.isAwayOrSnooze -> friendAwayOrSnooze
         friend.isInGame -> friendInGame
         friend.isOnline -> friendOnline
         else -> friendOffline

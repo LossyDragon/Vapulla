@@ -6,28 +6,16 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import java.util.LinkedList
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import org.spongycastle.util.encoders.Hex
 import timber.log.Timber
 
 class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
     private val map: MutableMap<SteamID, PersonaState> = hashMapOf()
-
     private val mapLock: Any = Any()
-
-    @Volatile
-    private var isRunning = false
-
-    private val thread: Runnable = Runnable {
-        Timber.i("starting persona state buffer thread")
-        isRunning = true
-
-        while (isRunning) {
-            Thread.sleep(1000L)
-            process()
-        }
-
-        Timber.i("stopping persona state buffer thread")
-    }
 
     fun push(state: PersonaState) {
         synchronized(mapLock) {
@@ -46,6 +34,8 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
             if (map.isEmpty()) {
                 return
             }
+
+            Timber.d("Processing friends: ${map.size}")
 
             map.forEach { (id, state) ->
                 steamFriendDao.find(id.convertToUInt64())?.let { friend ->
@@ -85,10 +75,30 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
     }
 
     fun start() {
-        Thread(thread, "PersonaStateBufferThread").start()
+        executorService.submit {
+            Timber.i("starting persona state buffer thread")
+            try {
+                while (!Thread.currentThread().isInterrupted) {
+                    Thread.sleep(1000L)
+                    process()
+                }
+            } catch (e: InterruptedException) {
+                Timber.i("Thread was interrupted")
+            } finally {
+                Timber.i("stopping persona state buffer thread")
+            }
+        }
     }
 
     fun stop() {
-        isRunning = false
+        executorService.shutdownNow() // Initiates an immediate shutdown
+        try {
+            if (!executorService.awaitTermination(1000, TimeUnit.SECONDS)) {
+                Timber.w("Executor did not terminate in the specified time.")
+                executorService.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            executorService.shutdownNow()
+        }
     }
 }

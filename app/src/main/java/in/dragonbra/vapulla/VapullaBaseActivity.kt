@@ -52,7 +52,7 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         }
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            steamService = (service as SteamServiceBinder).getService()
+            steamService = (service as SteamServiceBinder).service
 
             subs.add(steamService?.subscribe<ConnectedCallback> { onConnected() })
             subs.add(steamService?.subscribe<DisconnectedCallback> { onDisconnected() })
@@ -71,7 +71,6 @@ abstract class VapullaBaseActivity : ComponentActivity() {
         Timber.tag(this::class.java.simpleName).d("onCreate")
 
         val filter = IntentFilter(STOP_INTENT)
-
         if (Constants.isAtLeastT) {
             registerReceiver(stopReceiver, filter, RECEIVER_NOT_EXPORTED)
         } else {

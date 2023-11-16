@@ -44,20 +44,19 @@ data class FriendListItem(
         get() = EPersonaState.from(state ?: 0) == EPersonaState.Offline
 
     val isInGameAwayOrSnooze: Boolean
-        get() = isInGame && isAwayOrSnooze()
+        get() = isInGame && isAwayOrSnooze
 
     val isUnread: Boolean
         get() = (newMessageCount ?: 0) > 0
 
-    fun isAwayOrSnooze(): Boolean {
-        return when (EPersonaState.from(state ?: 0)) {
+    val isAwayOrSnooze: Boolean
+        get() = when (EPersonaState.from(state ?: 0)) {
             EPersonaState.Away,
             EPersonaState.Snooze,
             EPersonaState.Busy -> true
 
             else -> false
         }
-    }
 
     fun isItemRecentChat(recentsTimeout: Long, updateTime: Long): Boolean {
         val msgTime = lastMessageTime?.let { it >= updateTime - recentsTimeout }

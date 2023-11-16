@@ -20,16 +20,20 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideNotificationManager(@ApplicationContext context: Context) =
-        NotificationManagerCompat.from(context)
+    fun provideNotificationManager(
+        @ApplicationContext context: Context
+    ) = NotificationManagerCompat.from(context)
 
     @Provides
     @Singleton
-    fun provideGameSchemaManager(gameSchemaDao: GameSchemaDao, storeFront: StoreFront) =
-        GameSchemaManager(gameSchemaDao, storeFront)
+    fun provideGameSchemaManager(
+        gameSchemaDao: GameSchemaDao,
+        storeFront: StoreFront
+    ) = GameSchemaManager(gameSchemaDao, storeFront)
 
     @Provides
     @Singleton
-    fun provideLevelManager(steamApi: SteamApi) =
-        ProfileManager(steamApi)
+    fun provideLevelManager(
+        steamApi: SteamApi
+    ) = ProfileManager(steamApi)
 }

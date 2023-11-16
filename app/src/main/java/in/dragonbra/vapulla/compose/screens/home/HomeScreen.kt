@@ -63,8 +63,6 @@ import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-internal val CircularIndicatorDiameter = 48.0.dp - 4.0.dp * 2
-
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current

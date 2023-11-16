@@ -25,6 +25,29 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class HomeState(
+    val avatarHash: String = "",
+    val filteredFriendsList: List<FriendListGroup> = listOf(),
+    val friendsList: List<FriendListGroup> = listOf(),
+    val isRefreshing: Boolean = false,
+    val isSearching: Boolean = false,
+    val nickname: String = "",
+    val status: EPersonaState = EPersonaState.Offline,
+    val updateTime: Long = 0L
+)
+
+sealed class HomeUiEvent {
+    data class AcceptRequest(val friend: FriendListItem) : HomeUiEvent()
+    data class BlockFriend(val friend: FriendListItem) : HomeUiEvent()
+    data class ChangeStatus(val state: EPersonaState) : HomeUiEvent()
+    data class IgnoreRequest(val friend: FriendListItem) : HomeUiEvent()
+    data object AddFriend : HomeUiEvent()
+    data object Disconnect : HomeUiEvent()
+    data object LogOut : HomeUiEvent()
+    data object Refresh : HomeUiEvent()
+    data object Settings : HomeUiEvent()
+}
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val gameSchemaManager: GameSchemaManager,
@@ -87,7 +110,7 @@ class HomeViewModel @Inject constructor(
                 { it.isInGame.not() },
                 { it.isInGameAwayOrSnooze },
                 { it.isOnline.not() },
-                { it.isAwayOrSnooze() },
+                { it.isAwayOrSnooze },
                 { it.isOffline.not() },
                 { it.friendName.lowercase() }
             )
@@ -106,7 +129,7 @@ class HomeViewModel @Inject constructor(
                     item.isInGame || item.isInGameAwayOrSnooze ->
                         acc.getOrPut("In-Game") { mutableListOf() }.add(item)
 
-                    item.isOnline || item.isAwayOrSnooze() ->
+                    item.isOnline || item.isAwayOrSnooze ->
                         acc.getOrPut("Online") { mutableListOf() }.add(item)
 
                     else -> acc.getOrPut("Offline") { mutableListOf() }.add(item)

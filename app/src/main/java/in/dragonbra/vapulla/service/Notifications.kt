@@ -287,30 +287,27 @@ fun NotificationManagerCompat.createChannels() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun createServiceNotificationChannel(notificationManager: NotificationManagerCompat) {
-    val notificationChannel = NotificationChannel(
+    NotificationChannel(
         "vapulla-service",
         "Vapulla Service",
         NotificationManager.IMPORTANCE_LOW
-    )
-    notificationManager.createNotificationChannel(notificationChannel)
+    ).also(notificationManager::createNotificationChannel)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun createRequestNotificationChannel(notificationManager: NotificationManagerCompat) {
-    val notificationChannel = NotificationChannel(
+    NotificationChannel(
         "vapulla-friend-request",
         "Vapulla Friend Requests",
         NotificationManager.IMPORTANCE_DEFAULT
-    )
-    notificationManager.createNotificationChannel(notificationChannel)
+    ).also(notificationManager::createNotificationChannel)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 private fun createMessagesNotificationChannel(notificationManager: NotificationManagerCompat) {
-    val notificationChannel = NotificationChannel(
+    NotificationChannel(
         "vapulla-message",
         "Vapulla Chat Messages",
         NotificationManager.IMPORTANCE_HIGH
-    )
-    notificationManager.createNotificationChannel(notificationChannel)
+    ).also(notificationManager::createNotificationChannel)
 }

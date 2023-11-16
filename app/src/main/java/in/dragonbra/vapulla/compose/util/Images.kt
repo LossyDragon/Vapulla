@@ -37,7 +37,7 @@ fun getStatusIcon(friend: FriendListItem?): ImageVector? {
     val flags = EPersonaStateFlag.from(friend?.stateFlags ?: 0)
     return when {
         friend?.isRequestRecipient == true -> Icons.Default.PersonAdd
-        friend?.isAwayOrSnooze() == true -> Icons.Default.Bedtime
+        friend?.isAwayOrSnooze == true -> Icons.Default.Bedtime
         flags.contains(EPersonaStateFlag.ClientTypeVR) -> Icons.Default.VR
         flags.contains(EPersonaStateFlag.ClientTypeTenfoot) -> Icons.Default.SportsEsports
         flags.contains(EPersonaStateFlag.ClientTypeMobile) -> Icons.Default.Smartphone
@@ -98,10 +98,8 @@ fun StickerImage(
  */
 class AnimatedPngDecoder(private val source: ImageSource) : Decoder {
     override suspend fun decode(): DecodeResult {
-        return DecodeResult(
-            drawable = APNGDrawable.fromFile(source.file().toString()),
-            isSampled = false
-        )
+        val drawable = APNGDrawable.fromFile(source.file().toString())
+        return DecodeResult(drawable, false)
     }
 
     class Factory : Decoder.Factory {

@@ -33,6 +33,21 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+sealed class ChatUiEvent {
+    data object NavigateUp : ChatUiEvent()
+    data class SendTypingStatus(val id: SteamID) : ChatUiEvent()
+    data class SendMessage(val id: SteamID, val message: String, val emoteSet: Set<String>) :
+        ChatUiEvent()
+}
+
+data class ChatState(
+    val chatMessages: Map<String, List<ChatMessage>> = mapOf(),
+    val currentChatSteamID: SteamID? = null,
+    val emoteSet: Set<String> = setOf(),
+    val emoticonData: List<Emoticon> = listOf(),
+    val friend: FriendListItem? = null
+)
+
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class ChatViewModel @Inject constructor(

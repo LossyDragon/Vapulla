@@ -26,8 +26,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessage
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Response
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_SendMessage_Request
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetProfileBackground_Request
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetProfileBackground_Response
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_CreateFriendInviteToken_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_GetFriendInviteTokens_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_GetFriendInviteTokens_Response
@@ -108,7 +106,6 @@ class SteamService : Service() {
         private const val MAX_RETRY_COUNT = 5
 
         const val BROADCAST_INVITES_LIST = "in.dragonbra.vapulla.service.INVITES_LIST"
-        const val BROADCAST_PROFILE_INFO = "in.dragonbra.vapulla.service.PROFILE_INFO"
 
         /**
          * Time to back off when we receive an echo message because it means that the user is
@@ -475,17 +472,6 @@ class SteamService : Service() {
         clearMessageNotifications(id)
     }
 
-    /**
-     * Gets information about the player's profile background.
-     */
-    fun getProfileInfo(steamID: SteamID) {
-        Timber.d("getProfileBackground")
-        val request = CPlayer_GetProfileBackground_Request.newBuilder().apply {
-            steamid = steamID.convertToUInt64()
-        }.build()
-        unifiedPlayer?.GetProfileBackground(request)
-    }
-
     suspend fun signInViaCredentials(
         coroutineScope: CoroutineScope,
         iAuthenticator: IAuthenticator,
@@ -762,7 +748,7 @@ class SteamService : Service() {
     }
 
     private val onEmoticonList = Consumer<EmoticonListCallback> { emoticon ->
-        val emoticons = emoticon.getEmoteList().map {
+        val emoticons = emoticon.emoteList.map {
             if (it.isSticker) {
                 Emoticon(it.name, true, it.appId)
             } else {
@@ -799,22 +785,6 @@ class SteamService : Service() {
         if (resp.result != EResult.OK) {
             Timber.w("Unified service request failed with " + resp.result)
             return@Consumer
-        }
-
-        if (resp.serviceName == Player::class.java.simpleName) {
-            if (resp.rpcName == "GetProfileBackground") {
-                resp.getDeserializedResponse<CPlayer_GetProfileBackground_Response.Builder>(
-                    CPlayer_GetProfileBackground_Response::class.java
-                ).also { cb ->
-                    val profileItem = cb.profileBackground
-                    Intent(BROADCAST_PROFILE_INFO).apply {
-                        putExtra("imageLarge", profileItem.imageLarge)
-                        putExtra("movieWebm", profileItem.movieWebm)
-                    }.also {
-                        LocalBroadcastManager.getInstance(this).sendBroadcast(it)
-                    }
-                }
-            }
         }
 
         if (resp.serviceName == UserAccount::class.simpleName) {

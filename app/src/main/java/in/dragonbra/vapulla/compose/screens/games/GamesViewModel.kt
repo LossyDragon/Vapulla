@@ -11,6 +11,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+sealed class SortOptions {
+    data object Alphabetical : SortOptions()
+    data object Playtime : SortOptions()
+}
+
+data class GamesState(
+    val filteredGameList: List<Game> = listOf(),
+    val gameList: List<Game> = listOf(),
+    val isSearching: Boolean = false,
+    val name: String = "",
+    val sortMethod: SortOptions = SortOptions.Alphabetical
+)
+
 class GamesViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(GamesState())

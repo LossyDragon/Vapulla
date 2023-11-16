@@ -4,18 +4,17 @@ import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
-class GamesLibraryResponse {
+data class GamesLibraryResponse(
     @SerializedName("response")
     var gamesResponse: GamesResponse? = null
-}
+)
 
-class GamesResponse {
+data class GamesResponse(
     @SerializedName("game_count")
-    var gameCount: Int = 0
-
+    var gameCount: Int = 0,
     @SerializedName("games")
     var games: ArrayList<Game> = arrayListOf()
-}
+)
 
 @Parcelize
 data class Game(

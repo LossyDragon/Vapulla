@@ -13,9 +13,9 @@ import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.model.FriendListItem
+import `in`.dragonbra.vapulla.retrofit.response.Game
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,6 +24,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+
+sealed class ProfileUiEvent {
+    data class SetNickName(val nickName: String) : ProfileUiEvent()
+    data object BlockFriend : ProfileUiEvent()
+    data object GetAliases : ProfileUiEvent()
+    data object NavigateBack : ProfileUiEvent()
+    data object RemoveFriend : ProfileUiEvent()
+}
+
+data class ProfileState(
+    val aliasHistory: List<String> = listOf(),
+    val friend: FriendListItem? = null,
+    val gamesCount: Int? = 0,
+    val gameList: ArrayList<Game> = arrayListOf(),
+    val isLoading: Boolean = true,
+    val levelCount: Int? = 0,
+    val steamID: SteamID? = null
+)
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -67,13 +85,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    init {
-        viewModelScope.launch {
-            delay(500L)
-            getProfileInfo()
-        }
-    }
-
     fun onPostCreate(owner: LifecycleOwner) {
         val steamID = state.value.steamID!!
         Timber.d("onPostCreate($owner, $steamID)")
@@ -94,11 +105,6 @@ class ProfileViewModel @Inject constructor(
         val list = callback.responses[0].names.toList().sortedByDescending { it.nameSince }
         val nickNames = list.map { it.name }
         _state.update { it.copy(aliasHistory = nickNames) }
-    }
-
-    @Suppress("UNUSED_PARAMETER") // webm/mp4 not supported yet
-    fun onProfileBackground(imageLarge: String, movieWebm: String) {
-        _state.update { it.copy(profileBackground = imageLarge) }
     }
 
     fun setSteamID(steamID: SteamID) {
@@ -130,10 +136,6 @@ class ProfileViewModel @Inject constructor(
 
     fun getAlias() {
         emit(ProfileUiEvent.GetAliases)
-    }
-
-    private fun getProfileInfo() {
-        emit(ProfileUiEvent.ProfileInfo)
     }
 
     private fun emit(event: ProfileUiEvent) {

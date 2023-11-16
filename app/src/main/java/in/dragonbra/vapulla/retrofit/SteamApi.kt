@@ -7,7 +7,6 @@ import retrofit2.http.GET
 import retrofit2.http.QueryMap
 
 interface SteamApi {
-
     @GET("IPlayerService/GetSteamLevel/v0001/")
     fun getSteamLevel(@QueryMap args: Map<String, String>): Call<ProfileLevelResponse>
 

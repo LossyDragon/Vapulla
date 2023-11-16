@@ -12,12 +12,10 @@ import java.util.EnumMap
 
 class VapullaHandler : ClientMsgHandler() {
 
-    private var dispatchMap: EnumMap<EMsg, Consumer<IPacketMsg>> =
-        EnumMap<EMsg, Consumer<IPacketMsg>>(EMsg::class.java)
+    private var dispatchMap = EnumMap<EMsg, Consumer<IPacketMsg>>(EMsg::class.java)
 
     init {
-        dispatchMap[EMsg.ClientEmoticonList] =
-            Consumer { packetMsg -> handleEmoticonList(packetMsg) }
+        dispatchMap[EMsg.ClientEmoticonList] = Consumer { handleEmoticonList(it) }
     }
 
     override fun handleMsg(packetMsg: IPacketMsg) {
@@ -25,20 +23,19 @@ class VapullaHandler : ClientMsgHandler() {
     }
 
     fun getEmoticonList() {
-        val request = ClientMsgProtobuf<CMsgClientGetEmoticonList.Builder>(
+        ClientMsgProtobuf<CMsgClientGetEmoticonList.Builder>(
             CMsgClientGetEmoticonList::class.java,
             EMsg.ClientGetEmoticonList
-        )
-
-        client.send(request)
+        ).also(client::send)
     }
 
     private fun handleEmoticonList(packetMsg: IPacketMsg) {
-        val msg = ClientMsgProtobuf<CMsgClientEmoticonList.Builder>(
+        ClientMsgProtobuf<CMsgClientEmoticonList.Builder>(
             CMsgClientEmoticonList::class.java,
             packetMsg
-        )
-
-        client.postCallback(EmoticonListCallback(msg.body))
+        ).also {
+            val callback = EmoticonListCallback(it.body)
+            client.postCallback(callback)
+        }
     }
 }
