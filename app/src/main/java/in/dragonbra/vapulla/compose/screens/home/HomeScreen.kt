@@ -1,9 +1,7 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
 import android.content.Intent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +19,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,14 +47,9 @@ import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.components.ScrollToButton
 import `in`.dragonbra.vapulla.compose.components.VapullaAppbar
 import `in`.dragonbra.vapulla.compose.components.VapullaProfileDialog
-import `in`.dragonbra.vapulla.compose.components.pullrefresh.ExperimentalMaterialApi
-import `in`.dragonbra.vapulla.compose.components.pullrefresh.PullRefreshIndicator
-import `in`.dragonbra.vapulla.compose.components.pullrefresh.pullRefresh
-import `in`.dragonbra.vapulla.compose.components.pullrefresh.rememberPullRefreshState
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
 import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
 import `in`.dragonbra.vapulla.compose.util.StaticImage
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
@@ -63,10 +59,13 @@ import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val refreshState = rememberPullToRefreshState()
 
     val onProfileSelected = remember<(FriendListItem) -> Unit> {
         {
@@ -90,6 +89,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
     HomeScreenContent(
         state = state,
+        refreshState = refreshState,
         searchTextState = viewModel.searchText,
         onChatSelected = onChatSelected,
         onLogout = viewModel::onLogout,
@@ -105,13 +105,13 @@ fun HomeScreen(viewModel: HomeViewModel) {
 }
 
 @OptIn(
-    ExperimentalMaterialApi::class,
     ExperimentalFoundationApi::class,
     ExperimentalMaterial3Api::class
 )
 @Composable
 private fun HomeScreenContent(
     state: HomeState,
+    refreshState: PullToRefreshState,
     searchTextState: MutableStateFlow<TextFieldValue>,
     onChatSelected: (friend: FriendListItem) -> Unit,
     onLogout: () -> Unit,
@@ -165,10 +165,10 @@ private fun HomeScreenContent(
                     }
 
                     IconButton(onClick = { subMenuDialog = true }) {
-                        val borderStroke = BorderStroke(1.dp, getAccountStatusColor(state.status))
+                        // val borderStroke = BorderStroke(1.dp, getAccountStatusColor(state.status))
                         StaticImage(
                             modifier = Modifier
-                                .border(borderStroke, iconSmallCornerShape)
+                                // .border(borderStroke, iconSmallCornerShape)
                                 .clip(iconSmallCornerShape),
                             url = getAvatarUrl(state.avatarHash)
                         )
@@ -183,12 +183,20 @@ private fun HomeScreenContent(
             )
         }
     ) { paddingValues ->
-        val pullRefreshState = rememberPullRefreshState(state.isRefreshing, onRefresh)
+        // TODO: `meh` to the new M3 pull refresh. Could be done better
+        if (refreshState.isRefreshing) {
+            LaunchedEffect(true) {
+                onRefresh()
+            }
+            if (!state.isRefreshing) {
+                refreshState.endRefresh()
+            }
+        }
 
         Box(
             modifier = Modifier
-                .pullRefresh(pullRefreshState)
-                .padding(paddingValues)
+                    .nestedScroll(refreshState.nestedScrollConnection)
+                    .padding(paddingValues)
         ) {
             if (state.filteredFriendsList.isEmpty()) {
                 Card(modifier = Modifier.align(Alignment.Center)) {
@@ -250,15 +258,15 @@ private fun HomeScreenContent(
                 }
             )
 
-            PullRefreshIndicator(
-                refreshing = state.isRefreshing,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
+            PullToRefreshContainer(
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = refreshState
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 private fun Preview_HomeScreenContent() {
@@ -283,9 +291,15 @@ private fun Preview_HomeScreenContent() {
         isCollapsed = false
     )
 
+    val refreshState = rememberPullToRefreshState()
+    LaunchedEffect(true) {
+        refreshState.startRefresh()
+    }
+
     VapullaTheme {
         HomeScreenContent(
             state = HomeState(filteredFriendsList = listOf(group)),
+            refreshState = refreshState,
             searchTextState = MutableStateFlow(TextFieldValue("")),
             onChatSelected = {},
             onLogout = {},
