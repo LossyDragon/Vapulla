@@ -10,7 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.alorma.compose.settings.storage.base.rememberBooleanSettingState
 import com.alorma.compose.settings.ui.SettingsGroup
@@ -18,6 +20,7 @@ import com.alorma.compose.settings.ui.SettingsMenuLink
 import com.alorma.compose.settings.ui.SettingsSwitch
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.VapullaSelectionDialog
+import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.manager.AccountManager
 
@@ -66,5 +69,13 @@ fun SettingsGroupFriends(
                 .padding(vertical = 2.dp)
                 .fillMaxWidth()
         )
+    }
+}
+
+@Preview
+@Composable
+private fun Preview_SettingsFriends() {
+    VapullaTheme {
+        SettingsGroupFriends(accountManager = AccountManager(LocalContext.current))
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import coil.ImageLoader
 import coil.decode.DecodeResult
 import coil.decode.Decoder
@@ -65,7 +66,7 @@ fun StaticImage(
                 .crossfade(true)
                 .build()
         },
-        previewPlaceholder = R.mipmap.ic_launcher_foreground,
+        previewPlaceholder = painterResource(id = R.mipmap.ic_launcher_foreground),
         imageOptions = ImageOptions(alignment = alignment, contentScale = contentScale),
         loading = loading,
         failure = failure
@@ -88,7 +89,7 @@ fun StickerImage(
                 .crossfade(true)
                 .build()
         },
-        previewPlaceholder = R.mipmap.ic_launcher_foreground,
+        previewPlaceholder = painterResource(id = R.mipmap.ic_launcher_foreground),
         imageOptions = ImageOptions(contentScale = ContentScale.Fit)
     )
 }
