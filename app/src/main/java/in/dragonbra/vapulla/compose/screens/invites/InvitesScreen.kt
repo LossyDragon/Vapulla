@@ -119,7 +119,7 @@ private fun InvitesContent(
         Column(modifier = Modifier.padding(paddingValues)) {
             TabRow(
                 selectedTabIndex = tabIndex,
-                containerColor = Color.Transparent //
+                containerColor = Color.Transparent
             ) {
                 Tab(
                     selected = tabIndex == 0,

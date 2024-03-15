@@ -71,11 +71,13 @@ import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 
 enum class EmojiStickerSelector {
-    EMOJI, STICKER
+    EMOJI,
+    STICKER
 }
 
 enum class InputSelector {
-    NONE, EMOJI,
+    NONE,
+    EMOJI
 }
 
 val KeyboardShownKey = SemanticsPropertyKey<Boolean>("KeyboardShownKey")
@@ -285,7 +287,7 @@ private fun UserInputText(
                                 color = friendOffline,
                                 shape = RoundedCornerShape(size = 8.dp)
                             )
-                            .padding(all = 0.dp), // inner padding
+                            .padding(all = 0.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         InputSelectorButton(

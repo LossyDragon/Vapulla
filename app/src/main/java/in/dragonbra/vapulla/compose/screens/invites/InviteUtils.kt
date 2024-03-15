@@ -16,16 +16,16 @@ import java.util.TimeZone
 import java.util.regex.Pattern
 
 object InviteUtils {
-    private const val communityUrl = COMMUNITY_BASE_URL + "user/"
-    private const val publicUrl = "https://s.team/p/"
-    private const val r = "0123456789abcdef"
-    private const val w = "bcdfghjkmnpqrtvw"
+    private const val COMMUNITY_URL = COMMUNITY_BASE_URL + "user/"
+    private const val PUBLIC_URL = "https://s.team/p/"
+    private const val R = "0123456789abcdef"
+    private const val W = "bcdfghjkmnpqrtvw"
 
     /**
      * @param inviteToken a Token from CUserAccount_GetFriendInviteTokens_Response
      */
     fun getInviteURL(universe: EUniverse, steamID: SteamID, inviteToken: String): String {
-        val baseUrl = if (universe == EUniverse.Public) publicUrl else communityUrl
+        val baseUrl = if (universe == EUniverse.Public) PUBLIC_URL else COMMUNITY_URL
 
         @Suppress("RegExpRedundantEscape")
         val pattern = Pattern.compile(":([0-9]+)\\]")
@@ -47,7 +47,7 @@ object InviteUtils {
         val regex = Regex("[0-9a-f]", RegexOption.IGNORE_CASE)
 
         convertedSteamID = convertedSteamID.replace(regex) { matchResult ->
-            w[r.indexOf(matchResult.value.lowercase())].toString()
+            W[R.indexOf(matchResult.value.lowercase())].toString()
         }
         convertedSteamID = when {
             convertedSteamID.length >= 8 -> {

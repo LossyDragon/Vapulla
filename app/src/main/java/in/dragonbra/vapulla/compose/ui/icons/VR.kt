@@ -14,10 +14,10 @@ import androidx.compose.ui.unit.dp
 
 val Icons.Filled.VR: ImageVector
     get() {
-        if (_vR != null) {
-            return _vR!!
+        if (vr != null) {
+            return vr!!
         }
-        _vR = ImageVector.Builder(
+        vr = ImageVector.Builder(
             name = "VR",
             defaultWidth = 24.0.dp,
             defaultHeight = 24.0.dp,
@@ -59,9 +59,9 @@ val Icons.Filled.VR: ImageVector
             horizontalLineTo(23.927F)
             close()
         }.build()
-        return _vR!!
+        return vr!!
     }
-private var _vR: ImageVector? = null
+private var vr: ImageVector? = null
 
 @Preview
 @Composable

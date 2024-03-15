@@ -15,10 +15,10 @@ import androidx.compose.ui.unit.dp
 
 val Icons.SortNumeric: ImageVector
     get() {
-        if (_sortNumeric != null) {
-            return _sortNumeric!!
+        if (sortNumeric != null) {
+            return sortNumeric!!
         }
-        _sortNumeric = materialIcon(name = "SortNumeric") {
+        sortNumeric = materialIcon(name = "SortNumeric") {
             materialPath {
                 moveTo(19.0F, 17.0F)
                 horizontalLineTo(22.0F)
@@ -63,10 +63,10 @@ val Icons.SortNumeric: ImageVector
                 close()
             }
         }
-        return _sortNumeric!!
+        return sortNumeric!!
     }
 
-private var _sortNumeric: ImageVector? = null
+private var sortNumeric: ImageVector? = null
 
 @Preview
 @Composable

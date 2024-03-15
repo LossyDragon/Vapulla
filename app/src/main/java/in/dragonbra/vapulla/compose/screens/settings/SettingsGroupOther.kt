@@ -45,7 +45,6 @@ fun SettingsGroupOther(
     )
 
     var prefClearNotifications by remember {
-
         mutableStateOf(accountManager.prefClearNotifications)
     }
     SettingsGroup(title = { Text(text = stringResource(id = R.string.textSettingsOther)) }) {

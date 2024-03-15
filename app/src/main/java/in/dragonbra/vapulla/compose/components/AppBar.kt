@@ -131,7 +131,10 @@ fun VapullaAppbar(
                                 onSearchClose?.invoke()
                             }
                         ) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null
+                            )
                         }
                     },
                     actions = {

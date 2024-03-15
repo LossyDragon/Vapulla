@@ -846,7 +846,8 @@ class SteamService : Service() {
                             message = friendMessage.message,
                             timestamp = timestamp,
                             accountid = chatFriendId!!,
-                            fromLocal = fromLocal // Most likely the culprit
+                            // Most likely the culprit
+                            fromLocal = fromLocal
                         ).also { msg ->
                             if (msg != null) {
                                 return@forEachIndexed
