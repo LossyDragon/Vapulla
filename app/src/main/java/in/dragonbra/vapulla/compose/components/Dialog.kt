@@ -21,12 +21,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -220,7 +220,7 @@ fun VapullaProfileDialog(
                 }
 
                 FilledTonalButton(modifier = Modifier.fillMaxWidth(), onClick = onLogout) {
-                    Icon(imageVector = Icons.Default.Logout, contentDescription = null)
+                    Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                     Spacer(modifier = Modifier.size(ButtonDefaults.IconSize))
                     Text(text = "Log Out")
                 }
@@ -458,7 +458,7 @@ private fun Preview_DialogSelectionContent() {
 
     VapullaTheme {
         VapullaSelectionDialog(
-            icon = Icons.Default.Message,
+            icon = Icons.AutoMirrored.Filled.Message,
             title = stringResource(id = R.string.dialogTitleRecentFriendChats),
             currentSelection = 86400000L,
             items = recentsMap,

@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.compose.screens.settings
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
-import com.alorma.compose.settings.storage.base.rememberBooleanSettingState
 import com.alorma.compose.settings.ui.SettingsGroup
 import com.alorma.compose.settings.ui.SettingsMenuLink
 import com.alorma.compose.settings.ui.SettingsSwitch
@@ -22,6 +22,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
 import `in`.dragonbra.vapulla.manager.AccountManager
 
+@OptIn(ExperimentalCoilApi::class)
 @Composable
 fun SettingsGroupOther(
     accountManager: AccountManager,
@@ -43,17 +44,22 @@ fun SettingsGroupOther(
         negativeText = stringResource(id = R.string.cancel)
     )
 
+    var prefClearNotifications by remember {
+
+        mutableStateOf(accountManager.prefClearNotifications)
+    }
     SettingsGroup(title = { Text(text = stringResource(id = R.string.textSettingsOther)) }) {
         SettingsSwitch(
             title = {
                 Text(text = stringResource(R.string.textSettingsClearNotifications))
             },
-            state = rememberBooleanSettingState(accountManager.prefClearNotifications),
+            state = prefClearNotifications,
             subtitle = {
                 Text(text = stringResource(R.string.textSettingsClearNotificationsDesc))
             },
             onCheckedChange = { value ->
                 accountManager.prefClearNotifications = value
+                prefClearNotifications = value
             }
         )
         SettingsMenuLink(
@@ -82,7 +88,7 @@ fun SettingsGroupOther(
                 context.imageLoader.memoryCache?.clear()
             }
         )
-        Divider(
+        HorizontalDivider(
             Modifier
                 .padding(vertical = 2.dp)
                 .fillMaxWidth()

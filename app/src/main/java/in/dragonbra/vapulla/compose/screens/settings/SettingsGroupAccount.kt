@@ -3,9 +3,9 @@ package `in`.dragonbra.vapulla.compose.screens.settings
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,7 +30,7 @@ fun SettingsGroupAccount(
 ) {
     var changeUserDialog by remember { mutableStateOf(false) }
     VapullaMessageDialog(
-        icon = Icons.Default.Logout,
+        icon = Icons.AutoMirrored.Filled.Logout,
         title = stringResource(id = R.string.dialogTitleChangeUser),
         message = stringResource(id = R.string.dialogMessageChangeUser),
         positiveText = stringResource(id = R.string.buttonLogout),
@@ -76,7 +76,7 @@ fun SettingsGroupAccount(
             subtitle = { Text(text = accountManager.nickname ?: "*unknown*") },
             onClick = { changeNameDialog = true }
         )
-        Divider(
+        HorizontalDivider(
             Modifier
                 .padding(vertical = 2.dp)
                 .fillMaxWidth()

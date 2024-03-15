@@ -139,10 +139,22 @@ private fun HomeScreenContent(
     VapullaProfileDialog(
         openDialog = subMenuDialog,
         state = state,
-        onStatusChange = onStatusChange,
-        onPersonAdd = onPersonAdd,
-        onSettings = onSettings,
-        onLogout = onLogout,
+        onStatusChange = {
+            onStatusChange(it)
+            subMenuDialog = false
+        },
+        onPersonAdd = {
+            onPersonAdd()
+            subMenuDialog = false
+        },
+        onSettings = {
+            onSettings()
+            subMenuDialog = false
+        },
+        onLogout = {
+            onLogout()
+            subMenuDialog = false
+        },
         onDismiss = {
             subMenuDialog = false
         }
@@ -192,8 +204,8 @@ private fun HomeScreenContent(
 
         Box(
             modifier = Modifier
-                   // .nestedScroll(refreshState.nestedScrollConnection)
-                    .padding(paddingValues)
+                // .nestedScroll(refreshState.nestedScrollConnection)
+                .padding(paddingValues)
         ) {
             if (state.filteredFriendsList.isEmpty()) {
                 Card(modifier = Modifier.align(Alignment.Center)) {
