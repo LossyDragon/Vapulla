@@ -35,7 +35,6 @@ import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import kotlinx.coroutines.runBlocking
-import org.spongycastle.util.encoders.Hex
 
 private val flagUpdateCurrent = if (Constants.isAtLeastS) {
     PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -191,6 +190,7 @@ fun Context.serviceMessageNotification(
     onPost(notification)
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 fun Context.serviceRequestNotification(
     state: PersonaState,
     block: (builder: NotificationCompat.Builder) -> Unit
@@ -199,7 +199,7 @@ fun Context.serviceRequestNotification(
 
     var icon: IconCompat? = null
     val request = ImageRequest.Builder(this)
-        .data(getAvatarUrl(Hex.toHexString(state.avatarHash)))
+        .data(getAvatarUrl(state.avatarHash.toHexString()))
         .target { drawable ->
             icon = (IconCompat.createWithBitmap((drawable as BitmapDrawable).bitmap))
         }

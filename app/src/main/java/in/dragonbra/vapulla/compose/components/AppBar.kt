@@ -88,13 +88,7 @@ fun VapullaAppbar(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
             ),
             navigationIcon = {
-                if (onBackPressed == null) {
-                    Image(
-                        modifier = Modifier.padding(16.dp),
-                        painter = painterResource(id = R.drawable.vapulla),
-                        contentDescription = null
-                    )
-                } else {
+                if (onBackPressed != null) {
                     IconButton(onClick = onBackPressed) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -106,7 +100,8 @@ fun VapullaAppbar(
             title = {
                 Text(
                     text = toolbarText,
-                    fontFamily = fontFamily,
+//                    fontFamily = fontFamily,
+                    fontSize = 28.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

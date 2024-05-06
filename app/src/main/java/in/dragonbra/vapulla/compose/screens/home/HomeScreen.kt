@@ -172,16 +172,6 @@ private fun HomeScreenContent(
                             contentDescription = "Search"
                         )
                     }
-
-                    IconButton(onClick = { subMenuDialog = true }) {
-                        // val borderStroke = BorderStroke(1.dp, getAccountStatusColor(state.status))
-                        StaticImage(
-                            modifier = Modifier
-                                // .border(borderStroke, iconSmallCornerShape)
-                                .clip(iconSmallCornerShape),
-                            url = getAvatarUrl(state.avatarHash)
-                        )
-                    }
                 },
                 searchTextState = searchTextState,
                 isSearching = state.isSearching,

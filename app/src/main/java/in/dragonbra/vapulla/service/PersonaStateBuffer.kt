@@ -9,7 +9,6 @@ import java.util.LinkedList
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import org.spongycastle.util.encoders.Hex
 import timber.log.Timber
 
 class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
@@ -27,6 +26,7 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
         }
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     private fun process() {
         val friendsToUpdate: MutableList<SteamFriend> = LinkedList()
 
@@ -42,7 +42,7 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
                     val oldFriend = friend.copy()
 
                     if (state.avatarHash.isNotEmpty()) {
-                        friend.avatar = Hex.toHexString(state.avatarHash)
+                        friend.avatar = state.avatarHash.toHexString()
                     }
 
                     if (state.name.isNotEmpty()) {

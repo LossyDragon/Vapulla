@@ -125,12 +125,10 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
                         val deferredLogin = async {
                             if (loginState.value.isSigningInViaQR) {
                                 steamService?.signInViaQR(
-                                    coroutineScope = this,
                                     onDrawQRCode = viewModel::drawQRCode
                                 )
                             } else {
                                 steamService?.signInViaCredentials(
-                                    coroutineScope = this,
                                     iAuthenticator = this@LoginActivity,
                                     accountName = loginState.value.username.trim(),
                                     accountPassword = loginState.value.password

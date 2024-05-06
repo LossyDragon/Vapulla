@@ -1,34 +1,34 @@
 [versions]
-accompanist = "0.34.0" # https://mvnrepository.com/artifact/com.google.accompanist/accompanist-permissions
-activityCompose = "1.8.2" # https://mvnrepository.com/artifact/androidx.activity/activity-compose
-apng = "3.0.0" # https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
-composeBom = "2024.02.02" # https://developer.android.com/jetpack/androidx/releases/compose
-coreKtx = "1.12.0" # https://mvnrepository.com/artifact/androidx.core/core-ktx
+accompanist = "0.35.0-alpha" # https://mvnrepository.com/artifact/com.google.accompanist/accompanist-permissions
+activityCompose = "1.9.0" # https://mvnrepository.com/artifact/androidx.activity/activity-compose
+apng = "3.0.1" # https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
+composeBom = "2024.05.00" # https://developer.android.com/jetpack/androidx/releases/compose
+coreKtx = "1.13.1" # https://mvnrepository.com/artifact/androidx.core/core-ktx
 coreSplashscreen = "1.0.1" # https://mvnrepository.com/artifact/androidx.core/core-splashscreen
-gradlePlugin = "8.3.0" # https://mvnrepository.com/artifact/com.android.application/com.android.application.gradle.plugin
+gradlePlugin = "8.4.0" # https://mvnrepository.com/artifact/com.android.application/com.android.application.gradle.plugin
 hilt = "2.51" # https://mvnrepository.com/artifact/com.google.dagger/hilt-android
 hiltCompiler = "1.2.0" # https://mvnrepository.com/artifact/androidx.hilt/hilt-compiler
-javaSteam = "1.3.0" # https://mvnrepository.com/artifact/in.dragonbra/javasteam
+javaSteam = "1.4.1-SNAPSHOT" # https://mvnrepository.com/artifact/in.dragonbra/javasteam
 jsoup = "1.17.2" # https://mvnrepository.com/artifact/org.jsoup/jsoup
-kotlin = "1.9.22" # https://mvnrepository.com/artifact/org.jetbrains.kotlin.android/org.jetbrains.kotlin.android.gradle.plugin
-kotlinCompilerExtensionVersion = "1.5.10" # https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
-ksp = "1.9.22-1.0.18" # https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing-api
-landscapistCoil = "2.3.2" # https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
-leakCanary = "2.13" # https://mvnrepository.com/artifact/com.squareup.leakcanary/leakcanary-android
+kotlin = "1.9.23" # https://mvnrepository.com/artifact/org.jetbrains.kotlin.android/org.jetbrains.kotlin.android.gradle.plugin
+kotlinCompilerExtensionVersion = "1.5.13" # https://developer.android.com/jetpack/androidx/releases/compose#declaring_dependencies
+ksp = "1.9.23-1.0.20" # https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing-api
+landscapistCoil = "2.3.3" # https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
+leakCanary = "2.14" # https://mvnrepository.com/artifact/com.squareup.leakcanary/leakcanary-android
 lifecycleRuntimeCompose = "2.7.0" # https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-runtime-compose
-okhttp = "5.0.0-alpha.12" # https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
+okhttp = "5.0.0-alpha.14" # https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
 pagingRuntimeKtx = "3.2.1" # https://mvnrepository.com/artifact/androidx.paging/paging-compose
 paletteKtx = "1.0.0" # https://mvnrepository.com/artifact/androidx.palette/palette-ktx
 preferenceKtx = "1.2.1" # https://mvnrepository.com/artifact/androidx.preference/preference-ktx
-protoBufJava = "3.25.3" # https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
-qrCodeKotlin = "4.1.1" # https://mvnrepository.com/artifact/io.github.g0dkar/qrcode-kotlin
-retrofit = "2.9.0" # https://mvnrepository.com/artifact/com.squareup.retrofit2/retrofit
+protoBufJava = "4.26.1" # https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+qrCodeKotlin = "4.2.0" # https://mvnrepository.com/artifact/io.github.g0dkar/qrcode-kotlin
+retrofit = "2.11.0" # https://mvnrepository.com/artifact/com.squareup.retrofit2/retrofit
 room = "2.6.1" # https://mvnrepository.com/artifact/androidx.room/room-runtime
 settings = "2.1.0" # https://github.com/alorma/Compose-Settings/releases
-spongyCastleProv = "1.58.0.0" # https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
+bouncyCastleProv = "1.78.1" # https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
 timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
 ktlint = "12.1.0" # https://plugins.gradle.org/plugin/org.jlleitschuh.gradle.ktlint
-uiTextGoogleFonts = "1.6.3" # https://mvnrepository.com/artifact/androidx.compose.ui/ui-text-google-fonts
+uiTextGoogleFonts = "1.6.7" # https://mvnrepository.com/artifact/androidx.compose.ui/ui-text-google-fonts
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
@@ -70,7 +70,7 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
-spongyCastleProv = { module = "com.madgag.spongycastle:prov", version.ref = "spongyCastleProv" }
+bouncyCastleProv = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncyCastleProv" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
 

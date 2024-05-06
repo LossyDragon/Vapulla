@@ -36,7 +36,7 @@ import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.rpc.service.UserAccount
 import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
-import `in`.dragonbra.javasteam.steam.authentication.OnChallengeUrlChanged
+import `in`.dragonbra.javasteam.steam.authentication.IChallengeUrlChanged
 import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
 import `in`.dragonbra.javasteam.steam.authentication.SteamAuthentication
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
@@ -57,12 +57,9 @@ import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnified
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodNotification
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodResponse
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.MachineAuthDetails
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.OTPDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.SteamUserStats
 import `in`.dragonbra.javasteam.steam.handlers.steamworkshop.SteamWorkshop
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
@@ -215,7 +212,6 @@ class SteamService : Service() {
         callbackMgr.subscribe(PersonaStatesCallback::class.java, onPersonaState)
         callbackMgr.subscribe(ServiceMethodResponse::class.java, onMethodResponse)
         callbackMgr.subscribe(ServiceMethodNotification::class.java, onMethodNotification)
-        callbackMgr.subscribe(UpdateMachineAuthCallback::class.java, onUpdateMachineAuth)
         callbackMgr.subscribe(
             OfflineMessageNotificationCallback::class.java,
             onOfflineMessageNotification
@@ -320,10 +316,6 @@ class SteamService : Service() {
 
         details.isShouldRememberPassword = true
 
-        if (accountManager.hasSentryFile) {
-            details.sentryFileHash = accountManager.readSentryFile()
-        }
-
         getHandler<SteamUser>().logOn(details)
     }
 
@@ -392,7 +384,7 @@ class SteamService : Service() {
     fun getFriendPersonaStates() {
         Timber.d("getFriendPersonaStates")
         val request = CChat_RequestFriendPersonaStates_Request.newBuilder().build()
-        unifiedChat?.RequestFriendPersonaStates(request)
+        unifiedChat?.requestFriendPersonaStates(request)
     }
 
     /**
@@ -406,7 +398,7 @@ class SteamService : Service() {
                 timestamp = System.currentTimeMillis().div(1000).toInt()
             }.build()
 
-            unifiedFriendMessages?.AckMessage(msgNotification)
+            unifiedFriendMessages?.ackMessage(msgNotification)
         }
     }
 
@@ -426,7 +418,7 @@ class SteamService : Service() {
             ordinalLast = 0
         }.build()
 
-        unifiedFriendMessages?.GetRecentMessages(msgHistory)
+        unifiedFriendMessages?.getRecentMessages(msgHistory)
     }
 
     fun setTyping(steamID: SteamID) {
@@ -436,7 +428,7 @@ class SteamService : Service() {
             message = ""
             steamid = steamID.convertToUInt64()
         }.build()
-        unifiedFriendMessages?.SendMessage(message)
+        unifiedFriendMessages?.sendMessage(message)
     }
 
     fun sendMessage(id: SteamID, msg: String, emoteSet: Set<String>) {
@@ -455,7 +447,7 @@ class SteamService : Service() {
             echoToSender = false
             lowPriority = false
         }.build()
-        unifiedFriendMessages?.SendMessage(message)
+        unifiedFriendMessages?.sendMessage(message)
 
         // Then, save the message to our database.
         val formattedMessage = trimmedMessage.replace('\u02D0', ':')
@@ -473,7 +465,6 @@ class SteamService : Service() {
     }
 
     suspend fun signInViaCredentials(
-        coroutineScope: CoroutineScope,
         iAuthenticator: IAuthenticator,
         accountName: String,
         accountPassword: String
@@ -489,20 +480,18 @@ class SteamService : Service() {
         return try {
             val authSession = auth.beginAuthSessionViaCredentials(authSessionDetails)
 
-            val authPollResult = authSession.pollingWaitForResult(coroutineScope)
+            val authPollResult = authSession.pollingWaitForResult()
 
             // Save our results (username and refresh token) to account manager.
             with(authPollResult) {
                 AuthResponse(this.accountName, this.refreshToken)
             }
         } catch (e: IllegalArgumentException) {
-            coroutineScope.cancel(CancellationException(e.message))
             null
         }
     }
 
     suspend fun signInViaQR(
-        coroutineScope: CoroutineScope,
         onDrawQRCode: (QrAuthSession) -> Unit
     ): AuthResponse {
         val auth = SteamAuthentication(steamClient, unifiedMessages)
@@ -514,15 +503,11 @@ class SteamService : Service() {
 
         val authSession: QrAuthSession = auth.beginAuthSessionViaQR(authSessionDetails)
 
-        authSession.challengeUrlChanged = object : OnChallengeUrlChanged {
-            override fun onChanged(qrAuthSession: QrAuthSession) {
-                onDrawQRCode(qrAuthSession)
-            }
-        }
+        authSession.challengeUrlChanged = IChallengeUrlChanged { onDrawQRCode(it!!) }
 
         onDrawQRCode(authSession)
 
-        val pollResponse = authSession.pollingWaitForResult(coroutineScope)
+        val pollResponse = authSession.pollingWaitForResult()
 
         Timber.i("Connected to Steam! Logging in as ${pollResponse.accountName}...")
 
@@ -531,18 +516,18 @@ class SteamService : Service() {
 
     fun createFriendInviteToken() {
         val request = CUserAccount_CreateFriendInviteToken_Request.newBuilder()
-        userAccount?.CreateFriendInviteToken(request.build())
+        userAccount?.createFriendInviteToken(request.build())
     }
 
     fun getFriendInviteTokens() {
         val request = CUserAccount_GetFriendInviteTokens_Request.newBuilder()
-        userAccount?.GetFriendInviteTokens(request.build())
+        userAccount?.getFriendInviteTokens(request.build())
     }
 
     fun revokeFriendInviteToken(token: String) {
         val request = CUserAccount_RevokeFriendInviteToken_Request.newBuilder()
         request.inviteToken = token
-        userAccount?.RevokeFriendInviteToken(request.build())
+        userAccount?.revokeFriendInviteToken(request.build())
     }
 
     private fun steamThread() {
@@ -629,30 +614,6 @@ class SteamService : Service() {
 
     private val onLoggedOff = Consumer<LoggedOffCallback> {
         steamClient.disconnect()
-    }
-
-    private val onUpdateMachineAuth = Consumer<UpdateMachineAuthCallback> {
-        Timber.i("received sentry file called ${it.fileName}")
-        accountManager.updateSentryFile(it)
-
-        val otp = OTPDetails().apply {
-            identifier = it.oneTimePassword.identifier
-            type = it.oneTimePassword.type
-        }
-
-        val details = MachineAuthDetails().apply {
-            bytesWritten = it.bytesToWrite
-            eResult = EResult.OK
-            fileName = it.fileName
-            fileSize = accountManager.sentrySize.toInt()
-            jobID = it.jobID
-            lastError = 0
-            offset = it.offset
-            oneTimePassword = otp
-            sentryFileHash = accountManager.readSentryFile()
-        }
-
-        getHandler<SteamUser>().sendMachineAuthResponse(details)
     }
 
     private val onPersonaState = Consumer<PersonaStatesCallback> {

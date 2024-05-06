@@ -112,7 +112,7 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.protoBufJava)
     implementation(libs.qrCodeKotlin)
-    implementation(libs.spongyCastleProv)
+    implementation(libs.bouncyCastleProv)
     implementation(libs.timber)
 }
 

@@ -66,12 +66,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.compose.components.MinContrastOfPrimaryVsSurface
 import `in`.dragonbra.vapulla.compose.components.VapullaEditDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaListDialog
 import `in`.dragonbra.vapulla.compose.components.VapullaMessageDialog
-import `in`.dragonbra.vapulla.compose.components.contrastAgainst
-import `in`.dragonbra.vapulla.compose.components.rememberDominantColorState
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.games.GamesActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -215,37 +212,16 @@ private fun ProfileScreenContent(
     var isManageVisible by rememberSaveable { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    val dominantColorState = rememberDominantColorState(
-        defaultColor = MaterialTheme.colorScheme.surface,
-        isColorValid = {
-            it.contrastAgainst(surfaceColor) >= MinContrastOfPrimaryVsSurface
-        }
-    )
-
-    LaunchedEffect(state.friend?.avatar) {
-        dominantColorState.updateColorsFromImageUrl(getAvatarUrl(state.friend?.avatar))
-    }
-
     Surface {
         Scaffold(
             modifier = Modifier
                 .statusBarsPadding()
-                .waterfallPadding()
-                .background(
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            dominantColorState.color,
-                            surfaceColor
-                        )
-                    )
-                ),
+                .waterfallPadding(),
             containerColor = Color.Transparent,
             topBar = {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     IconButton(onClick = onBackPressed) {
                         Icon(
-                            tint = dominantColorState.onColor,
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Navigate Back"
                         )
@@ -264,17 +240,14 @@ private fun ProfileScreenContent(
                 ProfileScreenProfileIcon(state = state)
 
                 ProfileScreenNameAndStatus(
-                    color = dominantColorState.color.copy(alpha = .75f),
                     state = state
                 )
 
                 ProfileScreenInfo(
-                    color = dominantColorState.color.copy(alpha = .75f),
                     state = state
                 )
 
                 ProfileScreenButtons(
-                    color = dominantColorState.color.copy(alpha = .75f),
                     onChatClick = onChatClick,
                     onGamesClick = onGamesClick,
                     onAccountClick = onAccountClick,
@@ -314,7 +287,7 @@ private fun ProfileScreenProfileIcon(state: ProfileState) {
 }
 
 @Composable
-private fun ProfileScreenNameAndStatus(color: Color, state: ProfileState) {
+private fun ProfileScreenNameAndStatus(state: ProfileState) {
     val context = LocalContext.current
     val friendName = remember(state.friend) { getFriendName(friend = state.friend) }
     val status = remember(state.friend) { context.getStatusText(state.friend) }
@@ -323,9 +296,6 @@ private fun ProfileScreenNameAndStatus(color: Color, state: ProfileState) {
 
     Card(
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
     ) {
         Column(
             modifier = Modifier
@@ -367,14 +337,11 @@ private fun ProfileScreenNameAndStatus(color: Color, state: ProfileState) {
 }
 
 @Composable
-private fun ProfileScreenInfo(color: Color, state: ProfileState) {
+private fun ProfileScreenInfo(state: ProfileState) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = color
-        )
     ) {
         Row(
             horizontalArrangement = Arrangement.Center,
@@ -449,7 +416,6 @@ private fun ProfileLevelLayout(
 
 @Composable
 private fun ProfileScreenButtons(
-    color: Color,
     onChatClick: () -> Unit,
     onAccountClick: () -> Unit,
     onGamesClick: () -> Unit,
@@ -465,7 +431,6 @@ private fun ProfileScreenButtons(
     ) {
         FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onChatClick
         ) {
             Text(
@@ -475,7 +440,6 @@ private fun ProfileScreenButtons(
         }
         FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onAccountClick
         ) {
             Text(
@@ -485,7 +449,6 @@ private fun ProfileScreenButtons(
         }
         FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onGamesClick
         ) {
             Text(
@@ -495,7 +458,6 @@ private fun ProfileScreenButtons(
         }
         FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = color),
             onClick = onManageClick
         ) {
             Text(

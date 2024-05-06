@@ -8,14 +8,8 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
-import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.security.MessageDigest
-import org.spongycastle.util.encoders.Hex
 
-class AccountManager(private val context: Context) {
+class AccountManager(context: Context) {
 
     companion object {
         private const val KEY_AVATAR_HASH = "account_avatar_hash"
@@ -26,16 +20,11 @@ class AccountManager(private val context: Context) {
         private const val KEY_STEAM_ID = "account_steam_id"
         private const val KEY_UNIQUE_ID = "account_unique_id"
         private const val KEY_USERNAME = "account_username"
-
-        private const val SENTRY_FILE_NAME = "sentry.bin"
     }
 
     private var prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     private val listeners = mutableSetOf<AccountManagerListener>()
-
-    val hasSentryFile: Boolean
-        get() = File(context.filesDir, SENTRY_FILE_NAME).exists()
 
     var lastLoginSuccessful: Boolean
         get() = prefs.getBoolean(KEY_LAST_LOGIN_SUCCESSFUL, false)
@@ -84,27 +73,12 @@ class AccountManager(private val context: Context) {
         get() = EPersonaState.from(prefs.getInt(KEY_STATE, 0))
         set(value) = prefs.edit { putInt(KEY_STATE, value.code()) }
 
-    val sentrySize: Long
-        get() = File(context.filesDir, SENTRY_FILE_NAME).length()
-
     fun getCollapsedState(pref: String): Boolean {
         return prefs.getBoolean("is_${pref}_collapsed", false)
     }
 
     fun setCollapsedState(pref: String, value: Boolean) {
         prefs.edit { putBoolean("is_${pref}_collapsed", value) }
-    }
-
-    fun updateSentryFile(callback: UpdateMachineAuthCallback) {
-        val sentryFile = File(context.filesDir, SENTRY_FILE_NAME)
-        val byteBuffer = ByteBuffer.wrap(callback.data, 0, callback.bytesToWrite)
-
-        FileOutputStream(sentryFile).use { fos ->
-            fos.channel.apply {
-                position(callback.offset.toLong())
-                write(byteBuffer)
-            }
-        }
     }
 
     fun clear() {
@@ -120,14 +94,9 @@ class AccountManager(private val context: Context) {
         }
     }
 
-    fun readSentryFile(): ByteArray {
-        val file = File(context.filesDir, SENTRY_FILE_NAME)
-        val digest = MessageDigest.getInstance("SHA-1")
-        return digest.digest(file.readBytes())
-    }
-
+    @OptIn(ExperimentalStdlibApi::class)
     fun saveLocalUser(personaState: PersonaState) {
-        avatarHash = Hex.toHexString(personaState.avatarHash)
+        avatarHash = personaState.avatarHash.toHexString()
         nickname = personaState.name
         steamId = personaState.friendID.convertToUInt64()
         state = personaState.state
