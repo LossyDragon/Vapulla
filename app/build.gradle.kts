@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.android.dagger.hilt)
     alias(libs.plugins.kotlin)
+    alias(libs.plugins.kotlin.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
     id("kotlin-parcelize")
@@ -70,9 +71,6 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.kotlinCompilerExtensionVersion.get()
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,*.kotlin_module,DEPENDENCIES,LICENSE,NOTICE}"
@@ -112,7 +110,7 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.protoBufJava)
     implementation(libs.qrCodeKotlin)
-    implementation(libs.bouncyCastleProv)
+    implementation(libs.spongyCastleProv)
     implementation(libs.timber)
 }
 

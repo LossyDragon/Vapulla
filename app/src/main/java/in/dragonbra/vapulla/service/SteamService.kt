@@ -86,7 +86,6 @@ import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
 import java.io.Closeable
 import java.util.LinkedList
-import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

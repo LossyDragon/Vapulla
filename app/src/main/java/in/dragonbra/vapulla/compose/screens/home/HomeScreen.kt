@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -47,9 +46,6 @@ import `in`.dragonbra.vapulla.compose.components.VapullaProfileDialog
 import `in`.dragonbra.vapulla.compose.screens.chat.ChatActivity
 import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
-import `in`.dragonbra.vapulla.compose.util.StaticImage
-import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
 import `in`.dragonbra.vapulla.model.FriendListGroup
 import `in`.dragonbra.vapulla.model.FriendListItem
 import kotlin.random.Random
