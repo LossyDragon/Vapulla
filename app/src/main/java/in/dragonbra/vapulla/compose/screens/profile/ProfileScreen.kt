@@ -146,7 +146,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
         }
     )
 
-    val onChatClick = remember<() -> Unit> {
+    val onChatClick: () -> Unit = remember {
         {
             Intent(context, ChatActivity::class.java).apply {
                 putExtra(ProfileActivity.INTENT_STEAM_ID, state.steamID!!.convertToUInt64())
@@ -154,7 +154,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
         }
     }
 
-    val onGamesClicked = remember<() -> Unit> {
+    val onGamesClicked: () -> Unit = remember {
         {
             Intent(context, GamesActivity::class.java).apply {
                 Bundle().apply {

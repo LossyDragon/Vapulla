@@ -19,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.*
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,7 +59,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // val refreshState = rememberPullToRefreshState()
+    val refreshState = rememberPullToRefreshState()
 
     val onProfileSelected = remember<(FriendListItem) -> Unit> {
         {
@@ -82,7 +83,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
 
     HomeScreenContent(
         state = state,
-        // refreshState = refreshState,
+        refreshState = refreshState,
         searchTextState = viewModel.searchText,
         onChatSelected = onChatSelected,
         onLogout = viewModel::onLogout,
@@ -104,7 +105,7 @@ fun HomeScreen(viewModel: HomeViewModel) {
 @Composable
 private fun HomeScreenContent(
     state: HomeState,
-    // refreshState: PullToRefreshState,
+    refreshState: PullToRefreshState,
     searchTextState: MutableStateFlow<TextFieldValue>,
     onChatSelected: (friend: FriendListItem) -> Unit,
     onLogout: () -> Unit,
@@ -179,18 +180,18 @@ private fun HomeScreenContent(
         }
     ) { paddingValues ->
         // TODO: `meh` to the new M3 pull refresh. Could be done better
-//        if (refreshState.isRefreshing) {
-//            LaunchedEffect(true) {
-//                onRefresh()
-//            }
-//            if (!state.isRefreshing) {
-//                refreshState.endRefresh()
-//            }
-//        }
+        if (refreshState.isRefreshing) {
+            LaunchedEffect(true) {
+                onRefresh()
+            }
+            if (!state.isRefreshing) {
+                refreshState.endRefresh()
+            }
+        }
 
         Box(
             modifier = Modifier
-                // .nestedScroll(refreshState.nestedScrollConnection)
+                .nestedScroll(refreshState.nestedScrollConnection)
                 .padding(paddingValues)
         ) {
             if (state.filteredFriendsList.isEmpty()) {
@@ -253,10 +254,10 @@ private fun HomeScreenContent(
                 }
             )
 
-//            PullToRefreshContainer(
-//                modifier = Modifier.align(Alignment.TopCenter),
-//                state = refreshState
-//            )
+            PullToRefreshContainer(
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = refreshState
+            )
         }
     }
 }
@@ -289,7 +290,7 @@ private fun Preview_HomeScreenContent() {
     VapullaTheme {
         HomeScreenContent(
             state = HomeState(filteredFriendsList = listOf(group)),
-            // refreshState = refreshState,
+            refreshState = rememberPullToRefreshState(),
             searchTextState = MutableStateFlow(TextFieldValue("")),
             onChatSelected = {},
             onLogout = {},

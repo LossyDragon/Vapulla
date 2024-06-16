@@ -1,8 +1,8 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.*
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ChatMessageDao {
@@ -18,13 +18,13 @@ interface ChatMessageDao {
         "SELECT * FROM chat_message WHERE message = :message AND " +
             "account_id = :accountid AND from_local = :fromLocal"
     )
-    fun find(message: String, accountid: Long, fromLocal: Boolean): List<ChatMessage>
+    fun find(message: String, accountid: Long, fromLocal: Boolean): Flow<List<ChatMessage>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg messages: ChatMessage)
 
     @Query("SELECT * FROM chat_message WHERE account_id = :friendId ORDER BY timestamp DESC")
-    fun findLivePaged(friendId: Long): LiveData<List<ChatMessage>>
+    fun findLivePaged(friendId: Long): Flow<List<ChatMessage>>
 
     @Update
     fun update(vararg messages: ChatMessage)

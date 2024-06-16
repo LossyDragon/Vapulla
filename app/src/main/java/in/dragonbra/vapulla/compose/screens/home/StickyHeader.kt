@@ -38,23 +38,13 @@ private fun Preview_StickyHeaderItem() {
     val friend = FriendListItem(
         id = 0,
         state = EPersonaState.Online.code(),
-        avatar = null,
         gameAppId = 440,
         gameName = "Team Fortess 2",
-        lastLogOff = 0L,
-        lastLogOn = 0L,
-        lastMessage = null,
-        lastMessageTime = null,
         name = "Name The Game",
-        newMessageCount = null,
-        nickname = null,
-        relation = 0,
-        stateFlags = 0,
-        typingTs = 0L
     )
     VapullaTheme {
         Column {
-            StickyHeaderItem(true, "Online", 60, {})
+            StickyHeaderItem(isCollapsed = true, header = "Online", count = 60, onHeaderAction = {})
             FriendItem(
                 friend = friend,
                 onClickChat = {},

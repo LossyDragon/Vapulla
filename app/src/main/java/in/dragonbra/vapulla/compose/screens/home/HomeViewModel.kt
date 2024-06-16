@@ -1,9 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -64,19 +61,26 @@ class HomeViewModel @Inject constructor(
     private val _searchText = MutableStateFlow(TextFieldValue(""))
     val searchText: MutableStateFlow<TextFieldValue> = _searchText
 
-    private lateinit var friendsData: LiveData<List<FriendListItem>>
-    private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
-        val updateTime = System.currentTimeMillis().div(1000)
-        if (!state.value.isSearching) {
-            swap(list, updateTime)
-        }
-    }
-
     init {
         viewModelScope.launch {
             searchText.collectLatest {
                 search(it.text)
             }
+        }
+
+        viewModelScope.launch {
+            steamFriendDao.getLive().collectLatest { list ->
+                val updateTime = System.currentTimeMillis().div(1000)
+                if (!state.value.isSearching) {
+                    swap(list, updateTime)
+                }
+            }
+        }
+
+        // Queue a first time refresh to get a current friend states.
+        viewModelScope.launch {
+            delay(1000L)
+            _uiEvent.emit(HomeUiEvent.Refresh)
         }
     }
 
@@ -181,24 +185,6 @@ class HomeViewModel @Inject constructor(
 
     fun clearStates() {
         steamFriendDao.clearOnlineState()
-    }
-
-    fun onPostCreate(owner: LifecycleOwner) {
-        friendsData = steamFriendDao.getLive()
-        friendsData.observe(owner, dataObserver)
-
-        val updateTime = System.currentTimeMillis()
-        swap(friendsData.value.orEmpty(), updateTime)
-
-        // Queue a first time refresh to get a current friend states.
-        viewModelScope.launch {
-            delay(1000L)
-            _uiEvent.emit(HomeUiEvent.Refresh)
-        }
-    }
-
-    fun onDestroy() {
-        friendsData.removeObserver(dataObserver)
     }
 
     fun onSwipeRefresh(isRefreshing: Boolean) {

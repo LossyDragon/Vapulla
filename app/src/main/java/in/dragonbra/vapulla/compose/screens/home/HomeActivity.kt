@@ -49,7 +49,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         super.onServiceConnected(name, service)
         accountManager.addListener(this@HomeActivity)
 
-        viewModel.onPostCreate(this)
         onAccountUpdate(accountManager)
     }
 
@@ -61,11 +60,6 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
     override fun onPause() {
         super.onPause()
         accountManager.removeListener(this)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        viewModel.onDestroy()
     }
 
     override fun onAccountUpdate(account: AccountManager) {

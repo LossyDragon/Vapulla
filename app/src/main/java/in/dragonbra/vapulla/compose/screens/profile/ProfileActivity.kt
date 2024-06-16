@@ -52,12 +52,7 @@ class ProfileActivity : VapullaBaseActivity() {
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
-        viewModel.onPostCreate(this)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        viewModel.onDestroy()
+        viewModel.init()
     }
 
     override fun onDisconnected() {

@@ -1,9 +1,10 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import androidx.lifecycle.LiveData
+
 import androidx.room.*
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.model.FriendListItem
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SteamFriendDao {
@@ -26,10 +27,7 @@ interface SteamFriendDao {
             "ON gs.id = sf.game_app_id " +
             "WHERE sf.id = :id"
     )
-    fun findLive(id: Long): LiveData<FriendListItem>
-
-    @Update
-    fun update(vararg steamFriends: SteamFriend)
+    fun findLive(id: Long): Flow<FriendListItem>
 
     @Query(
         "SELECT " +
@@ -47,7 +45,10 @@ interface SteamFriendDao {
             "   OR sf.relation = 3 " +
             "GROUP BY sf.id"
     )
-    fun getLive(): LiveData<List<FriendListItem>>
+    fun getLive(): Flow<List<FriendListItem>>
+
+    @Update
+    fun update(vararg steamFriends: SteamFriend)
 
     @Query("UPDATE steam_friend SET nickname = NULL")
     fun clearNicknames()

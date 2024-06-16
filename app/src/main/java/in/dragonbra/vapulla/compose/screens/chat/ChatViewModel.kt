@@ -1,8 +1,5 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,28 +63,7 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableSharedFlow<ChatUiEvent>()
     val uiState = _uiState.asSharedFlow()
 
-    private lateinit var chatData: LiveData<List<ChatMessage>>
-    private val chatObserver = Observer<List<ChatMessage>> { list ->
-        val formattedList = list.groupBy { it.formattedTs }
-        _state.update { it.copy(chatMessages = formattedList) }
-    }
-
-    private lateinit var emoticonData: LiveData<List<Emoticon>>
-    private val emoteObserver = Observer<List<Emoticon>> { list ->
-        val emoteSet = list.filter { !it.isSticker }.map { it.name }.toSet()
-        _state.update { it.copy(emoticonData = list, emoteSet = emoteSet) }
-    }
-
-    private lateinit var friendData: LiveData<FriendListItem>
-    private val friendObserver = Observer<FriendListItem> { friend ->
-        if (friend.relation == EFriendRelationship.Friend.code()) {
-            _state.update { it.copy(friend = friend) }
-        } else {
-            emit(ChatUiEvent.NavigateUp)
-        }
-    }
-
-    init {
+    fun init(steamID: SteamID) {
         viewModelScope.launch {
             typingFlow
                 .debounce(10.seconds)
@@ -96,28 +72,31 @@ class ChatViewModel @Inject constructor(
                     typingJob?.cancel()
                 }
         }
-    }
 
-    fun onPostCreate(lifecycleOwner: LifecycleOwner) {
-        Timber.d("onPostCreate")
-
-        val steamID = _state.value.currentChatSteamID?.convertToUInt64()
-            ?: throw IllegalArgumentException("SteamID null no onPostCreate")
-
-        chatData = chatMessageDao.findLivePaged(steamID)
-        chatData.observe(lifecycleOwner, chatObserver)
-
-        friendData = steamFriendDao.findLive(steamID)
-        friendData.observe(lifecycleOwner, friendObserver)
-        val friendGameID = friendData.value?.gameAppId
-        if (friendGameID != null) {
-            viewModelScope.launch {
-                schemaManager.touch(friendGameID)
+        viewModelScope.launch(Dispatchers.IO) {
+            chatMessageDao.findLivePaged(steamID.convertToUInt64()).collectLatest { list ->
+                val formattedList = list.groupBy { it.formattedTs }
+                _state.update { it.copy(chatMessages = formattedList) }
             }
         }
 
-        emoticonData = emoticonDao.getLive()
-        emoticonData.observe(lifecycleOwner, emoteObserver)
+        viewModelScope.launch(Dispatchers.IO) {
+            steamFriendDao.findLive(steamID.convertToUInt64()).collectLatest { friend ->
+                if (friend.relation == EFriendRelationship.Friend.code()) {
+                    _state.update { it.copy(friend = friend) }
+                    schemaManager.touch(friend.gameAppId)
+                } else {
+                    emit(ChatUiEvent.NavigateUp)
+                }
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            emoticonDao.getLive().collectLatest { list ->
+                val emoteSet = list.filter { !it.isSticker }.map { it.name }.toSet()
+                _state.update { it.copy(emoticonData = list, emoteSet = emoteSet) }
+            }
+        }
     }
 
     fun onResume() {
@@ -127,12 +106,6 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             chatMessageDao.markRead(steamID.convertToUInt64())
         }
-    }
-
-    fun onDestroy() {
-        chatData.removeObserver(chatObserver)
-        friendData.removeObserver(friendObserver)
-        emoticonData.removeObserver(emoteObserver)
     }
 
     fun setChatSteamID(steamID: SteamID) {

@@ -78,11 +78,6 @@ class ChatActivity : VapullaBaseActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        viewModel.onDestroy()
-    }
-
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         super.onServiceConnected(name, service)
 
@@ -97,7 +92,7 @@ class ChatActivity : VapullaBaseActivity() {
             getHandler<VapullaHandler>()?.getEmoticonList()
         }
 
-        viewModel.onPostCreate(this)
+        viewModel.init(steamID)
     }
 
     override fun onServiceDisconnected(name: ComponentName) {
