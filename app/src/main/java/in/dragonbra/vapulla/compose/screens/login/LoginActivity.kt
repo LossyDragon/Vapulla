@@ -109,7 +109,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
                 accountManager.lastLoginSuccessful
             ) {
                 val logonDetails = LogOnDetails().apply {
-                    username = accountManager.username
+                    username = accountManager.username!!
                     accessToken = accountManager.loginKey
                     loginID = 149
                 }
@@ -148,7 +148,7 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
                         accountManager.loginKey = response.refreshToken
 
                         val logonDetails = LogOnDetails().apply {
-                            username = accountManager.username
+                            username = accountManager.username!!
                             accessToken = accountManager.loginKey
                             loginID = 149
                         }

@@ -10,7 +10,7 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.core.view.WindowCompat
-import `in`.dragonbra.javasteam.handlers.ClientMsgHandler
+import `in`.dragonbra.javasteam.steam.handlers.ClientMsgHandler
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback

@@ -188,8 +188,8 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSwipeRefresh(isRefreshing: Boolean) {
-        _state.update { it.copy(isRefreshing = isRefreshing) }
         viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = isRefreshing) }
             _uiEvent.emit(HomeUiEvent.Refresh)
             delay(1000L)
             _state.update { it.copy(isRefreshing = false) }

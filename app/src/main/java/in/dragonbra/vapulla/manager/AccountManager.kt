@@ -7,7 +7,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStatesCallback
 
 class AccountManager(context: Context) {
 
@@ -95,7 +95,7 @@ class AccountManager(context: Context) {
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun saveLocalUser(personaState: PersonaState) {
+    fun saveLocalUser(personaState: PersonaStatesCallback) {
         avatarHash = personaState.avatarHash.toHexString()
         nickname = personaState.name
         steamId = personaState.friendID.convertToUInt64()

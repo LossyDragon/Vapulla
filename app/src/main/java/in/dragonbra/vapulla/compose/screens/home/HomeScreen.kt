@@ -179,20 +179,11 @@ private fun HomeScreenContent(
             )
         }
     ) { paddingValues ->
-        // TODO: `meh` to the new M3 pull refresh. Could be done better
-        if (refreshState.isRefreshing) {
-            LaunchedEffect(true) {
-                onRefresh()
-            }
-            if (!state.isRefreshing) {
-                refreshState.endRefresh()
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .nestedScroll(refreshState.nestedScrollConnection)
-                .padding(paddingValues)
+        PullToRefreshBox(
+            modifier = Modifier.padding(paddingValues),
+            state = refreshState,
+            isRefreshing = state.isRefreshing,
+            onRefresh = onRefresh,
         ) {
             if (state.filteredFriendsList.isEmpty()) {
                 Card(modifier = Modifier.align(Alignment.Center)) {
@@ -252,11 +243,6 @@ private fun HomeScreenContent(
                         listState.animateScrollToItem(0)
                     }
                 }
-            )
-
-            PullToRefreshContainer(
-                modifier = Modifier.align(Alignment.TopCenter),
-                state = refreshState
             )
         }
     }

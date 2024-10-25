@@ -71,7 +71,7 @@ class ProfileActivity : VapullaBaseActivity() {
 
     private fun onProfileEvent(event: ProfileUiEvent) {
         Timber.d("onProfileEvent: ${event.javaClass.simpleName}")
-        val steamID = viewModel.state.value.steamID
+        val steamID = viewModel.state.value.steamID ?: return
         scope.launch(Dispatchers.IO) {
             when (event) {
                 ProfileUiEvent.BlockFriend ->

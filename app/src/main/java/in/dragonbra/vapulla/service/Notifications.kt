@@ -22,7 +22,7 @@ import androidx.core.graphics.drawable.toBitmap
 import coil.imageLoader
 import coil.request.ErrorResult
 import coil.request.ImageRequest
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStatesCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
@@ -192,7 +192,7 @@ fun Context.serviceMessageNotification(
 
 @OptIn(ExperimentalStdlibApi::class)
 fun Context.serviceRequestNotification(
-    state: PersonaState,
+    state: PersonaStatesCallback,
     block: (builder: NotificationCompat.Builder) -> Unit
 ) {
     val steamId = state.friendID.convertToUInt64().toInt()

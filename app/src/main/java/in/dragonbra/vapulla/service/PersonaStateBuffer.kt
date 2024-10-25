@@ -1,7 +1,7 @@
 package `in`.dragonbra.vapulla.service
 
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStatesCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
@@ -13,10 +13,10 @@ import timber.log.Timber
 
 class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
-    private val map: MutableMap<SteamID, PersonaState> = hashMapOf()
+    private val map: MutableMap<SteamID, PersonaStatesCallback> = hashMapOf()
     private val mapLock: Any = Any()
 
-    fun push(state: PersonaState) {
+    fun push(state: PersonaStatesCallback) {
         synchronized(mapLock) {
             val old = map[state.friendID]
 
