@@ -1,9 +1,6 @@
 package `in`.dragonbra.vapulla.compose.components
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,37 +9,36 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.NavigationDrawerItemColors
-import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,79 +48,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.request.ImageRequest
+import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.screens.home.HomeState
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.compose.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.compose.ui.theme.getAccountStatusColor
-import `in`.dragonbra.vapulla.compose.util.StaticImage
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallerCornerShape
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
-
-@Composable
-fun ProfileStatusItem(
-    label: @Composable () -> Unit,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    icon: (@Composable () -> Unit)? = null,
-    badge: (@Composable () -> Unit)? = null,
-    shape: Shape = CircleShape,
-    colors: NavigationDrawerItemColors = NavigationDrawerItemDefaults.colors(),
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
-) {
-    Surface(
-        selected = selected,
-        onClick = onClick,
-        modifier = modifier
-            .semantics { role = Role.Tab }
-            .height(32.dp)
-            .fillMaxWidth(.5f),
-        shape = shape,
-        color = colors.containerColor(selected).value,
-        interactionSource = interactionSource
-    ) {
-        Row(
-            Modifier.padding(start = 16.dp, end = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (icon != null) {
-                val iconColor = colors.iconColor(selected).value
-                CompositionLocalProvider(LocalContentColor provides iconColor, content = icon)
-                Spacer(Modifier.width(12.dp))
-            }
-            Box(Modifier.weight(1f)) {
-                val labelColor = colors.textColor(selected).value
-                CompositionLocalProvider(LocalContentColor provides labelColor, content = label)
-            }
-            if (badge != null) {
-                Spacer(Modifier.width(12.dp))
-                val badgeColor = colors.badgeColor(selected).value
-                CompositionLocalProvider(LocalContentColor provides badgeColor, content = badge)
-            }
-        }
-    }
-}
 
 @Composable
 fun VapullaProfileDialog(
     openDialog: Boolean,
     state: HomeState,
     onStatusChange: (EPersonaState) -> Unit,
-    onPersonAdd: () -> Unit,
+    onInvites: () -> Unit,
+    onInviteLinks: () -> Unit,
     onSettings: () -> Unit,
     onLogout: () -> Unit,
     onDismiss: () -> Unit
@@ -133,85 +84,85 @@ fun VapullaProfileDialog(
         return
     }
 
-    val borderStroke = BorderStroke(4.dp, getAccountStatusColor(state.status))
-    val cornerShape = RoundedCornerShape(16.dp)
-    var selectedItem by remember { mutableStateOf(EPersonaState.Online) }
+    val context = LocalContext.current
+    var selectedItem by remember(state.status) { mutableStateOf(state.status) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 /* Icon, Name, and Status */
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    StaticImage(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .border(borderStroke, cornerShape)
-                            .clip(cornerShape),
-                        url = getAvatarUrl(state.avatarHash)
-                    )
-                    Column(Modifier.padding(6.dp)) {
-                        Text(
-                            modifier = Modifier,
-                            text = state.nickname
+                ListItem(
+                    colors = ListItemDefaults.colors(
+                        containerColor = Color.Transparent
+                    ),
+                    leadingContent = {
+                        CoilImage(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    getAccountStatusColor(state.status),
+                                    iconSmallerCornerShape
+                                )
+                                .padding(2.dp)
+                                .clip(iconSmallerCornerShape),
+                            imageRequest = {
+                                ImageRequest.Builder(context)
+                                    .data(getAvatarUrl(state.avatarHash))
+                                    .crossfade(true)
+                                    .build()
+                            },
+                            previewPlaceholder = painterResource(R.drawable.vapulla),
+                            loading = {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.padding(8.dp),
+                                    color = MaterialTheme.colorScheme.background
+                                )
+                            }
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            modifier = Modifier,
-                            text = state.status.name
+                    },
+                    headlineContent = {
+                        Text(text = state.nickname)
+                    },
+                    supportingContent = {
+                        Text(text = state.status.name)
+                    }
+                )
+                /* Online Status */
+                Spacer(modifier = Modifier.height(16.dp))
+
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val status =
+                        listOf(EPersonaState.Online, EPersonaState.Away, EPersonaState.Invisible)
+                    status.forEachIndexed { index, state ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = status.size
+                            ),
+                            onClick = {
+                                selectedItem = state
+                                onStatusChange(state)
+                            },
+                            selected = state == selectedItem,
+                            label = {
+                                Text(state.name)
+                            }
                         )
                     }
                 }
-                /* Online Status */
-                Spacer(modifier = Modifier.height(16.dp))
-                ProfileStatusItem(
-                    modifier = Modifier.padding(0.dp),
-                    colors = NavigationDrawerItemDefaults.colors(
-                        unselectedContainerColor = Color.Transparent
-                    ),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Circle,
-                            contentDescription = null,
-                            tint = friendOnline
-                        )
-                    },
-                    label = { Text(EPersonaState.Online.name) },
-                    selected = selectedItem == EPersonaState.Online,
-                    onClick = {
-                        selectedItem = EPersonaState.Online
-                        onStatusChange(EPersonaState.Online)
-                    }
-                )
-
-                ProfileStatusItem(
-                    modifier = Modifier.padding(0.dp),
-                    colors = NavigationDrawerItemDefaults.colors(
-                        unselectedContainerColor = Color.Transparent
-                    ),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Circle,
-                            contentDescription = null,
-                            tint = friendOffline
-                        )
-                    },
-                    label = { Text(EPersonaState.Invisible.name) },
-                    selected = selectedItem == EPersonaState.Invisible,
-                    onClick = {
-                        selectedItem = EPersonaState.Invisible
-                        onStatusChange(EPersonaState.Invisible)
-                    }
-                )
 
                 /* Action Buttons */
                 Spacer(modifier = Modifier.height(16.dp))
-                FilledTonalButton(modifier = Modifier.fillMaxWidth(), onClick = onPersonAdd) {
+                FilledTonalButton(modifier = Modifier.fillMaxWidth(), onClick = onInvites) {
                     Icon(imageVector = Icons.Default.PersonAdd, contentDescription = null)
                     Spacer(modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Text(text = "Add Friend")
+                    Text(text = "Pending Invites")
+                }
+                FilledTonalButton(modifier = Modifier.fillMaxWidth(), onClick = onInviteLinks) {
+                    Icon(imageVector = Icons.Default.Link, contentDescription = null)
+                    Spacer(modifier = Modifier.size(ButtonDefaults.IconSize))
+                    Text(text = "Invite Links")
                 }
                 FilledTonalButton(modifier = Modifier.fillMaxWidth(), onClick = onSettings) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = null)
@@ -334,7 +285,7 @@ fun VapullaEditDialog(
                     onDone = { keyboard?.hide() }
                 ),
                 keyboardOptions = KeyboardOptions(
-                    autoCorrect = false,
+                    autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Done
                 )
@@ -428,14 +379,15 @@ fun VapullaMessageDialog(
 @Preview
 @Composable
 private fun Preview_VapullaDialog() {
-    val state = HomeState(nickname = "Some Cool Name")
+    val state = HomeState(nickname = "Some Cool Name", status = EPersonaState.Online)
 
     VapullaTheme {
         VapullaProfileDialog(
             openDialog = true,
             state = state,
             onStatusChange = {},
-            onPersonAdd = {},
+            onInvites = {},
+            onInviteLinks = {},
             onSettings = {},
             onLogout = {},
             onDismiss = {}

@@ -10,7 +10,6 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.model.FriendListGroup
 import `in`.dragonbra.vapulla.model.FriendListItem
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -21,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import javax.inject.Inject
 
 data class HomeState(
     val avatarHash: String = "",
@@ -38,9 +39,10 @@ sealed class HomeUiEvent {
     data class BlockFriend(val friend: FriendListItem) : HomeUiEvent()
     data class ChangeStatus(val state: EPersonaState) : HomeUiEvent()
     data class IgnoreRequest(val friend: FriendListItem) : HomeUiEvent()
-    data object AddFriend : HomeUiEvent()
     data object Disconnect : HomeUiEvent()
+    data object InviteLinks : HomeUiEvent()
     data object LogOut : HomeUiEvent()
+    data object PendingInvites : HomeUiEvent()
     data object Refresh : HomeUiEvent()
     data object Settings : HomeUiEvent()
 }
@@ -201,6 +203,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onStatusUpdate(status: EPersonaState) {
+        Timber.d("onStatusUpdate: $state")
         viewModelScope.launch {
             _uiEvent.emit(HomeUiEvent.ChangeStatus(status))
         }
@@ -222,9 +225,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun onAddFriend() {
+    fun onPendingInvites() {
         viewModelScope.launch {
-            _uiEvent.emit(HomeUiEvent.AddFriend)
+            _uiEvent.emit(HomeUiEvent.PendingInvites)
+        }
+    }
+
+    fun onInviteLinks() {
+        viewModelScope.launch {
+            _uiEvent.emit(HomeUiEvent.InviteLinks)
         }
     }
 

@@ -11,15 +11,15 @@ import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.VapullaBaseActivity
-import `in`.dragonbra.vapulla.compose.screens.invites.InvitesActivity
+import `in`.dragonbra.vapulla.compose.screens.invites.links.InviteLinks
 import `in`.dragonbra.vapulla.compose.screens.settings.SettingsActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.manager.AccountManager
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity() {
@@ -83,19 +83,25 @@ class HomeActivity : AccountManager.AccountManagerListener, VapullaBaseActivity(
         Intent(this, SettingsActivity::class.java).also(::startActivity)
     }
 
-    private fun onInvites() {
+    private fun onInviteLinks() {
         Timber.d("onInvites")
-        Intent(this, InvitesActivity::class.java).also(::startActivity)
+        Intent(this, InviteLinks::class.java).also(::startActivity)
+    }
+
+    private fun onPendingInvites() {
+        TODO()
     }
 
     private fun onFriendAction(event: HomeUiEvent) {
         Timber.d("onFriendAction ${event.javaClass}")
         scope.launch(Dispatchers.IO) {
             when (event) {
-                HomeUiEvent.AddFriend -> onInvites()
+                HomeUiEvent.PendingInvites -> onPendingInvites()
+                HomeUiEvent.InviteLinks -> onInviteLinks()
                 HomeUiEvent.Settings -> onSettings()
                 HomeUiEvent.Disconnect,
                 HomeUiEvent.LogOut -> steamService?.disconnect()
+
                 HomeUiEvent.Refresh -> {
                     viewModel.clearStates()
                     steamService?.getFriendPersonaStates()

@@ -1,42 +1,38 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.MarkUnreadChatAlt
-import androidx.compose.material.icons.outlined.PersonAddAlt1
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.PersonAddAlt1
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.request.ImageRequest
+import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.compose.components.PaperPlane
+import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
-import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallCornerShape
-import `in`.dragonbra.vapulla.compose.util.StaticImage
+import `in`.dragonbra.vapulla.compose.ui.theme.iconSmallerCornerShape
 import `in`.dragonbra.vapulla.compose.util.getAvatarUrl
-import `in`.dragonbra.vapulla.compose.util.getFriendName
+import `in`.dragonbra.vapulla.compose.util.getLastMessageTime
 import `in`.dragonbra.vapulla.compose.util.getStatusIcon
 import `in`.dragonbra.vapulla.compose.util.getStatusText
+import `in`.dragonbra.vapulla.compose.util.getUnreadMessageCount
 import `in`.dragonbra.vapulla.model.FriendListItem
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -48,6 +44,7 @@ fun FriendItem(
     onClickProfile: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     val onClick = remember {
         {
@@ -62,75 +59,85 @@ fun FriendItem(
         }
     }
 
-    val statusColor = remember(friend) { getStatusColor(friend) }
+    val statusColor = remember { getStatusColor(friend) }
     ListItem(
         modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        leadingContent = {
-            Surface(
-                shape = iconSmallCornerShape,
-                color = statusColor
-            ) {
-                val avatarUrl = remember(friend) { getAvatarUrl(friend.avatar) }
-                StaticImage(
-                    modifier = Modifier
-                        .padding(1.dp)
-                        .clip(iconSmallCornerShape)
-                        .size(58.dp),
-                    url = avatarUrl
-                )
-            }
-        },
         headlineContent = {
-            val friendName = remember(friend) { getFriendName(friend = friend) }
-            val statusIcon = remember(friend) { getStatusIcon(friend) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    modifier = Modifier.weight(1f, false),
-                    text = friendName,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            Text(
+                text = buildAnnotatedString {
+                    append(friend.friendName)
+                    append(" ")
+                    appendInlineContent("icon", "[icon]")
+                },
+                color = statusColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                inlineContent = mapOf(
+                    "icon" to InlineTextContent(
+                        Placeholder(
+                            width = 14.sp,
+                            height = 14.sp,
+                            placeholderVerticalAlign = PlaceholderVerticalAlign.Center
+                        )
+                    ) {
+                        getStatusIcon(friend)?.let {
+                            Icon(imageVector = it, contentDescription = it.name)
+                        }
+                    }
                 )
-                statusIcon?.let {
-                    Icon(
-                        modifier = Modifier
-                            .padding(horizontal = 2.dp)
-                            .size(12.dp),
-                        imageVector = it,
-                        contentDescription = it.name
-                    )
-                }
-            }
+            )
         },
         supportingContent = {
-            if (friend.lastMessage != null && !friend.isRequestRecipient) {
-                PaperPlane(
-                    text = friend.lastMessage!!,
-                    isPreviewMode = true,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            } else {
-                val context = LocalContext.current
-                val statusText = remember(friend) { context.getStatusText(friend) }
-                Text(
-                    text = statusText,
-                    color = statusColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            // TODO most recent chat msg
+            Text(
+                text = context.getStatusText(friend),
+                color = statusColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingContent = {
+            CoilImage(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(statusColor, iconSmallerCornerShape)
+                    .padding(2.dp)
+                    .clip(iconSmallerCornerShape),
+                imageRequest = {
+                    ImageRequest.Builder(context)
+                        .data(getAvatarUrl(friend.avatar))
+                        .crossfade(true)
+                        .build()
+                },
+                previewPlaceholder = painterResource(R.drawable.vapulla),
+                loading = {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(8.dp),
+                        color = MaterialTheme.colorScheme.background
+                    )
+                }
+            )
         },
         trailingContent = {
-            val icon = when {
-                friend.isRequestRecipient -> Icons.Outlined.PersonAddAlt1
-                friend.isUnread -> Icons.Outlined.MarkUnreadChatAlt
-                else -> Icons.Outlined.ChatBubbleOutline
-            }
-            IconButton(onClick = onClickChat) {
-                Icon(imageVector = icon, contentDescription = null)
+            if (friend.isUnread) {
+                val count = remember { getUnreadMessageCount(friend.newMessageCount) }
+                Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(text = count)
+                }
+            } else if (friend.isRequestRecipient) {
+                Icon(
+                    imageVector = Icons.Default.PersonAddAlt1,
+                    contentDescription = null
+                )
+            } else if (friend.lastMessage != null) {
+                val time = getLastMessageTime(friend)
+                Text(text = time.toString())
+            } else {
+                null
             }
         }
     )
+    HorizontalDivider()
 }
 
 @Preview

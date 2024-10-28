@@ -1,45 +1,28 @@
 package `in`.dragonbra.vapulla.compose.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.slideIn
-import androidx.compose.animation.slideOut
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.res.*
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.tooling.preview.*
+import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.dragonbra.javasteam.enums.EFriendRelationship
+import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.compose.screens.home.FriendItem
+import `in`.dragonbra.vapulla.compose.ui.theme.fontFamily
+import `in`.dragonbra.vapulla.model.FriendListItem
 import kotlinx.coroutines.flow.MutableStateFlow
 
 // Animation slide in when searching is enabled
@@ -63,6 +46,79 @@ private val slideUp = {
             visibilityThreshold = IntOffset.VisibilityThreshold
         )
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeAppbar(
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    toolbarText: String = stringResource(id = R.string.app_name),
+    actions: @Composable RowScope.() -> Unit = {},
+    searchTextState: MutableStateFlow<TextFieldValue>? = null,
+    isSearching: Boolean = false,
+    onSearchClose: (() -> Unit)? = null
+) {
+    Box {
+        TopAppBar(
+            actions = actions,
+            scrollBehavior = scrollBehavior,
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 1f)
+            ),
+            navigationIcon = {
+                Box(modifier = Modifier.size(90.0.dp)) { }
+            },
+            title = {
+                Text(
+                    text = toolbarText,
+                    fontFamily = fontFamily,
+                    fontSize = 28.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        )
+
+        if (searchTextState != null) {
+            AnimatedVisibility(
+                visible = isSearching,
+                enter = slideIn(),
+                exit = slideUp()
+            ) {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                searchTextState.value = TextFieldValue("")
+                                onSearchClose?.invoke()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                searchTextState.value = TextFieldValue("")
+                            }
+                        ) {
+                            Icon(imageVector = Icons.Default.Clear, contentDescription = null)
+                        }
+                    },
+                    title = {
+                        SearchView(state = searchTextState)
+                    }
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,7 +152,7 @@ fun VapullaAppbar(
             title = {
                 Text(
                     text = toolbarText,
-//                    fontFamily = fontFamily,
+                    fontFamily = fontFamily,
                     fontSize = 28.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -161,6 +217,44 @@ private fun SearchView(state: MutableStateFlow<TextFieldValue>) {
             state.value = value
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview
+@Composable
+private fun Preview_HomeToolbar() {
+    val searchText: MutableStateFlow<TextFieldValue> = MutableStateFlow(TextFieldValue(""))
+    var searchState by remember { mutableStateOf(false) }
+
+    MaterialTheme(colorScheme = darkColorScheme()) {
+        Column {
+            HomeAppbar(
+                actions = {
+                    IconButton(onClick = { searchState = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "Search"
+                        )
+                    }
+                },
+                searchTextState = searchText,
+                isSearching = searchState,
+                onSearchClose = { searchState = false }
+            )
+            FriendItem(
+                friend = FriendListItem(
+                    id = 0,
+                    lastMessage = "Left 4 Dead 2 is so fun!",
+                    name = "New Friend Request",
+                    nickname = "New Friend Request",
+                    relation = EFriendRelationship.RequestRecipient.code(),
+                    state = EPersonaState.Offline.code()
+                ),
+                onClickChat = {},
+                onClickProfile = {}
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

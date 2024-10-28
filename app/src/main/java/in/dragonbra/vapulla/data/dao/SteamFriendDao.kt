@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.data.dao
 
-
 import androidx.room.*
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.model.FriendListItem

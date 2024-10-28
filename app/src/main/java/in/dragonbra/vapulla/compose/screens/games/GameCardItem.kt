@@ -38,7 +38,7 @@ import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.retrofit.response.Game
 
 @Composable
-fun GameCardItem(game: Game, onItemClick: () -> Unit) {
+fun GameListItem(game: Game, onItemClick: () -> Unit) {
     Card(
         modifier = Modifier
             .padding(8.dp)
@@ -110,7 +110,7 @@ private fun GameCardItem_Preview() {
     VapullaTheme {
         LazyColumn(Modifier.fillMaxSize()) {
             items(12) {
-                GameCardItem(
+                GameListItem(
                     game = Game(
                         appid = 440,
                         name = "Team Fortress 2",

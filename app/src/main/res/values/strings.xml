@@ -5,7 +5,7 @@
     <!-- Activity Titles -->
     <string name="title_activity_games">%1$s\'s games</string>
     <string name="title_activity_settings">Settings</string>
-    <string name="title_activity_invites">Invites</string>
+    <string name="title_activity_invites">Invites Links</string>
 
     <!-- Activity Profiles -->
     <string name="textProfileGames">Games</string>

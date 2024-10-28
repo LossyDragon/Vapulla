@@ -11,23 +11,18 @@ import androidx.core.app.NotificationCompat.MessagingStyle
 import androidx.core.app.NotificationManagerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
-import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
 import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EChatEntryType
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
-import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChat_RequestFriendPersonaStates_Request
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2.CMsgClientUIMode
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_AckMessage_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Request
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Response
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_SendMessage_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_CreateFriendInviteToken_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_GetFriendInviteTokens_Request
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_GetFriendInviteTokens_Response
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_RevokeFriendInviteToken_Request
 import `in`.dragonbra.javasteam.rpc.service.Chat
 import `in`.dragonbra.javasteam.rpc.service.FriendMessages
@@ -38,7 +33,6 @@ import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.javasteam.steam.authentication.IChallengeUrlChanged
 import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
-import `in`.dragonbra.javasteam.steam.authentication.SteamAuthentication
 import `in`.dragonbra.javasteam.steam.handlers.ClientMsgHandler
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
@@ -54,9 +48,6 @@ import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.SteamNotificat
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.callback.OfflineMessageNotificationCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamscreenshots.SteamScreenshots
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnifiedMessages
-import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.UnifiedService
-import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodNotification
-import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodResponse
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback
@@ -91,7 +82,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -216,13 +206,15 @@ class SteamService : Service() {
         )
         callbackMgr.subscribeServiceNotification<
             FriendMessages,
-            CFriendMessages_AckMessage_Notification.Builder> {
+            CFriendMessages_AckMessage_Notification.Builder
+            > {
             Timber.i("onAckMessage")
             db.chatMessageDao().markRead(it.body.steamidPartner)
         }
         callbackMgr.subscribeServiceNotification<
             FriendMessagesClient,
-            CFriendMessages_IncomingMessage_Notification.Builder> {
+            CFriendMessages_IncomingMessage_Notification.Builder
+            > {
             Timber.i("onIncomingMessage")
             when (it.body.chatEntryType) {
                 EChatEntryType.Typing.code() -> {
@@ -349,9 +341,6 @@ class SteamService : Service() {
 
     fun logOn(details: LogOnDetails) {
         if (isLoggedIn) return
-
-        details.shouldRememberPassword = true
-
         getHandler<SteamUser>()?.logOn(details)
     }
 
@@ -714,17 +703,6 @@ class SteamService : Service() {
             EResult.OK -> {
                 isLoggedIn = true
                 getHandler<SteamNotifications>()?.requestOfflineMessageCount()
-
-                // Set the client's "UI" mode to receive new callbacks.
-                val uiMode = ClientMsgProtobuf<CMsgClientUIMode.Builder>(
-                    CMsgClientUIMode::class.java,
-                    EMsg.ClientCurrentUIMode
-                ).apply {
-                    body.uimode = 0
-                    body.chatMode = 2
-                }
-                steamClient.send(uiMode)
-
                 userAccount = unifiedMessages.createService(UserAccount::class.java)
                 unifiedChat = unifiedMessages.createService(Chat::class.java)
                 unifiedPlayer = unifiedMessages.createService(Player::class.java)

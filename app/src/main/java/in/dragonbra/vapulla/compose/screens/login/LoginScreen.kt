@@ -291,7 +291,7 @@ private fun LoginScreenContent(
                                 onDone = { focusManager.clearFocus() }
                             ),
                             keyboardOptions = KeyboardOptions(
-                                autoCorrect = false,
+                                autoCorrectEnabled = false,
                                 keyboardType = KeyboardType.Text,
                                 imeAction = ImeAction.Done
                             ),
@@ -463,7 +463,7 @@ private fun LoginTextFields(
             onNext = { focusManager.moveFocus(FocusDirection.Down) }
         ),
         keyboardOptions = KeyboardOptions(
-            autoCorrect = false,
+            autoCorrectEnabled = false,
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Next
         ),
@@ -492,7 +492,7 @@ private fun LoginTextFields(
             onNext = { focusManager.moveFocus(FocusDirection.Down) }
         ),
         keyboardOptions = KeyboardOptions(
-            autoCorrect = false,
+            autoCorrectEnabled = false,
             keyboardType = KeyboardType.Password,
             imeAction = if (!loginState.expectSteamGuardCode) ImeAction.Done else ImeAction.Next
         ),
@@ -613,6 +613,75 @@ private fun BottomSheet(
 /**
  * Previews
  */
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_LoginScreenContent() {
+    val loginState = LoginState(
+        isPasswordValid = PasswordValidation.LetterOrDigit,
+        isPasswordVisible = true,
+        isUsernameValid = false,
+        password = "Password",
+        username = "Username"
+    )
+    VapullaTheme {
+        LoginScreenContent(
+            loginState = loginState,
+            snackbarHostState = SnackbarHostState(),
+            onUsername = {},
+            onPassword = {},
+            onSteamGuard = {},
+            onPasswordVisible = {},
+            onLogin = {},
+            onLoginQR = {},
+            onTwoFactorSubmit = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_LoginScreenContent2() {
+    val loginState = LoginState(
+        isLoading = true,
+        expectSteamGuardApp = true
+    )
+    VapullaTheme {
+        LoginScreenContent(
+            loginState = loginState,
+            snackbarHostState = SnackbarHostState(),
+            onUsername = {},
+            onPassword = {},
+            onSteamGuard = {},
+            onPasswordVisible = {},
+            onLogin = {},
+            onLoginQR = {},
+            onTwoFactorSubmit = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_LoginScreenContent3() {
+    val loginState = LoginState(
+        isLoading = true,
+        expectSteamGuardCode = true,
+        steamGuard = "1A2B3C"
+    )
+    VapullaTheme {
+        LoginScreenContent(
+            loginState = loginState,
+            snackbarHostState = SnackbarHostState(),
+            onUsername = {},
+            onPassword = {},
+            onSteamGuard = {},
+            onPasswordVisible = {},
+            onLogin = {},
+            onLoginQR = {},
+            onTwoFactorSubmit = {}
+        )
+    }
+}
 
 @Preview
 @Composable
@@ -644,29 +713,6 @@ private fun Preview_VapullaLoginLogoError() {
     }
 }
 
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
-@Composable
-private fun Preview_LoginScreenContent3() {
-    val loginState = LoginState(
-        isLoading = true,
-        expectSteamGuardCode = true,
-        steamGuard = "1A2B3C"
-    )
-    VapullaTheme {
-        LoginScreenContent(
-            loginState = loginState,
-            snackbarHostState = SnackbarHostState(),
-            onUsername = {},
-            onPassword = {},
-            onSteamGuard = {},
-            onPasswordVisible = {},
-            onLogin = {},
-            onLoginQR = {},
-            onTwoFactorSubmit = {}
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
@@ -682,53 +728,6 @@ private fun Preview_BottomSheet() {
             qrState = QrState.Loading,
             onCancel = { },
             content = { }
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
-@Composable
-private fun Preview_LoginScreenContent2() {
-    val loginState = LoginState(
-        isLoading = true,
-        expectSteamGuardApp = true
-    )
-    VapullaTheme {
-        LoginScreenContent(
-            loginState = loginState,
-            snackbarHostState = SnackbarHostState(),
-            onUsername = {},
-            onPassword = {},
-            onSteamGuard = {},
-            onPasswordVisible = {},
-            onLogin = {},
-            onLoginQR = {},
-            onTwoFactorSubmit = {}
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
-@Composable
-private fun Preview_LoginScreenContent() {
-    val loginState = LoginState(
-        isPasswordValid = PasswordValidation.LetterOrDigit,
-        isPasswordVisible = true,
-        isUsernameValid = false,
-        password = "Password",
-        username = "Username"
-    )
-    VapullaTheme {
-        LoginScreenContent(
-            loginState = loginState,
-            snackbarHostState = SnackbarHostState(),
-            onUsername = {},
-            onPassword = {},
-            onSteamGuard = {},
-            onPasswordVisible = {},
-            onLogin = {},
-            onLoginQR = {},
-            onTwoFactorSubmit = {}
         )
     }
 }

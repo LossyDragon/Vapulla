@@ -8,6 +8,7 @@ import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStatesCallback
+import timber.log.Timber
 
 class AccountManager(context: Context) {
 
@@ -96,6 +97,7 @@ class AccountManager(context: Context) {
 
     @OptIn(ExperimentalStdlibApi::class)
     fun saveLocalUser(personaState: PersonaStatesCallback) {
+        Timber.d("Saving Local User")
         avatarHash = personaState.avatarHash.toHexString()
         nickname = personaState.name
         steamId = personaState.friendID.convertToUInt64()

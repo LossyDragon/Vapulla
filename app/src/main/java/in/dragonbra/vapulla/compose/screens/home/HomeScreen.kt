@@ -1,26 +1,13 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
 import android.content.Intent
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.*
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -30,15 +17,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.tooling.preview.*
+import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.components.ScrollToButton
@@ -49,9 +33,9 @@ import `in`.dragonbra.vapulla.compose.screens.profile.ProfileActivity
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.model.FriendListGroup
 import `in`.dragonbra.vapulla.model.FriendListItem
-import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +71,8 @@ fun HomeScreen(viewModel: HomeViewModel) {
         searchTextState = viewModel.searchText,
         onChatSelected = onChatSelected,
         onLogout = viewModel::onLogout,
-        onPersonAdd = viewModel::onAddFriend,
+        onPendingInvites = viewModel::onPendingInvites,
+        onInviteLinks = viewModel::onInviteLinks,
         onProfileSelected = onProfileSelected,
         onRefresh = { viewModel.onSwipeRefresh(true) },
         onSearchClosed = viewModel::isNotSearching,
@@ -109,7 +94,8 @@ private fun HomeScreenContent(
     searchTextState: MutableStateFlow<TextFieldValue>,
     onChatSelected: (friend: FriendListItem) -> Unit,
     onLogout: () -> Unit,
-    onPersonAdd: () -> Unit,
+    onInviteLinks: () -> Unit,
+    onPendingInvites: () -> Unit,
     onProfileSelected: (friend: FriendListItem) -> Unit,
     onRefresh: () -> Unit,
     onSearchClosed: () -> Unit,
@@ -121,7 +107,6 @@ private fun HomeScreenContent(
     val keyboard = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     LaunchedEffect(state.isSearching) {
         if (state.isSearching) {
@@ -138,10 +123,14 @@ private fun HomeScreenContent(
         state = state,
         onStatusChange = {
             onStatusChange(it)
+            // subMenuDialog = false
+        },
+        onInvites = {
+            onPendingInvites()
             subMenuDialog = false
         },
-        onPersonAdd = {
-            onPersonAdd()
+        onInviteLinks = {
+            onInviteLinks()
             subMenuDialog = false
         },
         onSettings = {
@@ -158,14 +147,18 @@ private fun HomeScreenContent(
     )
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             VapullaAppbar(
-                scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(onClick = onSearchOpened) {
                         Icon(
                             imageVector = Icons.Filled.Search,
+                            contentDescription = "Search"
+                        )
+                    }
+                    IconButton(onClick = { subMenuDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
                             contentDescription = "Search"
                         )
                     }
@@ -219,7 +212,7 @@ private fun HomeScreenContent(
                     if (!collapsedState[index]) {
                         items(group.groupList, key = { it.id }) { friend ->
                             FriendItem(
-                                modifier = Modifier.animateItemPlacement(),
+                                modifier = Modifier.animateItem(),
                                 friend = friend,
                                 onClickChat = { onChatSelected(friend) },
                                 onClickProfile = { onProfileSelected(friend) }
@@ -280,7 +273,8 @@ private fun Preview_HomeScreenContent() {
             searchTextState = MutableStateFlow(TextFieldValue("")),
             onChatSelected = {},
             onLogout = {},
-            onPersonAdd = {},
+            onInviteLinks = {},
+            onPendingInvites = {},
             onProfileSelected = {},
             onRefresh = {},
             onSearchClosed = {},

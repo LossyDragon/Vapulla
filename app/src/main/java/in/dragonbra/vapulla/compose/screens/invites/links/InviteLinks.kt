@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.compose.screens.invites
+package `in`.dragonbra.vapulla.compose.screens.invites.links
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -17,12 +17,13 @@ import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.model.InviteTokenItem
 import `in`.dragonbra.vapulla.service.SteamService
 import kotlinx.coroutines.launch
+import kotlin.collections.orEmpty
 
-class InvitesActivity : VapullaBaseActivity() {
+class InviteLinks : VapullaBaseActivity() {
 
     private lateinit var receiver: BroadcastReceiver
 
-    private val viewModel: InvitesViewModel by viewModels()
+    private val viewModel: InviteLinksViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,22 +46,25 @@ class InvitesActivity : VapullaBaseActivity() {
             }
         }
 
+
         setContent {
-            VapullaTheme {
-                InvitesScreen(
-                    viewModel = viewModel,
-                    onBackPressed = { finish() },
-                    onGenerateLink = {
-                        scope.launch {
-                            steamService?.createFriendInviteToken()
+            setContent {
+                VapullaTheme {
+                    InviteScreen(
+                        viewModel = viewModel,
+                        onBackPressed = { finish() },
+                        onGenerateLink = {
+                            scope.launch {
+                                steamService?.createFriendInviteToken()
+                            }
+                        },
+                        onDeleteInvite = {
+                            scope.launch {
+                                steamService?.revokeFriendInviteToken(it)
+                            }
                         }
-                    },
-                    onDeleteInvite = {
-                        scope.launch {
-                            steamService?.revokeFriendInviteToken(it)
-                        }
-                    }
-                )
+                    )
+                }
             }
         }
     }

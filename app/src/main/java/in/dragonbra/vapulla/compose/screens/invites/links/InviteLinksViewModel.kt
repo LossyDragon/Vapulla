@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.compose.screens.invites
+package `in`.dragonbra.vapulla.compose.screens.invites.links
 
 import androidx.lifecycle.ViewModel
 import `in`.dragonbra.javasteam.enums.EUniverse
@@ -14,7 +14,7 @@ data class InvitesState(
     val loggedInUniverse: EUniverse = EUniverse.Invalid
 )
 
-class InvitesViewModel : ViewModel() {
+class InviteLinksViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(InvitesState())
     val state = _state.asStateFlow()

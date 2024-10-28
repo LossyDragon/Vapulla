@@ -13,8 +13,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.javasteam.enums.EUIMode
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.ChatMode
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
 import `in`.dragonbra.vapulla.VapullaBaseActivity
@@ -111,6 +113,9 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
                 val logonDetails = LogOnDetails().apply {
                     username = accountManager.username!!
                     accessToken = accountManager.loginKey
+                    shouldRememberPassword = true
+                    uiMode = EUIMode.Unknown
+                    chatMode = ChatMode.NEW_STEAM_CHAT
                     loginID = 149
                 }
 
@@ -151,6 +156,9 @@ class LoginActivity : VapullaBaseActivity(), IAuthenticator {
                             username = accountManager.username!!
                             accessToken = accountManager.loginKey
                             loginID = 149
+                            shouldRememberPassword = true
+                            uiMode = EUIMode.Unknown
+                            chatMode = ChatMode.NEW_STEAM_CHAT
                         }
 
                         steamService?.logOn(logonDetails)

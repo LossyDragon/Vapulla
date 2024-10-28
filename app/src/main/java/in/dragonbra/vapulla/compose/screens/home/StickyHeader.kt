@@ -9,7 +9,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
@@ -17,9 +16,8 @@ import `in`.dragonbra.vapulla.model.FriendListItem
 
 @Composable
 fun StickyHeaderItem(isCollapsed: Boolean, header: String, count: Int, onHeaderAction: () -> Unit) {
-    val headerText = remember(header, count) { "$header ($count)" }
     ListItem(
-        headlineContent = { Text(text = headerText) },
+        headlineContent = { Text(text = "$header ($count)") },
         trailingContent = {
             val button = when (isCollapsed) {
                 true -> Icons.Outlined.KeyboardArrowDown

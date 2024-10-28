@@ -103,7 +103,7 @@ fun Context.getStatusText(friend: FriendListItem?): String {
     val isTypingFromLastMessage = friend.typingTs > (friend.lastMessageTime ?: 0)
     val isTyping = friend.typingTs > (System.currentTimeMillis() - 20000L)
     if (isTypingFromLastMessage && isTyping) {
-        // Would be nice to have a typing indicator
+        // TODO Would be nice to have a typing indicator
         return getString(R.string.statusTyping)
     }
 
