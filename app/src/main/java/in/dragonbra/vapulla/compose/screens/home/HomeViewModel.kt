@@ -1,6 +1,6 @@
 package `in`.dragonbra.vapulla.compose.screens.home
 
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -71,12 +73,16 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            steamFriendDao.getLive().collectLatest { list ->
-                val updateTime = System.currentTimeMillis().div(1000)
-                if (!state.value.isSearching) {
-                    swap(list, updateTime)
+            steamFriendDao.getFriendsList()
+                .map { list ->
+                    list to System.currentTimeMillis().div(1000)
                 }
-            }
+                .flowOn(Dispatchers.IO)
+                .collectLatest { (friendsList, updateTime) ->
+                    if (!state.value.isSearching) {
+                        swap(friendsList, updateTime)
+                    }
+                }
         }
 
         // Queue a first time refresh to get a current friend states.
@@ -185,7 +191,7 @@ class HomeViewModel @Inject constructor(
         swap(list, System.currentTimeMillis())
     }
 
-    fun clearStates() {
+    suspend fun clearStates() {
         steamFriendDao.clearOnlineState()
     }
 

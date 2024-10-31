@@ -1,25 +1,12 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.Alignment.Companion.CenterVertically
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.vapulla.compose.components.PaperPlane
@@ -59,7 +46,7 @@ fun ChatMessageItem(
                 modifier = Modifier
                     .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
                     .align(if (chatMessage.fromLocal) Alignment.End else Alignment.Start),
-                text = chatMessage.formattedChatTime(),
+                text = chatMessage.formattedTime,
                 fontSize = 10.sp,
                 color = friendOffline
             )
@@ -116,7 +103,7 @@ private fun Preview_ChatMessageItem() {
         Column(Modifier.fillMaxWidth()) {
             ChatMessageItem(
                 chatMessage = ChatMessage(
-                    accountid = 1,
+                    accountId = 1,
                     fromLocal = false,
                     isUnread = false,
                     message = randomMsg,
@@ -126,7 +113,7 @@ private fun Preview_ChatMessageItem() {
             Spacer(Modifier.height(8.dp))
             ChatMessageItem(
                 chatMessage = ChatMessage(
-                    accountid = 1,
+                    accountId = 1,
                     fromLocal = true,
                     isUnread = false,
                     message = randomMsg,

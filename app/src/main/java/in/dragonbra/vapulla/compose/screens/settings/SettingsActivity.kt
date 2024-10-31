@@ -3,7 +3,7 @@ package `in`.dragonbra.vapulla.compose.screens.settings
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.*
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.vapulla.VapullaBaseActivity
@@ -12,9 +12,9 @@ import `in`.dragonbra.vapulla.compose.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.compose.util.LocalActivity
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class SettingsActivity : VapullaBaseActivity() {
@@ -79,9 +79,9 @@ class SettingsActivity : VapullaBaseActivity() {
         steamService?.disconnect()
 
         scope.launch(Dispatchers.IO) {
-            db.steamFriendDao().delete()
-            db.chatMessageDao().delete()
-            db.emoticonDao().delete()
+            db.steamFriendDao().deleteAll()
+            db.chatMessageDao().deleteAllMessages()
+            db.emoticonDao().deleteAll()
             db.gameSchemaDao().delete()
         }
     }

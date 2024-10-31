@@ -1,58 +1,27 @@
 package `in`.dragonbra.vapulla.compose.screens.chat
 
 import android.content.Intent
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.add
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.input.nestedscroll.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.tooling.preview.*
+import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
@@ -70,8 +39,8 @@ import `in`.dragonbra.vapulla.compose.util.getFriendName
 import `in`.dragonbra.vapulla.compose.util.getStatusText
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.model.FriendListItem
-import kotlin.random.Random
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel) {
@@ -148,7 +117,7 @@ private fun ChatScreenContent(
                         state.chatMessages.forEach { (header, items) ->
                             items(items, key = { it.id }) { msg ->
                                 ChatMessageItem(
-                                    modifier = Modifier.animateItemPlacement(),
+                                    modifier = Modifier.animateItem(),
                                     chatMessage = msg
                                 )
                             }
@@ -176,14 +145,14 @@ private fun ChatScreenContent(
                     modifier = Modifier
                         .navigationBarsPadding()
                         .imePadding(),
-                    emoticonList = state.emoticonData,
-                    onTextChanged = onTextChanged,
+                    emoticonData = state.emoticonData,
                     onMessageSent = onChatMessage,
-                    onResetScroll = {
+                    onTextChanged = onTextChanged,
+                    resetScroll = {
                         scope.launch {
                             scrollState.scrollToItem(0)
                         }
-                    }
+                    },
                 )
             }
 
@@ -287,16 +256,16 @@ private fun Preview_ChatScreenContent() {
         val currentTime = System.currentTimeMillis()
         ChatMessage(
             id = it.toLong(),
+            accountId = 1,
+            fromLocal = it.mod(2) == 0,
+            isUnread = false,
             message = "Sup\nBro $it",
             timestamp = currentTime - Random.nextLong(currentTime),
-            accountid = 1,
-            fromLocal = it.mod(2) == 0,
-            isUnread = false
         )
     }
 
     val state = ChatState(
-        chatMessages = messages.groupBy { it.formattedTs },
+        chatMessages = messages.groupBy { it.formattedDate },
         friend = FriendListItem(
             id = 0,
             avatar = "17683cb013b8f4cd6ef1d1b1aa47036da2413d8e",

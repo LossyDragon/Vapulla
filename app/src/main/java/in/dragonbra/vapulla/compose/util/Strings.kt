@@ -2,8 +2,7 @@ package `in`.dragonbra.vapulla.compose.util
 
 import android.content.Context
 import android.text.format.DateUtils
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.*
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.R
@@ -11,10 +10,10 @@ import `in`.dragonbra.vapulla.compose.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.compose.ui.theme.getStatusColor
 import `in`.dragonbra.vapulla.core.Constants
 import `in`.dragonbra.vapulla.model.FriendListItem
+import timber.log.Timber
 import java.math.RoundingMode
 import java.text.DateFormat
 import java.text.DecimalFormat
-import timber.log.Timber
 
 /**
  * This Class provides helpers that return a String of some kind
@@ -92,42 +91,39 @@ fun getUnreadMessageCount(number: Int?): String {
  * @return A formatted string containing their status
  */
 fun Context.getStatusText(friend: FriendListItem?): String {
-    if (friend == null) {
-        return getString(R.string.statusOfflineLabel)
+    return when {
+        friend == null -> getString(R.string.statusOfflineLabel)
+        friend.isRequestRecipient -> getString(R.string.statusFriendRequest)
+        friend.isTyping() -> getString(R.string.statusTyping)
+        friend.isOffline -> getString(R.string.statusOffline, getLastSeenText(friend))
+        friend.isInGame -> getString(R.string.statusPlaying, friend.gameName.orEmpty())
+        else -> getOnlineStatusText(friend)
     }
+}
 
-    if (friend.isRequestRecipient) {
-        return getString(R.string.statusFriendRequest)
-    }
+private fun FriendListItem.isTyping(): Boolean {
+    val isTypingFromLastMessage = typingTs > (lastMessageTime ?: 0)
+    val isRecentlyTyping = typingTs > (System.currentTimeMillis() - 20_000L)
+    return isTypingFromLastMessage && isRecentlyTyping
+}
 
-    val isTypingFromLastMessage = friend.typingTs > (friend.lastMessageTime ?: 0)
-    val isTyping = friend.typingTs > (System.currentTimeMillis() - 20000L)
-    if (isTypingFromLastMessage && isTyping) {
-        // TODO Would be nice to have a typing indicator
-        return getString(R.string.statusTyping)
-    }
-
-    if (friend.state == EPersonaState.Offline.code()) {
-        return getString(R.string.statusOffline, getLastSeenText(friend))
-    }
-
-    if (friend.gameAppId != 0 || !friend.gameName.isNullOrEmpty()) {
-        return getString(R.string.statusPlaying, friend.gameName ?: "")
-    }
-
-    val currentTime = System.currentTimeMillis()
-    val resolution = DateUtils.MINUTE_IN_MILLIS
-    val relativeDate =
-        DateUtils.getRelativeTimeSpanString(friend.lastLogOff, currentTime, resolution)
-
+private fun Context.getOnlineStatusText(friend: FriendListItem): String {
     return when (EPersonaState.from(friend.state ?: 0)) {
         EPersonaState.Online -> getString(R.string.statusOnline)
         EPersonaState.Busy,
         EPersonaState.Away,
         EPersonaState.Snooze -> getString(R.string.statusAway)
 
-        else -> getString(R.string.statusOffline, relativeDate)
+        else -> getString(R.string.statusOffline, getRelativeTimeString(friend.lastLogOff))
     }
+}
+
+private fun getRelativeTimeString(timestamp: Long): CharSequence {
+    return DateUtils.getRelativeTimeSpanString(
+        timestamp,
+        System.currentTimeMillis(),
+        DateUtils.MINUTE_IN_MILLIS
+    )
 }
 
 /**

@@ -2,24 +2,20 @@ package `in`.dragonbra.vapulla.compose.screens.home
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PersonAddAlt1
+import androidx.compose.foundation.text.*
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.hapticfeedback.*
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.Placeholder
-import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.*
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.tooling.preview.*
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import coil.request.ImageRequest
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
@@ -59,7 +55,7 @@ fun FriendItem(
         }
     }
 
-    val statusColor = remember { getStatusColor(friend) }
+    val statusColor = remember(friend) { getStatusColor(friend) }
     ListItem(
         modifier = modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
         headlineContent = {
@@ -118,23 +114,36 @@ fun FriendItem(
                 }
             )
         },
-        trailingContent = {
-            if (friend.isUnread) {
-                val count = remember { getUnreadMessageCount(friend.newMessageCount) }
-                Badge(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
-                    Text(text = count)
+        trailingContent = if (friend.isUnread) {
+            {
+                val count = remember(friend.newMessageCount) {
+                    getUnreadMessageCount(friend.newMessageCount)
                 }
-            } else if (friend.isRequestRecipient) {
+                Badge(
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .size(32.0.dp),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(text = count, fontSize = 12.sp)
+                }
+            }
+        } else if (friend.isRequestRecipient) {
+            {
                 Icon(
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .size(32.0.dp),
                     imageVector = Icons.Default.PersonAddAlt1,
                     contentDescription = null
                 )
-            } else if (friend.lastMessage != null) {
-                val time = getLastMessageTime(friend)
-                Text(text = time.toString())
-            } else {
-                null
             }
+        } else if (friend.lastMessage != null) {
+            {
+                Text(text = getLastMessageTime(friend).toString())
+            }
+        } else {
+            null
         }
     )
     HorizontalDivider()
@@ -167,6 +176,7 @@ private fun Preview_FriendListItem() {
             )
 
             friendData.onEachIndexed { index, entry ->
+                StickyHeaderItem(false, "In-Game", 14, {})
                 FriendItem(
                     friend = FriendListItem(
                         gameAppId = if (index < 3) 0 else index,

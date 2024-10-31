@@ -11,16 +11,20 @@ import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.manager.ProfileManager
 import `in`.dragonbra.vapulla.model.FriendListItem
 import `in`.dragonbra.vapulla.retrofit.response.Game
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import javax.inject.Inject
 
 sealed class ProfileUiEvent {
     data class SetNickName(val nickName: String) : ProfileUiEvent()
@@ -54,33 +58,46 @@ class ProfileViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     fun init() {
-        val steamID = _state.value.steamID!!
+        val steamID = _state.value.steamID ?: return
 
-        viewModelScope.launch(Dispatchers.IO) {
-            steamFriendDao.findLive(steamID.convertToUInt64()).collectLatest { friend ->
-                Timber.d("friendObserver update: $friend")
+        viewModelScope.launch {
+            steamFriendDao.getFriendDetails(steamID.convertToUInt64())
+                .flowOn(Dispatchers.IO)
+                .onEach { friend ->
+                    Timber.d("friendObserver update: $friend")
 
-                if (friend.relation != EFriendRelationship.Friend.code()) {
-                    // No longer a friend while viewing profile, go back.
-                    emit(ProfileUiEvent.NavigateBack)
-                    return@collectLatest
+                    if (friend.relation != EFriendRelationship.Friend.code()) {
+                        emit(ProfileUiEvent.NavigateBack)
+                        return@onEach
+                    }
+
+                    // Load additional data in IO context
+                    val profileData = withContext(Dispatchers.IO) {
+                        Triple(
+                            levelManager.getLevel(steamID),
+                            levelManager.getGames(steamID),
+                            schemaManager.touch(friend.gameAppId)
+                        )
+                    }
+
+                    val (level, games, _) = profileData
+
+                    _state.update {
+                        it.copy(
+                            steamID = steamID,
+                            friend = friend,
+                            levelCount = level,
+                            gamesCount = games.count,
+                            gameList = games.list,
+                            isLoading = false
+                        )
+                    }
                 }
-
-                val level = levelManager.getLevel(state.value.steamID!!)
-                val games = levelManager.getGames(state.value.steamID!!)
-                schemaManager.touch(friend.gameAppId)
-
-                _state.update {
-                    it.copy(
-                        steamID = steamID,
-                        friend = friend,
-                        levelCount = level,
-                        gamesCount = games.count,
-                        gameList = games.list,
-                        isLoading = false
-                    )
+                .catch { error ->
+                    Timber.e(error, "Error loading profile data")
+                    _state.update { it.copy(isLoading = false) }
                 }
-            }
+                .collectLatest { }  // Empty collector since we handle everything in onEach
         }
     }
 
@@ -95,16 +112,13 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun setNickname(nickName: String) {
-        if (_state.value.steamID == null) {
-            return
-        }
+        val steamID = _state.value.steamID ?: return
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             emit(ProfileUiEvent.SetNickName(nickName))
 
-            steamFriendDao.find(_state.value.steamID!!.convertToUInt64())?.let { friend ->
-                friend.nickname = nickName
-                steamFriendDao.update(friend)
+            steamFriendDao.find(steamID.convertToUInt64())?.let { friend ->
+                steamFriendDao.update(friend.copy(nickname = nickName))
             }
         }
     }

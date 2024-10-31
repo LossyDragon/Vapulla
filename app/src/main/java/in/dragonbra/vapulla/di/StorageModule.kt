@@ -1,7 +1,7 @@
-package `in`.dragonbra.vapulla.module
+package `in`.dragonbra.vapulla.di
 
 import android.content.Context
-import androidx.room.Room
+import androidx.room.*
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

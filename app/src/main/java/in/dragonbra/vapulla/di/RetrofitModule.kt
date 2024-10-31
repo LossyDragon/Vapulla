@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.module
+package `in`.dragonbra.vapulla.di
 
 import dagger.Module
 import dagger.Provides

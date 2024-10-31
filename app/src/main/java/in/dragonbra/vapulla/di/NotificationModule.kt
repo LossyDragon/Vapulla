@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.module
+package `in`.dragonbra.vapulla.di
 
 import android.app.Notification
 import android.app.NotificationManager

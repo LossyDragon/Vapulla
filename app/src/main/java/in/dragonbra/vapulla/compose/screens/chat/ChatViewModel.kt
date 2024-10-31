@@ -12,8 +12,6 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.manager.GameSchemaManager
 import `in`.dragonbra.vapulla.model.FriendListItem
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -25,10 +23,15 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 sealed class ChatUiEvent {
     data object NavigateUp : ChatUiEvent()
@@ -73,29 +76,44 @@ class ChatViewModel @Inject constructor(
                 }
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            chatMessageDao.findLivePaged(steamID.convertToUInt64()).collectLatest { list ->
-                val formattedList = list.groupBy { it.formattedTs }
-                _state.update { it.copy(chatMessages = formattedList) }
-            }
-        }
-
-        viewModelScope.launch(Dispatchers.IO) {
-            steamFriendDao.findLive(steamID.convertToUInt64()).collectLatest { friend ->
-                if (friend.relation == EFriendRelationship.Friend.code()) {
-                    _state.update { it.copy(friend = friend) }
-                    schemaManager.touch(friend.gameAppId)
-                } else {
-                    emit(ChatUiEvent.NavigateUp)
+        viewModelScope.launch {
+            chatMessageDao.getMessagesForFriend(steamID.convertToUInt64())
+                .map { messages -> messages.groupBy { it.formattedDate } }
+                .flowOn(Dispatchers.IO)
+                .collectLatest { formattedList ->
+                    _state.update { it.copy(chatMessages = formattedList) }
                 }
-            }
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            emoticonDao.getLive().collectLatest { list ->
-                val emoteSet = list.filter { !it.isSticker }.map { it.name }.toSet()
-                _state.update { it.copy(emoticonData = list, emoteSet = emoteSet) }
-            }
+        viewModelScope.launch {
+            steamFriendDao.getFriendDetails(steamID.convertToUInt64())
+                .flowOn(Dispatchers.IO)
+                .collectLatest { friend ->
+                    if (friend.relation == EFriendRelationship.Friend.code()) {
+                        _state.update { it.copy(friend = friend) }
+                        withContext(Dispatchers.IO) {
+                            schemaManager.touch(friend.gameAppId)
+                        }
+                    } else {
+                        emit(ChatUiEvent.NavigateUp)
+                    }
+                }
+        }
+
+        viewModelScope.launch {
+            emoticonDao.getAll()
+                .map { list ->
+                    list to list.filter { !it.isSticker }.map { it.name }.toSet()
+                }
+                .flowOn(Dispatchers.IO)
+                .collectLatest { (list, emoteSet) ->
+                    _state.update {
+                        it.copy(
+                            emoticonData = list,
+                            emoteSet = emoteSet
+                        )
+                    }
+                }
         }
     }
 

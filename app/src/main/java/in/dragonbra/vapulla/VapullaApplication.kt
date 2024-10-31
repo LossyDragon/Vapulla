@@ -8,26 +8,15 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.util.DebugLogger
 import dagger.hilt.android.HiltAndroidApp
-import `in`.dragonbra.javasteam.util.log.LogListener
-import `in`.dragonbra.javasteam.util.log.LogManager
-import `in`.dragonbra.vapulla.compose.util.AnimatedPngDecoder
+import `in`.dragonbra.vapulla.core.factory.AnimatedPngDecoder
 import timber.log.Timber
 
 @HiltAndroidApp
-class VapullaApplication : Application(), LogListener, ImageLoaderFactory {
+class VapullaApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
         Timber.plant(Timber.DebugTree())
-        LogManager.addListener(this)
-    }
-
-    override fun onLog(clazz: Class<*>?, message: String?, throwable: Throwable?) {
-        Timber.d("${clazz?.simpleName ?: "Unknown Class"} + $message")
-    }
-
-    override fun onError(clazz: Class<*>?, message: String?, throwable: Throwable?) {
-        Timber.d("${clazz?.simpleName ?: "Unknown Class"} + $message")
     }
 
     override fun newImageLoader(): ImageLoader {

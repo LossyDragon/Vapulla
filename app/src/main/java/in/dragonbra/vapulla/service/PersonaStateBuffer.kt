@@ -4,101 +4,99 @@ import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStatesCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import java.util.LinkedList
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.sample
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import kotlin.coroutines.cancellation.CancellationException
 
-class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
-    private val map: MutableMap<SteamID, PersonaStatesCallback> = hashMapOf()
-    private val mapLock: Any = Any()
+class PersonaStateBuffer(private val steamFriendDao: SteamFriendDao) {
+
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+            Timber.e(e, "Error in PersonaStateBuffer")
+        }
+    )
+
+    private val _stateFlow = MutableStateFlow<Map<SteamID, PersonaStatesCallback>>(emptyMap())
+    private val bufferJob = Job()
 
     fun push(state: PersonaStatesCallback) {
-        synchronized(mapLock) {
-            val old = map[state.friendID]
-
-            if (old == null || state != old) {
-                map[state.friendID] = state
+        _stateFlow.update { currentMap ->
+            if (currentMap[state.friendID] != state) {
+                currentMap + (state.friendID to state)
+            } else {
+                currentMap
             }
         }
     }
 
     @OptIn(ExperimentalStdlibApi::class)
-    private fun process() {
-        val friendsToUpdate: MutableList<SteamFriend> = LinkedList()
+    private suspend fun processStates(states: Map<SteamID, PersonaStatesCallback>) {
+        if (states.isEmpty()) return
 
-        synchronized(mapLock) {
-            if (map.isEmpty()) {
-                return
-            }
-
-            Timber.d("Processing friends: ${map.size}")
-
-            map.forEach { (id, state) ->
+        val friendsToUpdate = withContext(Dispatchers.IO) {
+            states.mapNotNull { (id, state) ->
                 steamFriendDao.find(id.convertToUInt64())?.let { friend ->
                     val oldFriend = friend.copy()
 
-                    if (state.avatarHash.isNotEmpty()) {
-                        friend.avatar = state.avatarHash.toHexString()
-                    }
-
-                    if (state.name.isNotEmpty()) {
-                        friend.name = state.name
-                    }
-
-                    if (state.lastLogOff.time > 0) {
-                        friend.lastLogOff = state.lastLogOff.time
-                    }
-
-                    if (state.lastLogOn.time > 0) {
-                        friend.lastLogOn = state.lastLogOn.time
-                    }
-
-                    friend.gameAppId = state.gameAppID
-                    friend.gameName = state.gameName
-                    friend.state = state.state.code()
-                    friend.stateFlags = EPersonaStateFlag.code(state.stateFlags)
-
-                    if (friend != oldFriend) {
-                        friendsToUpdate.add(friend)
-                    }
+                    friend.copy(
+                        avatar = if (state.avatarHash.isNotEmpty()) state.avatarHash.toHexString() else friend.avatar,
+                        name = state.name.ifEmpty { friend.name },
+                        lastLogOff = if (state.lastLogOff.time > 0) state.lastLogOff.time else friend.lastLogOff,
+                        lastLogOn = if (state.lastLogOn.time > 0) state.lastLogOn.time else friend.lastLogOn,
+                        gameAppId = state.gameAppID,
+                        gameName = state.gameName,
+                        state = state.state.code(),
+                        stateFlags = EPersonaStateFlag.code(state.stateFlags)
+                    ).takeIf { it != oldFriend }
                 }
             }
-
-            map.clear()
         }
 
-        steamFriendDao.insert(*friendsToUpdate.toTypedArray())
+        if (friendsToUpdate.isNotEmpty()) {
+            withContext(Dispatchers.IO) {
+                steamFriendDao.updateAll(friendsToUpdate)
+            }
+        }
+
+        _stateFlow.update { emptyMap() }
     }
 
+    @OptIn(FlowPreview::class)
     fun start() {
-        executorService.submit {
-            Timber.i("starting persona state buffer thread")
+        scope.launch(bufferJob) {
+            Timber.i("Starting persona state buffer")
             try {
-                while (!Thread.currentThread().isInterrupted) {
-                    Thread.sleep(1000L)
-                    process()
-                }
-            } catch (e: InterruptedException) {
-                Timber.i("Thread was interrupted")
+                _stateFlow
+                    .sample(1000L)
+                    .collect(::processStates)
+            } catch (e: CancellationException) {
+                Timber.i("Persona state buffer was cancelled")
             } finally {
-                Timber.i("stopping persona state buffer thread")
+                Timber.i("Stopping persona state buffer")
             }
         }
     }
 
     fun stop() {
-        executorService.shutdownNow() // Initiates an immediate shutdown
-        try {
-            if (!executorService.awaitTermination(1000, TimeUnit.SECONDS)) {
-                Timber.w("Executor did not terminate in the specified time.")
-                executorService.shutdownNow()
-            }
-        } catch (e: InterruptedException) {
-            executorService.shutdownNow()
+        scope.launch {
+            bufferJob.cancelAndJoin()
+            scope.cancel()
         }
+    }
+
+    fun cleanup() {
+        scope.cancel()
     }
 }
