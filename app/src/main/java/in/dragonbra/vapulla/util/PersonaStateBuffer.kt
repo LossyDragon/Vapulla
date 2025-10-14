@@ -2,17 +2,15 @@ package `in`.dragonbra.vapulla.util
 
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.PersonaState
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import org.jetbrains.anko.AnkoLogger
-import org.jetbrains.anko.info
 import org.spongycastle.util.encoders.Hex
 import java.util.*
 
 class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : AnkoLogger {
-    private val map: MutableMap<SteamID, PersonaState> = hashMapOf()
+    private val map: MutableMap<SteamID, PersonaStateCallback> = hashMapOf()
 
     private val mapLock: Any = Any()
 
@@ -30,7 +28,7 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : AnkoLogger {
         info("stopping persona state buffer thread")
     }
 
-    fun push(state: PersonaState) {
+    fun push(state: PersonaStateCallback) {
         synchronized(mapLock) {
             if (map.contains(state.friendID)) {
                 val old = map[state.friendID]

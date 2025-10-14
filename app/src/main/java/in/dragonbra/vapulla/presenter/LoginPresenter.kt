@@ -14,9 +14,9 @@ import `in`.dragonbra.vapulla.view.LoginView
 import android.content.ComponentName
 import android.content.Context
 import android.os.IBinder
-import org.jetbrains.anko.info
-import org.jetbrains.anko.startService
-import org.jetbrains.anko.warn
+import `in`.dragonbra.vapulla.util.info
+import `in`.dragonbra.vapulla.util.startService
+import `in`.dragonbra.vapulla.util.warn
 
 class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
@@ -41,17 +41,22 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
         subscribe(steamService?.subscribe<LoggedOnCallback>({ onLoggedOn(it) }))
 
+        info("1")
         if (account.hasLoginKey()) {
+        info("2")
             ifViewAttached {
+        info("3")
                 it.startLoading({
-                    logOnDetails.username = account.username
+                    logOnDetails.username = account.username!!
                     logOnDetails.password = null
-                    logOnDetails.loginKey = account.loginKey
+                    logOnDetails.accessToken = account.loginKey
                     startSteamService()
                 })
             }
         } else {
+        info("4")
             if (!expectSteamGuard) {
+        info("5")
                 ifViewAttached { it.showLoginForm() }
             }
         }
@@ -107,7 +112,7 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
         expectSteamGuard = false
         runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
+            steamService?.steamClient?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
         }
 
         ifViewAttached {
@@ -119,7 +124,7 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
     fun login(username: String, password: String) {
         logOnDetails.username = username
         logOnDetails.password = password
-        logOnDetails.loginKey = null
+        logOnDetails.accessToken = null
 
         startSteamService()
     }
@@ -152,9 +157,9 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
 
     fun retry() {
         if (account.hasLoginKey()) {
-            logOnDetails.username = account.username
+            logOnDetails.username = account.username!!
             logOnDetails.password = null
-            logOnDetails.loginKey = account.loginKey
+            logOnDetails.accessToken = account.loginKey
             startSteamService()
         }
     }

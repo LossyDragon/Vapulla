@@ -4,7 +4,7 @@ import `in`.dragonbra.vapulla.service.SteamService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.jetbrains.anko.startService
+import `in`.dragonbra.vapulla.util.startService
 
 class AcceptRequestReceiver : BroadcastReceiver() {
 
@@ -18,8 +18,8 @@ class AcceptRequestReceiver : BroadcastReceiver() {
         }
 
         context.startService<SteamService>(
-                SteamService.EXTRA_ID to intent.getLongExtra(EXTRA_ID, 9L),
-                SteamService.EXTRA_ACTION to "accept_request"
+            SteamService.EXTRA_ID to intent.getLongExtra(EXTRA_ID, 9L),
+            SteamService.EXTRA_ACTION to "accept_request"
         )
     }
 }

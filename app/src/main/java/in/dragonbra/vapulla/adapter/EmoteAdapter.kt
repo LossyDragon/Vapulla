@@ -1,24 +1,26 @@
 package `in`.dragonbra.vapulla.adapter
 
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.extension.click
 import android.content.Context
-import android.support.v7.util.DiffUtil
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import kotlinx.android.synthetic.main.list_emote.view.*
+import `in`.dragonbra.vapulla.databinding.ListEmoteBinding
 
 class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : RecyclerView.Adapter<EmoteAdapter.ViewHolder>() {
 
     var emoteList: List<Emoticon> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.list_emote, parent, false)
+        val v = ListEmoteBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
         return ViewHolder(v)
     }
 
@@ -44,7 +46,7 @@ class EmoteAdapter(val context: Context, val listener: EmoteListener? = null) : 
         result.dispatchUpdatesTo(this)
     }
 
-    inner class ViewHolder(val v: View) : RecyclerView.ViewHolder(v) {
+    inner class ViewHolder(val v: ListEmoteBinding) : RecyclerView.ViewHolder(v.root) {
         fun bind(emote: Emoticon) {
             v.emote.click { listener?.onEmoteSelected(emote) }
 

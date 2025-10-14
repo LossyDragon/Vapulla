@@ -11,12 +11,12 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
 import `in`.dragonbra.vapulla.view.HomeView
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.Observer
 import android.content.ComponentName
 import android.content.Context
 import android.os.IBinder
-import org.jetbrains.anko.info
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import `in`.dragonbra.vapulla.util.info
 
 class HomePresenter(context: Context,
                     private val steamFriendDao: SteamFriendDao,
@@ -80,8 +80,7 @@ class HomePresenter(context: Context,
 
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
         val updateTime = System.currentTimeMillis()
-        ifViewAttached { it.showFriends(list?.sortedWith(FriendsComparator(context, updateTime))
-                ?: listOf(), updateTime) }
+        ifViewAttached { it.showFriends(list.sortedWith(FriendsComparator(context, updateTime)), updateTime) }
     }
 
     fun disconnect() {
@@ -90,16 +89,16 @@ class HomePresenter(context: Context,
 
     fun changeStatus(state: EPersonaState) {
         if (account.state != state) {
-            runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.setPersonaState(state) }
+            runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.setPersonaState(state) }
         }
     }
 
     fun acceptRequest(friend: FriendListItem) {
-        runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id)) }
+        runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id)) }
     }
 
     fun ignoreRequest(friend: FriendListItem) {
-        runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id)) }
+        runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id)) }
     }
 
     fun blockRequest(friend: FriendListItem) {
@@ -108,7 +107,7 @@ class HomePresenter(context: Context,
 
     fun confirmBlockFriend(friend: FriendListItem) {
         runOnBackgroundThread {
-            runOnBackgroundThread { steamService?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id)) }
+            runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id)) }
         }
     }
 

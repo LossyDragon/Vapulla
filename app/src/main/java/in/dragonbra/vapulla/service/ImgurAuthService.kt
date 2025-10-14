@@ -107,7 +107,7 @@ class ImgurAuthService(context: Context, val imgur: Imgur) {
         return true
     }
 
-    fun getUsername(): String = prefs.getString(KEY_IMGUR_USERNAME, "")
+    fun getUsername(): String = prefs.getString(KEY_IMGUR_USERNAME, "")!!
 
     fun clear() {
         prefs.edit()
@@ -122,7 +122,7 @@ class ImgurAuthService(context: Context, val imgur: Imgur) {
     fun refreshTokenIfNeeded() {
         if (prefs.getLong(KEY_IMGUR_LAST_UPDATE, 0L) < System.currentTimeMillis() - 1728000000L) {
             val call = imgur.refreshToken(
-                    prefs.getString(KEY_IMGUR_REFRESH_TOKEN, null),
+                    prefs.getString(KEY_IMGUR_REFRESH_TOKEN, null)!!,
                     BuildConfig.IMGUR_CLIENT_ID,
                     BuildConfig.IMGUR_CLIENT_SECRET,
                     "refresh_token"

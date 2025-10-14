@@ -7,15 +7,16 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import com.hannesdorfmann.mosby3.mvp.MvpBasePresenter
 import com.hannesdorfmann.mosby3.mvp.MvpView
-import org.jetbrains.anko.AnkoLogger
-import org.jetbrains.anko.intentFor
+import `in`.dragonbra.vapulla.util.AnkoLogger
+import `in`.dragonbra.vapulla.util.intentFor
 import java.io.Closeable
 import java.util.*
 
-abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePresenter<V>(), AnkoLogger {
+abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePresenter<V>(),
+    AnkoLogger {
 
     protected var bound = false
 
@@ -43,12 +44,15 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
 
     open fun onPostCreate() {
     }
+
     @CallSuper
     open fun onStart() {
         context.bindService(context.intentFor<SteamService>(), connection, Context.BIND_AUTO_CREATE)
     }
+
     open fun onResume() {}
     open fun onPause() {}
+
     @CallSuper
     open fun onStop() {
         context.unbindService(connection)
@@ -56,6 +60,7 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
         subs.clear()
         bound = false
     }
+
     open fun onDestroy() {
 
     }

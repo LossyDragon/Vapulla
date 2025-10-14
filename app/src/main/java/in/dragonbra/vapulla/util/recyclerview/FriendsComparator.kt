@@ -11,7 +11,7 @@ class FriendsComparator(context: Context, private val updateTime: Long) : Compar
     init {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
-        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000").toLong()
+        recentsTimeout = prefs.getString("pref_friends_list_recents", "604800000")!!.toLong()
     }
 
     override fun compare(o1: FriendListItem, o2: FriendListItem): Int {

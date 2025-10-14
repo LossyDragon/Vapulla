@@ -22,15 +22,19 @@ import android.preference.ListPreference
 import android.preference.Preference
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
-import android.support.design.widget.Snackbar
-import android.support.v4.app.NavUtils
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.Toolbar
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.ViewGroup
-import kotlinx.android.synthetic.main.dialog_nickname.view.*
-import org.jetbrains.anko.*
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.Toolbar
+import androidx.core.app.NavUtils
+import com.google.android.material.snackbar.Snackbar
+import `in`.dragonbra.vapulla.databinding.DialogNicknameBinding
+import `in`.dragonbra.vapulla.util.browse
+import `in`.dragonbra.vapulla.util.clearTask
+import `in`.dragonbra.vapulla.util.find
+import `in`.dragonbra.vapulla.util.intentFor
+import `in`.dragonbra.vapulla.util.newTask
 import java.io.Closeable
 import java.util.*
 import javax.inject.Inject
@@ -96,9 +100,11 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
             if (success) {
                 updateImgurPref()
-                Snackbar.make(v, getString(R.string.snackbarImgurLinked), Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(v, getString(R.string.snackbarImgurLinked), Snackbar.LENGTH_SHORT)
+                    .show()
             } else {
-                Snackbar.make(v, getString(R.string.snackbarImgurLinkFailed), Snackbar.LENGTH_SHORT).show()
+                Snackbar.make(v, getString(R.string.snackbarImgurLinkFailed), Snackbar.LENGTH_SHORT)
+                    .show()
             }
         }
     }
@@ -144,19 +150,20 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         updateImgurPref()
 
         val changeUserPreference = findPreference("pref_change_user")
-        changeUserPreference.summary = getString(R.string.prefSummaryChangeUser, accountManager.username)
+        changeUserPreference.summary =
+            getString(R.string.prefSummaryChangeUser, accountManager.username)
         changeUserPreference.click {
             val builder = AlertDialog.Builder(this)
 
             builder.setMessage(getString(R.string.dialogMessageChangeUser))
-                    .setTitle(getString(R.string.dialogTitleChangeUser))
-                    .setPositiveButton(R.string.dialogYes, { _, _ ->
-                        runOnBackgroundThread {
-                            runOnBackgroundThread { steamService.disconnect() }
-                            clearData()
-                        }
-                    })
-                    .setNegativeButton(R.string.dialogNo, null)
+                .setTitle(getString(R.string.dialogTitleChangeUser))
+                .setPositiveButton(R.string.dialogYes, { _, _ ->
+                    runOnBackgroundThread {
+                        runOnBackgroundThread { steamService.disconnect() }
+                        clearData()
+                    }
+                })
+                .setNegativeButton(R.string.dialogNo, null)
 
             builder.create().show()
             true
@@ -165,23 +172,23 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         val changeProfileName = findPreference("pref_change_profile_name")
         changeProfileName.summary = accountManager.nickname
         changeProfileName.click {
-            val v = LayoutInflater.from(this).inflate(R.layout.dialog_nickname, null)
+            val v = DialogNicknameBinding.inflate(layoutInflater)
             v.nickname.setText(accountManager.nickname)
 
             val builder = AlertDialog.Builder(this)
-                    .setTitle(R.string.dialogTitleNickname)
-                    .setView(v)
-                    .setPositiveButton(R.string.dialogSet, { _, _ ->
-                        val name = v.nickname.text.toString()
-                        if (Strings.isNullOrEmpty(name)) {
-                            return@setPositiveButton
-                        }
-                        runOnBackgroundThread {
-                            steamService.getHandler<SteamFriends>()?.setPersonaName(name)
-                        }
-                        changeProfileName.summary = name
-                    })
-                    .setNegativeButton(R.string.dialogCancel, null)
+                .setTitle(R.string.dialogTitleNickname)
+                .setView(v.root)
+                .setPositiveButton(R.string.dialogSet, { _, _ ->
+                    val name = v.nickname.text.toString()
+                    if (Strings.isNullOrEmpty(name)) {
+                        return@setPositiveButton
+                    }
+                    runOnBackgroundThread {
+                        steamService.steamClient.getHandler<SteamFriends>()?.setPersonaName(name)
+                    }
+                    changeProfileName.summary = name
+                })
+                .setNegativeButton(R.string.dialogCancel, null)
 
             builder.create().show()
             true
@@ -233,7 +240,8 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         val pref = findPreference("pref_imgur")
         if (prefs.contains(ImgurAuthService.KEY_IMGUR_USERNAME)) {
             pref.title = getString(R.string.prefTitleImgurLinked)
-            pref.summary = getString(R.string.prefSummaryImgurLinked, imgurAuthService.getUsername())
+            pref.summary =
+                getString(R.string.prefSummaryImgurLinked, imgurAuthService.getUsername())
 
             findPreference("pref_imgur").setOnPreferenceClickListener {
                 imgurAuthService.clear()
@@ -256,23 +264,25 @@ class SettingsActivity : AppCompatPreferenceActivity() {
          * A preference value change listener that updates the preference's summary
          * to reflect its new value.
          */
-        private val sBindPreferenceSummaryToValueListener = Preference.OnPreferenceChangeListener { preference, value ->
-            val stringValue = value.toString()
+        private val sBindPreferenceSummaryToValueListener =
+            Preference.OnPreferenceChangeListener { preference, value ->
+                val stringValue = value.toString()
 
-            if (preference is ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
-                val listPreference = preference
-                val index = listPreference.findIndexOfValue(stringValue)
+                if (preference is ListPreference) {
+                    // For list preferences, look up the correct display value in
+                    // the preference's 'entries' list.
+                    val listPreference = preference
+                    val index = listPreference.findIndexOfValue(stringValue)
 
-                // Set the summary to reflect the new value.
-                preference.setSummary(
+                    // Set the summary to reflect the new value.
+                    preference.setSummary(
                         if (index >= 0)
                             listPreference.entries[index]
                         else
-                            null)
+                            null
+                    )
 
-            }/* else if (preference is RingtonePreference) {
+                }/* else if (preference is RingtonePreference) {
                 // For ringtone preferences, look up the correct display value
                 // using RingtoneManager.
                 if (TextUtils.isEmpty(stringValue)) {
@@ -295,12 +305,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
                 }
 
             } */ else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
-                preference.summary = stringValue
+                    // For all other preferences, set the summary to the value's
+                    // simple string representation.
+                    preference.summary = stringValue
+                }
+                true
             }
-            true
-        }
 
         /**
          * Binds a preference's summary to its value. More specifically, when the
@@ -317,10 +327,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
             // Trigger the listener immediately with the preference's
             // current value.
-            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                    PreferenceManager
-                            .getDefaultSharedPreferences(preference.context)
-                            .getString(preference.key, ""))
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(
+                preference,
+                PreferenceManager
+                    .getDefaultSharedPreferences(preference.context)
+                    .getString(preference.key, "")
+            )
         }
     }
 }

@@ -5,11 +5,11 @@ import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.vapulla.R
 import android.app.Activity
 import android.content.Context
-import android.support.v4.content.ContextCompat
 import android.text.format.DateUtils
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat
 import com.bumptech.glide.request.RequestOptions
 import java.util.regex.Pattern
 

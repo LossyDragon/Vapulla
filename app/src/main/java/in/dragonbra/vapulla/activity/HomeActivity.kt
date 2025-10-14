@@ -15,12 +15,6 @@ import `in`.dragonbra.vapulla.view.HomeView
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.support.constraint.ConstraintSet
-import android.support.transition.ChangeBounds
-import android.support.transition.Transition
-import android.support.transition.TransitionManager
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.PopupMenu
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.format.DateUtils
@@ -28,15 +22,22 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.AnticipateOvershootInterpolator
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.PopupMenu
+import androidx.constraintlayout.widget.ConstraintSet
+import androidx.transition.ChangeBounds
+import androidx.transition.Transition
+import androidx.transition.TransitionManager
 import com.brandongogetap.stickyheaders.StickyLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import kotlinx.android.synthetic.main.activity_home.*
-import kotlinx.android.synthetic.main.home_toolbar.*
-import org.jetbrains.anko.startActivity
+import `in`.dragonbra.vapulla.databinding.ActivityHomeBinding
+import `in`.dragonbra.vapulla.databinding.HomeToolbarBinding
+import `in`.dragonbra.vapulla.util.startActivity
 import javax.inject.Inject
 
-class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, PopupMenu.OnMenuItemClickListener, FriendListAdapter.OnItemSelectedListener {
+class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView,
+    PopupMenu.OnMenuItemClickListener, FriendListAdapter.OnItemSelectedListener {
 
     companion object {
         const val UPDATE_INTERVAL = DateUtils.MINUTE_IN_MILLIS
@@ -56,29 +57,34 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
 
     private val updateHandler: Handler = Handler()
 
+    private lateinit var binding: ActivityHomeBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
+        binding = ActivityHomeBinding.inflate(layoutInflater)
+
         paperPlane = PaperPlane(this, 14.0f)
         offlineStatusUpdater = OfflineStatusUpdater(this)
-        friendListAdapter = FriendListAdapter(this, gameSchemaManager, paperPlane, offlineStatusUpdater)
+        friendListAdapter =
+            FriendListAdapter(this, gameSchemaManager, paperPlane, offlineStatusUpdater)
         friendListAdapter.listener = this
 
         val layoutManager = StickyLayoutManager(this, friendListAdapter)
         layoutManager.elevateHeaders(true)
 
-        friendList.layoutManager = layoutManager
-        friendList.adapter = friendListAdapter
+        binding.friendList.layoutManager = layoutManager
+        binding.friendList.adapter = friendListAdapter
 
-        moreButton.click(this::openMoreMenu)
-        statusButton.click(this::openStatusMenu)
-        searchButton.click(this::openSearch)
-        closeSearchButton.click(this::closeSearch)
+        binding.toolbar.moreButton.click(this::openMoreMenu)
+        binding.toolbar.statusButton.click(this::openStatusMenu)
+        binding.toolbar.searchButton.click(this::openSearch)
+        binding.toolbar.closeSearchButton.click(this::closeSearch)
 
-        searchInput.isEnabled = false
-        searchInput.addTextChangedListener(object: TextWatcher{
+        binding.toolbar.searchInput.isEnabled = false
+        binding.toolbar.searchInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
                 presenter.search(s.toString())
             }
@@ -118,10 +124,12 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
             presenter.disconnect()
             true
         }
+
         R.id.settings -> {
             startActivity<SettingsActivity>()
             true
         }
+
         else -> false
     }
 
@@ -141,14 +149,14 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
 
     override fun showAccount(account: AccountManager) {
         runOnUiThread {
-            localUsername.text = account.nickname
-            localStatus.text = account.state.toString()
+            binding.toolbar.localUsername.text = account.nickname
+            binding.toolbar.localStatus.text = account.state.toString()
 
             Glide.with(this@HomeActivity)
-                    .load(Utils.getAvatarUrl(account.avatarHash))
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .apply(Utils.avatarOptions)
-                    .into(localAvatar)
+                .load(Utils.getAvatarUrl(account.avatarHash))
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .apply(Utils.avatarOptions)
+                .into(binding.toolbar.localAvatar)
         }
     }
 
@@ -173,9 +181,9 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
         val builder = AlertDialog.Builder(this)
 
         builder.setMessage(getString(R.string.dialogMessageBlockFriend, name))
-                .setTitle(getString(R.string.dialogTitleBlockFriend, name))
-                .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmBlockFriend(friend) })
-                .setNegativeButton(R.string.dialogNo, null)
+            .setTitle(getString(R.string.dialogTitleBlockFriend, name))
+            .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmBlockFriend(friend) })
+            .setNegativeButton(R.string.dialogNo, null)
 
         builder.create().show()
     }
@@ -216,9 +224,9 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
         trans.interpolator = AnticipateOvershootInterpolator(1.0f)
         val constraintSet = ConstraintSet()
         constraintSet.clone(this, R.layout.home_toolbar_frame_search)
-        TransitionManager.beginDelayedTransition(toolbarLayout, trans)
-        constraintSet.applyTo(toolbarLayout)
-        searchInput.isEnabled = true
+        TransitionManager.beginDelayedTransition(binding.toolbar.toolbarLayout, trans)
+        constraintSet.applyTo(binding.toolbar.toolbarLayout)
+        binding.toolbar.searchInput.isEnabled = true
     }
 
     private fun closeSearch(v: View) {
@@ -227,23 +235,27 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView, P
 
         trans.addListener(object : Transition.TransitionListener {
             override fun onTransitionEnd(transition: Transition) {
-                searchInput.setText("")
-                searchInput.isEnabled = false
+                binding.toolbar.searchInput.setText("")
+                binding.toolbar.searchInput.isEnabled = false
                 Utils.hideKeyboardFrom(this@HomeActivity, v)
             }
+
             override fun onTransitionResume(transition: Transition) {
             }
+
             override fun onTransitionPause(transition: Transition) {
             }
+
             override fun onTransitionCancel(transition: Transition) {
             }
+
             override fun onTransitionStart(transition: Transition) {
             }
         })
 
         val constraintSet = ConstraintSet()
         constraintSet.clone(this, R.layout.home_toolbar)
-        TransitionManager.beginDelayedTransition(toolbarLayout, trans)
-        constraintSet.applyTo(toolbarLayout)
+        TransitionManager.beginDelayedTransition(binding.toolbar.toolbarLayout, trans)
+        constraintSet.applyTo(binding.toolbar.toolbarLayout)
     }
 }

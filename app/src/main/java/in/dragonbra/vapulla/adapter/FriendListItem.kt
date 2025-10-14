@@ -1,8 +1,8 @@
 package `in`.dragonbra.vapulla.adapter
 
+import androidx.room.ColumnInfo
+import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.util.Strings
-import android.arch.persistence.room.ColumnInfo
-import android.arch.persistence.room.PrimaryKey
 
 data class FriendListItem(
         @PrimaryKey var id: Long,

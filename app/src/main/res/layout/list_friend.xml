@@ -11,17 +11,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
-        android:padding="16dp"
-        tools:text="Header"
+        android:clickable="true"
         android:focusable="true"
-        android:clickable="true" />
+        android:padding="16dp"
+        tools:text="Header" />
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/friendLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingBottom="8dp"
-        android:background="?attr/selectableItemBackground">
+        android:background="?attr/selectableItemBackground"
+        android:paddingBottom="8dp">
 
         <ImageView
             android:id="@+id/avatar"
@@ -45,9 +45,9 @@
             android:id="@+id/nameLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
             android:layout_marginStart="88dp"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
             android:gravity="left"
             app:layout_constraintEnd_toStartOf="@id/time"
             app:layout_constraintStart_toStartOf="parent"
@@ -107,8 +107,8 @@
             android:id="@+id/lastMessage"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
             android:layout_marginStart="88dp"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:lines="1"
             app:layout_constraintEnd_toStartOf="@id/newMessageCount"
@@ -120,8 +120,8 @@
             android:id="@+id/time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
             android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -131,13 +131,13 @@
             android:id="@+id/newMessageCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
             android:background="@drawable/new_message_count_background"
-            android:paddingBottom="4dp"
-            android:paddingEnd="8dp"
             android:paddingStart="8dp"
             android:paddingTop="4dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="4dp"
             android:textColor="@color/textPrimary"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
@@ -145,6 +145,6 @@
             tools:text="50"
             tools:visibility="visible" />
 
-    </android.support.constraint.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

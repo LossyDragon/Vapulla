@@ -3,6 +3,7 @@
     package="in.dragonbra.vapulla">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <!--<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />-->
 
@@ -16,6 +17,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".activity.LoginActivity"
+            android:exported="true"
             android:launchMode="singleTop"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -41,7 +43,8 @@
         <service
             android:name=".service.SteamService"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <receiver
             android:name=".broadcastreceiver.ReplyReceiver"
@@ -54,6 +57,7 @@
 
         <activity
             android:name=".activity.SettingsActivity"
+            android:exported="true"
             android:label="@string/title_activity_settings"
             android:parentActivityName=".activity.HomeActivity">
             <meta-data

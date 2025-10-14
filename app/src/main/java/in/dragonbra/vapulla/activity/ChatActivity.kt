@@ -20,36 +20,36 @@ import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.recyclerview.ChatAdapterDataObserver
 import `in`.dragonbra.vapulla.view.ChatView
-import android.arch.paging.PagedList
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.Snackbar
-import android.support.v4.app.NavUtils
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.PopupMenu
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.app.NavUtils
+import androidx.core.content.ContextCompat
+import androidx.paging.PagedList
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
-import kotlinx.android.synthetic.main.activity_chat.*
-import kotlinx.android.synthetic.main.dialog_nickname.view.*
-import org.jetbrains.anko.browse
-import org.jetbrains.anko.startActivity
-import org.jetbrains.anko.textColor
+import com.google.android.material.snackbar.Snackbar
+import `in`.dragonbra.vapulla.databinding.ActivityChatBinding
+import `in`.dragonbra.vapulla.databinding.DialogNicknameBinding
+import `in`.dragonbra.vapulla.util.browse
+import `in`.dragonbra.vapulla.util.startActivity
 import javax.inject.Inject
 
-
 class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, TextWatcher,
-        PopupMenu.OnMenuItemClickListener, EmoteAdapter.EmoteListener {
+    PopupMenu.OnMenuItemClickListener, EmoteAdapter.EmoteListener {
 
     companion object {
         const val INTENT_STEAM_ID = "steam_id"
@@ -81,6 +81,8 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
     private lateinit var emoteAdapter: EmoteAdapter
 
+    private lateinit var binding: ActivityChatBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         vapulla().graph.inject(this)
         super.onCreate(savedInstanceState)
@@ -91,14 +93,19 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
         val layoutManager = LinearLayoutManager(this)
         layoutManager.reverseLayout = true
-        chatList.layoutManager = layoutManager
-        chatList.adapter = chatAdapter
 
-        chatAdapter.registerAdapterDataObserver(ChatAdapterDataObserver(
+        binding = ActivityChatBinding.inflate(layoutInflater)
+
+        binding.chatList.layoutManager = layoutManager
+        binding.chatList.adapter = chatAdapter
+
+        chatAdapter.registerAdapterDataObserver(
+            ChatAdapterDataObserver(
                 chatAdapter,
                 layoutManager,
-                chatList
-        ))
+                binding.chatList
+            )
+        )
 
         emoteAdapter = EmoteAdapter(this, this)
 
@@ -106,13 +113,13 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         emoteLayoutManager.flexDirection = FlexDirection.ROW
         emoteLayoutManager.justifyContent = JustifyContent.CENTER
 
-        emoteList.layoutManager = emoteLayoutManager;
-        emoteList.adapter = emoteAdapter
+        binding.emoteList.layoutManager = emoteLayoutManager;
+        binding.emoteList.adapter = emoteAdapter
 
-        messageBox.addTextChangedListener(this)
-        messageBox.setOnClickListener { emoteList.hide() }
+        binding.messageBox.addTextChangedListener(this)
+        binding.messageBox.setOnClickListener { binding.emoteList.hide() }
 
-        moreButton.setOnClickListener {
+        binding.moreButton.setOnClickListener {
             val popup = PopupMenu(this@ChatActivity, it)
             popup.menuInflater.inflate(R.menu.menu_chat, popup.menu)
             popup.show()
@@ -127,7 +134,15 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
     override fun createPresenter(): ChatPresenter {
         val steamId = SteamID(intent.getLongExtra(INTENT_STEAM_ID, 0L))
-        return ChatPresenter(this, chatMessageDao, steamFriendDao, emoticonDao, imgurAuthService, schemaManager, steamId)
+        return ChatPresenter(
+            this,
+            chatMessageDao,
+            steamFriendDao,
+            emoticonDao,
+            imgurAuthService,
+            schemaManager,
+            steamId
+        )
     }
 
     override fun closeApp() {
@@ -150,36 +165,47 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         }
         runOnUiThread {
             val state = EPersonaState.from(friend.state ?: 0)
-            friendUsername.text = friend.name
+            binding.friendUsername.text = friend.name
 
             if (Strings.isNullOrEmpty(friend.nickname)) {
-                friendNickname.hide()
+                binding.friendNickname.hide()
             } else {
-                friendNickname.show()
-                friendNickname.text = getString(R.string.nicknameFormat, friend.nickname)
+                binding.friendNickname.show()
+                binding.friendNickname.text = getString(R.string.nicknameFormat, friend.nickname)
             }
 
             if ((friend.lastMessageTime == null || friend.typingTs > friend.lastMessageTime!!)
-                    && friend.typingTs > System.currentTimeMillis() - 20000L) {
-                friendStatus.text = getString(R.string.statusTyping)
-                friendStatus.textColor = ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
-                friendStatus.bold()
+                && friend.typingTs > System.currentTimeMillis() - 20000L
+            ) {
+                binding.friendStatus.text = getString(R.string.statusTyping)
+                val color = ContextCompat.getColor(this@ChatActivity, R.color.colorAccent)
+                binding.friendStatus.setTextColor(color)
+                binding.friendStatus.bold()
             } else {
-                friendStatus.text = Utils.getStatusText(this@ChatActivity, state, friend.gameAppId, friend.gameName, friend.lastLogOff)
-                friendStatus.textColor = ContextCompat.getColor(this@ChatActivity, android.R.color.secondary_text_dark)
-                friendStatus.normal()
+                binding.friendStatus.text = Utils.getStatusText(
+                    this@ChatActivity,
+                    state,
+                    friend.gameAppId,
+                    friend.gameName,
+                    friend.lastLogOff
+                )
+                val color =
+                    ContextCompat.getColor(this@ChatActivity, android.R.color.secondary_text_dark)
+                binding.friendStatus.setTextColor(color)
+
+                binding.friendStatus.normal()
             }
 
             Glide.with(this@ChatActivity)
-                    .load(Utils.getAvatarUrl(friend.avatar))
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .apply(Utils.avatarOptions)
-                    .into(friendAvatar)
+                .load(Utils.getAvatarUrl(friend.avatar))
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .apply(Utils.avatarOptions)
+                .into(binding.friendAvatar)
         }
     }
 
     override fun navigateUp() {
-        Utils.hideKeyboardFrom(this, messageBox)
+        Utils.hideKeyboardFrom(this, binding.messageBox)
         NavUtils.navigateUpFromSameTask(this)
     }
 
@@ -192,9 +218,9 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
     override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
         if (s.isEmpty()) {
-            imageButton.show()
+            binding.imageButton.show()
         } else {
-            imageButton.hide()
+            binding.imageButton.hide()
         }
     }
 
@@ -203,22 +229,27 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             presenter.removeFriend()
             true
         }
+
         R.id.blockFriend -> {
             presenter.blockFriend()
             true
         }
+
         R.id.setNickname -> {
             presenter.nicknameMenuClicked()
             true
         }
+
         R.id.viewAccount -> {
             presenter.viewAccountMenuClicked()
             true
         }
+
         R.id.viewAliases -> {
             presenter.viewAliasesMenuClicked()
             true
         }
+
         else -> false
     }
 
@@ -226,9 +257,9 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         val builder = AlertDialog.Builder(this)
 
         builder.setMessage(getString(R.string.dialogMessageRemoveFriend, name))
-                .setTitle(getString(R.string.dialogTitleRemoveFriend, name))
-                .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmRemoveFriend() })
-                .setNegativeButton(R.string.dialogNo, null)
+            .setTitle(getString(R.string.dialogTitleRemoveFriend, name))
+            .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmRemoveFriend() })
+            .setNegativeButton(R.string.dialogNo, null)
 
         builder.create().show()
     }
@@ -237,22 +268,24 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         val builder = AlertDialog.Builder(this)
 
         builder.setMessage(getString(R.string.dialogMessageBlockFriend, name))
-                .setTitle(getString(R.string.dialogTitleBlockFriend, name))
-                .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmBlockFriend() })
-                .setNegativeButton(R.string.dialogNo, null)
+            .setTitle(getString(R.string.dialogTitleBlockFriend, name))
+            .setPositiveButton(R.string.dialogYes, { _, _ -> presenter.confirmBlockFriend() })
+            .setNegativeButton(R.string.dialogNo, null)
 
         builder.create().show()
     }
 
     override fun showNicknameDialog(nickname: String) {
-        val v = LayoutInflater.from(this).inflate(R.layout.dialog_nickname, null)
+        val v = DialogNicknameBinding.inflate(LayoutInflater.from(this))
         v.nickname.setText(nickname)
 
         val builder = AlertDialog.Builder(this)
-                .setTitle(R.string.dialogTitleNickname)
-                .setView(v)
-                .setPositiveButton(R.string.dialogSet, { _, _ -> presenter.setNickname(v.nickname.text.toString()) })
-                .setNegativeButton(R.string.dialogCancel, null)
+            .setTitle(R.string.dialogTitleNickname)
+            .setView(v.root)
+            .setPositiveButton(
+                R.string.dialogSet,
+                { _, _ -> presenter.setNickname(v.nickname.text.toString()) })
+            .setNegativeButton(R.string.dialogCancel, null)
 
         builder.create().show()
     }
@@ -266,8 +299,8 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             val builder = AlertDialog.Builder(this)
 
             builder.setTitle(R.string.dialogTitleAliases)
-                    .setItems(names.toTypedArray(), null)
-                    .setNegativeButton(R.string.dialogClose, null)
+                .setItems(names.toTypedArray(), null)
+                .setNegativeButton(R.string.dialogClose, null)
 
             builder.create().show()
         }
@@ -278,16 +311,16 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
     }
 
     override fun onEmoteSelected(emoticon: Emoticon) {
-        messageBox.text.insert(messageBox.selectionStart, ":${emoticon.name}:")
+        binding.messageBox.text.insert(binding.messageBox.selectionStart, ":${emoticon.name}:")
     }
 
     override fun showImgurDialog() {
         val builder = AlertDialog.Builder(this)
 
         builder.setMessage(R.string.dialogMessageImgur)
-                .setTitle(R.string.dialogTitleImgur)
-                .setPositiveButton(R.string.dialogYes, { _, _ -> startActivity<SettingsActivity>() })
-                .setNegativeButton(R.string.dialogCancel, null)
+            .setTitle(R.string.dialogTitleImgur)
+            .setPositiveButton(R.string.dialogYes, { _, _ -> startActivity<SettingsActivity>() })
+            .setNegativeButton(R.string.dialogCancel, null)
 
         builder.create().show()
     }
@@ -300,39 +333,41 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_IMAGE_GET && resultCode == RESULT_OK) {
-            presenter.sendImage(data.data)
+            presenter.sendImage(data!!.data!!)
         }
     }
 
     override fun showUploadDialog() {
         runOnUiThread {
-            imageButton.isClickable = false
-            uploadProgressBar.show()
-            uploadProgressBar.isIndeterminate = true
+            binding.imageButton.isClickable = false
+            binding.uploadProgressBar.show()
+            binding.uploadProgressBar.isIndeterminate = true
         }
     }
 
     override fun imageUploadFail() {
         runOnUiThread {
-            imageButton.isClickable = true
-            uploadProgressBar.hide()
-            Snackbar.make(rootLayout, R.string.snackbarImgurUploadFailed, Snackbar.LENGTH_LONG).show()
+            binding.imageButton.isClickable = true
+            binding.uploadProgressBar.hide()
+            Snackbar.make(binding.rootLayout, R.string.snackbarImgurUploadFailed, Snackbar.LENGTH_LONG)
+                .show()
         }
     }
 
     override fun imageUploadSuccess() {
         runOnUiThread {
-            imageButton.isClickable = true
-            uploadProgressBar.hide()
+            binding.imageButton.isClickable = true
+            binding.uploadProgressBar.hide()
         }
     }
 
     override fun imageUploadProgress(total: Int, progress: Int) {
-        uploadProgressBar.max = total
-        uploadProgressBar.progress = progress
-        uploadProgressBar.isIndeterminate = false
+        binding.uploadProgressBar.max = total
+        binding.uploadProgressBar.progress = progress
+        binding.uploadProgressBar.isIndeterminate = false
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -342,10 +377,10 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
     @Suppress("UNUSED_PARAMETER")
     fun sendMessage(v: View) {
-        val message = messageBox.text.toString()
+        val message = binding.messageBox.text.toString()
 
         if (!Strings.isNullOrEmpty(message)) {
-            messageBox.setText("")
+            binding.messageBox.setText("")
             presenter.sendMessage(message)
         }
 
@@ -353,10 +388,10 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
 
     @Suppress("UNUSED_PARAMETER")
     fun toggleEmote(v: View) {
-        emoteList.toggleVisibility()
+        binding.emoteList.toggleVisibility()
 
-        if (emoteList.isVisible()) {
-            Utils.hideKeyboardFrom(this, messageBox)
+        if (binding.emoteList.isVisible()) {
+            Utils.hideKeyboardFrom(this, binding.messageBox)
             presenter.requestEmotes()
         }
     }

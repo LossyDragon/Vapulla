@@ -15,7 +15,7 @@ import android.content.Context
 import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
-import com.google.firebase.crash.FirebaseCrash
+import `in`.dragonbra.javasteam.util.log.LogListener
 
 class VapullaApplication : Application() {
 
@@ -25,33 +25,55 @@ class VapullaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        FirebaseCrash.setCrashCollectionEnabled(!BuildConfig.DEBUG)
+        LogManager.addListener(
+            object : LogListener {
+                override fun onLog(
+                    clazz: Class<*>,
+                    message: String?,
+                    throwable: Throwable?
+                ) {
+                    Log.d(clazz.simpleName, message, throwable)
+                }
 
-        LogManager.addListener { clazz, message, throwable ->
-            Log.d(clazz.simpleName, message, throwable)
-        }
+                override fun onError(
+                    clazz: Class<*>,
+                    message: String?,
+                    throwable: Throwable?
+                ) {
+                    Log.e(clazz.simpleName, message, throwable)
+                }
+
+            }
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val serviceChannel = NotificationChannel("vapulla-service",
-                    "Vapulla service",
-                    NotificationManager.IMPORTANCE_LOW)
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val serviceChannel = NotificationChannel(
+                "vapulla-service",
+                "Vapulla service",
+                NotificationManager.IMPORTANCE_LOW
+            )
             serviceChannel.enableVibration(false)
             serviceChannel.importance = NotificationManager.IMPORTANCE_LOW
             serviceChannel.enableLights(false)
             notificationManager.createNotificationChannel(serviceChannel)
 
-            val friendRequestChannel = NotificationChannel("vapulla-friend-request",
-                    "Friend request",
-                    NotificationManager.IMPORTANCE_DEFAULT)
+            val friendRequestChannel = NotificationChannel(
+                "vapulla-friend-request",
+                "Friend request",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
             friendRequestChannel.importance = NotificationManager.IMPORTANCE_DEFAULT
             friendRequestChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             friendRequestChannel.lightColor = 0xffffffff.toInt()
             notificationManager.createNotificationChannel(friendRequestChannel)
 
 
-            val messageChannel = NotificationChannel("vapulla-message", "New messages",
-                    NotificationManager.IMPORTANCE_HIGH)
+            val messageChannel = NotificationChannel(
+                "vapulla-message", "New messages",
+                NotificationManager.IMPORTANCE_HIGH
+            )
 
             messageChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             messageChannel.lightColor = 0xffffffff.toInt()
@@ -60,10 +82,10 @@ class VapullaApplication : Application() {
         }
 
         graph = DaggerVapullaComponent.builder()
-                .appModule(AppModule(this))
-                .storageModule(StorageModule())
-                .presenterModule(PresenterModule())
-                .build()
+            .appModule(AppModule(this))
+            .storageModule(StorageModule())
+            .presenterModule(PresenterModule())
+            .build()
 
         PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
     }

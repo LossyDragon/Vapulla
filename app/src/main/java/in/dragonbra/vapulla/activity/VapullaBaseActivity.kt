@@ -6,14 +6,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import com.hannesdorfmann.mosby3.mvp.MvpActivity
 import com.hannesdorfmann.mosby3.mvp.MvpPresenter
 import com.hannesdorfmann.mosby3.mvp.MvpView
-import org.jetbrains.anko.AnkoLogger
+import `in`.dragonbra.vapulla.util.AnkoLogger
 
-abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> : MvpActivity<V, P>(), AnkoLogger {
+abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> : MvpActivity<V, P>(),
+    AnkoLogger {
 
     companion object {
         const val STOP_INTENT = "in.dragonbra.vapulla.SERVICE_STOP"
@@ -27,7 +29,7 @@ abstract class VapullaBaseActivity<V : MvpView, P : MvpPresenter<V>> : MvpActivi
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val filter = IntentFilter(STOP_INTENT)
-        registerReceiver(stopReceiver, filter)
+        registerReceiver(stopReceiver, filter, RECEIVER_NOT_EXPORTED)
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {

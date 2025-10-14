@@ -4,7 +4,7 @@ import `in`.dragonbra.vapulla.service.SteamService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import org.jetbrains.anko.startService
+import `in`.dragonbra.vapulla.util.startService
 
 class IgnoreRequestReceiver : BroadcastReceiver() {
 

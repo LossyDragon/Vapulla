@@ -20,10 +20,6 @@ import `in`.dragonbra.vapulla.service.ImgurAuthService
 import `in`.dragonbra.vapulla.steam.VapullaHandler
 import `in`.dragonbra.vapulla.threading.runOnBackgroundThread
 import `in`.dragonbra.vapulla.view.ChatView
-import android.arch.lifecycle.LiveData
-import android.arch.lifecycle.Observer
-import android.arch.paging.LivePagedListBuilder
-import android.arch.paging.PagedList
 import android.content.ComponentName
 import android.content.Context
 import android.graphics.Bitmap
@@ -32,7 +28,11 @@ import android.os.Handler
 import android.os.IBinder
 import android.provider.MediaStore
 import android.text.format.DateUtils
-import org.jetbrains.anko.info
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import androidx.paging.LivePagedListBuilder
+import androidx.paging.PagedList
+import `in`.dragonbra.vapulla.util.info
 import java.io.ByteArrayOutputStream
 
 class ChatPresenter(context: Context,
@@ -98,7 +98,10 @@ class ChatPresenter(context: Context,
     }
 
     override fun onPostCreate() {
-        chatData = LivePagedListBuilder(chatMessageDao.findLivePaged(steamId.convertToUInt64()), 50).build()
+        chatData = LivePagedListBuilder(
+            chatMessageDao.findLivePaged(steamId.convertToUInt64()),
+            50
+        ).build()
         chatData.observe(view as ChatActivity, chatObserver)
 
         friendData = steamFriendsDao.findLive(steamId.convertToUInt64())
@@ -160,7 +163,7 @@ class ChatPresenter(context: Context,
 
     fun getMessageHistory() {
         runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
+            steamService?.steamClient?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
         }
     }
 
@@ -197,7 +200,7 @@ class ChatPresenter(context: Context,
             lastTypingMessage = System.currentTimeMillis()
 
             runOnBackgroundThread {
-                steamService?.getHandler<SteamFriends>()?.sendChatMessage(steamId, EChatEntryType.Typing, "")
+                steamService?.steamClient?.getHandler<SteamFriends>()?.sendChatMessage(steamId, EChatEntryType.Typing, "")
             }
         }
     }
@@ -208,7 +211,7 @@ class ChatPresenter(context: Context,
 
     fun confirmRemoveFriend() {
         runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.removeFriend(steamId)
+            steamService?.steamClient?.getHandler<SteamFriends>()?.removeFriend(steamId)
         }
     }
 
@@ -218,7 +221,7 @@ class ChatPresenter(context: Context,
 
     fun confirmBlockFriend() {
         runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
+            steamService?.steamClient?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
         }
     }
 
@@ -228,7 +231,7 @@ class ChatPresenter(context: Context,
 
     fun setNickname(nickname: String) {
         runOnBackgroundThread {
-            steamService?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
+            steamService?.steamClient?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
             val friend = steamFriendsDao.find(steamId.convertToUInt64())
 
             if (friend != null) {
@@ -243,11 +246,11 @@ class ChatPresenter(context: Context,
     }
 
     fun viewAliasesMenuClicked() {
-        runOnBackgroundThread { aliasJobId = steamService?.getHandler<SteamFriends>()?.requestAliasHistory(steamId) }
+        runOnBackgroundThread { aliasJobId = steamService?.steamClient?.getHandler<SteamFriends>()?.requestAliasHistory(steamId) }
     }
 
     fun requestEmotes() {
-        runOnBackgroundThread { steamService?.getHandler<VapullaHandler>()?.getEmoticonList() }
+        runOnBackgroundThread { steamService?.steamClient?.getHandler<VapullaHandler>()?.getEmoticonList() }
     }
 
     fun imageButtonClicked() {
