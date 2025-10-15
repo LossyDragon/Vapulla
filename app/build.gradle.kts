@@ -3,8 +3,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    // alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -35,10 +36,8 @@ android {
         //     }
         // }
 
-        val vapullaImgurClientId: String by project
-        val vapullaImgurClientSecret: String by project
-        buildConfigField("String", "IMGUR_CLIENT_ID", "\"$vapullaImgurClientId\"")
-        buildConfigField("String", "IMGUR_CLIENT_SECRET", "\"$vapullaImgurClientSecret\"")
+        buildConfigField("String", "IMGUR_CLIENT_ID", "\"\"") // TODO remove
+        buildConfigField("String", "IMGUR_CLIENT_SECRET", "\"\"") // TODO remove
     }
 
     buildTypes {
@@ -64,13 +63,36 @@ android {
 
     buildFeatures {
         buildConfig = true
-       // compose = true
+        compose = true
         viewBinding = true
     }
 }
 
 //noinspection UseTomlInstead // TODO remove
 dependencies {
+    // Compose
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.compose)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // JavaSteam
+    implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT")
+
+    // I have no idea right now, pretty rusty at android
+    implementation(libs.android.timber)
+    implementation(libs.nav3.runtime)
+    implementation(libs.nav3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.nav3)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.compose.material3.windowsizeclass)
+    implementation(libs.androidx.material3.adaptive)
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+
     // TODO remove
     val kotlin_version = "2.2.20"
     val android_support_version = "28.0.0"
@@ -79,10 +101,9 @@ dependencies {
     val dagger_version = "2.57.2"
     val room_version = "2.8.2"
 
-    // implementation fileTree (dir: "libs", include: ["*.jar"])
-    // implementation("org.jetbrains.anko:anko:0.10.8")
-    androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.2")
-    androidTestImplementation("com.android.support.test:runner:1.0.2")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("io.github.alexzhirkevich:qrose:1.0.1")
     implementation("android.arch.lifecycle:livedata:1.1.1")
     implementation("android.arch.paging:runtime:1.0.1")
     implementation("androidx.room:room-runtime:${room_version}")
@@ -102,13 +123,11 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:4.32.1")
     implementation("com.squareup.retrofit2:converter-gson:$retrofit_verson")
     implementation("com.squareup.retrofit2:retrofit:$retrofit_verson")
-    implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     ksp("androidx.room:room-compiler:$room_version")
     ksp("com.github.bumptech.glide:compiler:$glide_version")
     ksp("com.google.dagger:dagger-compiler:$dagger_version")
-    testImplementation("junit:junit:4.13.2")
 }
 
 

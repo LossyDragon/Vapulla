@@ -1,21 +1,22 @@
 package `in`.dragonbra.vapulla
 
+import android.annotation.SuppressLint
+import android.app.Application
+import android.os.StrictMode
+import android.preference.PreferenceManager
+import `in`.dragonbra.javasteam.util.log.LogListener
 import `in`.dragonbra.javasteam.util.log.LogManager
 import `in`.dragonbra.vapulla.component.DaggerVapullaComponent
 import `in`.dragonbra.vapulla.component.VapullaComponent
+import `in`.dragonbra.vapulla.di.appModule
 import `in`.dragonbra.vapulla.module.AppModule
 import `in`.dragonbra.vapulla.module.PresenterModule
 import `in`.dragonbra.vapulla.module.StorageModule
-import android.annotation.SuppressLint
-import android.app.Application
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.os.Build
-import android.preference.PreferenceManager
-import android.util.Log
-import `in`.dragonbra.javasteam.util.log.LogListener
+import `in`.dragonbra.vapulla.util.NotificationHelper
+import `in`.dragonbra.vapulla.util.ReleaseTree
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.startKoin
+import timber.log.Timber
 
 class VapullaApplication : Application() {
 
@@ -25,60 +26,47 @@ class VapullaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        LogManager.addListener(
-            object : LogListener {
-                override fun onLog(
-                    clazz: Class<*>,
-                    message: String?,
-                    throwable: Throwable?
-                ) {
-                    Log.d(clazz.simpleName, message, throwable)
-                }
+        // Application debugging & logging
+        if (BuildConfig.DEBUG) {
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .detectLeakedClosableObjects() // Detect when Closeable objects are not properly closed
+                    .penaltyLog() // Log violations to logcat
+                    .build(),
+            )
 
-                override fun onError(
-                    clazz: Class<*>,
-                    message: String?,
-                    throwable: Throwable?
-                ) {
-                    Log.e(clazz.simpleName, message, throwable)
-                }
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectAll() // Detect all violations (disk reads/writes, network operations, etc.)
+                    .penaltyLog() // Log violations to logcat
+                    .build(),
+            )
 
+            val tree = Timber.DebugTree()
+            Timber.plant(tree = tree)
+        } else {
+            val tree = ReleaseTree()
+            Timber.plant(tree = tree)
+        }
+
+        // JavaSteam logging
+        val listener = object : LogListener {
+            override fun onLog(clazz: Class<*>, message: String?, throwable: Throwable?) {
+                Timber.tag(tag = clazz.simpleName).i(t = throwable, message = message)
             }
-        )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val serviceChannel = NotificationChannel(
-                "vapulla-service",
-                "Vapulla service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            serviceChannel.enableVibration(false)
-            serviceChannel.importance = NotificationManager.IMPORTANCE_LOW
-            serviceChannel.enableLights(false)
-            notificationManager.createNotificationChannel(serviceChannel)
+            override fun onError(clazz: Class<*>, message: String?, throwable: Throwable?) {
+                Timber.tag(tag = clazz.simpleName).e(t = throwable, message = message)
+            }
+        }
+        LogManager.addListener(listener)
 
-            val friendRequestChannel = NotificationChannel(
-                "vapulla-friend-request",
-                "Friend request",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            friendRequestChannel.importance = NotificationManager.IMPORTANCE_DEFAULT
-            friendRequestChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            friendRequestChannel.lightColor = 0xffffffff.toInt()
-            notificationManager.createNotificationChannel(friendRequestChannel)
+        // Create notification channels
+        NotificationHelper.createNotificationChannels(this)
 
-
-            val messageChannel = NotificationChannel(
-                "vapulla-message", "New messages",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-
-            messageChannel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            messageChannel.lightColor = 0xffffffff.toInt()
-
-            notificationManager.createNotificationChannel(messageChannel)
+        startKoin {
+            androidContext(androidContext = this@VapullaApplication)
+            modules(modules = appModule)
         }
 
         graph = DaggerVapullaComponent.builder()

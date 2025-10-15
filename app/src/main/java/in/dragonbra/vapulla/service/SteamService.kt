@@ -64,6 +64,7 @@ import com.bumptech.glide.Glide
 import `in`.dragonbra.javasteam.steam.handlers.ClientMsgHandler
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 import `in`.dragonbra.vapulla.util.AnkoLogger
+import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.info
 import `in`.dragonbra.vapulla.util.intentFor
 import kotlinx.coroutines.CancellationException
@@ -72,8 +73,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
+import org.koin.android.scope.serviceScope
 import org.spongycastle.util.encoders.Hex
+import timber.log.Timber
 import java.io.Closeable
 import java.io.File
 import java.util.*
@@ -112,6 +117,8 @@ class SteamService : Service(), AnkoLogger {
 
     @Inject
     lateinit var notificationManager: NotificationManagerCompat
+
+    private val serviceManager: ServiceManager by inject()
 
     private val scope = CoroutineScope(
         context = Dispatchers.IO + SupervisorJob() + CoroutineName("SteamService")
@@ -167,10 +174,10 @@ class SteamService : Service(), AnkoLogger {
     private var lastEcho = 0L
 
     override fun onCreate() {
-        vapulla().graph.inject(this)
+        vapulla().graph.inject(this) // TODO remove
         super.onCreate()
 
-        info("onCreate")
+        Timber.i("onCreate")
 
         handlerThread.start()
         handler = Handler(handlerThread.looper)
@@ -214,6 +221,16 @@ class SteamService : Service(), AnkoLogger {
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
             .setLabel("Reply")
             .build()
+
+        scope.launch {
+            serviceManager.commandChannel.collect { command ->
+                when (command) {
+                    is ServiceCommand.Start -> handleStart()
+                    is ServiceCommand.Stop -> handleStop()
+                    is ServiceCommand.Login -> handleStop()
+                }
+            }
+        }
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -223,61 +240,26 @@ class SteamService : Service(), AnkoLogger {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        info("onStartCommand")
+        Timber.i("onStartCommand")
 
-        if (isRunning && intent != null && intent.hasExtra(EXTRA_ACTION)) {
-            val id = SteamID(intent.getLongExtra(EXTRA_ID, 0L))
-            val action = intent.getStringExtra(EXTRA_ACTION)
+        val notification = NotificationHelper.createServiceNotification(
+            this,
+            this.getString(R.string.app_name),
+            "Starting..."
+        )
+        startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
 
-            info("Received $action action message")
+        serviceManager.setServiceRunning(true)
 
-            when (intent.getStringExtra(EXTRA_ACTION)) {
-                "reply" -> {
-                    val message = intent.getStringExtra(EXTRA_MESSAGE)
-
-                    runOnBackgroundThread {
-                        val emotes = db.emoticonDao().find()
-                        val emoteSet = emotes.map { it.name }.toSet()
-                        sendMessage(id, message, emoteSet)
-                    }
-
-                    notificationManager.cancel(id.convertToUInt64().toInt())
-                }
-
-                "stop" -> {
-                    sendBroadcast(Intent(VapullaBaseActivity.STOP_INTENT))
-                    stopSelf()
-                }
-
-                "accept_request" -> {
-                    runOnBackgroundThread {
-                        steamClient.getHandler<SteamFriends>()?.addFriend(id)
-                    }
-                    notificationManager.cancel(id.convertToUInt64().toInt())
-                }
-
-                "ignore_request" -> {
-                    runOnBackgroundThread {
-                        steamClient.getHandler<SteamFriends>()?.removeFriend(id)
-                    }
-                    notificationManager.cancel(id.convertToUInt64().toInt())
-                }
-
-                "block_request" -> {
-                    runOnBackgroundThread {
-                        steamClient.getHandler<SteamFriends>()?.ignoreFriend(id)
-                    }
-                    notificationManager.cancel(id.convertToUInt64().toInt())
-                }
-            }
-        }
+        val data = intent?.getStringExtra("extra_data")
+        Timber.d("Received data: $data") // TODO re-add notification intents.
 
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        info("onDestroy")
+        Timber.i("onDestroy")
 
         disconnect()
 
@@ -286,7 +268,27 @@ class SteamService : Service(), AnkoLogger {
         steamThreadJob.cancel(CancellationException("Service Destroyed"))
 
         sendBroadcast(Intent(VapullaBaseActivity.STOP_INTENT))
+
+        serviceManager.setServiceRunning(false)
+        serviceManager.setLoading(false)
+
+        scope.cancel(CancellationException("Service Destroyed"))
     }
+
+    private fun handleStart() {
+        Timber.d("handleStart() - Starting work")
+        serviceManager.setLoading(true)
+
+        // Do your work here, the service will live indefinitely
+    }
+
+    private fun handleStop() {
+        Timber.d("handleStop() - Stopping service")
+        serviceManager.setLoading(false)
+        stopSelf()
+    }
+
+    // -----------------
 
     private fun setNotification(text: String) {
         val logOutIntent = intentFor<LogOutReceiver>()
