@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.manager
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
 import org.spongycastle.util.encoders.Hex
@@ -24,6 +24,10 @@ class AccountManager(context: Context) {
     private val editor: SharedPreferences.Editor = prefs.edit()
 
     private val listeners = mutableSetOf<AccountManagerListener>()
+
+    var uuid: Int
+        get() = prefs.getInt("uuid", 0)
+        set(value) = editor.putInt("uuid", value).apply()
 
     var loginKey: String?
         get() = prefs.getString(KEY_LOGIN_KEY, null)

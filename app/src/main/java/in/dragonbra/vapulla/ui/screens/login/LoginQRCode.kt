@@ -16,6 +16,11 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.room.util.TableInfo
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import io.github.alexzhirkevich.qrose.options.QrBallShape
 import io.github.alexzhirkevich.qrose.options.QrFrameShape
@@ -35,9 +41,10 @@ import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 @Composable
 fun LoginQRCode(
     code: String,
-    isWaiting: Boolean,
+    isWaitingForConfirmation: Boolean,
     onQrCodeCancel: () -> Unit,
 ) {
+    var isCodeEmpty by rememberSaveable { mutableStateOf(false) }
     val painter = rememberQrCodePainter(
         data = code,
         shapes = QrShapes(
@@ -47,45 +54,52 @@ fun LoginQRCode(
         )
     )
 
+    LaunchedEffect(key1 = code) {
+        isCodeEmpty = code.isBlank()
+    }
+
     Card {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Crossfade(isWaitingForConfirmation) { value ->
+                when (value) {
+                    true -> {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            LoadingIndicator(modifier = Modifier.size(150.dp))
 
-        Crossfade(isWaiting) { value ->
-            when (value) {
-                true -> {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        LoadingIndicator(modifier = Modifier.size(150.dp))
-
-                        Text(text = "Use the Steam Mobile App\nto confirm your sign in...")
+                            Text(text = "Use the Steam Mobile App\nto confirm your sign in...")
+                        }
                     }
-                }
 
-                false -> {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Image(
-                            modifier = Modifier
-                                .size(150.dp)
-                                .background(Color.White),
-                            painter = painter,
-                            contentDescription = null,
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = onQrCodeCancel,
-                            content = {
-                                Text(text = "Cancel")
-                            }
-                        )
+                    false -> {
+                        if (isCodeEmpty) {
+                            LoadingIndicator(modifier = Modifier.size(150.dp))
+                        } else {
+                            Image(
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .background(Color.White),
+                                painter = painter,
+                                contentDescription = null,
+                            )
+                        }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onQrCodeCancel,
+                content = {
+                    Text(text = "Cancel")
+                }
+            )
         }
     }
 }
@@ -103,7 +117,7 @@ private fun Preview(
         Surface {
             LoginQRCode(
                 code = "Hello World",
-                isWaiting = value,
+                isWaitingForConfirmation = value,
                 onQrCodeCancel = { },
             )
         }

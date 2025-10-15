@@ -18,10 +18,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import `in`.dragonbra.vapulla.util.info
 
-class HomePresenter(context: Context,
-                    private val steamFriendDao: SteamFriendDao,
-                    private val account: AccountManager) :
-        VapullaPresenter<HomeView>(context), AccountManager.AccountManagerListener {
+class HomePresenter(
+    context: Context,
+    private val steamFriendDao: SteamFriendDao,
+    private val account: AccountManager
+) :
+    VapullaPresenter<HomeView>(context), AccountManager.AccountManagerListener {
 
     private lateinit var friendsData: LiveData<List<FriendListItem>>
 
@@ -31,7 +33,7 @@ class HomePresenter(context: Context,
 
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         info("Bound to Steam service")
-        steamService?.isActivityRunning = true
+        // steamService?.isActivityRunning = true
     }
 
     override fun onDisconnected() {
@@ -46,14 +48,16 @@ class HomePresenter(context: Context,
 
         ifViewAttached {
             val updateTime = System.currentTimeMillis()
-            it.showFriends(friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
-                    ?: emptyList(), updateTime)
+            it.showFriends(
+                friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
+                    ?: emptyList(), updateTime
+            )
         }
     }
 
     override fun onResume() {
         if (bound) {
-            steamService?.isActivityRunning = true
+            // steamService?.isActivityRunning = true
         }
 
         account.addListener(this)
@@ -64,7 +68,7 @@ class HomePresenter(context: Context,
 
     override fun onPause() {
         if (bound) {
-            steamService?.isActivityRunning = false
+            //  steamService?.isActivityRunning = false
         }
 
         account.removeListener(this)
@@ -80,25 +84,30 @@ class HomePresenter(context: Context,
 
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
         val updateTime = System.currentTimeMillis()
-        ifViewAttached { it.showFriends(list.sortedWith(FriendsComparator(context, updateTime)), updateTime) }
+        ifViewAttached {
+            it.showFriends(
+                list.sortedWith(FriendsComparator(context, updateTime)),
+                updateTime
+            )
+        }
     }
 
     fun disconnect() {
-        runOnBackgroundThread { steamService?.disconnect() }
+        // runOnBackgroundThread { steamService?.disconnect() }
     }
 
     fun changeStatus(state: EPersonaState) {
         if (account.state != state) {
-            runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.setPersonaState(state) }
+            // runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.setPersonaState(state) }
         }
     }
 
     fun acceptRequest(friend: FriendListItem) {
-        runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id)) }
+        // runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.addFriend(SteamID(friend.id)) }
     }
 
     fun ignoreRequest(friend: FriendListItem) {
-        runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id)) }
+        //  runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.removeFriend(SteamID(friend.id)) }
     }
 
     fun blockRequest(friend: FriendListItem) {
@@ -107,7 +116,10 @@ class HomePresenter(context: Context,
 
     fun confirmBlockFriend(friend: FriendListItem) {
         runOnBackgroundThread {
-            runOnBackgroundThread { steamService?.steamClient?.getHandler<SteamFriends>()?.ignoreFriend(SteamID(friend.id)) }
+            runOnBackgroundThread {
+               // steamService?.steamClient?.getHandler<SteamFriends>()
+               //     ?.ignoreFriend(SteamID(friend.id))
+            }
         }
     }
 
@@ -116,7 +128,16 @@ class HomePresenter(context: Context,
         friendsData.value?.let { list ->
             val updateTime = System.currentTimeMillis()
             if (Strings.isNullOrEmpty(trimmedQuery)) {
-                ifViewAttached { it.showFriends(list.sortedWith(FriendsComparator(context, updateTime)), updateTime) }
+                ifViewAttached {
+                    it.showFriends(
+                        list.sortedWith(
+                            FriendsComparator(
+                                context,
+                                updateTime
+                            )
+                        ), updateTime
+                    )
+                }
                 return@let
             }
 

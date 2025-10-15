@@ -21,7 +21,7 @@ import android.os.IBinder
 import android.preference.ListPreference
 import android.preference.Preference
 import android.preference.PreferenceActivity
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.ViewGroup
@@ -71,9 +71,9 @@ class SettingsActivity : AppCompatPreferenceActivity() {
         }
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            val binder = service as SteamService.SteamBinder
-            steamService = binder.getService()
-            subs.add(steamService.subscribe<DisconnectedCallback>({ onDisconnected() }))
+            // val binder = service as SteamService.SteamBinder
+            // steamService = binder.getService()
+            // subs.add(steamService.subscribe<DisconnectedCallback>({ onDisconnected() }))
         }
     }
 
@@ -159,7 +159,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
                 .setTitle(getString(R.string.dialogTitleChangeUser))
                 .setPositiveButton(R.string.dialogYes, { _, _ ->
                     runOnBackgroundThread {
-                        runOnBackgroundThread { steamService.disconnect() }
+                        // runOnBackgroundThread { steamService.disconnect() }
                         clearData()
                     }
                 })
@@ -184,7 +184,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
                         return@setPositiveButton
                     }
                     runOnBackgroundThread {
-                        steamService.steamClient.getHandler<SteamFriends>()?.setPersonaName(name)
+                       //  steamService.steamClient.getHandler<SteamFriends>()?.setPersonaName(name)
                     }
                     changeProfileName.summary = name
                 })

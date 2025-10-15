@@ -57,24 +57,23 @@ object NotificationHelper {
 
     fun createServiceNotification(
         context: Context,
-        title: String,
         text: String
     ): Notification {
         return NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
-            .setContentTitle(title)
+            .setContentTitle(context.getString(R.string.app_name))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_vapulla)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
 
     fun updateServiceNotification(
         context: Context,
-        title: String,
-        text: String
+        text: String,
     ) {
-        val notification = createServiceNotification(context, title, text)
+        val notification = createServiceNotification(context, text)
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID_SERVICE, notification)
     }

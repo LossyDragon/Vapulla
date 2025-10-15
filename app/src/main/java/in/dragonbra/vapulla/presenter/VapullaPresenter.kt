@@ -33,10 +33,10 @@ abstract class VapullaPresenter<V : MvpView>(val context: Context) : MvpBasePres
         }
 
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
-            val binder = service as SteamService.SteamBinder
-            steamService = binder.getService()
-            subs.add(steamService?.subscribe<ConnectedCallback>({ onConnected() }))
-            subs.add(steamService?.subscribe<DisconnectedCallback>({ onDisconnected() }))
+            // val binder = service as SteamService.SteamBinder
+            // steamService = binder.getService()
+            // subs.add(steamService?.subscribe<ConnectedCallback>({ onConnected() }))
+            // subs.add(steamService?.subscribe<DisconnectedCallback>({ onDisconnected() }))
             bound = true
             this@VapullaPresenter.onServiceConnected(name, service)
         }

@@ -53,6 +53,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
     LoginScreenContent(
         snackbarHostState = snackbarHostState,
         uiState = uiState,
+        onSignInViaCredentials = viewModel::onSignInViaCredentials,
+        onSignInViaQR = viewModel::onSignInViaQR,
         onQrCodeCancel = viewModel::onQrCodeCancel,
         onTwoFactorChange = viewModel::onTwoFactorChange,
         onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
@@ -66,6 +68,8 @@ fun LoginScreen(viewModel: LoginViewModel) {
 private fun LoginScreenContent(
     snackbarHostState: SnackbarHostState,
     uiState: LoginUiState,
+    onSignInViaCredentials: () -> Unit,
+    onSignInViaQR: () -> Unit,
     onQrCodeCancel: () -> Unit,
     onTwoFactorSubmit: () -> Unit,
     onTwoFactorChange: (String) -> Unit,
@@ -85,7 +89,6 @@ private fun LoginScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             content = {
-                var checked by rememberSaveable { mutableStateOf(false) }
                 var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
                 VapullaLoadingAnimation(isAnimating = uiState.isLoading)
@@ -120,16 +123,8 @@ private fun LoginScreenContent(
                                 onPasswordChange = onPasswordChange,
                                 buttonContent = {
                                     LoginButtons(
-                                        checked = checked,
-                                        onCheckedChanged = {
-                                            checked = it
-                                        },
-                                        onSignInViaQR = {
-                                            TODO()
-                                        },
-                                        onClearPreferences = {
-                                            TODO()
-                                        }
+                                        onSignInViaCredentials = onSignInViaCredentials,
+                                        onSignInViaQR = onSignInViaQR,
                                     )
                                 }
                             )
@@ -138,7 +133,7 @@ private fun LoginScreenContent(
                         LoginStep.QRCODE -> {
                             LoginQRCode(
                                 code = uiState.qrCode,
-                                isWaiting = uiState.isWaitingForConfirmation,
+                                isWaitingForConfirmation = uiState.isWaitingForConfirmation,
                                 onQrCodeCancel = onQrCodeCancel
                             )
                         }
@@ -184,6 +179,8 @@ private fun Preview(
         LoginScreenContent(
             snackbarHostState = SnackbarHostState(),
             uiState = uiState,
+            onSignInViaCredentials = { },
+            onSignInViaQR = { },
             onQrCodeCancel = { },
             onTwoFactorChange = { },
             onTwoFactorSubmit = { },

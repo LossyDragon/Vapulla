@@ -3,7 +3,7 @@ package `in`.dragonbra.vapulla
 import android.annotation.SuppressLint
 import android.app.Application
 import android.os.StrictMode
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.util.log.LogListener
 import `in`.dragonbra.javasteam.util.log.LogManager
 import `in`.dragonbra.vapulla.component.DaggerVapullaComponent

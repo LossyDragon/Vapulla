@@ -28,26 +28,12 @@ class LoginViewModel(
     private val _snackbarMessage = MutableSharedFlow<String>()
     val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
 
-    private val submitChannel = Channel<String>()
+    // private val submitChannel = Channel<String>()
 
     private val authenticator = object : IAuthenticator {
         override fun getDeviceCode(previousCodeWasIncorrect: Boolean): CompletableFuture<String> {
             Timber.i("Two-Factor, device code")
-
-            _uiState.update {
-                it.copy(
-                    loginStep = LoginStep.TWOFACTOR,
-                    twoFactorCode = "",
-                    previousCodeWasIncorrect = previousCodeWasIncorrect,
-                )
-            }
-
-            return CompletableFuture<String>().apply {
-                viewModelScope.launch {
-                    val code = submitChannel.receive()
-                    complete(code)
-                }
-            }
+            TODO("Device Code not implemented")
         }
 
         override fun getEmailCode(
@@ -55,22 +41,7 @@ class LoginViewModel(
             previousCodeWasIncorrect: Boolean
         ): CompletableFuture<String> {
             Timber.i("Two-Factor, asking for email code")
-
-            _uiState.update {
-                it.copy(
-                    loginStep = LoginStep.TWOFACTOR,
-                    twoFactorCode = "",
-                    twoFactorMessage = email.orEmpty(),
-                    previousCodeWasIncorrect = previousCodeWasIncorrect,
-                )
-            }
-
-            return CompletableFuture<String>().apply {
-                viewModelScope.launch {
-                    val code = submitChannel.receive()
-                    complete(code)
-                }
-            }
+            TODO("Email Code not implemented")
         }
 
         override fun acceptDeviceConfirmation(): CompletableFuture<Boolean> {
@@ -118,11 +89,9 @@ class LoginViewModel(
                     }
 
                     LoginResult.Success -> {
+                        Timber.d("Logged in, navigating to home screen")
+                        _uiState.value = LoginUiState() // Reset
                         // TODO navigate to main screen.
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            qrCode = ""
-                        )
                     }
 
                     is LoginResult.Error -> {
@@ -130,10 +99,21 @@ class LoginViewModel(
                         _snackbarMessage.emit(result.error)
                     }
 
-                    is LoginResult.RequiresQRCode -> {
+                    is LoginResult.QRCode -> {
+                        Timber.d("QR CODE: ${result.qrCode}")
                         _uiState.value = _uiState.value.copy(
                             loginStep = LoginStep.QRCODE,
+                            isLoading = true,
                             qrCode = result.qrCode
+                        )
+                    }
+
+                    is LoginResult.QRCodeEnded -> {
+                        Timber.d("QR Code Ended")
+                        _uiState.value = _uiState.value.copy(
+                            loginStep = LoginStep.CREDENTIALS,
+                            isLoading = false,
+                            qrCode = "",
                         )
                     }
                 }
@@ -142,7 +122,9 @@ class LoginViewModel(
     }
 
     fun onQrCodeCancel() {
-        _uiState.value = _uiState.value.copy(loginStep = LoginStep.CREDENTIALS)
+        viewModelScope.launch {
+            serviceManager.sendCommand(ServiceCommand.LoginQRCancel)
+        }
     }
 
     fun onTwoFactorChange(code: String) {
@@ -161,15 +143,30 @@ class LoginViewModel(
         TODO()
     }
 
-    fun login() {
+    fun onSignInViaQR() {
+        _uiState.value = _uiState.value.copy(loginStep = LoginStep.QRCODE)
+
+        viewModelScope.launch {
+            val command = ServiceCommand.LoginQR
+            serviceManager.sendCommand(command)
+        }
+    }
+
+    fun onSignInViaCredentials() {
         val state = _uiState.value
 
         if (state.username.isBlank()) {
             Timber.w("username is blank!")
+            viewModelScope.launch {
+                _snackbarMessage.emit("Username is empty")
+            }
             return
         }
-        if (state.password.isBlank()) {
+        if (state.password.isBlank() && state.refreshToken.isBlank()) {
             Timber.w("password is blank!")
+            viewModelScope.launch {
+                _snackbarMessage.emit("Password is empty")
+            }
             return
         }
 
@@ -177,7 +174,8 @@ class LoginViewModel(
             val command = ServiceCommand.Login(
                 username = state.username,
                 password = state.password,
-                refreshToken = state.refreshToken
+                refreshToken = state.refreshToken,
+                authenticator = authenticator,
             )
             serviceManager.sendCommand(command)
         }

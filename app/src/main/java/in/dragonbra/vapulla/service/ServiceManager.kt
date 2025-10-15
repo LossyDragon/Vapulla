@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service
 
 import android.app.Application
 import android.content.Intent
+import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,10 +41,6 @@ class ServiceManager(
     }
 
     // Service methods
-    fun setLoading(loading: Boolean) {
-        _isLoading.value = loading
-    }
-
     fun setServiceRunning(running: Boolean) {
         _isServiceRunning.value = running
     }
@@ -54,12 +51,13 @@ class ServiceManager(
 }
 
 sealed class ServiceCommand {
-    object Start : ServiceCommand()
-    object Stop : ServiceCommand()
+    object LoginQR : ServiceCommand()
+    object LoginQRCancel : ServiceCommand()
     data class Login(
         val username: String,
-        val password: String,
-        val refreshToken: String
+        val password: String? = null,
+        val refreshToken: String? = null,
+        val authenticator: IAuthenticator,
     ) : ServiceCommand()
 }
 
@@ -67,6 +65,7 @@ sealed class LoginResult {
     object StandBy : LoginResult()
     object Loading : LoginResult()
     object Success : LoginResult()
+    object QRCodeEnded : LoginResult()
     data class Error(var error: String) : LoginResult()
-    data class RequiresQRCode(val qrCode: String) : LoginResult()
+    data class QRCode(val qrCode: String) : LoginResult()
 }

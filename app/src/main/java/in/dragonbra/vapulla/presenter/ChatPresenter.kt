@@ -35,13 +35,15 @@ import androidx.paging.PagedList
 import `in`.dragonbra.vapulla.util.info
 import java.io.ByteArrayOutputStream
 
-class ChatPresenter(context: Context,
-                    private val chatMessageDao: ChatMessageDao,
-                    private val steamFriendsDao: SteamFriendDao,
-                    private val emoticonDao: EmoticonDao,
-                    private val imgurAuthService: ImgurAuthService,
-                    private val schemaManager: GameSchemaManager,
-                    private val steamId: SteamID) : VapullaPresenter<ChatView>(context) {
+class ChatPresenter(
+    context: Context,
+    private val chatMessageDao: ChatMessageDao,
+    private val steamFriendsDao: SteamFriendDao,
+    private val emoticonDao: EmoticonDao,
+    private val imgurAuthService: ImgurAuthService,
+    private val schemaManager: GameSchemaManager,
+    private val steamId: SteamID
+) : VapullaPresenter<ChatView>(context) {
 
     companion object {
         const val UPDATE_INTERVAL = DateUtils.MINUTE_IN_MILLIS
@@ -90,10 +92,10 @@ class ChatPresenter(context: Context,
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         info("Bound to Steam service")
 
-        subscribe(steamService?.subscribe<AliasHistoryCallback> { onAliasHistory(it) })
+        // subscribe(steamService?.subscribe<AliasHistoryCallback> { onAliasHistory(it) })
 
-        steamService?.setChatFriendId(steamId)
-        steamService?.isActivityRunning = true
+        // steamService?.setChatFriendId(steamId)
+        // steamService?.isActivityRunning = true
         getMessageHistory()
     }
 
@@ -129,8 +131,8 @@ class ChatPresenter(context: Context,
 
     override fun onResume() {
         if (bound) {
-            steamService?.setChatFriendId(steamId)
-            steamService?.isActivityRunning = true
+            // steamService?.setChatFriendId(steamId)
+            // steamService?.isActivityRunning = true
             getMessageHistory()
         }
 
@@ -143,8 +145,8 @@ class ChatPresenter(context: Context,
 
     override fun onPause() {
         if (bound) {
-            steamService?.isActivityRunning = false
-            steamService?.removeChatFriendId()
+            // steamService?.isActivityRunning = false
+            // steamService?.removeChatFriendId()
         }
 
         updateHandler.removeCallbacksAndMessages(null)
@@ -163,7 +165,7 @@ class ChatPresenter(context: Context,
 
     fun getMessageHistory() {
         runOnBackgroundThread {
-            steamService?.steamClient?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
+            // steamService?.steamClient?.getHandler<SteamFriends>()?.requestMessageHistory(steamId)
         }
     }
 
@@ -191,7 +193,7 @@ class ChatPresenter(context: Context,
         lastTypingMessage = 0L
 
         runOnBackgroundThread {
-            steamService?.sendMessage(steamId, message, emoteSet)
+            // steamService?.sendMessage(steamId, message, emoteSet)
         }
     }
 
@@ -200,7 +202,7 @@ class ChatPresenter(context: Context,
             lastTypingMessage = System.currentTimeMillis()
 
             runOnBackgroundThread {
-                steamService?.steamClient?.getHandler<SteamFriends>()?.sendChatMessage(steamId, EChatEntryType.Typing, "")
+                // steamService?.steamClient?.getHandler<SteamFriends>()?.sendChatMessage(steamId, EChatEntryType.Typing, "")
             }
         }
     }
@@ -211,7 +213,7 @@ class ChatPresenter(context: Context,
 
     fun confirmRemoveFriend() {
         runOnBackgroundThread {
-            steamService?.steamClient?.getHandler<SteamFriends>()?.removeFriend(steamId)
+            // steamService?.steamClient?.getHandler<SteamFriends>()?.removeFriend(steamId)
         }
     }
 
@@ -221,7 +223,7 @@ class ChatPresenter(context: Context,
 
     fun confirmBlockFriend() {
         runOnBackgroundThread {
-            steamService?.steamClient?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
+            // steamService?.steamClient?.getHandler<SteamFriends>()?.ignoreFriend(steamId)
         }
     }
 
@@ -231,13 +233,14 @@ class ChatPresenter(context: Context,
 
     fun setNickname(nickname: String) {
         runOnBackgroundThread {
-            steamService?.steamClient?.getHandler<SteamFriends>()?.setFriendNickname(steamId, nickname)
-            val friend = steamFriendsDao.find(steamId.convertToUInt64())
-
-            if (friend != null) {
-                friend.nickname = nickname
-                steamFriendsDao.update(friend)
-            }
+            // steamService?.steamClient?.getHandler<SteamFriends>()
+            //     ?.setFriendNickname(steamId, nickname)
+            // val friend = steamFriendsDao.find(steamId.convertToUInt64())
+            //
+            // if (friend != null) {
+            //     friend.nickname = nickname
+            //     steamFriendsDao.update(friend)
+            // }
         }
     }
 
@@ -246,11 +249,15 @@ class ChatPresenter(context: Context,
     }
 
     fun viewAliasesMenuClicked() {
-        runOnBackgroundThread { aliasJobId = steamService?.steamClient?.getHandler<SteamFriends>()?.requestAliasHistory(steamId) }
+        runOnBackgroundThread {
+            // aliasJobId = steamService?.steamClient?.getHandler<SteamFriends>()?.requestAliasHistory(steamId)
+        }
     }
 
     fun requestEmotes() {
-        runOnBackgroundThread { steamService?.steamClient?.getHandler<VapullaHandler>()?.getEmoticonList() }
+        runOnBackgroundThread {
+            // steamService?.steamClient?.getHandler<VapullaHandler>()?.getEmoticonList()
+        }
     }
 
     fun imageButtonClicked() {

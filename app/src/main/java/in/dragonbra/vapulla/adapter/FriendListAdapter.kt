@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.adapter
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup

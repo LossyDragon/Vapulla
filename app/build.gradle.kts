@@ -103,6 +103,7 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.preference:preference:1.2.1")
     implementation("io.github.alexzhirkevich:qrose:1.0.1")
     implementation("android.arch.lifecycle:livedata:1.1.1")
     implementation("android.arch.paging:runtime:1.0.1")

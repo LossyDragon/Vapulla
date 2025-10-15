@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.util.recyclerview
 
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import android.content.Context
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 
 class FriendsComparator(context: Context, private val updateTime: Long) : Comparator<FriendListItem> {
 

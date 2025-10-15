@@ -39,13 +39,13 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
     override fun onServiceConnected(name: ComponentName, service: IBinder) {
         info("Bound to Steam service")
 
-        subscribe(steamService?.subscribe<LoggedOnCallback>({ onLoggedOn(it) }))
+        // subscribe(steamService?.subscribe<LoggedOnCallback>({ onLoggedOn(it) }))
 
         info("1")
         if (account.hasLoginKey()) {
-        info("2")
+            info("2")
             ifViewAttached {
-        info("3")
+                info("3")
                 it.startLoading({
                     logOnDetails.username = account.username!!
                     logOnDetails.password = null
@@ -54,29 +54,29 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
                 })
             }
         } else {
-        info("4")
+            info("4")
             if (!expectSteamGuard) {
-        info("5")
+                info("5")
                 ifViewAttached { it.showLoginForm() }
             }
         }
     }
 
     override fun onConnected() {
-        if (steamService?.isLoggedIn == true) {
-            ifViewAttached {
-                it.loginSuccess()
-            }
-            return
-        }
-
-        runOnBackgroundThread {
-            steamService?.logOn(logOnDetails)
-        }
-
-        ifViewAttached {
-            it.showLoading(context.getString(R.string.loadingTextLoggingIn))
-        }
+        // if (steamService?.isLoggedIn == true) {
+        //     ifViewAttached {
+        //         it.loginSuccess()
+        //     }
+        //     return
+        // }
+        //
+        // runOnBackgroundThread {
+        //     steamService?.logOn(logOnDetails)
+        // }
+        //
+        // ifViewAttached {
+        //     it.showLoading(context.getString(R.string.loadingTextLoggingIn))
+        // }
     }
 
     override fun onDisconnected() {
@@ -106,13 +106,14 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
                     ifViewAttached { it.showLoginForm(errorMessage) }
                 }
             }
-            steamService?.disconnect()
+            // steamService?.disconnect()
             return
         }
 
         expectSteamGuard = false
         runOnBackgroundThread {
-            steamService?.steamClient?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
+            // steamService?.steamClient?.getHandler<SteamFriends>()
+            //     ?.setPersonaState(EPersonaState.Online)
         }
 
         ifViewAttached {
@@ -143,15 +144,15 @@ class LoginPresenter(context: Context) : VapullaPresenter<LoginView>(context) {
         info("Starting steam service...")
         context.startService<SteamService>()
 
-        if (steamService?.isRunning != true) {
-            steamService?.connect()
-
-            ifViewAttached {
-                it.showLoading(context.getString(R.string.loadingTextConnecting))
-            }
-        } else {
-            onConnected()
-        }
+        // if (steamService?.isRunning != true) {
+        //     steamService?.connect()
+        //
+        //     ifViewAttached {
+        //         it.showLoading(context.getString(R.string.loadingTextConnecting))
+        //     }
+        // } else {
+        //     onConnected()
+        // }
 
     }
 
