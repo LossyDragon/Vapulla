@@ -6,9 +6,8 @@ import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.LoginResult
 import `in`.dragonbra.vapulla.service.ServiceCommand
-import `in`.dragonbra.vapulla.service.ServiceManager
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
+import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamService
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,10 +18,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.CompletableFuture
-import kotlin.time.Duration.Companion.seconds
 
 class LoginViewModel(
-    private val serviceManager: ServiceManager,
+    private val connection: ServiceConnection,
     private val accountManager: AccountManager,
 ) : ViewModel() {
 
@@ -65,52 +63,39 @@ class LoginViewModel(
     }
 
     init {
-        viewModelScope.launch {
-            serviceManager.startServiceLazy()
-
-            if (!accountManager.username.isNullOrBlank() &&
-                !accountManager.loginKey.isNullOrBlank()
-            ) {
-                delay(1.seconds)
-
-                _uiState.update {
-                    it.copy(
-                        username = accountManager.username!!,
-                        refreshToken = accountManager.loginKey!!
-                    )
-                }
-                delay(1.seconds)
-                Timber.d("Auto Logging in ")
-                onSignInViaCredentials()
-            }
-        }
+        connection.bindService()
+        connection.startForegroundService()
 
         viewModelScope.launch {
-            serviceManager.isLoading.collect { loading ->
+            SteamService.isLoading.collect { loading ->
                 _uiState.value = _uiState.value.copy(isLoading = loading)
             }
         }
 
         viewModelScope.launch {
-            serviceManager.isServiceRunning.collect { running ->
-                _uiState.value = _uiState.value.copy(isServiceRunning = running)
+            connection.isBound.collect { bound ->
+                if (bound &&
+                    (!accountManager.username.isNullOrBlank() &&
+                            !accountManager.loginKey.isNullOrBlank())
+                ) {
+                    _uiState.update {
+                        it.copy(
+                            username = accountManager.username!!,
+                            refreshToken = accountManager.loginKey!!,
+                            isLoading = true
+                        )
+                    }
+                    Timber.d("Auto Logging in ")
+                    onSignInViaCredentials()
+                }
             }
         }
 
         viewModelScope.launch {
-            serviceManager.loginResult.collect { result ->
+            SteamService.loginResult.collect { result ->
                 when (result) {
                     LoginResult.Loading -> {
                         _uiState.value = _uiState.value.copy(isLoading = true)
-                    }
-
-                    LoginResult.StandBy -> {
-                        _uiState.value = _uiState.value.copy(
-                            loginStep = LoginStep.CREDENTIALS,
-                            isLoading = false,
-                            qrCode = "",
-                            twoFactorCode = ""
-                        )
                     }
 
                     LoginResult.Success -> {
@@ -146,10 +131,13 @@ class LoginViewModel(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        Timber.d("ViewModel Cleared")
+    }
+
     fun onQrCodeCancel() {
-        viewModelScope.launch {
-            serviceManager.sendCommand(ServiceCommand.LoginQRCancel)
-        }
+        connection.steamService!!.handleQrCodeCancel()
     }
 
     fun onTwoFactorChange(code: String) {
@@ -171,10 +159,7 @@ class LoginViewModel(
     fun onSignInViaQR() {
         _uiState.value = _uiState.value.copy(loginStep = LoginStep.QRCODE)
 
-        viewModelScope.launch {
-            val command = ServiceCommand.LoginQR
-            serviceManager.sendCommand(command)
-        }
+        connection.steamService!!.handleQRLogin()
     }
 
     fun onSignInViaCredentials() {
@@ -195,14 +180,11 @@ class LoginViewModel(
             return
         }
 
-        viewModelScope.launch {
-            val command = ServiceCommand.Login(
-                username = state.username,
-                password = state.password,
-                refreshToken = state.refreshToken,
-                authenticator = authenticator,
-            )
-            serviceManager.sendCommand(command)
-        }
+        connection.steamService!!.handleCredentialLogin(
+            username = state.username,
+            password = state.password,
+            refreshToken = state.refreshToken,
+            authenticator = authenticator,
+        )
     }
 }

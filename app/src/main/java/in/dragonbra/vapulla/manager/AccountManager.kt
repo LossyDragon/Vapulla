@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
-import org.spongycastle.util.encoders.Hex
 
 class AccountManager(context: Context) {
 
@@ -71,7 +70,7 @@ class AccountManager(context: Context) {
     fun hasLoginKey() = prefs.contains(KEY_LOGIN_KEY)
 
     fun saveLocalUser(state: PersonaStateCallback) {
-        avatarHash = Hex.toHexString(state.avatarHash)
+        avatarHash = state.avatarHash.toHexString()
         nickname = state.name
         steamId = state.friendID.convertToUInt64()
         this.state = state.state

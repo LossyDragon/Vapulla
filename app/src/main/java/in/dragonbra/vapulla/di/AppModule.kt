@@ -3,7 +3,7 @@ package `in`.dragonbra.vapulla.di
 import androidx.room.Room
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.service.ServiceManager
+import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -16,11 +16,11 @@ val appModule = module {
             androidApplication(),
             VapullaDatabase::class.java,
             VapullaDatabase.DATABASE_NAME
-        ).build()
+        ).fallbackToDestructiveMigration(true).build()
     }
 
-    single<AccountManager> { AccountManager(androidApplication()) }
-    single { ServiceManager(androidApplication()) }
+    single { AccountManager(androidApplication()) }
+    single { ServiceConnection(androidApplication()) }
 
     viewModel { LoginViewModel(get(), get()) }
     viewModel { HomeViewModel(get(), get(), get()) }

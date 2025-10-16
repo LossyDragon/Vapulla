@@ -2,11 +2,10 @@ package `in`.dragonbra.vapulla.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.VapullaDatabase
+import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.service.ServiceManager
-import `in`.dragonbra.vapulla.util.recyclerview.FriendsComparator
+import `in`.dragonbra.vapulla.service.ServiceConnection
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -14,11 +13,11 @@ import kotlinx.coroutines.flow.stateIn
 
 class HomeViewModel(
     db: VapullaDatabase,
-    private val serviceManager: ServiceManager,
+    private val service: ServiceConnection,
     private val accountManager: AccountManager,
 ) : ViewModel() {
 
-    val friendsList: StateFlow<List<FriendListItem>> = db.steamFriendDao()
+   private val friendsList: StateFlow<List<SteamFriend>> = db.steamFriendDao()
         .getFriendsFlow()
         .map { friends ->
             friends.filter { it.isFriend && !it.isBlocked }
@@ -33,6 +32,7 @@ class HomeViewModel(
                         { it.nameOrNickname.lowercase() },
                     ),
                 )
+
         }
         .stateIn(
             scope = viewModelScope,
@@ -40,4 +40,20 @@ class HomeViewModel(
             initialValue = emptyList()
         )
 
+    val friends: StateFlow<Map<String, List<SteamFriend>>> = friendsList
+        .map { friends ->
+            friends.groupBy { friend ->
+                when {
+                    friend.isRequestRecipient -> "Friend Requests"
+                    friend.isPlayingGame || friend.isInGameAwayOrSnooze -> "In Game"
+                    friend.isOnline || friend.isAwayOrSnooze -> "Online"
+                    else -> "Offline"
+                }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
 }

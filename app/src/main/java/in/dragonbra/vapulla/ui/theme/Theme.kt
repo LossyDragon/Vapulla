@@ -22,7 +22,7 @@ import `in`.dragonbra.vapulla.R
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VapullaTheme(
-    seedColor: Color = colorResource(R.color.colorPrimary),
+    seedColor: Color = colorPrimary,
     isDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {

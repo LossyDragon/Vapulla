@@ -14,5 +14,4 @@ data class LoginUiState(
     val refreshToken: String = "",
     val loginStep: LoginStep = LoginStep.CREDENTIALS,
     val isLoading: Boolean = false,
-    val isServiceRunning: Boolean = false,
 )

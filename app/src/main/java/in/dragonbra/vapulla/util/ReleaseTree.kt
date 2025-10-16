@@ -5,7 +5,7 @@ import timber.log.Timber
 
 /**
  * A log manager instance for release mode.
- * Debug mode uses [timber.log.Timber.DebugTree]
+ * Debug mode uses [Timber.DebugTree]
  */
 class ReleaseTree : Timber.Tree() {
 

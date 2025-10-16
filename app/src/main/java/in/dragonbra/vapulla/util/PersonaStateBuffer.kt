@@ -6,7 +6,6 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStat
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import org.spongycastle.util.encoders.Hex
 import timber.log.Timber
 import java.util.*
 
@@ -63,12 +62,12 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
 
                     friend.name = state.name
                     friend.avatar = avatarHash
-                    friend.state = state.state.code()
+                    friend.state = state.state
                     friend.gameName = state.gameName
                     friend.gameAppId = state.gameAppID
                     friend.lastLogOn = state.lastLogOn.time
                     friend.lastLogOff = state.lastLogOff.time
-                    friend.stateFlags = EPersonaStateFlag.code(state.stateFlags)
+                    friend.stateFlags = state.stateFlags
 
                     friendsToUpdate.add(friend)
                 }

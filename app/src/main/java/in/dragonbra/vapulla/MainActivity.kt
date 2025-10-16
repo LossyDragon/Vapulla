@@ -29,7 +29,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.i("Created...")
+
         enableEdgeToEdge(navigationBarStyle = SystemBarStyle.light(TRANSPARENT, TRANSPARENT))
+
         setContent {
             val context = LocalContext.current
 
@@ -53,16 +55,7 @@ class MainActivity : ComponentActivity() {
             }
 
             VapullaTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    content = { innerPadding ->
-                        NavigationRoot(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
-                        )
-                    }
-                )
+                NavigationRoot(modifier = Modifier.fillMaxSize())
             }
         }
     }

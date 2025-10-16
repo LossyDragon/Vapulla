@@ -1,0 +1,60 @@
+package `in`.dragonbra.vapulla.ui.screens.home.components
+
+import android.content.res.Configuration
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import `in`.dragonbra.javasteam.enums.EPersonaState
+import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+
+@Composable
+fun FriendListHeader(
+    modifier: Modifier = Modifier,
+    isCollapsed: Boolean = false,
+    header: String,
+    count: Int,
+    onHeaderAction: () -> Unit = {},
+) {
+    ListItem(
+        modifier = modifier.clickable(onClick = onHeaderAction),
+        headlineContent = { Text(text = "$header ($count)") },
+        trailingContent = {
+            val button = when (isCollapsed) {
+                true -> Icons.Outlined.KeyboardArrowDown
+                else -> Icons.Outlined.KeyboardArrowUp
+            }
+            IconButton(onClick = onHeaderAction) {
+                Icon(imageVector = button, contentDescription = null)
+            }
+        },
+    )
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_StickyHeaderItem() {
+    VapullaTheme {
+        Column {
+            FriendListHeader(isCollapsed = true, header = "Online", count = 60, onHeaderAction = {})
+            FriendListItem(
+                friend = SteamFriend(
+                    id = 0,
+                    state = EPersonaState.Online,
+                    gameAppId = 440,
+                    gameName = "Team Fortress 2",
+                    name = "Name The Game",
+                ),
+            )
+        }
+    }
+}

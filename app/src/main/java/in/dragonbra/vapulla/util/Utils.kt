@@ -1,22 +1,10 @@
 package `in`.dragonbra.vapulla.util
 
-import android.app.Activity
 import android.content.Context
-import android.text.format.DateUtils
 import android.util.DisplayMetrics
-import android.view.View
-import android.view.inputmethod.InputMethodManager
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.colorResource
-import androidx.core.content.ContextCompat
-import com.bumptech.glide.request.RequestOptions
-import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.util.Strings
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.manager.AccountManager
 import java.util.UUID
 import java.util.regex.Pattern
-
 
 object Utils {
 
@@ -28,9 +16,6 @@ object Utils {
         const val PROFILE_URL = "https://steamcommunity.com/profiles/"
     }
 
-    val avatarOptions = RequestOptions()
-        .transform(CircleTransform())
-
     val EMOTE_PATTERN = Pattern.compile(":([a-zA-Z0-9]+):")
 
     fun getAvatarURL(string: String?): String =
@@ -39,56 +24,6 @@ object Utils {
             ?.takeIf { str -> str.isNotEmpty() && !str.all { it == '0' } }
             ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
             ?: Constants.MISSING_AVATAR_URL
-
-    fun getStatusColor(state: EPersonaState?, gameAppId: Int, gameName: String?) =
-        if (state == EPersonaState.Offline || gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
-            when (state) {
-                EPersonaState.Online -> R.color.statusOnline
-                EPersonaState.Busy -> R.color.statusBusy
-                EPersonaState.Away,
-                EPersonaState.Snooze -> R.color.statusAway
-
-                EPersonaState.LookingToTrade,
-                EPersonaState.LookingToPlay -> R.color.statusLookingTo
-
-                else -> R.color.statusOffline
-            }
-        } else {
-            R.color.statusInGame
-        }
-
-    fun getStatusText(
-        context: Context,
-        state: EPersonaState?,
-        gameAppId: Int,
-        gameName: String?,
-        lastLogOff: Long
-    ): String =
-        if (state == EPersonaState.Offline || gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
-            when (state) {
-                EPersonaState.Online -> context.getString(R.string.statusOnline)
-                EPersonaState.Busy -> context.getString(R.string.statusBusy)
-                EPersonaState.Away -> context.getString(R.string.statusAway)
-                EPersonaState.Snooze -> context.getString(R.string.statusSnooze)
-                EPersonaState.LookingToTrade -> context.getString(R.string.statusLookingTrade)
-                EPersonaState.LookingToPlay -> context.getString(R.string.statusLookingPlay)
-                else -> context.getString(
-                    R.string.statusOffline,
-                    DateUtils.getRelativeTimeSpanString(
-                        lastLogOff,
-                        System.currentTimeMillis(),
-                        DateUtils.MINUTE_IN_MILLIS
-                    )
-                )
-            }
-        } else {
-            context.getString(R.string.statusPlaying, if (gameName == null) "" else gameName)
-        }
-
-    fun hideKeyboardFrom(context: Context, view: View) {
-        val imm = context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(view.windowToken, 0)
-    }
 
     fun convertDpToPixel(dp: Float, context: Context): Float {
         val resources = context.resources

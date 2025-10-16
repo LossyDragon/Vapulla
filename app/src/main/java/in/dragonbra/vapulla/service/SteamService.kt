@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service
 
 import android.app.Service
 import android.content.Intent
+import android.os.Binder
 import android.os.IBinder
 import androidx.core.app.RemoteInput
 import androidx.room.withTransaction
@@ -10,6 +11,7 @@ import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.authentication.AuthPollResult
 import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
+import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.javasteam.steam.authentication.IChallengeUrlChanged
 import `in`.dragonbra.javasteam.steam.authentication.QrAuthSession
 import `in`.dragonbra.javasteam.steam.discovery.FileServerListProvider
@@ -44,16 +46,14 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.activity.VapullaBaseActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import `in`.dragonbra.vapulla.extension.vapulla
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.steam.VapullaHandler
-import `in`.dragonbra.vapulla.steam.callback.EmoticonListCallback
+import `in`.dragonbra.vapulla.service.handler.VapullaHandler
+import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.PersonaStateBuffer
 import `in`.dragonbra.vapulla.util.Utils
@@ -68,6 +68,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -75,7 +82,6 @@ import org.koin.android.ext.android.inject
 import timber.log.Timber
 import java.io.Closeable
 import java.io.File
-import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
 class SteamService : Service() {
@@ -88,6 +94,18 @@ class SteamService : Service() {
         const val EXTRA_ID = "id"
 
         const val SERVERS_FILE = "servers.bin"
+
+        private val _isLoading = MutableStateFlow(false)
+        val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+        private val _isLoggedIn = MutableStateFlow(false)
+        val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+
+        private val _loginResult = MutableSharedFlow<LoginResult>()
+        val loginResult: SharedFlow<LoginResult> = _loginResult.asSharedFlow()
     }
 
     // Coroutines
@@ -98,7 +116,6 @@ class SteamService : Service() {
     // Koin DI Injection
     private val db: VapullaDatabase by inject()
     private val account: AccountManager by inject()
-    private val serviceManager: ServiceManager by inject()
 
     // Steam-related properties
     private var steamClient: SteamClient? = null
@@ -111,14 +128,19 @@ class SteamService : Service() {
     private lateinit var stateBuffer: PersonaStateBuffer
     private lateinit var remoteInput: RemoteInput
     private var expectDisconnect: Boolean = false
-    private var isRunning: Boolean = false
     private var isWaitingForQRAuth: Boolean = false
     private var retryCount = 0
     private val requestsToNotify = mutableSetOf<SteamID>()
 
     private var currentAuthJob: Job? = null
 
-    override fun onBind(intent: Intent): IBinder? = null
+    private var binder: Binder? = ServiceBinder()
+
+    inner class ServiceBinder : Binder() {
+        val service: SteamService = this@SteamService
+    }
+
+    override fun onBind(intent: Intent): IBinder? = binder
 
     override fun onCreate() {
         super.onCreate()
@@ -129,16 +151,6 @@ class SteamService : Service() {
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
             .setLabel("Reply")
             .build()
-
-        scope.launch {
-            serviceManager.commandChannel.collect { command ->
-                when (command) {
-                    is ServiceCommand.Login -> handleCredentialLogin(command)
-                    is ServiceCommand.LoginQR -> handleQRLogin()
-                    is ServiceCommand.LoginQRCancel -> handleQrCodeCancel()
-                }
-            }
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -153,8 +165,6 @@ class SteamService : Service() {
             text = "Starting..."
         )
         startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
-
-        serviceManager.setServiceRunning(true)
 
         return START_STICKY
     }
@@ -172,10 +182,8 @@ class SteamService : Service() {
         // Cancel coroutines
         scope.cancel(CancellationException("Service Destroyed"))
 
-        val intent = Intent(VapullaBaseActivity.STOP_INTENT)
+        val intent = Intent("stop")
         sendBroadcast(intent)
-
-        serviceManager.setServiceRunning(false)
     }
 
     private fun cancelCurrentAuthOperation() {
@@ -206,7 +214,7 @@ class SteamService : Service() {
             stateBuffer.stop()
         }
 
-        isRunning = false
+        _isRunning.value = false
     }
 
     private fun initializeSteamClient() {
@@ -262,7 +270,12 @@ class SteamService : Service() {
         }
     }
 
-    private fun handleCredentialLogin(command: ServiceCommand.Login) {
+    fun handleCredentialLogin(
+        username: String? = null,
+        password: String? = null,
+        refreshToken: String? = null,
+        authenticator: IAuthenticator,
+    ) {
         Timber.d("handleCredentialLogin() - Starting and Logging into Steam")
 
         // Cancel any ongoing QR auth
@@ -276,18 +289,18 @@ class SteamService : Service() {
                 connectedSignal?.await()
                     ?: throw IllegalStateException("Connection signal not available")
 
-                serviceManager.emitLoginResult(LoginResult.Loading)
+                _loginResult.emit(LoginResult.Loading)
 
-                var username = command.username?.trim()
+                var username = username?.trim()
                 var loginKey = account.loginKey
 
                 if (loginKey.isNullOrBlank() || username.isNullOrBlank()) {
                     // Normal sign in
                     val authDetails = AuthSessionDetails().apply {
-                        this.authenticator = command.authenticator
+                        this.authenticator = authenticator
                         this.deviceFriendlyName = "Vapulla ${BuildConfig.VERSION_NAME}"
                         this.username = username
-                        this.password = command.password?.trim()
+                        this.password = password?.trim()
                         this.persistentSession = true
                     }
 
@@ -299,7 +312,7 @@ class SteamService : Service() {
 
                     if (pollResult.accountName.isBlank() || pollResult.refreshToken.isBlank()) {
                         val result = LoginResult.Error("Account Name or Refresh Token is blank")
-                        serviceManager.emitLoginResult(result)
+                        _loginResult.emit(result)
                         return@launch
                     }
 
@@ -322,14 +335,14 @@ class SteamService : Service() {
                 Timber.i(e, "Credential login cancelled")
             } catch (e: Exception) {
                 Timber.e(e, "Error during credential login")
-                serviceManager.emitLoginResult(LoginResult.Error("Login failed: ${e.message}"))
+                _loginResult.emit(LoginResult.Error("Login failed: ${e.message}"))
             } finally {
                 currentAuthJob = null
             }
         }
     }
 
-    private fun handleQRLogin() {
+    fun handleQRLogin() {
         Timber.i("Logging in via QR.")
 
         if (isWaitingForQRAuth) {
@@ -371,19 +384,17 @@ class SteamService : Service() {
                     return@launch
                 }
 
-                authSession.challengeUrlChanged = object : IChallengeUrlChanged {
-                    override fun onChanged(qrAuthSession: QrAuthSession?) {
-                        if (isWaitingForQRAuth) {
-                            scope.launch {
-                                val qrCode = qrAuthSession?.challengeUrl.orEmpty()
-                                serviceManager.emitLoginResult(LoginResult.QRCode(qrCode))
-                            }
+                authSession.challengeUrlChanged = IChallengeUrlChanged { qrAuthSession ->
+                    if (isWaitingForQRAuth) {
+                        scope.launch {
+                            val qrCode = qrAuthSession?.challengeUrl.orEmpty()
+                            _loginResult.emit(LoginResult.QRCode(qrCode))
                         }
                     }
                 }
 
                 // Send initial QR code
-                serviceManager.emitLoginResult(LoginResult.QRCode(authSession.challengeUrl))
+                _loginResult.emit(LoginResult.QRCode(authSession.challengeUrl))
 
                 var authPollResult: AuthPollResult? = null
 
@@ -420,18 +431,18 @@ class SteamService : Service() {
                 Timber.i(e, "QR login cancelled")
             } catch (e: Exception) {
                 Timber.e(e, "Error during QR login")
-                serviceManager.emitLoginResult(LoginResult.Error("QR login failed: ${e.message}"))
+                _loginResult.emit(LoginResult.Error("QR login failed: ${e.message}"))
             } finally {
                 isWaitingForQRAuth = false
                 withContext(NonCancellable) {
-                    serviceManager.emitLoginResult(LoginResult.QRCodeEnded)
+                    _loginResult.emit(LoginResult.QRCodeEnded)
                 }
                 currentAuthJob = null
             }
         }
     }
 
-    private fun handleQrCodeCancel() {
+    fun handleQrCodeCancel() {
         Timber.i("Cancelling QR Login")
         cancelCurrentAuthOperation()
     }
@@ -453,7 +464,7 @@ class SteamService : Service() {
     }
 
     private fun connectToSteam() {
-        if (!isRunning) {
+        if (!isRunning.value) {
             expectDisconnect = false
             retryCount = 0
 
@@ -461,7 +472,7 @@ class SteamService : Service() {
 
             Timber.i("Connecting to steam...")
 
-            isRunning = true
+            _isRunning.value = true
             steamClient?.connect()
 
             NotificationHelper.updateServiceNotification(
@@ -473,7 +484,7 @@ class SteamService : Service() {
                 Timber.i("Callback loop started on thread: ${Thread.currentThread().name}")
 
                 try {
-                    while (isRunning && callbackMgr != null) {
+                    while (isRunning.value && callbackMgr != null) {
                         callbackMgr?.runWaitCallbackAsync()
                     }
                 } catch (e: Exception) {
@@ -495,8 +506,8 @@ class SteamService : Service() {
 
             stopForeground(STOP_FOREGROUND_REMOVE)
 
-            isRunning = false
-            serviceManager.setLoggedIn(false)
+            _isRunning.value = false
+            _isLoggedIn.value = false
 
             stateBuffer.stop()
         } else {
@@ -534,8 +545,8 @@ class SteamService : Service() {
                 steamClient?.getHandler<SteamNotifications>()?.requestOfflineMessageCount()
                 steamClient?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
                 scope.launch {
-                    serviceManager.emitLoginResult(LoginResult.Success)
-                    serviceManager.setLoggedIn(true)
+                    _loginResult.emit(LoginResult.Success)
+                    _isLoggedIn.value = true
                 }
             }
 
@@ -597,7 +608,7 @@ class SteamService : Service() {
             .forEach { friendInfo ->
                 val steamId = friendInfo.steamID.convertToUInt64()
                 val existingFriend = dao.find(steamId)
-                val relationCode = friendInfo.relationship.code()
+                val relationCode = friendInfo.relationship
 
                 val isValidRelationship = friendInfo.relationship in listOf(
                     EFriendRelationship.Friend,

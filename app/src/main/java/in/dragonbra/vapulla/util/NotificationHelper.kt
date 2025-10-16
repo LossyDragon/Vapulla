@@ -16,7 +16,6 @@ import coil3.request.transformations
 import coil3.toBitmap
 import coil3.transform.CircleCropTransformation
 import `in`.dragonbra.vapulla.MainActivity
-import `in`.dragonbra.vapulla.activity.HomeActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver

@@ -37,6 +37,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.ui.composables.VapullaLoadingAnimation
+import `in`.dragonbra.vapulla.ui.screens.login.components.LoginButtons
+import `in`.dragonbra.vapulla.ui.screens.login.components.LoginCredentials
+import `in`.dragonbra.vapulla.ui.screens.login.components.LoginQRCode
+import `in`.dragonbra.vapulla.ui.screens.login.components.LoginTwoFactor
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable

@@ -2,6 +2,11 @@ package `in`.dragonbra.vapulla.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val colorPrimary = Color(0x212121ff)
+val colorPrimaryDark = Color(0x000000ff)
+val colorAccent = Color(0x546e7aff)
+val colorAccentDark = Color(0x455a64ff)
+
 val friendAwayOrSnooze = Color(0x806DCFF6)
 val friendInGame = Color(0xFF90BA3C)
 val friendInGameAwayOrSnooze = Color(0x8090BA3C)
