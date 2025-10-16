@@ -43,15 +43,15 @@ class HomePresenter(
     }
 
     override fun onPostCreate() {
-        friendsData = steamFriendDao.getLive()
+        //friendsData = steamFriendDao.getLive()
         friendsData.observe(view as HomeActivity, dataObserver)
 
         ifViewAttached {
             val updateTime = System.currentTimeMillis()
-            it.showFriends(
-                friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
-                    ?: emptyList(), updateTime
-            )
+            // it.showFriends(
+            //     friendsData.value?.sortedWith(FriendsComparator(context, updateTime))
+            //         ?: emptyList(), updateTime
+            // )
         }
     }
 
@@ -85,10 +85,10 @@ class HomePresenter(
     private val dataObserver: Observer<List<FriendListItem>> = Observer { list ->
         val updateTime = System.currentTimeMillis()
         ifViewAttached {
-            it.showFriends(
-                list.sortedWith(FriendsComparator(context, updateTime)),
-                updateTime
-            )
+            // it.showFriends(
+            //     list.sortedWith(FriendsComparator(context, updateTime)),
+            //     updateTime
+            // )
         }
     }
 
@@ -129,24 +129,24 @@ class HomePresenter(
             val updateTime = System.currentTimeMillis()
             if (Strings.isNullOrEmpty(trimmedQuery)) {
                 ifViewAttached {
-                    it.showFriends(
-                        list.sortedWith(
-                            FriendsComparator(
-                                context,
-                                updateTime
-                            )
-                        ), updateTime
-                    )
+                    // it.showFriends(
+                    //     list.sortedWith(
+                    //         FriendsComparator(
+                    //             context,
+                    //             updateTime
+                    //         )
+                    //     ), updateTime
+                    // )
                 }
                 return@let
             }
 
-            val filtered = list.filter {
-                it.name?.contains(trimmedQuery, true) == true ||
-                        it.nickname?.contains(trimmedQuery, true) == true
-            }.sortedWith(FriendsComparator(context, updateTime))
-
-            ifViewAttached { it.showFriends(filtered, updateTime) }
+            // val filtered = list.filter {
+            //     it.name?.contains(trimmedQuery, true) == true ||
+            //             it.nickname?.contains(trimmedQuery, true) == true
+            // }.sortedWith(FriendsComparator(context, updateTime))
+            //
+            // ifViewAttached { it.showFriends(filtered, updateTime) }
         }
     }
 }

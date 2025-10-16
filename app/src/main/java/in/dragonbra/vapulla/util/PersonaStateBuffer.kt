@@ -7,9 +7,10 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import org.spongycastle.util.encoders.Hex
+import timber.log.Timber
 import java.util.*
 
-class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : AnkoLogger {
+class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) {
     private val map: MutableMap<SteamID, PersonaStateCallback> = hashMapOf()
 
     private val mapLock: Any = Any()
@@ -18,14 +19,15 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : AnkoLogger {
     private var isRunning = false
 
     private val thread: Runnable = Runnable {
-        info("starting persona state buffer thread")
+        Timber.i("Starting persona state buffer thread.")
         isRunning = true
 
         while (isRunning) {
             Thread.sleep(1000L)
             process()
         }
-        info("stopping persona state buffer thread")
+
+        Timber.i("stopping persona state buffer thread")
     }
 
     fun push(state: PersonaStateCallback) {
@@ -57,7 +59,7 @@ class PersonaStateBuffer(val steamFriendDao: SteamFriendDao) : AnkoLogger {
                 val friend = steamFriendDao.find(id.convertToUInt64())
 
                 if (friend != null && (state.state != EPersonaState.Offline || state.lastLogOff.time > friend.lastLogOff)) {
-                    val avatarHash = Hex.toHexString(state.avatarHash)
+                    val avatarHash = state.avatarHash.toHexString()
 
                     friend.name = state.name
                     friend.avatar = avatarHash

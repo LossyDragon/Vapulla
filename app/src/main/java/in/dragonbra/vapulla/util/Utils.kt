@@ -2,11 +2,12 @@ package `in`.dragonbra.vapulla.util
 
 import android.app.Activity
 import android.content.Context
-import android.provider.Settings
 import android.text.format.DateUtils
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.colorResource
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.request.RequestOptions
 import `in`.dragonbra.javasteam.enums.EPersonaState
@@ -18,42 +19,42 @@ import java.util.regex.Pattern
 
 
 object Utils {
+
+    object Constants {
+        const val AVATAR_BASE_URL =
+            "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/"
+        const val MISSING_AVATAR_URL =
+            "${AVATAR_BASE_URL}fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
+        const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+    }
+
     val avatarOptions = RequestOptions()
         .transform(CircleTransform())
 
     val EMOTE_PATTERN = Pattern.compile(":([a-zA-Z0-9]+):")
 
-    fun getAvatarUrl(avatar: String?) =
-        if (avatar == null || Strings.isNullOrEmpty(avatar) || avatar == "0000000000000000000000000000000000000000") {
-            "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-        } else {
-            "http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/${
-                avatar.substring(
-                    0,
-                    2
-                )
-            }/${avatar}_full.jpg"
-        }
+    fun getAvatarURL(string: String?): String =
+        string.orEmpty()
+            .ifEmpty { null }
+            ?.takeIf { str -> str.isNotEmpty() && !str.all { it == '0' } }
+            ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
+            ?: Constants.MISSING_AVATAR_URL
 
-    fun getStatusColor(context: Context, state: EPersonaState?, gameAppId: Int, gameName: String?) =
+    fun getStatusColor(state: EPersonaState?, gameAppId: Int, gameName: String?) =
         if (state == EPersonaState.Offline || gameAppId == 0 && Strings.isNullOrEmpty(gameName)) {
             when (state) {
-                EPersonaState.Online -> ContextCompat.getColor(context, R.color.statusOnline)
-                EPersonaState.Busy -> ContextCompat.getColor(context, R.color.statusBusy)
-                EPersonaState.Away, EPersonaState.Snooze -> ContextCompat.getColor(
-                    context,
-                    R.color.statusAway
-                )
+                EPersonaState.Online -> R.color.statusOnline
+                EPersonaState.Busy -> R.color.statusBusy
+                EPersonaState.Away,
+                EPersonaState.Snooze -> R.color.statusAway
 
-                EPersonaState.LookingToTrade, EPersonaState.LookingToPlay -> ContextCompat.getColor(
-                    context,
-                    R.color.statusLookingTo
-                )
+                EPersonaState.LookingToTrade,
+                EPersonaState.LookingToPlay -> R.color.statusLookingTo
 
-                else -> ContextCompat.getColor(context, R.color.statusOffline)
+                else -> R.color.statusOffline
             }
         } else {
-            ContextCompat.getColor(context, R.color.statusInGame)
+            R.color.statusInGame
         }
 
     fun getStatusText(

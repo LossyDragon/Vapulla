@@ -106,7 +106,7 @@ class ChatPresenter(
         ).build()
         chatData.observe(view as ChatActivity, chatObserver)
 
-        friendData = steamFriendsDao.findLive(steamId.convertToUInt64())
+        //friendData = steamFriendsDao.findLive(steamId.convertToUInt64())
         friendData.observe(view as ChatActivity, friendObserver)
 
         friendData.value?.let {

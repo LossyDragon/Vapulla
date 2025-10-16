@@ -197,7 +197,7 @@ class ChatActivity : VapullaBaseActivity<ChatView, ChatPresenter>(), ChatView, T
             }
 
             Glide.with(this@ChatActivity)
-                .load(Utils.getAvatarUrl(friend.avatar))
+                .load(Utils.getAvatarURL(friend.avatar))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .apply(Utils.avatarOptions)
                 .into(binding.friendAvatar)

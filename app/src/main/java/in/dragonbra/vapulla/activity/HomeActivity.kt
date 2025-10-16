@@ -153,7 +153,7 @@ class HomeActivity : VapullaBaseActivity<HomeView, HomePresenter>(), HomeView,
             binding.toolbar.localStatus.text = account.state.toString()
 
             Glide.with(this@HomeActivity)
-                .load(Utils.getAvatarUrl(account.avatarHash))
+                .load(Utils.getAvatarURL(account.avatarHash))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .apply(Utils.avatarOptions)
                 .into(binding.toolbar.localAvatar)

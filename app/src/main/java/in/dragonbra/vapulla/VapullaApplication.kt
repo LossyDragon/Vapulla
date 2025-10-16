@@ -35,12 +35,12 @@ class VapullaApplication : Application() {
                     .build(),
             )
 
-            StrictMode.setThreadPolicy(
-                StrictMode.ThreadPolicy.Builder()
-                    .detectAll() // Detect all violations (disk reads/writes, network operations, etc.)
-                    .penaltyLog() // Log violations to logcat
-                    .build(),
-            )
+            // StrictMode.setThreadPolicy(
+            //     StrictMode.ThreadPolicy.Builder()
+            //         .detectAll() // Detect all violations (disk reads/writes, network operations, etc.)
+            //         .penaltyLog() // Log violations to logcat
+            //         .build(),
+            // )
 
             val tree = Timber.DebugTree()
             Timber.plant(tree = tree)

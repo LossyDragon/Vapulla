@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import timber.log.Timber
 
 class ServiceManager(
     private val application: Application
@@ -19,6 +20,9 @@ class ServiceManager(
 
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
+
+    private val _isLoggedIn = MutableStateFlow(false)
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     // Commands from ViewModel to Service
     private val _commandChannel = MutableSharedFlow<ServiceCommand>()
@@ -42,7 +46,13 @@ class ServiceManager(
 
     // Service methods
     fun setServiceRunning(running: Boolean) {
+        Timber.d("Is Service Running: $running}")
         _isServiceRunning.value = running
+    }
+
+    fun setLoggedIn(loggedIn: Boolean) {
+        Timber.d("Is Logged In $loggedIn")
+        _isLoggedIn.value = loggedIn
     }
 
     suspend fun emitLoginResult(result: LoginResult) {
@@ -54,7 +64,7 @@ sealed class ServiceCommand {
     object LoginQR : ServiceCommand()
     object LoginQRCancel : ServiceCommand()
     data class Login(
-        val username: String,
+        val username: String? = null,
         val password: String? = null,
         val refreshToken: String? = null,
         val authenticator: IAuthenticator,

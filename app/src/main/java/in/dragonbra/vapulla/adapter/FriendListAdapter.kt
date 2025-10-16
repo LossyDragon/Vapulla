@@ -103,9 +103,9 @@ class FriendListAdapter(
                 ITEM_TYPE_FRIEND_REQUEST
             } else if (recentsTimeout == 0L || (recentsTimeout > 0L && item.lastMessageTime?.let { it >= updateTime - recentsTimeout } == true)) {
                 ITEM_TYPE_FRIEND_RECENT
-            } else if (item.isInGame()) {
+            } else if (item.isPlayingGame) {
                 ITEM_TYPE_FRIEND_IN_GAME
-            } else if (item.isOnline()) {
+            } else if (item.isOnline) {
                 ITEM_TYPE_FRIEND_ONLINE
             } else ITEM_TYPE_FRIEND_OFFLINE
         }
@@ -175,7 +175,7 @@ class FriendListAdapter(
                 .clear(b.avatar)
 
             Glide.with(context)
-                .load(Utils.getAvatarUrl(friend.avatar))
+                .load(Utils.getAvatarURL(friend.avatar))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .apply(Utils.avatarOptions)
                 .into(b.avatar)
@@ -214,7 +214,7 @@ class FriendListAdapter(
                 .clear(b.avatar)
 
             Glide.with(context)
-                .load(Utils.getAvatarUrl(friend.avatar))
+                .load(Utils.getAvatarURL(friend.avatar))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .apply(Utils.avatarOptions)
                 .into(b.avatar)
@@ -277,14 +277,14 @@ class FriendListAdapter(
                 b.username.normal()
             }
 
-            (b.statusIndicator.drawable as GradientDrawable).setColor(
-                Utils.getStatusColor(
-                    context,
-                    state,
-                    friend.gameAppId,
-                    friend.gameName
-                )
-            )
+            // (b.statusIndicator.drawable as GradientDrawable).setColor(
+            //     // Utils.getStatusColor(
+            //     //     context,
+            //     //     state,
+            //     //     friend.gameAppId,
+            //     //     friend.gameName
+            //     // )
+            // )
 
             b.mobileIndicator.hide()
             b.webIndicator.hide()

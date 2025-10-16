@@ -40,13 +40,22 @@ import `in`.dragonbra.vapulla.ui.composables.VapullaLoadingAnimation
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel) {
+fun LoginScreen(
+    viewModel: LoginViewModel,
+    onNavigateToHome: () -> Unit,
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.snackbarMessage.collect { message ->
             snackbarHostState.showSnackbar(message)
+        }
+
+    }
+    LaunchedEffect(Unit) {
+        viewModel.navigateToHome.collect { result ->
+            if (result) onNavigateToHome()
         }
     }
 

@@ -9,6 +9,7 @@ import androidx.room.Query
 import androidx.room.Update
 import `in`.dragonbra.vapulla.adapter.FriendListItem
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SteamFriendDao {
@@ -28,7 +29,7 @@ interface SteamFriendDao {
             "LEFT JOIN game_schema gs " +
             "ON gs.id = sf.game_app_id " +
             "WHERE sf.id = :id")
-    fun findLive(id: Long): LiveData<FriendListItem>
+    fun findFlow(id: Long): Flow<FriendListItem>
 
     @Update
     fun update(vararg steamFriends: SteamFriend)
@@ -47,7 +48,7 @@ interface SteamFriendDao {
             "WHERE sf.relation = 2 " +
             "   OR sf.relation = 3 " +
             "GROUP BY sf.id")
-    fun getLive(): LiveData<List<FriendListItem>>
+    fun getFriendsFlow(): Flow<List<FriendListItem>>
 
     @Query("UPDATE steam_friend SET nickname = NULL")
     fun clearNicknames()

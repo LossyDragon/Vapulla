@@ -103,6 +103,9 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
     implementation("androidx.preference:preference:1.2.1")
     implementation("io.github.alexzhirkevich:qrose:1.0.1")
     implementation("android.arch.lifecycle:livedata:1.1.1")

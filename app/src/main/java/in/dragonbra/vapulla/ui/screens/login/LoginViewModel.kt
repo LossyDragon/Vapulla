@@ -3,10 +3,12 @@ package `in`.dragonbra.vapulla.ui.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
+import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.LoginResult
 import `in`.dragonbra.vapulla.service.ServiceCommand
 import `in`.dragonbra.vapulla.service.ServiceManager
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,9 +19,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.CompletableFuture
+import kotlin.time.Duration.Companion.seconds
 
 class LoginViewModel(
-    private val serviceManager: ServiceManager
+    private val serviceManager: ServiceManager,
+    private val accountManager: AccountManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -27,6 +31,9 @@ class LoginViewModel(
 
     private val _snackbarMessage = MutableSharedFlow<String>()
     val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
+
+    private val _navigateToHome = MutableSharedFlow<Boolean>()
+    val navigateToHome: SharedFlow<Boolean> = _navigateToHome.asSharedFlow()
 
     // private val submitChannel = Channel<String>()
 
@@ -58,7 +65,25 @@ class LoginViewModel(
     }
 
     init {
-        serviceManager.startServiceLazy()
+        viewModelScope.launch {
+            serviceManager.startServiceLazy()
+
+            if (!accountManager.username.isNullOrBlank() &&
+                !accountManager.loginKey.isNullOrBlank()
+            ) {
+                delay(1.seconds)
+
+                _uiState.update {
+                    it.copy(
+                        username = accountManager.username!!,
+                        refreshToken = accountManager.loginKey!!
+                    )
+                }
+                delay(1.seconds)
+                Timber.d("Auto Logging in ")
+                onSignInViaCredentials()
+            }
+        }
 
         viewModelScope.launch {
             serviceManager.isLoading.collect { loading ->
@@ -91,7 +116,7 @@ class LoginViewModel(
                     LoginResult.Success -> {
                         Timber.d("Logged in, navigating to home screen")
                         _uiState.value = LoginUiState() // Reset
-                        // TODO navigate to main screen.
+                        _navigateToHome.emit(true)
                     }
 
                     is LoginResult.Error -> {
