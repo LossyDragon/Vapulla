@@ -28,8 +28,10 @@ import androidx.compose.ui.unit.dp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
+import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.SearchAppBar
+import `in`.dragonbra.vapulla.ui.composables.SearchNoResults
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
@@ -45,7 +47,7 @@ fun HomeScreen(
     val friends by viewModel.friends.collectAsState()
     val stickyHeaders by viewModel.stickyHeaders.collectAsState()
     HomeScreenContent(
-        friends = friends,
+        friendsList = friends,
         stickyHeaders = stickyHeaders,
         onStickyHeaderAction = viewModel::onStickyHeaderAction,
         onNavDrawerAction = onNavDrawerAction,
@@ -57,9 +59,9 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreenContent(
-    friends: Map<String, List<SteamFriend>>,
-    stickyHeaders: Set<String>,
-    onStickyHeaderAction: (String) -> Unit,
+    friendsList: Map<Int, List<SteamFriend>>,
+    stickyHeaders: Set<Int>,
+    onStickyHeaderAction: (Int) -> Unit,
     onNavDrawerAction: () -> Unit,
     onFriendClick: (Long) -> Unit,
     onFriendLongClick: (Long) -> Unit,
@@ -77,16 +79,13 @@ private fun HomeScreenContent(
                 searchBarState = searchBarState,
                 scrollBehavior = scrollBehavior,
                 onNavDrawerAction = onNavDrawerAction,
-                onAccountAction = {
-                    TODO()
-                },
                 expandedSearchBar = {
                     val searchQuery = textFieldState.text.toString()
 
                     if (searchQuery.isNotEmpty()) {
-                        val filteredFriends = friends.values.flatten().filter { friend ->
+                        val filteredFriends = friendsList.values.flatten().filter { friend ->
                             friend.name.contains(searchQuery, ignoreCase = true) ||
-                            friend.nickname.contains(searchQuery, ignoreCase = true)
+                                    friend.nickname.contains(searchQuery, ignoreCase = true)
                         }
 
                         LazyColumn(
@@ -115,18 +114,9 @@ private fun HomeScreenContent(
 
                             if (filteredFriends.isEmpty()) {
                                 item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(32.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "No friends found matching \"$searchQuery\"",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    SearchNoResults(
+                                        message = "No friends found matching \"$searchQuery\""
+                                    )
                                 }
                             }
                         }
@@ -152,7 +142,7 @@ private fun HomeScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                friends = friends,
+                friendsList = friendsList,
                 stickyHeaders = stickyHeaders,
                 onStickyHeaderAction = onStickyHeaderAction,
                 onFriendClick = onFriendClick,
@@ -162,36 +152,50 @@ private fun HomeScreenContent(
     )
 }
 
-@Preview(
-    showBackground = false,
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
-)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview() {
     val friends = mapOf(
-        "In Game" to List(10) {
+        R.string.headerFriendInGame to List(2) {
             SteamFriend(
                 id = it.toLong(),
-                name = "Friend Name $it",
-                avatar = null,
+                name = "Vapulla $it",
                 relation = EFriendRelationship.Friend,
-                state = EPersonaState.from(1),
+                state = EPersonaState.from(it + 1),
                 gameAppId = 440,
                 gameName = "Team Fortress 2",
-                lastLogOn = 0,
-                lastLogOff = 0,
-                stateFlags = EPersonaStateFlag.from(2048),
-                typingTs = 0,
-                lastMessage = "Beans are yummy!",
-                lastMessageTime = 0,
-                newMessageCount = it,
+                stateFlags = EPersonaStateFlag.from(1024),
+                lastMessage = "Hey, what's up",
+                newMessageCount = it * 16,
+                nickname = "Nick Name $it",
+            )
+        },
+        R.string.headerFriendOnline to List(2) {
+            SteamFriend(
+                id = it.toLong() + 1 * 4,
+                name = "Vapulla $it",
+                relation = EFriendRelationship.Friend,
+                state = EPersonaState.from(1),
+                stateFlags = EPersonaStateFlag.from((it + 1) * 256),
+                lastMessage = "Hey, what's up",
+                newMessageCount = it * 16,
+                nickname = "Nick Name $it",
+            )
+        },
+        R.string.headerFriendOffline to List(1) {
+            SteamFriend(
+                id = it.toLong() + 1 * 6,
+                name = "Vapulla $it",
+                relation = EFriendRelationship.Friend,
+                state = EPersonaState.Offline,
+                newMessageCount = it * 16,
                 nickname = "Nick Name $it",
             )
         }
     )
     VapullaTheme {
         HomeScreenContent(
-            friends = friends,
+            friendsList = friends,
             stickyHeaders = setOf(),
             onStickyHeaderAction = { },
             onNavDrawerAction = { },

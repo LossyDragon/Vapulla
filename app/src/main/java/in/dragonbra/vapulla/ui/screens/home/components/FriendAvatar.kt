@@ -5,9 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Surface
@@ -19,6 +17,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
@@ -30,22 +29,23 @@ import `in`.dragonbra.vapulla.util.Utils
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FriendAvatar(friend: SteamFriend) {
+fun FriendAvatar(
+    modifier: Modifier = Modifier,
+    size: Dp = 56.dp,
+    friend: SteamFriend,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         content = {
             CoilImage(
+                modifier = modifier.size(size = size),
                 imageModel = { Utils.getAvatarURL(friend.avatar) },
-                modifier = Modifier
-                    .size(40.dp),
                 imageOptions = ImageOptions(
                     contentScale = ContentScale.Crop,
                     contentDescription = "Avatar for ${friend.name}"
                 ),
                 previewPlaceholder = painterResource(R.drawable.vapulla_background),
-                loading = {
-                    LoadingIndicator()
-                },
+                loading = { LoadingIndicator() },
                 failure = {
                     Image(
                         painter = painterResource(R.drawable.vapulla),
@@ -56,11 +56,11 @@ fun FriendAvatar(friend: SteamFriend) {
             )
 
             // Basically a 'VerticalDivider' but height constrained.
-            Canvas(Modifier.height(40.dp).width(4.dp)) {
+            Canvas(Modifier.size(height =size, width = 4.dp)) {
                 drawLine(
                     color = friend.statusColor,
-                    pathEffect = if(friend.isAwayOrSnooze) {
-                        val heightPx = size.height
+                    pathEffect = if (friend.isAwayOrSnooze) {
+                        val heightPx = this@Canvas.size.height
                         val numberOfDashes = 7
                         val numberOfGaps = numberOfDashes - 1
                         val totalSegments = numberOfDashes + numberOfGaps
@@ -74,7 +74,7 @@ fun FriendAvatar(friend: SteamFriend) {
                     },
                     strokeWidth = 4.dp.toPx(),
                     start = Offset(4.dp.toPx() / 2, 0f),
-                    end = Offset(4.dp.toPx() / 2, size.height),
+                    end = Offset(4.dp.toPx() / 2, this@Canvas.size.height),
                 )
             }
         }
@@ -89,7 +89,10 @@ private fun Preview() {
 
     VapullaTheme {
         Surface {
-            FriendAvatar(friend = friend)
+            FriendAvatar(
+                size = 128.dp,
+                friend = friend
+            )
         }
     }
 }

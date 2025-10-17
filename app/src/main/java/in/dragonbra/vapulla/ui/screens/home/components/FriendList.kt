@@ -15,27 +15,27 @@ import kotlin.collections.component2
 @Composable
 fun FriendList(
     modifier: Modifier,
-    friends: Map<String, List<SteamFriend>>,
-    stickyHeaders: Set<String>,
-    onStickyHeaderAction: (String) -> Unit,
+    friendsList: Map<Int, List<SteamFriend>>,
+    stickyHeaders: Set<Int>,
+    onStickyHeaderAction: (Int) -> Unit,
     onFriendClick: (Long) -> Unit,
     onFriendLongClick: (Long) -> Unit,
 ) {
     LazyColumn(
         modifier = modifier,
         content = {
-            friends.forEach { (k, v) ->
+            friendsList.forEach { (header, friends) ->
                 stickyHeader {
                     FriendListHeader(
-                        isCollapsed = k in stickyHeaders,
-                        header = k,
-                        count = v.size,
-                        onHeaderAction = { onStickyHeaderAction(k) },
+                        isCollapsed = header in stickyHeaders,
+                        header = header,
+                        count = friends.size,
+                        onHeaderAction = { onStickyHeaderAction(header) },
                     )
                 }
 
-                if (k !in stickyHeaders) {
-                    itemsIndexed(v, key = { _, item -> item.id }) { idx, friend ->
+                if (header !in stickyHeaders) {
+                    itemsIndexed(friends, key = { _, item -> item.id }) { idx, friend ->
                         FriendListItem(
                             modifier = Modifier
                                 .animateItem()
@@ -47,7 +47,7 @@ fun FriendList(
                             friend = friend,
                         )
 
-                        if (idx < v.lastIndex) {
+                        if (idx < friends.lastIndex) {
                             HorizontalDivider()
                         }
                     }

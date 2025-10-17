@@ -1,8 +1,10 @@
 package `in`.dragonbra.vapulla.util
 
-import android.content.Context
-import android.util.DisplayMetrics
 import `in`.dragonbra.vapulla.manager.AccountManager
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.regex.Pattern
 
@@ -11,12 +13,17 @@ object Utils {
     object Constants {
         const val AVATAR_BASE_URL =
             "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/"
+
         const val MISSING_AVATAR_URL =
             "${AVATAR_BASE_URL}fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
-        const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+
+        private const val PROFILE_URL = "https://steamcommunity.com/profiles/"
     }
 
-    val EMOTE_PATTERN = Pattern.compile(":([a-zA-Z0-9]+):")
+    private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
+
+    private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
+    private val systemZone = ZoneId.systemDefault()
 
     fun getAvatarURL(string: String?): String =
         string.orEmpty()
@@ -25,10 +32,23 @@ object Utils {
             ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
             ?: Constants.MISSING_AVATAR_URL
 
-    fun convertDpToPixel(dp: Float, context: Context): Float {
-        val resources = context.resources
-        val metrics = resources.displayMetrics
-        return dp * (metrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)
+    fun Long.toTimeString(): String {
+        val instant = Instant.ofEpochMilli(this)
+        val localDateTime = LocalDateTime.ofInstant(instant, systemZone)
+        return localDateTime.format(timeFormatter)
+    }
+
+    fun Long.toTimeAgo(): String {
+        val diffSeconds = (System.currentTimeMillis() - this) / 1000
+        return when {
+            diffSeconds >= 31_536_000 -> "${diffSeconds / 31_536_000} years ago"
+            diffSeconds >= 2_592_000 -> "${diffSeconds / 2_592_000} months ago"
+            diffSeconds >= 604_800 -> "${diffSeconds / 604_800} weeks ago"
+            diffSeconds >= 86_400 -> "${diffSeconds / 86_400} days ago"
+            diffSeconds >= 3_600 -> "${diffSeconds / 3_600} hours ago"
+            diffSeconds >= 60 -> "${diffSeconds / 60} minutes ago"
+            else -> "Just now"
+        }
     }
 
     fun findEmotes(message: String, emoteSet: Set<String>): String {
@@ -46,10 +66,10 @@ object Utils {
 
                 return findEmotes(builder.toString(), emoteSet)
             } else {
-                return message.substring(
-                    0,
-                    result.end() - 1
-                ) + findEmotes(message.substring(result.end() - 1), emoteSet)
+                return message.take(result.end() - 1) + findEmotes(
+                    message.substring(result.end() - 1),
+                    emoteSet
+                )
             }
         } else {
             return message

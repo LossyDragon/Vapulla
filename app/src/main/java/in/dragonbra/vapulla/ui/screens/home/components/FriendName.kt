@@ -15,6 +15,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
@@ -36,7 +37,9 @@ fun FriendName(friend: SteamFriend) {
                 append(" ")
             }
 
-            appendInlineContent("icon", "[icon]")
+            if (friend.statusIcon != null) {
+                appendInlineContent("icon", "[icon]")
+            }
         },
         inlineContent = mapOf(
             "icon" to InlineTextContent(
@@ -66,7 +69,12 @@ private fun Preview() {
     VapullaTheme {
         Surface {
             FriendName(
-                friend = SteamFriend(id = 0, name = "Actual Name", nickname = "Nick Name")
+                friend = SteamFriend(
+                    id = 0,
+                    name = "Actual Name",
+                    nickname = "Nick Name",
+                    state = EPersonaState.Away
+                )
             )
         }
     }

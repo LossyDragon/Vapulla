@@ -23,7 +23,7 @@ import `in`.dragonbra.vapulla.R
 @Composable
 fun VapullaTheme(
     seedColor: Color = colorPrimary,
-    isDarkTheme: Boolean = isSystemInDarkTheme(),
+    isDarkTheme: Boolean =  isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val darkColorScheme = darkColorScheme(primary = seedColor)
@@ -31,15 +31,17 @@ fun VapullaTheme(
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val colorScheme = when {
-            supportsDynamicColor && isDarkTheme -> {
-                dynamicDarkColorScheme(LocalContext.current)
-            }
-            supportsDynamicColor && !isDarkTheme -> {
-                dynamicLightColorScheme(LocalContext.current)
-            }
-            isDarkTheme -> darkColorScheme
-            else -> expressiveLightColorScheme()
+        supportsDynamicColor && isDarkTheme -> {
+            dynamicDarkColorScheme(LocalContext.current)
         }
+
+        supportsDynamicColor && !isDarkTheme -> {
+            dynamicLightColorScheme(LocalContext.current)
+        }
+
+        isDarkTheme -> darkColorScheme
+        else -> expressiveLightColorScheme()
+    }
 
 
     MaterialExpressiveTheme(

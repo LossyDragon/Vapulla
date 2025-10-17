@@ -22,13 +22,15 @@ import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
 import java.util.EnumSet
 
 private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
 
 @Entity(tableName = "steam_friend")
 data class SteamFriend(
-    @PrimaryKey var id: Long,
+    @PrimaryKey
+    var id: Long,
     @ColumnInfo(name = "name")
     var name: String = "",
     @ColumnInfo(name = "avatar")
@@ -78,7 +80,11 @@ data class SteamFriend(
             if (isBlocked) {
                 relation.name
             } else {
-                state.name
+                if (state == EPersonaState.Offline) {
+                    lastLogOff.toTimeAgo()
+                } else {
+                    state.name
+                }
             }
         }
 
