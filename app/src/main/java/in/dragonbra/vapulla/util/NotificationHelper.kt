@@ -9,12 +9,11 @@ import androidx.core.app.NotificationCompat
 import `in`.dragonbra.vapulla.R
 import kotlinx.coroutines.withTimeoutOrNull
 import android.graphics.Bitmap
-import coil3.ImageLoader
-import coil3.request.ImageRequest
-import coil3.request.SuccessResult
-import coil3.request.transformations
-import coil3.toBitmap
-import coil3.transform.CircleCropTransformation
+import androidx.core.graphics.drawable.toBitmap
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
+import coil.transform.CircleCropTransformation
 import `in`.dragonbra.vapulla.MainActivity
 import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
@@ -208,7 +207,7 @@ object NotificationHelper {
 
             val result = imageLoader.execute(request)
             if (result is SuccessResult) {
-                result.image.toBitmap()
+                result.drawable.toBitmap()
             } else {
                 null
             }

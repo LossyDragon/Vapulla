@@ -64,7 +64,6 @@ android {
     }
 }
 
-//noinspection UseTomlInstead // TODO remove
 dependencies {
     // Compose
     implementation(platform(libs.androidx.compose.bom))
@@ -73,8 +72,7 @@ dependencies {
 
     // JavaSteam
     implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT")
-
-    // I have no idea right now, pretty rusty at android
+    
     implementation(libs.android.timber)
     implementation(libs.nav3.runtime)
     implementation(libs.nav3.ui)
@@ -92,8 +90,8 @@ dependencies {
     implementation("androidx.preference:preference:1.2.1") // TODO Remove
     implementation("com.google.protobuf:protobuf-java:4.32.1")
     implementation("com.squareup.okhttp3:okhttp:5.2.1")
-    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+    implementation("com.github.skydoves:landscapist-coil:2.6.1")
+    implementation("com.github.penfeizhou.android.animation:apng:3.0.5")
     implementation("io.github.alexzhirkevich:qrose:1.0.1")
     implementation("org.bouncycastle:bcprov-jdk18on:1.82")
     implementation("androidx.room:room-runtime:2.8.2")

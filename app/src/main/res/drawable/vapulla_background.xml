@@ -4,6 +4,10 @@
     android:viewportHeight="1000"
     android:viewportWidth="1000">
     <path
+        android:name="background"
+        android:fillColor="#660099"
+        android:pathData="M 0,0 H 1000 V 1000 H 0 Z" />
+    <path
         android:name="bottomSheet"
         android:fillColor="#546e7a"
         android:pathData="M 666,669 331,0 H 0 l 500,1000 z" />
