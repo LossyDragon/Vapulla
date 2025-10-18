@@ -95,8 +95,6 @@ dependencies {
     implementation("io.github.alexzhirkevich:qrose:1.0.1")
     implementation("org.bouncycastle:bcprov-jdk18on:1.82")
     implementation("androidx.room:room-runtime:2.8.2")
-    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
-    implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("androidx.room:room-ktx:2.8.2")
     implementation("androidx.room:room-paging:2.8.2")
     implementation("androidx.paging:paging-runtime:3.3.6")

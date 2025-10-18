@@ -1,12 +1,15 @@
 package `in`.dragonbra.vapulla.util
 
+import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.vapulla.manager.AccountManager
+import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.regex.Pattern
+
 
 object Utils {
 
@@ -18,6 +21,8 @@ object Utils {
             "${AVATAR_BASE_URL}fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
         private const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+
+        const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/api/"
     }
 
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
@@ -83,5 +88,14 @@ object Utils {
         }
 
         return accountManager.uuid
+    }
+
+    fun printKeyValue(keyvalue: KeyValue, depth: Int) {
+        if (keyvalue.children.isEmpty())
+                Timber.tag("KeyValue").d(" ".repeat(depth * 4) + " " + keyvalue.name + ": " + keyvalue.value)
+        else {
+            Timber.tag("KeyValue").d(" ".repeat(depth * 4) + " " + keyvalue.name + ":")
+            for (child in keyvalue.children) printKeyValue(child, depth + 1)
+        }
     }
 }

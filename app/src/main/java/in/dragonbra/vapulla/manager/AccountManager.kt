@@ -24,6 +24,10 @@ class AccountManager(context: Context) {
 
     private val listeners = mutableSetOf<AccountManagerListener>()
 
+    var lastChangeNumber: Int
+        get() = prefs.getInt("lastChangeNumber", 0)
+        set(value) = editor.putInt("lastChangeNumber", value).apply()
+
     var uuid: Int
         get() = prefs.getInt("uuid", 0)
         set(value) = editor.putInt("uuid", value).apply()

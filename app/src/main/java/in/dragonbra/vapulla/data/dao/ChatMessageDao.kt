@@ -12,10 +12,21 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 interface ChatMessageDao {
 
     @Query("SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friend_id = :friendId AND from_local = :fromLocal AND timestamp_confirmed = :confirmed")
-    fun find(message: String, timestamp: Long, friendId: Long, fromLocal: Boolean, confirmed: Boolean): ChatMessage?
+    fun find(
+        message: String,
+        timestamp: Long,
+        friendId: Long,
+        fromLocal: Boolean,
+        confirmed: Boolean
+    ): ChatMessage?
 
     @Query("SELECT * FROM chat_message WHERE message = :message AND friend_id = :friendId AND from_local = :fromLocal AND timestamp_confirmed = :confirmed")
-    fun find(message: String, friendId: Long, fromLocal: Boolean, confirmed: Boolean): List<ChatMessage>
+    fun find(
+        message: String,
+        friendId: Long,
+        fromLocal: Boolean,
+        confirmed: Boolean
+    ): List<ChatMessage>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg messages: ChatMessage)
@@ -24,7 +35,10 @@ interface ChatMessageDao {
     fun findLivePaged(friendId: Long): DataSource.Factory<Int, ChatMessage>
 
     @Update
-    fun update(vararg messages: ChatMessage)
+    fun update(message: ChatMessage)
+
+    @Update
+    fun update(list: List<ChatMessage>)
 
     @Query("UPDATE chat_message SET unread = 0 WHERE friend_id = :friendId")
     fun markRead(friendId: Long)

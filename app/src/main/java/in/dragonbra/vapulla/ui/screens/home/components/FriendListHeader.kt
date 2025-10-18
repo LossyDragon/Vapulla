@@ -50,7 +50,7 @@ private fun Preview_StickyHeaderItem() {
         Column {
             FriendListHeader(
                 isCollapsed = true,
-                header = R.string.statusOnline,
+                header = R.string.headerFriendInGame,
                 count = 60,
                 onHeaderAction = {}
             )
@@ -58,7 +58,7 @@ private fun Preview_StickyHeaderItem() {
                 friend = SteamFriend(
                     id = 0,
                     state = EPersonaState.Online,
-                    gameAppId = 440,
+                    gameAppID = 440,
                     gameName = "Team Fortress 2",
                     name = "Name The Game",
                 ),

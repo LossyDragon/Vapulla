@@ -3,35 +3,34 @@ package `in`.dragonbra.vapulla.service.handler
 import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
 import `in`.dragonbra.javasteam.base.IPacketMsg
 import `in`.dragonbra.javasteam.enums.EMsg
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverFriends
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverFriends.CMsgClientGetEmoticonList
 import `in`.dragonbra.javasteam.steam.handlers.ClientMsgHandler
+import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 
 class VapullaHandler : ClientMsgHandler() {
 
-    fun getEmoticonList() {
-        val request =
-            ClientMsgProtobuf<SteammessagesClientserverFriends.CMsgClientGetEmoticonList.Builder>(
-                SteammessagesClientserverFriends.CMsgClientGetEmoticonList::class.java,
-                EMsg.ClientGetEmoticonList
-            )
-        client.send(request)
-    }
-
-    override fun handleMsg(packetMsg: IPacketMsg) {
-        when (packetMsg.msgType) {
-            EMsg.ClientEmoticonList -> handleEmoticonList(packetMsg)
-            else -> {
-            }
+    companion object {
+        fun getCallback(packetMsg: IPacketMsg): CallbackMsg? = when (packetMsg.msgType) {
+            EMsg.ClientEmoticonList -> EmoticonListCallback(packetMsg)
+            else -> null
         }
     }
 
-    private fun handleEmoticonList(packetMsg: IPacketMsg) {
-        val msg =
-            ClientMsgProtobuf<SteammessagesClientserverFriends.CMsgClientEmoticonList.Builder>(
-                SteammessagesClientserverFriends.CMsgClientEmoticonList::class.java,
-                packetMsg
-            )
-        client.postCallback(EmoticonListCallback(msg.body))
+    /**
+     * Handles a client message. This should not be called directly.
+     * @param packetMsg The packet message that contains the data.
+     */
+    override fun handleMsg(packetMsg: IPacketMsg) {
+        val callback = getCallback(packetMsg) ?: return
+
+        client.postCallback(callback)
+    }
+
+    fun getEmoticonList() {
+        ClientMsgProtobuf<CMsgClientGetEmoticonList.Builder>(
+            CMsgClientGetEmoticonList::class.java,
+            EMsg.ClientGetEmoticonList,
+        ).also(client::send)
     }
 }

@@ -11,9 +11,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
+import `in`.dragonbra.javasteam.types.GameID
 import `in`.dragonbra.vapulla.ui.icons.VR
 import `in`.dragonbra.vapulla.ui.theme.friendAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendBlocked
@@ -40,7 +42,11 @@ data class SteamFriend(
     @ColumnInfo(name = "state")
     var state: EPersonaState = EPersonaState.Offline,
     @ColumnInfo(name = "game_app_id")
-    var gameAppId: Int = 0,
+    var gameAppID: Int = 0,
+    @ColumnInfo(name = "game_id")
+    var gameID: GameID = GameID(0),
+    @ColumnInfo(name = "game_data_blob")
+    var gameDataBlob: ByteArray = byteArrayOf(0),
     @ColumnInfo(name = "game_name")
     var gameName: String = "",
     @ColumnInfo(name = "last_log_on")
@@ -49,6 +55,8 @@ data class SteamFriend(
     var lastLogOff: Long = 0,
     @ColumnInfo(name = "state_flags")
     var stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
+    @ColumnInfo(name = "status_flags")
+    var statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(EClientPersonaStateFlag::class.java),
     @ColumnInfo(name = "typing_timestamp")
     var typingTs: Long = -1,
     @ColumnInfo(name = "nickname")
@@ -71,11 +79,11 @@ data class SteamFriend(
         get() = nickname.ifEmpty { name.ifEmpty { "<unknown>" } }
 
     val isPlayingGame: Boolean
-        get() = if (isOnline) gameAppId > 0 || gameName.isEmpty().not() else false
+        get() = if (isOnline) gameAppID > 0 || gameName.isEmpty().not() else false
 
     val isPlayingGameName: String
         get() = if (isPlayingGame) {
-            gameName.ifEmpty { "Playing game id: $gameAppId" }
+            gameName.ifEmpty { "Playing game id: $gameAppID" }
         } else {
             if (isBlocked) {
                 relation.name
@@ -128,4 +136,78 @@ data class SteamFriend(
             stateFlags.contains(EPersonaStateFlag.ClientTypeWeb) -> Icons.Default.Web
             else -> null
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SteamFriend
+
+        if (id != other.id) return false
+        if (gameAppID != other.gameAppID) return false
+        if (lastLogOn != other.lastLogOn) return false
+        if (lastLogOff != other.lastLogOff) return false
+        if (typingTs != other.typingTs) return false
+        if (lastMessageTime != other.lastMessageTime) return false
+        if (newMessageCount != other.newMessageCount) return false
+        if (name != other.name) return false
+        if (avatar != other.avatar) return false
+        if (relation != other.relation) return false
+        if (state != other.state) return false
+        if (gameID != other.gameID) return false
+        if (!gameDataBlob.contentEquals(other.gameDataBlob)) return false
+        if (gameName != other.gameName) return false
+        if (stateFlags != other.stateFlags) return false
+        if (statusFlags != other.statusFlags) return false
+        if (nickname != other.nickname) return false
+        if (lastMessage != other.lastMessage) return false
+        if (isOnline != other.isOnline) return false
+        if (isOffline != other.isOffline) return false
+        if (isPlayingGame != other.isPlayingGame) return false
+        if (isAwayOrSnooze != other.isAwayOrSnooze) return false
+        if (isInGameAwayOrSnooze != other.isInGameAwayOrSnooze) return false
+        if (isRequestRecipient != other.isRequestRecipient) return false
+        if (isBlocked != other.isBlocked) return false
+        if (isFriend != other.isFriend) return false
+        if (nameOrNickname != other.nameOrNickname) return false
+        if (isPlayingGameName != other.isPlayingGameName) return false
+        if (statusColor != other.statusColor) return false
+        if (statusIcon != other.statusIcon) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + gameAppID
+        result = 31 * result + lastLogOn.hashCode()
+        result = 31 * result + lastLogOff.hashCode()
+        result = 31 * result + typingTs.hashCode()
+        result = 31 * result + lastMessageTime.hashCode()
+        result = 31 * result + newMessageCount
+        result = 31 * result + name.hashCode()
+        result = 31 * result + (avatar?.hashCode() ?: 0)
+        result = 31 * result + relation.hashCode()
+        result = 31 * result + state.hashCode()
+        result = 31 * result + gameID.hashCode()
+        result = 31 * result + gameDataBlob.contentHashCode()
+        result = 31 * result + gameName.hashCode()
+        result = 31 * result + stateFlags.hashCode()
+        result = 31 * result + statusFlags.hashCode()
+        result = 31 * result + nickname.hashCode()
+        result = 31 * result + lastMessage.hashCode()
+        result = 31 * result + isOnline.hashCode()
+        result = 31 * result + isOffline.hashCode()
+        result = 31 * result + isPlayingGame.hashCode()
+        result = 31 * result + isAwayOrSnooze.hashCode()
+        result = 31 * result + isInGameAwayOrSnooze.hashCode()
+        result = 31 * result + isRequestRecipient.hashCode()
+        result = 31 * result + isBlocked.hashCode()
+        result = 31 * result + isFriend.hashCode()
+        result = 31 * result + nameOrNickname.hashCode()
+        result = 31 * result + isPlayingGameName.hashCode()
+        result = 31 * result + statusColor.hashCode()
+        result = 31 * result + (statusIcon?.hashCode() ?: 0)
+        return result
+    }
 }

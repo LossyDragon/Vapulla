@@ -85,7 +85,7 @@ fun FriendAvatar(
 @Composable
 private fun Preview() {
     val friend =
-        SteamFriend(id = 0, name = "Vapulla", gameAppId = 440, state = EPersonaState.Away)
+        SteamFriend(id = 0, name = "Vapulla", gameAppID = 440, state = EPersonaState.Away)
 
     VapullaTheme {
         Surface {

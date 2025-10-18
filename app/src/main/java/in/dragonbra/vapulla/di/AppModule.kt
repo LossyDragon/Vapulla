@@ -11,17 +11,21 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
+    /* Database */
     single<VapullaDatabase> {
         Room.databaseBuilder(
             androidApplication(),
             VapullaDatabase::class.java,
             VapullaDatabase.DATABASE_NAME
-        ).fallbackToDestructiveMigration(true).build()
+        ).apply {
+            fallbackToDestructiveMigration(true)
+        }.build()
     }
 
     single { AccountManager(androidApplication()) }
     single { ServiceConnection(androidApplication()) }
 
+    /* ViewModels */
     viewModel { LoginViewModel(get(), get()) }
     viewModel { HomeViewModel(get(), get(), get()) }
 }

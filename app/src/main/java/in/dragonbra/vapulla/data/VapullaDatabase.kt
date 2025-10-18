@@ -6,16 +6,16 @@ import androidx.room.TypeConverters
 import `in`.dragonbra.vapulla.data.converters.FriendTypeConverters
 import `in`.dragonbra.vapulla.data.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.data.dao.EmoticonDao
-import `in`.dragonbra.vapulla.data.dao.GameSchemaDao
+import `in`.dragonbra.vapulla.data.dao.SteamAppDao
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.Emoticon
-import `in`.dragonbra.vapulla.data.entity.GameSchema
+import `in`.dragonbra.vapulla.data.entity.SteamApp
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 
 @Database(
-    entities = [SteamFriend::class, ChatMessage::class, GameSchema::class, Emoticon::class],
-    version = 2,
+    entities = [SteamFriend::class, ChatMessage::class, Emoticon::class, SteamApp::class],
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(FriendTypeConverters::class)
@@ -28,7 +28,7 @@ abstract class VapullaDatabase : RoomDatabase() {
 
     abstract fun chatMessageDao(): ChatMessageDao
 
-    abstract fun gameSchemaDao(): GameSchemaDao
-
     abstract fun emoticonDao(): EmoticonDao
+
+    abstract fun steamAppDao(): SteamAppDao
 }

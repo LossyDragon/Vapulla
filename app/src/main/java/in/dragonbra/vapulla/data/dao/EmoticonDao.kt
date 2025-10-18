@@ -1,23 +1,23 @@
 package `in`.dragonbra.vapulla.data.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import `in`.dragonbra.vapulla.data.entity.Emoticon
 
 @Dao
 interface EmoticonDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(vararg emoticon: Emoticon)
-
-    @Query("SELECT * FROM emoticon ORDER BY name ASC")
-    fun getLive(): LiveData<List<Emoticon>>
-
-    @Query("SELECT * FROM emoticon ORDER BY name ASC")
-    fun find(): List<Emoticon>
+    suspend fun insertAll(emoticons: List<Emoticon>)
 
     @Query("DELETE FROM emoticon")
-    fun delete()
+    suspend fun deleteAll()
+
+    @Transaction
+    suspend fun replaceAll(emoticons: List<Emoticon>) {
+        deleteAll()
+        insertAll(emoticons)
+    }
 }

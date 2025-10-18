@@ -162,7 +162,7 @@ private fun Preview() {
                 name = "Vapulla $it",
                 relation = EFriendRelationship.Friend,
                 state = EPersonaState.from(it + 1),
-                gameAppId = 440,
+                gameAppID = 440,
                 gameName = "Team Fortress 2",
                 stateFlags = EPersonaStateFlag.from(1024),
                 lastMessage = "Hey, what's up",

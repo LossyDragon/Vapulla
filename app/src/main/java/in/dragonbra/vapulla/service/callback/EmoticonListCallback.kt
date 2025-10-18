@@ -1,12 +1,30 @@
 package `in`.dragonbra.vapulla.service.callback
 
+import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
+import `in`.dragonbra.javasteam.base.IPacketMsg
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverFriends.CMsgClientEmoticonList
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
+import `in`.dragonbra.vapulla.data.entity.Emoticon
 
-class EmoticonListCallback(msg: CMsgClientEmoticonList.Builder) : CallbackMsg() {
-    val emoticons: List<Emoticon> = msg.emoticonsList.map { Emoticon(it) }
-}
+class EmoticonListCallback(packetMsg: IPacketMsg) : CallbackMsg() {
 
-data class Emoticon(val name: String, val count: Int) {
-    constructor(emoticon: CMsgClientEmoticonList.Emoticon) : this(emoticon.name, emoticon.count)
+    val emoteList: List<Emoticon>
+
+    init {
+        val resp = ClientMsgProtobuf<CMsgClientEmoticonList.Builder>(
+            CMsgClientEmoticonList::class.java,
+            packetMsg,
+        )
+        jobID = resp.targetJobID
+
+        emoteList = buildList {
+            addAll(
+                resp.body.emoticonsList.map {
+                    val fixedName = it.name.substring(1, it.name.length - 1)
+                    Emoticon(name = fixedName, appID = it.appid, isSticker = false)
+                },
+            )
+            addAll(resp.body.stickersList.map { Emoticon(name = it.name, appID = it.appid, isSticker = true) })
+        }
+    }
 }

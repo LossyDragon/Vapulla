@@ -167,24 +167,24 @@ object NotificationHelper {
             .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
             .setSmallIcon(R.drawable.ic_add_friend)
             .setLargeIcon(avatarBitmap)
-            .setContentTitle(context.getString(R.string.notificationTitleFriendRequest))
-            .setContentText(context.getString(R.string.notificationMessageFriendRequest, friendName))
+            .setContentTitle("New friend request")
+            .setContentText("$friendName has added to their friends list!")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(contentIntent)
             .addAction(
                 R.drawable.ic_check,
-                context.getString(R.string.notificationActionAccept),
+                "Accept",
                 acceptPendingIntent
             )
             .addAction(
                 R.drawable.ic_close,
-                context.getString(R.string.notificationActionIgnore),
+                "Ignore",
                 ignorePendingIntent
             )
             .addAction(
                 R.drawable.ic_block,
-                context.getString(R.string.notificationActionBlock),
+                "Block",
                 blockPendingIntent
             )
             .build()
