@@ -5,7 +5,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,7 +30,7 @@ import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.SearchAppBar
-import `in`.dragonbra.vapulla.ui.composables.SearchNoResults
+import `in`.dragonbra.vapulla.ui.composables.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
@@ -72,7 +71,6 @@ private fun HomeScreenContent(
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        modifier = Modifier,
         topBar = {
             SearchAppBar(
                 textFieldState = textFieldState,
@@ -114,25 +112,14 @@ private fun HomeScreenContent(
 
                             if (filteredFriends.isEmpty()) {
                                 item {
-                                    SearchNoResults(
+                                    SearchResultMessage(
                                         message = "No friends found matching \"$searchQuery\""
                                     )
                                 }
                             }
                         }
                     } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.TopCenter
-                        ) {
-                            Text(
-                                text = "Start typing to search friends",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        SearchResultMessage(message = "Start typing to search friends")
                     }
                 }
             )

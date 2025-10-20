@@ -40,7 +40,7 @@ fun <T> Flow<T>.timeChunked(
                         upstream.onReceiveCatching { result ->
                             result.getOrNull()?.let { element ->
                                 buffer.add(element)
-                                if (buffer.size == 1) { // Start timer on first element
+                                if (buffer.size == 1) {
                                     ticker = customTicker(duration)
                                 }
                             } ?: run {

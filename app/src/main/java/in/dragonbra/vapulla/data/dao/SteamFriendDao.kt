@@ -32,7 +32,7 @@ interface SteamFriendDao {
     @Query("UPDATE steam_friend SET nickname = ''")
     fun clearNicknames()
 
-    @Query("SELECT * FROM steam_friend WHERE game_app_id > 0")
+    @Query("SELECT * FROM steam_friend WHERE gameAppID > 0")
     fun findFriendsInGame(): List<SteamFriend>
 
     @Delete

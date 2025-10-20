@@ -22,7 +22,8 @@ object Utils {
 
         private const val PROFILE_URL = "https://steamcommunity.com/profiles/"
 
-        const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/api/"
+        const val BASE_STEAM_STORE_API_URL = "https://store.steampowered.com/api/"
+        const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/app/"
     }
 
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")

@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Web
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
@@ -31,41 +30,23 @@ private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
 
 @Entity(tableName = "steam_friend")
 data class SteamFriend(
-    @PrimaryKey
-    var id: Long,
-    @ColumnInfo(name = "name")
+    @PrimaryKey var id: Long,
     var name: String = "",
-    @ColumnInfo(name = "avatar")
     var avatar: String? = Utils.Constants.MISSING_AVATAR_URL,
-    @ColumnInfo(name = "relation")
     var relation: EFriendRelationship = EFriendRelationship.None,
-    @ColumnInfo(name = "state")
     var state: EPersonaState = EPersonaState.Offline,
-    @ColumnInfo(name = "game_app_id")
     var gameAppID: Int = 0,
-    @ColumnInfo(name = "game_id")
     var gameID: GameID = GameID(0),
-    @ColumnInfo(name = "game_data_blob")
     var gameDataBlob: ByteArray = byteArrayOf(0),
-    @ColumnInfo(name = "game_name")
     var gameName: String = "",
-    @ColumnInfo(name = "last_log_on")
     var lastLogOn: Long = 0,
-    @ColumnInfo(name = "last_log_off")
     var lastLogOff: Long = 0,
-    @ColumnInfo(name = "state_flags")
     var stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
-    @ColumnInfo(name = "status_flags")
     var statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(EClientPersonaStateFlag::class.java),
-    @ColumnInfo(name = "typing_timestamp")
     var typingTs: Long = -1,
-    @ColumnInfo(name = "nickname")
     var nickname: String = "",
-    @ColumnInfo(name = "last_message")
     var lastMessage: String = "",
-    @ColumnInfo(name = "last_message_time")
     var lastMessageTime: Long = -1,
-    @ColumnInfo(name = "new_message_count")
     var newMessageCount: Int = 0,
 ) {
 

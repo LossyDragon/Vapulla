@@ -58,6 +58,10 @@ android {
         }
     }
 
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+
     buildFeatures {
         buildConfig = true
         compose = true
@@ -71,8 +75,13 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     // JavaSteam
-    implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT")
-    
+    implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT") { isChanging = true }
+    // implementation(files("C:/Users/Lossy/IdeaProjects/javasteam/build/libs/javasteam-1.7.1-SNAPSHOT.jar"))
+    // implementation("commons-io:commons-io:2.19.0")
+    // implementation("org.apache.commons:commons-lang3:3.17.0")
+    // implementation("commons-validator:commons-validator:1.9.0")
+    // implementation("io.ktor:ktor-client-cio:3.2.2")
+
     implementation(libs.android.timber)
     implementation(libs.nav3.runtime)
     implementation(libs.nav3.ui)
@@ -97,7 +106,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.8.2")
     implementation("androidx.room:room-ktx:2.8.2")
     implementation("androidx.room:room-paging:2.8.2")
-    implementation("androidx.paging:paging-runtime:3.3.6")
+    implementation("androidx.paging:paging-compose:3.3.6")
     ksp("androidx.room:room-compiler:2.8.2")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

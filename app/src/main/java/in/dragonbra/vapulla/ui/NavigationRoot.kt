@@ -19,6 +19,8 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.ui.screens.games.GamesScreen
+import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeScreen
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginScreen
@@ -75,6 +77,9 @@ fun NavigationRoot(
         onNavigationClick = { route ->
             backStack.removeAll { it != Routes.Home }
             backStack.addLast(route)
+            scope.launch {
+                drawerState.close()
+            }
         },
         onLogOut = {
 
@@ -113,9 +118,11 @@ fun NavigationRoot(
                         )
                     }
                     entry<Routes.Games> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Games")
-                        }
+                       val viewModel = koinViewModel<GamesViewModel>()
+                        GamesScreen(
+                            viewmodel = viewModel,
+                            onNavDrawerAction = onNavDrawerAction
+                        )
                     }
                     entry<Routes.Downloads> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

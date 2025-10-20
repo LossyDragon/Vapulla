@@ -1,9 +1,11 @@
 package `in`.dragonbra.vapulla.data.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import `in`.dragonbra.vapulla.data.entity.SteamApp
 
 @Dao
@@ -15,12 +17,27 @@ interface SteamAppDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(apps: List<SteamApp>)
 
-    @Query("SELECT * FROM steam_app WHERE id = :id")
-    suspend fun find(id: Int): SteamApp?
+    @Update
+    suspend fun update(app: SteamApp)
 
-    @Query("SELECT * FROM steam_app WHERE id = :id")
-    fun findBlocking(id: Int): SteamApp?
+    @Query(
+        "SELECT * FROM steam_app " +
+                "WHERE id != 480 " +
+                "AND packageId != :invalidPkgId " +
+                "AND type != 0 " +
+                "AND type = :appType " +
+                "AND (:query = '' OR LOWER(name) LIKE '%' || LOWER(:query) || '%') " +
+                "ORDER BY LOWER(name)"
+    )
+    fun getAllOwnedAppsPaged(
+        appType: SteamApp.AppType = SteamApp.AppType.game,
+        query: String = "",
+        invalidPkgId: Int = Int.MAX_VALUE
+    ): PagingSource<Int, SteamApp>
 
-    @Query("SELECT * FROM steam_app WHERE id IN (:appIds)")
-    suspend fun find(appIds: List<Int>): List<SteamApp>
+    @Query("SELECT * FROM steam_app WHERE id = :appId")
+    suspend fun findApp(appId: Int): SteamApp?
+
+    @Query("SELECT * FROM steam_app WHERE id = :appId")
+    fun findBlocking(appId: Int): SteamApp?
 }

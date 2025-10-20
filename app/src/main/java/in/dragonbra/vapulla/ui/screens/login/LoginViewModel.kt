@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.LoginResult
-import `in`.dragonbra.vapulla.service.ServiceCommand
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
 import kotlinx.coroutines.flow.MutableSharedFlow

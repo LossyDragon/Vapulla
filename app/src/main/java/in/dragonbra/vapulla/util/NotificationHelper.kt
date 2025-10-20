@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import `in`.dragonbra.vapulla.R
 import kotlinx.coroutines.withTimeoutOrNull
@@ -130,27 +131,27 @@ object NotificationHelper {
         val acceptPendingIntent = PendingIntent.getBroadcast(
             context,
             notificationId,
-            context.intentFor<AcceptRequestReceiver>(
-                AcceptRequestReceiver.EXTRA_ID to friendId
-            ),
+            Intent(context, AcceptRequestReceiver::class.java).apply {
+                putExtra(AcceptRequestReceiver.EXTRA_ID, friendId)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val ignorePendingIntent = PendingIntent.getBroadcast(
             context,
             notificationId,
-            context.intentFor<IgnoreRequestReceiver>(
-                IgnoreRequestReceiver.EXTRA_ID to friendId
-            ),
+            Intent(context, IgnoreRequestReceiver::class.java).apply {
+                putExtra(IgnoreRequestReceiver.EXTRA_ID, friendId)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val blockPendingIntent = PendingIntent.getBroadcast(
             context,
             notificationId,
-            context.intentFor<BlockRequestReceiver>(
-                BlockRequestReceiver.EXTRA_ID to friendId
-            ),
+            Intent(context, BlockRequestReceiver::class.java).apply {
+                putExtra(BlockRequestReceiver.EXTRA_ID, friendId)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -158,7 +159,7 @@ object NotificationHelper {
         val contentIntent = PendingIntent.getActivity(
             context,
             0,
-            context.intentFor<MainActivity>(),
+            Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 

@@ -1,22 +1,22 @@
 package `in`.dragonbra.vapulla.data.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.text.DateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-@Entity(tableName = "chat_message", indices = [Index("friend_id")])
+@Entity(tableName = "chat_message", indices = [Index("friendId")])
 data class ChatMessage(
-    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") var id: Long,
-    @ColumnInfo(name = "message") var message: String,
-    @ColumnInfo(name = "timestamp") var timestamp: Long,
-    @ColumnInfo(name = "friend_id") var friendId: Long,
-    @ColumnInfo(name = "from_local") var fromLocal: Boolean,
-    @ColumnInfo(name = "unread") var unread: Boolean,
-    @ColumnInfo(name = "timestamp_confirmed") var timestampConfirmed: Boolean
+    @PrimaryKey(autoGenerate = true) var id: Long,
+    var message: String,
+    var timestamp: Long,
+    var friendId: Long,
+    var fromLocal: Boolean,
+    var unread: Boolean,
+    var timestampConfirmed: Boolean
 ) {
     companion object {
         private val DATE_FORMAT = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
@@ -26,6 +26,12 @@ data class ChatMessage(
     val formattedTs = DATE_FORMAT.format(Date(timestamp)).uppercase()
 
     @Ignore
-    constructor(message: String, timestamp: Long, friendId: Long, fromLocal: Boolean, unread: Boolean, timestampConfirmed: Boolean)
-            : this(0L, message, timestamp, friendId, fromLocal, unread, timestampConfirmed)
+    constructor(
+        message: String,
+        timestamp: Long,
+        friendId: Long,
+        fromLocal: Boolean,
+        unread: Boolean,
+        timestampConfirmed: Boolean
+    ) : this(0L, message, timestamp, friendId, fromLocal, unread, timestampConfirmed)
 }

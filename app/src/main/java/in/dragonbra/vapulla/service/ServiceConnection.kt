@@ -12,18 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 
-
-sealed class ServiceCommand {
-    object LoginQR : ServiceCommand()
-    object LoginQRCancel : ServiceCommand()
-    data class Login(
-        val username: String? = null,
-        val password: String? = null,
-        val refreshToken: String? = null,
-        val authenticator: IAuthenticator,
-    ) : ServiceCommand()
-}
-
 sealed class LoginResult {
     object Loading : LoginResult()
     object Success : LoginResult()

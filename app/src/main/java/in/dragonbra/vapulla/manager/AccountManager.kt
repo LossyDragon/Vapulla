@@ -75,9 +75,9 @@ class AccountManager(context: Context) {
 
     fun saveLocalUser(state: PersonaStateCallback) {
         avatarHash = state.avatarHash.toHexString()
-        nickname = state.name
-        steamId = state.friendID.convertToUInt64()
-        this.state = state.state
+        nickname = state.gameName
+        steamId = state.friendId.convertToUInt64()
+        this.state = state.personaState
 
         listeners.forEach {
             it.unAccountUpdate(this@AccountManager)

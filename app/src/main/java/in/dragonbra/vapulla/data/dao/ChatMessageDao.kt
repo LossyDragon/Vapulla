@@ -11,7 +11,7 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 @Dao
 interface ChatMessageDao {
 
-    @Query("SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friend_id = :friendId AND from_local = :fromLocal AND timestamp_confirmed = :confirmed")
+    @Query("SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed")
     fun find(
         message: String,
         timestamp: Long,
@@ -20,7 +20,7 @@ interface ChatMessageDao {
         confirmed: Boolean
     ): ChatMessage?
 
-    @Query("SELECT * FROM chat_message WHERE message = :message AND friend_id = :friendId AND from_local = :fromLocal AND timestamp_confirmed = :confirmed")
+    @Query("SELECT * FROM chat_message WHERE message = :message AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed")
     fun find(
         message: String,
         friendId: Long,
@@ -31,7 +31,7 @@ interface ChatMessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(vararg messages: ChatMessage)
 
-    @Query("SELECT * FROM chat_message WHERE friend_id = :friendId ORDER BY timestamp DESC")
+    @Query("SELECT * FROM chat_message WHERE friendId = :friendId ORDER BY timestamp DESC")
     fun findLivePaged(friendId: Long): DataSource.Factory<Int, ChatMessage>
 
     @Update
@@ -40,7 +40,7 @@ interface ChatMessageDao {
     @Update
     fun update(list: List<ChatMessage>)
 
-    @Query("UPDATE chat_message SET unread = 0 WHERE friend_id = :friendId")
+    @Query("UPDATE chat_message SET unread = 0 WHERE friendId = :friendId")
     fun markRead(friendId: Long)
 
     @Query("DELETE FROM chat_message")

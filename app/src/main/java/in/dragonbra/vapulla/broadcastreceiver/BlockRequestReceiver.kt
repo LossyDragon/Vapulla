@@ -4,7 +4,6 @@ import `in`.dragonbra.vapulla.service.SteamService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import `in`.dragonbra.vapulla.util.startService
 
 class BlockRequestReceiver : BroadcastReceiver() {
 
@@ -17,9 +16,11 @@ class BlockRequestReceiver : BroadcastReceiver() {
             throw IllegalStateException("missing extra steam id")
         }
 
-        context.startService<SteamService>(
-                SteamService.EXTRA_ID to intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L),
-                SteamService.EXTRA_ACTION to "block_request"
+        context.startService(
+            Intent(context, SteamService::class.java).apply { context
+                putExtra(SteamService.EXTRA_ID, intent.getLongExtra(EXTRA_ID, 9L))
+                putExtra(SteamService.EXTRA_ACTION, "block_request")
+            }
         )
     }
 }

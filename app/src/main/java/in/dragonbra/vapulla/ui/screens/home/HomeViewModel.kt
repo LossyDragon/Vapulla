@@ -17,41 +17,43 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 class HomeViewModel(
-    db: SteamFriendDao,
-    private val service: ServiceConnection,
+    db: VapullaDatabase,
+    private val serviceConnection: ServiceConnection,
     private val accountManager: AccountManager,
 ) : ViewModel() {
 
     private val _stickyHeaders = MutableStateFlow(emptySet<Int>())
     val stickyHeaders: StateFlow<Set<Int>> = _stickyHeaders.asStateFlow()
 
-    val friends: StateFlow<Map<Int, List<SteamFriend>>> = db.getFriendsFlow().map { friends ->
-        friends.filter { it.isFriend && !it.isBlocked }
-            .sortedWith(
-                compareBy(
-                    { it.isRequestRecipient.not() },
-                    { it.isPlayingGame.not() },
-                    { it.isInGameAwayOrSnooze },
-                    { it.isOnline.not() },
-                    { it.isAwayOrSnooze },
-                    { it.isOffline.not() },
-                    { it.nameOrNickname.lowercase() },
-                ),
-            )
-            .groupBy { friend ->
-                // Group with Sticky Headers
-                when {
-                    friend.isRequestRecipient -> R.string.headerFriendRecent
-                    friend.isPlayingGame || friend.isInGameAwayOrSnooze -> R.string.headerFriendInGame
-                    friend.isOnline || friend.isAwayOrSnooze -> R.string.headerFriendOnline
-                    else -> R.string.headerFriendOffline
+    val friends: StateFlow<Map<Int, List<SteamFriend>>> = db.steamFriendDao()
+        .getFriendsFlow()
+        .map { friends ->
+            friends.filter { it.isFriend && !it.isBlocked }
+                .sortedWith(
+                    compareBy(
+                        { it.isRequestRecipient.not() },
+                        { it.isPlayingGame.not() },
+                        { it.isInGameAwayOrSnooze },
+                        { it.isOnline.not() },
+                        { it.isAwayOrSnooze },
+                        { it.isOffline.not() },
+                        { it.nameOrNickname.lowercase() },
+                    ),
+                )
+                .groupBy { friend ->
+                    // Group with Sticky Headers
+                    when {
+                        friend.isRequestRecipient -> R.string.headerFriendRecent
+                        friend.isPlayingGame || friend.isInGameAwayOrSnooze -> R.string.headerFriendInGame
+                        friend.isOnline || friend.isAwayOrSnooze -> R.string.headerFriendOnline
+                        else -> R.string.headerFriendOffline
+                    }
                 }
-            }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyMap()
-    )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
 
     fun onStickyHeaderAction(value: Int) {
         val list = stickyHeaders.value.toMutableSet()

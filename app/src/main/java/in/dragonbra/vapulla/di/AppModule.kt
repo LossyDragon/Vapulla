@@ -1,9 +1,11 @@
 package `in`.dragonbra.vapulla.di
 
 import androidx.room.Room
+import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -18,9 +20,18 @@ val appModule = module {
             VapullaDatabase::class.java,
             VapullaDatabase.DATABASE_NAME
         ).apply {
-            fallbackToDestructiveMigration(true)
+            if (BuildConfig.DEBUG) {
+                fallbackToDestructiveMigration(true)
+            }
         }.build()
     }
+
+    /* DAOs */
+    single { get<VapullaDatabase>().steamFriendDao() }
+    single { get<VapullaDatabase>().chatMessageDao() }
+    single { get<VapullaDatabase>().emoticonDao() }
+    single { get<VapullaDatabase>().steamAppDao() }
+    single { get<VapullaDatabase>().steamLicenseDao() }
 
     single { AccountManager(androidApplication()) }
     single { ServiceConnection(androidApplication()) }
@@ -28,4 +39,5 @@ val appModule = module {
     /* ViewModels */
     viewModel { LoginViewModel(get(), get()) }
     viewModel { HomeViewModel(get(), get(), get()) }
+    viewModel { GamesViewModel(get()) }
 }

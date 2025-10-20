@@ -6,6 +6,7 @@ import android.os.Binder
 import android.os.IBinder
 import androidx.core.app.RemoteInput
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
+import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.authentication.AuthPollResult
@@ -15,6 +16,7 @@ import `in`.dragonbra.javasteam.steam.authentication.IChallengeUrlChanged
 import `in`.dragonbra.javasteam.steam.discovery.FileServerListProvider
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
+import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSChangesCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSProductInfoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
@@ -44,19 +46,21 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.configuration.SteamConfiguration
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
 import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.entity.ChatMessage
 import `in`.dragonbra.vapulla.data.entity.SteamApp
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.data.entity.SteamLicense
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.service.handler.VapullaHandler
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.timeChunked
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -85,19 +89,17 @@ import org.koin.android.ext.android.inject
 import timber.log.Timber
 import java.io.Closeable
 import java.io.File
+import java.util.EnumSet
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class SteamService : Service() {
 
     companion object {
-        private const val MAX_RETRY_COUNT = 5
-
         const val EXTRA_ACTION = "action"
         const val EXTRA_MESSAGE = "message"
         const val EXTRA_ID = "id"
-
-        const val SERVERS_FILE = "servers.bin"
 
         private val _isLoading = MutableStateFlow(false)
         val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -123,6 +125,8 @@ class SteamService : Service() {
 
     // Steam-related properties
     private var steamClient: SteamClient? = null
+    private var steamApps: SteamApps? = null
+    private var steamUser: SteamUser? = null
     private var callbackMgr: CallbackManager? = null
     private var steamThreadJob: Job? = null
     private val subscriptions: MutableSet<Closeable> = mutableSetOf()
@@ -168,6 +172,7 @@ class SteamService : Service() {
             context = this,
             text = "Starting..."
         )
+
         startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
 
         return START_STICKY
@@ -206,6 +211,8 @@ class SteamService : Service() {
         steamThreadJob?.cancel(CancellationException("Service cleanup"))
         steamThreadJob = null
 
+        steamApps = null
+        steamUser = null
         steamClient?.disconnect()
         steamClient = null
         callbackMgr = null
@@ -225,7 +232,7 @@ class SteamService : Service() {
 
         connectedSignal = CompletableDeferred()
 
-        val serverFile = File(filesDir, SERVERS_FILE)
+        val serverFile = File(filesDir, "servers.bin")
         val config = SteamConfiguration.create {
             it.withServerListProvider(FileServerListProvider(serverFile))
         }
@@ -251,21 +258,34 @@ class SteamService : Service() {
                         mgr.subscribe(onFriendMsgEcho),
                         mgr.subscribe(onPicsChanges),
                         mgr.subscribe(onPicsProduct),
+                        mgr.subscribe(onLicenseList),
                     )
                 )
+
+                steamApps = requireNotNull(client.getHandler())
+                steamUser = requireNotNull(client.getHandler())
             }
 
             // Configure handlers
             with(client) {
-                addHandler<VapullaHandler>()
+                addHandler(VapullaHandler())
 
-                removeHandler<SteamCloud>()
-                removeHandler<SteamGameCoordinator>()
-                removeHandler<SteamGameServer>()
-                removeHandler<SteamMasterServer>()
-                removeHandler<SteamScreenshots>()
-                removeHandler<SteamUserStats>()
-                removeHandler<SteamWorkshop>()
+                removeHandler(SteamCloud::class.java)
+                removeHandler(SteamGameCoordinator::class.java)
+                removeHandler(SteamGameServer::class.java)
+                removeHandler(SteamMasterServer::class.java)
+                removeHandler(SteamScreenshots::class.java)
+                removeHandler(SteamUserStats::class.java)
+                removeHandler(SteamWorkshop::class.java)
+                //addHandler<VapullaHandler>()
+                //
+                //removeHandler<SteamCloud>()
+                //removeHandler<SteamGameCoordinator>()
+                //removeHandler<SteamGameServer>()
+                //removeHandler<SteamMasterServer>()
+                //removeHandler<SteamScreenshots>()
+                //removeHandler<SteamUserStats>()
+                //removeHandler<SteamWorkshop>()
             }
         }
     }
@@ -460,7 +480,7 @@ class SteamService : Service() {
             chatMode = ChatMode.NEW_STEAM_CHAT
         )
 
-        steamClient?.getHandler<SteamUser>()?.logOn(loginDetails)
+        steamUser!!.logOn(loginDetails)
     }
 
     private fun connectToSteam() {
@@ -478,9 +498,7 @@ class SteamService : Service() {
                 text = "Connecting"
             )
 
-            steamThreadJob = scope.launch(Dispatchers.IO) {
-                Timber.i("Callback loop started on thread: ${Thread.currentThread().name}")
-
+            steamThreadJob = scope.launch {
                 try {
                     while (isRunning.value && callbackMgr != null) {
                         callbackMgr?.runWaitCallbackAsync()
@@ -499,13 +517,15 @@ class SteamService : Service() {
     private val onDisconnected: Consumer<DisconnectedCallback> = Consumer {
         expectDisconnect = it.isUserInitiated
 
-        if (expectDisconnect || retryCount >= MAX_RETRY_COUNT) {
+        if (expectDisconnect || retryCount >= 5) {
             Timber.i("onDisconnected() - Disconnected from steam")
 
             stopForeground(STOP_FOREGROUND_REMOVE)
 
             _isRunning.value = false
             _isLoggedIn.value = false
+
+            stopSelf()
         } else {
             Timber.i("onDisconnected() - Failed to connect ${++retryCount} times, trying again...")
 
@@ -516,7 +536,7 @@ class SteamService : Service() {
 
             scope.launch {
                 delay(duration = 1.seconds)
-                steamClient?.connect()
+                connectToSteam()
             }
         }
     }
@@ -567,48 +587,48 @@ class SteamService : Service() {
     private val onPersonaState: Consumer<PersonaStateCallback> = Consumer {
         Timber.d("onPersonaState()")
         scope.launch {
-            if (!it.friendID.isIndividualAccount) {
+            if (!it.friendId.isIndividualAccount) {
                 return@launch
             }
 
-            if (it.friendID == steamClient!!.steamID) {
+            if (it.friendId == steamClient!!.steamID) {
                 account.saveLocalUser(it)
                 return@launch
             }
 
-            val id = it.friendID.convertToUInt64()
+            val id = it.friendId.convertToUInt64()
             val friend = db.steamFriendDao().find(id) ?: return@launch
 
-            Timber.d("${it.name} is ${it.state} - ${it.lastLogOff.time} - ${it.lastLogOn.time}")
+            // Timber.d("${it.name} is ${it.state} - ${it.lastLogOff.time} - ${it.lastLogOn.time}")
 
-            if (it.state != EPersonaState.Offline || it.lastLogOff.time > friend.lastLogOff) {
+            if (it.personaState != EPersonaState.Offline || it.lastLogoff.time > friend.lastLogOff) {
                 db.steamFriendDao().update(
                     friend.copy(
                         avatar = it.avatarHash.toHexString(),
-                        gameAppID = it.gameAppID,
+                        gameAppID = it.gamePlayedAppId,
                         gameDataBlob = it.gameDataBlob,
-                        gameID = it.gameID,
-                        gameName = db.steamAppDao().find(it.gameAppID)?.name ?: it.gameName,
-                        lastLogOff = it.lastLogOff.time,
-                        lastLogOn = it.lastLogOn.time,
-                        name = it.name,
-                        state = it.state,
-                        stateFlags = it.stateFlags,
+                        gameID = it.gameId,
+                        gameName = db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: it.gameName,
+                        lastLogOff = it.lastLogoff.time,
+                        lastLogOn = it.lastLogon.time,
+                        name = it.playerName,
+                        state = it.personaState,
+                        stateFlags = it.personaStateFlags,
                         statusFlags = it.statusFlags,
                     )
                 )
             }
 
-            if (requestsToNotify.contains(it.friendID)) {
+            if (requestsToNotify.contains(it.friendId)) {
                 scope.launch {
                     NotificationHelper.sendFriendRequestNotification(
                         context = applicationContext,
-                        friendId = it.friendID.convertToUInt64(),
-                        friendName = it.name,
+                        friendId = it.friendId.convertToUInt64(),
+                        friendName = it.playerName,
                         avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString())
                     )
                 }
-                requestsToNotify.remove(it.friendID)
+                requestsToNotify.remove(it.friendId)
             }
         }
     }
@@ -665,9 +685,11 @@ class SteamService : Service() {
                 }
 
             // Batch database operations
-            dao.insert(friendsToAdd)
-            dao.update(friendsToUpdate)
-            dao.remove(friendsToRemove)
+            db.runInTransaction {
+                dao.insert(friendsToAdd)
+                dao.update(friendsToUpdate)
+                dao.remove(friendsToRemove)
+            }
         }
     }
 
@@ -687,7 +709,7 @@ class SteamService : Service() {
 
             // Try to find and update an unconfirmed message
             val unconfirmedMessage = dao.find(message.message, friendId, isFromLocal, false)
-                .minByOrNull { kotlin.math.abs(timestamp - it.timestamp) }
+                .minByOrNull { abs(timestamp - it.timestamp) }
 
             if (unconfirmedMessage != null) {
                 // Update existing unconfirmed message
@@ -762,54 +784,183 @@ class SteamService : Service() {
         Timber.d("onPicsChanges()")
 
         account.lastChangeNumber = it.currentChangeNumber
+
+        scope.launch {
+            it.appChanges.values
+                .filter { value ->
+                    // only queue PICS requests for apps existing in the db that have changed
+                    val app = db.steamAppDao().findApp(value.id) ?: return@filter false
+                    value.changeNumber != app.lastChangeNumber
+                }
+                .map { value -> value.id }
+                .also { value -> Timber.d("onPicsChanges: Queueing ${value.size} app requests") }
+                .forEach { value -> picsRequestChannel.send(value) }
+
+            val pkgsWithChanges = it.packageChanges.values
+                .filter { changeData ->
+                    // only queue PICS requests for pkgs existing in the db that have changed
+                    val pkg = db.steamLicenseDao().findLicense(changeData.id) ?: return@filter false
+                    changeData.changeNumber != pkg.lastChangeNumber
+                }
+            val pkgsForAccessTokens = pkgsWithChanges
+                .filter { value -> value.isNeedsToken }
+                .map { value -> value.id }
+            val accessTokens = steamApps!!
+                .picsGetAccessTokens(appIds = emptyList(), packageIds = pkgsForAccessTokens)
+                .await()
+                .packageTokens
+            val picsRequest = pkgsWithChanges
+                .map { value -> PICSRequest(value.id, accessTokens[value.id] ?: 0) }
+
+            Timber.d("onPicsChanges: Queueing ${picsRequest.size} package requests")
+            steamApps!!.picsGetProductInfo(apps = emptyList(), packages = picsRequest)
+        }
     }
 
     private val onPicsProduct: Consumer<PICSProductInfoCallback> = Consumer {
         Timber.d("onPicsProduct()")
 
         scope.launch {
-            val steamApps = it.apps.values.mapNotNull { app ->
-                val dbApp = db.steamAppDao().find(app.id)
+            Timber.i("onPicsProduct: Received PICS of ${it.packages.size} package(s)")
+            it.packages.values.forEach { pkg ->
+                val appIds = pkg.keyValues["appids"].children.map { it.asInteger() }
+                db.steamLicenseDao().updateApps(pkg.id, appIds)
 
-                if (app.changeNumber == dbApp?.lastChangeNumber) {
-                    return@mapNotNull null
+                val depotIds = pkg.keyValues["depotids"].children.map { it.asInteger() }
+                db.steamLicenseDao().updateDepots(pkg.id, depotIds)
+
+                // Insert a stub row (or update) of SteamApps to the database.
+                appIds.forEach { appid ->
+                    val steamApp = db.steamAppDao().findApp(appid)?.copy(packageId = pkg.id)
+                    if (steamApp != null) {
+                        db.steamAppDao().update(steamApp)
+                    } else {
+                        val stubSteamApp = SteamApp(id = appid, packageId = pkg.id)
+                        db.steamAppDao().insert(stubSteamApp)
+                    }
+
+                    picsRequestChannel.send(appid)
                 }
-
-                SteamApp(
-                    id = app.id,
-                    name = app.keyValues["common"]["name"].value.orEmpty(),
-                    lastChangeNumber = app.changeNumber
-                )
             }
 
-            db.steamAppDao().insert(steamApps)
+            Timber.i("onPicsProduct: Received PICS of ${it.apps.size} apps(s)")
+            it.apps.values
+                .mapNotNull { app ->
+                    val appFromDb = db.steamAppDao().findApp(app.id)
+                    val packageId = appFromDb?.packageId ?: Int.MAX_VALUE
+                    val packageFromDb = if (packageId != Int.MAX_VALUE) db.steamLicenseDao().findLicense(packageId) else null
+                    val ownerAccountId = packageFromDb?.ownerAccountID ?: emptyList()
+
+
+                    if (app.changeNumber != appFromDb?.lastChangeNumber) {
+                        app.keyValues.generateSteamApp().copy(
+                            packageId = packageId,
+                            ownerAccountId = ownerAccountId,
+                            receivedPICS = true,
+                            lastChangeNumber = app.changeNumber,
+                            licenseFlags = packageFromDb?.licenseFlags
+                                ?: EnumSet.noneOf(ELicenseFlags::class.java),
+                        )
+                    } else {
+                        null
+                    }
+                }
+                .takeIf { apps -> apps.isNotEmpty() }
+                ?.also { apps ->
+                    Timber.d("Inserting ${apps.size} PICS apps to database")
+                    db.steamAppDao().insert(apps)
+                }
         }
     }
 
-// endregion
+    private val onLicenseList: Consumer<LicenseListCallback> = Consumer {
+        Timber.d("onLicenseList()")
+
+        val result = it.result
+
+        if (result != EResult.OK) {
+            Timber.w("Failed to get license list.")
+        }
+
+        scope.launch {
+            val licenseToAdd = it.licenseList
+                .groupBy { license -> license.packageID }
+                .map { entry ->
+                    val preferredAccount = entry.value.firstOrNull { value ->
+                        val mySid = steamUser!!.steamID?.accountID?.toInt()
+                        value.ownerAccountID == mySid
+                    } ?: entry.value.first()
+
+                    SteamLicense(
+                        packageID = entry.key,
+                        lastChangeNumber = preferredAccount.lastChangeNumber,
+                        timeCreated = preferredAccount.timeCreated,
+                        timeNextProcess = preferredAccount.timeNextProcess,
+                        minuteLimit = preferredAccount.minuteLimit,
+                        minutesUsed = preferredAccount.minutesUsed,
+                        paymentMethod = preferredAccount.paymentMethod,
+                        licenseFlags = entry.value
+                            .map { value -> value.licenseFlags }
+                            .reduceOrNull { first, second ->
+                                val combined = EnumSet.copyOf(first)
+                                combined.addAll(second)
+                                combined
+                            } ?: EnumSet.noneOf(ELicenseFlags::class.java),
+                        purchaseCode = preferredAccount.purchaseCode,
+                        licenseType = preferredAccount.licenseType,
+                        territoryCode = preferredAccount.territoryCode,
+                        accessToken = preferredAccount.accessToken,
+                        ownerAccountID = entry.value.map { value -> value.ownerAccountID },
+                        masterPackageID = preferredAccount.masterPackageID,
+                    )
+                }
+
+            if (licenseToAdd.isNotEmpty()) {
+                Timber.i("Adding ${licenseToAdd.size} licenses")
+                db.steamLicenseDao().insert(licenseToAdd)
+            }
+
+            val licensesToRemove = db.steamLicenseDao()
+                .findStaleLicences(it.licenseList.map { value -> value.packageID })
+
+            if (licensesToRemove.isNotEmpty()) {
+                Timber.i("Removing ${licensesToRemove.size} (stale) licenses")
+                val packageIds = licensesToRemove.map { value -> value.packageID }
+                db.steamLicenseDao().deleteStaleLicenses(packageIds)
+            }
+
+            // Get PICS information with the current license database.
+            val picsRequests = db.steamLicenseDao().getAllLicenses()
+                .map { value -> PICSRequest(value.packageID, value.accessToken) }
+
+            steamApps!!.picsGetProductInfo(apps = emptyList(), packages = picsRequests)
+        }
+    }
+
+    // endregion
 
     private fun continuousPicsChanges() = scope.launch {
         while (isActive && _isLoggedIn.value) {
+            delay(1.minutes)
+
             val lastChangeNumber = account.lastChangeNumber
 
             Timber.d("picsGetChangesSince($lastChangeNumber)")
 
-            steamClient?.getHandler<SteamApps>()?.picsGetChangesSince(
+            steamApps!!.picsGetChangesSince(
                 lastChangeNumber = lastChangeNumber,
                 sendAppChangeList = true,
                 sendPackageChangelist = true,
             )
-
-            delay(1.minutes)
         }
     }
 
     private fun continuousPicsChecker() = scope.launch {
         picsRequestChannel.receiveAsFlow()
-            .timeChunked(50, 1.seconds)
+            .timeChunked(500, 10.seconds)
             .collect { ids ->
                 Timber.d("Collected ${ids.size} app(s) to query PICS")
-                steamClient?.getHandler<SteamApps>()?.picsGetProductInfo(
+                steamApps!!.picsGetProductInfo(
                     apps = ids.map { PICSRequest(id = it, accessToken = 0) },
                     packages = emptyList()
                 )
@@ -818,13 +969,13 @@ class SteamService : Service() {
 
     private fun continuousFriendChecker() = scope.launch {
         while (isActive && _isLoggedIn.value) {
-            delay(10.seconds)
+            delay(5.seconds)
             db.steamFriendDao().findFriendsInGame()
-                .also { friends -> Timber.d("Found ${friends.size} friends in game") }
+                // .also { friends -> Timber.d("Found ${friends.size} friends in game") }
                 .forEach { friend ->
-                    db.steamAppDao().find(friend.gameAppID)?.let { app ->
+                    db.steamAppDao().findApp(friend.gameAppID)?.let { app ->
                         if (friend.gameName != app.name) {
-                            Timber.d("Updating ${friend.name} with game ${app.name}")
+                            // Timber.d("Updating ${friend.name} with game ${app.name}")
                             db.steamFriendDao().update(friend.copy(gameName = app.name))
                         }
                     } ?: picsRequestChannel.send(friend.gameAppID)

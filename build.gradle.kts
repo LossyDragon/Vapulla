@@ -5,3 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.ksp) apply false
 }
+
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(1, TimeUnit.SECONDS)
+    resolutionStrategy.cacheDynamicVersionsFor(1, TimeUnit.SECONDS)
+}
