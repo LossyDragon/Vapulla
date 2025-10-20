@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -48,7 +49,9 @@ class HomeViewModel(
                         else -> R.string.headerFriendOffline
                     }
                 }
-        }.stateIn(
+        }
+        .distinctUntilChanged()
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
@@ -60,13 +63,12 @@ class HomeViewModel(
     }
 
     fun onStickyHeaderAction(value: Int) {
-        val list = stickyHeaders.value.toMutableSet()
-        if (value in list) {
-            list.remove(value)
-        } else {
-            list.add(value)
+        _stickyHeaders.update { current ->
+            if (value in current) {
+                current - value
+            } else {
+                current + value
+            }
         }
-
-        _stickyHeaders.update { list }
     }
 }

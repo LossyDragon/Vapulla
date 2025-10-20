@@ -56,7 +56,7 @@ fun FriendAvatar(
             )
 
             // Basically a 'VerticalDivider' but height constrained.
-            Canvas(Modifier.size(height =size, width = 4.dp)) {
+            Canvas(Modifier.size(height = size, width = 4.dp)) {
                 drawLine(
                     color = friend.statusColor,
                     pathEffect = if (friend.isAwayOrSnooze) {
@@ -84,14 +84,16 @@ fun FriendAvatar(
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview() {
-    val friend =
-        SteamFriend(id = 0, name = "Vapulla", gameAppID = 440, state = EPersonaState.Away)
-
     VapullaTheme {
         Surface {
             FriendAvatar(
                 size = 128.dp,
-                friend = friend
+                friend = SteamFriend(
+                    id = 0,
+                    name = "Vapulla",
+                    gameAppID = 440,
+                    state = EPersonaState.Away
+                )
             )
         }
     }

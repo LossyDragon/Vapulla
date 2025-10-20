@@ -32,12 +32,15 @@ fun FriendListHeader(
         modifier = modifier.clickable(onClick = onHeaderAction),
         headlineContent = { Text(text = stringResource(header) + " ($count)") },
         trailingContent = {
-            val button = when (isCollapsed) {
-                true -> Icons.Outlined.KeyboardArrowDown
-                else -> Icons.Outlined.KeyboardArrowUp
-            }
             IconButton(onClick = onHeaderAction) {
-                Icon(imageVector = button, contentDescription = null)
+                Icon(
+                    imageVector = if (isCollapsed) {
+                        Icons.Outlined.KeyboardArrowDown
+                    } else {
+                        Icons.Outlined.KeyboardArrowUp
+                    },
+                    contentDescription = null
+                )
             }
         },
     )

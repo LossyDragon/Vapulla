@@ -119,29 +119,27 @@ private val mockFriends = listOf(
 )
 
 val mockSteamFriendDao = object : SteamFriendDao {
-    private val friendsFlow = MutableStateFlow(mockFriends)
+    override suspend fun insert(friend: SteamFriend) {}
 
-    override fun insert(list: List<SteamFriend>) {}
+    override suspend fun insert(list: List<SteamFriend>) {}
 
     override suspend fun find(id: Long): SteamFriend? = null
 
-    override fun update(friend: SteamFriend) {}
+    override suspend fun update(friend: SteamFriend) {}
 
-    override fun update(list: List<SteamFriend>) {}
+    override suspend fun update(list: List<SteamFriend>) {}
 
-    override fun updateAll(friends: List<SteamFriend>) {}
+    override suspend fun updateAll(friends: List<SteamFriend>) {}
 
-    override fun getFriendsFlow(): Flow<List<SteamFriend>> {
-        return friendsFlow
-    }
+    override fun getFriendsFlow(): Flow<List<SteamFriend>> = MutableStateFlow(mockFriends)
 
-    override fun clearNicknames() {}
+    override suspend fun clearNicknames() {}
 
-    override fun findFriendsInGame(): List<SteamFriend> {
-        return mockFriends.filter { it.gameAppID > 0 }
-    }
+    override suspend fun findFriendsInGame(): List<SteamFriend> = mockFriends.filter { it.gameAppID > 0 }
 
-    override fun remove(list: List<SteamFriend>) {}
+    override suspend fun remove(list: List<SteamFriend>) {}
 
-    override fun delete() {}
+    override suspend fun remove(friend: SteamFriend) {}
+
+    override suspend fun delete() {}
 }

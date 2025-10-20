@@ -19,6 +19,7 @@ import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +61,18 @@ fun HomeScreen(
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val scope = rememberCoroutineScope()
 
+    val searchQuery = textFieldState.text.toString()
+    val filteredFriends = remember(searchQuery, friendsList) {
+        if (searchQuery.isNotEmpty()) {
+            friendsList.values.flatten().filter { friend ->
+                friend.name.contains(searchQuery, ignoreCase = true) ||
+                        friend.nickname.contains(searchQuery, ignoreCase = true)
+            }
+        } else {
+            emptyList()
+        }
+    }
+
     Scaffold(
         topBar = {
             SearchAppBar(
@@ -68,8 +81,6 @@ fun HomeScreen(
                 scrollBehavior = scrollBehavior,
                 onNavDrawerAction = onNavDrawerAction,
                 expandedSearchBar = {
-                    val searchQuery = textFieldState.text.toString()
-
                     if (searchQuery.isNotEmpty()) {
                         val filteredFriends = friendsList.values.flatten().filter { friend ->
                             friend.name.contains(searchQuery, ignoreCase = true) ||

@@ -13,38 +13,38 @@ import kotlinx.coroutines.flow.Flow
 interface SteamFriendDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(friend: SteamFriend)
+    suspend fun insert(friend: SteamFriend)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(list: List<SteamFriend>)
+    suspend fun insert(list: List<SteamFriend>)
 
     @Query("SELECT * FROM steam_friend WHERE id = :id")
     suspend fun find(id: Long): SteamFriend?
 
     @Update
-    fun update(friend : SteamFriend)
+    suspend fun update(friend: SteamFriend)
 
     @Update
-    fun update(list: List<SteamFriend>)
+    suspend fun update(list: List<SteamFriend>)
 
     @Update
-    fun updateAll(friends: List<SteamFriend>)
+    suspend fun updateAll(friends: List<SteamFriend>)
 
     @Query("SELECT * FROM steam_friend")
     fun getFriendsFlow(): Flow<List<SteamFriend>>
 
     @Query("UPDATE steam_friend SET nickname = ''")
-    fun clearNicknames()
+    suspend fun clearNicknames()
 
     @Query("SELECT * FROM steam_friend WHERE gameAppID > 0")
-    fun findFriendsInGame(): List<SteamFriend>
+    suspend fun findFriendsInGame(): List<SteamFriend>
 
     @Delete
-    fun remove(list: List<SteamFriend>)
+    suspend fun remove(list: List<SteamFriend>)
 
     @Delete
-    fun remove(friend: SteamFriend)
+    suspend fun remove(friend: SteamFriend)
 
     @Query("DELETE FROM steam_friend")
-    fun delete()
+    suspend fun delete()
 }

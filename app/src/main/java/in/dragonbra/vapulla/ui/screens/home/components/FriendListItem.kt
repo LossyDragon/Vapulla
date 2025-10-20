@@ -28,6 +28,8 @@ fun FriendListItem(
     modifier: Modifier = Modifier,
     friend: SteamFriend
 ) {
+    val hasTrailingContent = friend.newMessageCount > 0 || friend.lastMessageTime > 0
+
     ListItem(
         modifier = modifier,
         colors = ListItemDefaults.colors(
@@ -38,28 +40,30 @@ fun FriendListItem(
         headlineContent = { FriendName(friend = friend) },
         supportingContent = { Text(text = friend.isPlayingGameName) },
         leadingContent = { FriendAvatar(friend = friend) },
-        trailingContent = if (friend.newMessageCount > 0 || friend.lastMessageTime > 0) {
-            {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    content = {
-                        Text(text = friend.lastMessageTime.toTimeString())
-                        Spacer(modifier = Modifier.height(6.dp))
-                        if (friend.newMessageCount > 0) {
-                            Badge(
-                                containerColor = colorAccent,
-                                contentColor = MaterialTheme.colorScheme.onSurface,
-                                content = { Text("${friend.newMessageCount}") }
-                            )
-                        }
-                    }
-                )
-            }
+        trailingContent = if (hasTrailingContent) {
+            { FriendTrailingContent(friend = friend) }
         } else {
             null
         }
     )
+}
+
+@Composable
+private fun FriendTrailingContent(friend: SteamFriend) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(text = friend.lastMessageTime.toTimeString())
+        Spacer(modifier = Modifier.height(6.dp))
+        if (friend.newMessageCount > 0) {
+            Badge(
+                containerColor = colorAccent,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                content = { Text("${friend.newMessageCount}") }
+            )
+        }
+    }
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)

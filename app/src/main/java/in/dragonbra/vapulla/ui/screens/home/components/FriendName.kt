@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
@@ -21,13 +22,15 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
 fun FriendName(friend: SteamFriend) {
-    Text(
-        text = buildAnnotatedString {
+    val variantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val annotatedText = remember(friend.name, friend.nickname, friend.statusIcon, variantColor) {
+        buildAnnotatedString {
             append(friend.name)
             if (friend.nickname.isNotEmpty()) {
                 withStyle(
                     style = SpanStyle(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = variantColor,
                         fontSize = 12.sp,
                     ),
                 ) {
@@ -40,8 +43,13 @@ fun FriendName(friend: SteamFriend) {
             if (friend.statusIcon != null) {
                 appendInlineContent("icon", "[icon]")
             }
-        },
-        inlineContent = mapOf(
+        }
+    }
+
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
+    val inlineContent = remember(friend.statusIcon, onSurfaceColor) {
+        mapOf(
             "icon" to InlineTextContent(
                 Placeholder(
                     width = 14.sp,
@@ -49,16 +57,21 @@ fun FriendName(friend: SteamFriend) {
                     placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
                 ),
                 children = {
-                    friend.statusIcon?.let {
+                    friend.statusIcon?.let { icon ->
                         Icon(
-                            imageVector = it,
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            contentDescription = it.name,
+                            imageVector = icon,
+                            tint = onSurfaceColor,
+                            contentDescription = icon.name,
                         )
                     }
                 },
             ),
-        ),
+        )
+    }
+
+    Text(
+        text = annotatedText,
+        inlineContent = inlineContent,
     )
 }
 

@@ -24,7 +24,7 @@ fun FriendList(
     LazyColumn(
         modifier = modifier,
         content = {
-            friendsList.forEach { (header, friends) ->
+            for ((header, friends) in friendsList.entries) {
                 stickyHeader {
                     FriendListHeader(
                         isCollapsed = header in stickyHeaders,
