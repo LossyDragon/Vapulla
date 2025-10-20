@@ -25,12 +25,12 @@ interface SteamAppDao {
                 "WHERE id != 480 " +
                 "AND packageId != :invalidPkgId " +
                 "AND type != 0 " +
-                "AND type = :appType " +
+                "AND (type & :appType) != 0 " +
                 "AND (:query = '' OR LOWER(name) LIKE '%' || LOWER(:query) || '%') " +
                 "ORDER BY LOWER(name)"
     )
     fun getAllOwnedAppsPaged(
-        appType: SteamApp.AppType = SteamApp.AppType.game,
+        appType: Int,
         query: String = "",
         invalidPkgId: Int = Int.MAX_VALUE
     ): PagingSource<Int, SteamApp>

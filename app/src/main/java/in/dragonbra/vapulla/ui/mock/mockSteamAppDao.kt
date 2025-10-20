@@ -11,7 +11,7 @@ val mockSteamAppDao = object : SteamAppDao {
     override suspend fun update(app: SteamApp) {}
 
     override fun getAllOwnedAppsPaged(
-        appType: SteamApp.AppType,
+        appType: Int,
         query: String,
         invalidPkgId: Int
     ): PagingSource<Int, SteamApp> {

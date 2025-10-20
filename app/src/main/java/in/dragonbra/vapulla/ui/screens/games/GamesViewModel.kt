@@ -8,37 +8,54 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import `in`.dragonbra.vapulla.data.dao.SteamAppDao
 import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.data.entity.SteamApp.AppType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import timber.log.Timber
+import java.util.EnumSet
 
 class GamesViewModel(
-    steamAppDao: SteamAppDao
-): ViewModel() {
+    private val steamAppDao: SteamAppDao
+) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _appTypes = MutableStateFlow(emptySet<AppType>())
+    val appTypes: StateFlow<Set<AppType>> = _appTypes.asStateFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    val steamApps: Flow<PagingData<SteamApp>> = searchQuery
-        .flatMapLatest { query ->
+    val steamApps: Flow<PagingData<SteamApp>> =
+        combine(appTypes, searchQuery) { selectedTypes, query ->
+            val typesToUse = selectedTypes.ifEmpty { setOf(AppType.game) }
+            val flags = AppType.toFlags(EnumSet.copyOf(typesToUse))
+
             Pager(
-                config = PagingConfig(
-                    pageSize = 20,
-                    prefetchDistance = 5,
-                    enablePlaceholders = false
-                ),
-                pagingSourceFactory = { steamAppDao.getAllOwnedAppsPaged(query = query) }
+                config = PagingConfig(pageSize = 20),
+                pagingSourceFactory = {
+                    steamAppDao.getAllOwnedAppsPaged(
+                        appType = flags,
+                        query = query
+                    )
+                }
             ).flow
-        }
-        .cachedIn(viewModelScope)
+        }.flatMapLatest { it }.cachedIn(viewModelScope)
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun updateAppTypes(appType: AppType) {
+        _appTypes.value = if (_appTypes.value.contains(appType)) {
+            _appTypes.value - appType
+        } else {
+            _appTypes.value + appType
+        }
     }
 
     override fun onCleared() {

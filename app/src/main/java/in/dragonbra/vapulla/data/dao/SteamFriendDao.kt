@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SteamFriendDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(friend: SteamFriend)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(list: List<SteamFriend>)
 
@@ -37,6 +41,9 @@ interface SteamFriendDao {
 
     @Delete
     fun remove(list: List<SteamFriend>)
+
+    @Delete
+    fun remove(friend: SteamFriend)
 
     @Query("DELETE FROM steam_friend")
     fun delete()
