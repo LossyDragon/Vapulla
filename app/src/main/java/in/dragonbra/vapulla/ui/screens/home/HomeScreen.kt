@@ -22,20 +22,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.SearchAppBar
 import `in`.dragonbra.vapulla.ui.composables.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.mock.mockSteamFriendDao
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.coroutines.launch
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.KoinApplicationPreview
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -43,28 +52,9 @@ fun HomeScreen(
     onFriendClick: (Long) -> Unit,
     onFriendLongClick: (Long) -> Unit,
 ) {
-    val friends by viewModel.friends.collectAsState()
+    val friendsList by viewModel.friends.collectAsState()
     val stickyHeaders by viewModel.stickyHeaders.collectAsState()
-    HomeScreenContent(
-        friendsList = friends,
-        stickyHeaders = stickyHeaders,
-        onStickyHeaderAction = viewModel::onStickyHeaderAction,
-        onNavDrawerAction = onNavDrawerAction,
-        onFriendClick = onFriendClick,
-        onFriendLongClick = onFriendLongClick,
-    )
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeScreenContent(
-    friendsList: Map<Int, List<SteamFriend>>,
-    stickyHeaders: Set<Int>,
-    onStickyHeaderAction: (Int) -> Unit,
-    onNavDrawerAction: () -> Unit,
-    onFriendClick: (Long) -> Unit,
-    onFriendLongClick: (Long) -> Unit,
-) {
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
@@ -131,7 +121,7 @@ private fun HomeScreenContent(
                     .padding(padding),
                 friendsList = friendsList,
                 stickyHeaders = stickyHeaders,
-                onStickyHeaderAction = onStickyHeaderAction,
+                onStickyHeaderAction = viewModel::onStickyHeaderAction,
                 onFriendClick = onFriendClick,
                 onFriendLongClick = onFriendLongClick,
             )
@@ -142,52 +132,26 @@ private fun HomeScreenContent(
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview() {
-    val friends = mapOf(
-        R.string.headerFriendInGame to List(2) {
-            SteamFriend(
-                id = it.toLong(),
-                name = "Vapulla $it",
-                relation = EFriendRelationship.Friend,
-                state = EPersonaState.from(it + 1),
-                gameAppID = 440,
-                gameName = "Team Fortress 2",
-                stateFlags = EPersonaStateFlag.from(1024),
-                lastMessage = "Hey, what's up",
-                newMessageCount = it * 16,
-                nickname = "Nick Name $it",
-            )
+    val context = LocalContext.current
+    val previewModule = module {
+        single<SteamFriendDao> { mockSteamFriendDao }
+        viewModel { HomeViewModel(get()) }
+    }
+
+    KoinApplicationPreview(
+        application = {
+            androidContext(context.applicationContext)
+            modules(previewModule)
         },
-        R.string.headerFriendOnline to List(2) {
-            SteamFriend(
-                id = it.toLong() + 1 * 4,
-                name = "Vapulla $it",
-                relation = EFriendRelationship.Friend,
-                state = EPersonaState.from(1),
-                stateFlags = EPersonaStateFlag.from((it + 1) * 256),
-                lastMessage = "Hey, what's up",
-                newMessageCount = it * 16,
-                nickname = "Nick Name $it",
-            )
-        },
-        R.string.headerFriendOffline to List(1) {
-            SteamFriend(
-                id = it.toLong() + 1 * 6,
-                name = "Vapulla $it",
-                relation = EFriendRelationship.Friend,
-                state = EPersonaState.Offline,
-                newMessageCount = it * 16,
-                nickname = "Nick Name $it",
-            )
+        content = {
+            VapullaTheme {
+                HomeScreen(
+                    viewModel = koinViewModel(),
+                    onNavDrawerAction = { },
+                    onFriendClick = { },
+                    onFriendLongClick = { },
+                )
+            }
         }
     )
-    VapullaTheme {
-        HomeScreenContent(
-            friendsList = friends,
-            stickyHeaders = setOf(),
-            onStickyHeaderAction = { },
-            onNavDrawerAction = { },
-            onFriendClick = { },
-            onFriendLongClick = { },
-        )
-    }
 }

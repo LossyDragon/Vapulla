@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla
 import android.annotation.SuppressLint
 import android.app.Application
 import android.os.StrictMode
-import androidx.preference.PreferenceManager
 import `in`.dragonbra.javasteam.util.log.LogListener
 import `in`.dragonbra.javasteam.util.log.LogManager
 import `in`.dragonbra.vapulla.di.appModule
@@ -61,7 +60,5 @@ class VapullaApplication : Application() {
             androidContext(androidContext = this@VapullaApplication)
             modules(modules = appModule)
         }
-
-        PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
     }
 }

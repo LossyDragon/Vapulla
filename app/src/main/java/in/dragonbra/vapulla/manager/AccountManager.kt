@@ -1,94 +1,109 @@
 package `in`.dragonbra.vapulla.manager
 
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.preference.PreferenceManager
-import `in`.dragonbra.javasteam.enums.EPersonaState
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import java.io.IOException
 
-class AccountManager(context: Context) {
+class AccountManager(private val context: Context) {
 
-    companion object {
-        private const val KEY_LOGIN_KEY = "account_login_key"
-        private const val KEY_UNIQUE_ID = "account_unique_id"
-        private const val KEY_USERNAME = "account_username"
-        private const val KEY_NICKNAME = "account_nickname"
-        private const val KEY_AVATAR_HASH = "account_avatar_hash"
-        private const val KEY_STEAM_ID = "account_steam_id"
-        private const val KEY_STATE = "account_state"
+    private companion object {
+        val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "preferences")
+
+        val ACCOUNT_NAME = stringPreferencesKey("account_name")
+        val ACCOUNT_AVATAR_HASH = stringPreferencesKey("account_avatar_hash")
+        val ACCOUNT_PERSONA_STATE = intPreferencesKey("account_state")
+
+        val LOGIN_USERNAME = stringPreferencesKey("account_username")
+        val LOGIN_REFRESH_TOKEN = stringPreferencesKey("account_refresh_token")
+        val LOGIN_UUID = intPreferencesKey("account_uuid")
+
+        val LAST_CHANGE_NUMBER = intPreferencesKey("last_change_number")
     }
 
-    private val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    val username = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[LOGIN_USERNAME] }
 
-    private val editor: SharedPreferences.Editor = prefs.edit()
+    val refreshToken = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[LOGIN_REFRESH_TOKEN] }
 
-    private val listeners = mutableSetOf<AccountManagerListener>()
+    val uuid = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[LOGIN_UUID] }
 
-    var lastChangeNumber: Int
-        get() = prefs.getInt("lastChangeNumber", 0)
-        set(value) = editor.putInt("lastChangeNumber", value).apply()
+    val lastChangeNumber = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[LAST_CHANGE_NUMBER] }
 
-    var uuid: Int
-        get() = prefs.getInt("uuid", 0)
-        set(value) = editor.putInt("uuid", value).apply()
+    val accountName = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[ACCOUNT_NAME] }
 
-    var loginKey: String?
-        get() = prefs.getString(KEY_LOGIN_KEY, null)
-        set(value) = editor.putString(KEY_LOGIN_KEY, value).apply()
+    val accountAvatar = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[ACCOUNT_AVATAR_HASH] }
 
-    var uniqueId: Int
-        get() = prefs.getInt(KEY_UNIQUE_ID, 0)
-        set(value) = editor.putInt(KEY_UNIQUE_ID, value).apply()
+    val accountPersonaState = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[ACCOUNT_PERSONA_STATE] }
 
-    var username: String?
-        get() = prefs.getString(KEY_USERNAME, null)
-        set(value) = editor.putString(KEY_USERNAME, value).apply()
-
-    var nickname: String?
-        get() = prefs.getString(KEY_NICKNAME, null)
-        set(value) = editor.putString(KEY_NICKNAME, value).apply()
-
-    var steamId: Long
-        get() = prefs.getLong(KEY_STEAM_ID, 0L)
-        set(value) = editor.putLong(KEY_STEAM_ID, value).apply()
-
-    var avatarHash: String?
-        get() = prefs.getString(KEY_AVATAR_HASH, null)
-        set(value) = editor.putString(KEY_AVATAR_HASH, value).apply()
-
-    var state: EPersonaState
-        get() = EPersonaState.from(prefs.getInt(KEY_STATE, 0))
-        set(value) = editor.putInt(KEY_STATE, value.code()).apply()
-
-    fun clear() {
-        editor.remove(KEY_LOGIN_KEY)
-            .remove(KEY_UNIQUE_ID)
-            .remove(KEY_USERNAME)
-            .remove(KEY_STEAM_ID)
-            .remove(KEY_AVATAR_HASH)
-            .remove(KEY_NICKNAME)
-            .remove(KEY_STATE)
-            .apply()
-    }
-
-    fun hasLoginKey() = prefs.contains(KEY_LOGIN_KEY)
-
-    fun saveLocalUser(state: PersonaStateCallback) {
-        avatarHash = state.avatarHash.toHexString()
-        nickname = state.gameName
-        steamId = state.friendId.convertToUInt64()
-        this.state = state.personaState
-
-        listeners.forEach {
-            it.unAccountUpdate(this@AccountManager)
+    suspend fun setUserName(name: String) {
+        context.dataStore.edit { prefs ->
+            prefs[LOGIN_USERNAME] = name
         }
     }
 
-    fun addListener(l: AccountManagerListener) = listeners.add(l)
+    suspend fun setRefreshToken(token: String?) {
+        context.dataStore.edit { prefs ->
+            if (token != null) {
+                prefs[LOGIN_REFRESH_TOKEN] = token
+            } else {
+                prefs.remove(LOGIN_REFRESH_TOKEN)
+            }
+        }
+    }
 
-    fun removeListener(l: AccountManagerListener) = listeners.remove(l)
+    suspend fun setUuid(uuid: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[LOGIN_UUID] = uuid
+        }
+    }
 
-    interface AccountManagerListener {
-        fun unAccountUpdate(account: AccountManager)
+    suspend fun setLastChangeNumber(value: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[LAST_CHANGE_NUMBER] = value
+        }
+    }
+
+    suspend fun saveLocalUser(localUser: PersonaStateCallback) {
+        context.dataStore.edit { prefs ->
+            prefs[ACCOUNT_NAME] = localUser.playerName
+            prefs[ACCOUNT_AVATAR_HASH] = localUser.avatarHash.toHexString()
+            prefs[ACCOUNT_PERSONA_STATE] = localUser.personaState.code()
+        }
+    }
+
+    suspend fun clearPreferences() {
+        context.dataStore.edit {
+            it.clear()
+        }
+    }
+
+    private fun handleException(exception: Throwable): Preferences {
+        if (exception is IOException) {
+            return emptyPreferences()
+        } else {
+            throw exception
+        }
     }
 }

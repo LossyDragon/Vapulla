@@ -44,7 +44,8 @@ fun NavigationRoot(
     modifier: Modifier = Modifier
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val connection = getKoin().get<ServiceConnection>()
+    val koin = getKoin()
+    val connection = remember(koin) { koin.get<ServiceConnection>() }
     val scope = rememberCoroutineScope()
 
     val backStack = remember {
@@ -118,9 +119,9 @@ fun NavigationRoot(
                         )
                     }
                     entry<Routes.Games> {
-                       val viewModel = koinViewModel<GamesViewModel>()
+                        val viewModel = koinViewModel<GamesViewModel>()
                         GamesScreen(
-                            viewmodel = viewModel,
+                            viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction
                         )
                     }

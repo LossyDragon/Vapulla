@@ -46,7 +46,6 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback
 import `in`.dragonbra.javasteam.steam.steamclient.configuration.SteamConfiguration
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.javasteam.util.Strings
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
@@ -80,6 +79,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
@@ -268,26 +268,21 @@ class SteamService : Service() {
 
             // Configure handlers
             with(client) {
-                addHandler(VapullaHandler())
+                addHandler<VapullaHandler>()
 
-                removeHandler(SteamCloud::class.java)
-                removeHandler(SteamGameCoordinator::class.java)
-                removeHandler(SteamGameServer::class.java)
-                removeHandler(SteamMasterServer::class.java)
-                removeHandler(SteamScreenshots::class.java)
-                removeHandler(SteamUserStats::class.java)
-                removeHandler(SteamWorkshop::class.java)
-                //addHandler<VapullaHandler>()
-                //
-                //removeHandler<SteamCloud>()
-                //removeHandler<SteamGameCoordinator>()
-                //removeHandler<SteamGameServer>()
-                //removeHandler<SteamMasterServer>()
-                //removeHandler<SteamScreenshots>()
-                //removeHandler<SteamUserStats>()
-                //removeHandler<SteamWorkshop>()
+                removeHandler<SteamCloud>()
+                removeHandler<SteamGameCoordinator>()
+                removeHandler<SteamGameServer>()
+                removeHandler<SteamMasterServer>()
+                removeHandler<SteamScreenshots>()
+                removeHandler<SteamUserStats>()
+                removeHandler<SteamWorkshop>()
             }
         }
+    }
+
+    fun setPersonaState(state: EPersonaState) {
+        steamClient!!.getHandler<SteamFriends>()!!.setPersonaState(state = state)
     }
 
     fun handleCredentialLogin(
@@ -312,7 +307,7 @@ class SteamService : Service() {
                 _loginResult.emit(LoginResult.Loading)
 
                 var username = username?.trim()
-                var loginKey = account.loginKey
+                var loginKey = account.refreshToken.first()
 
                 if (loginKey.isNullOrBlank() || username.isNullOrBlank()) {
                     // Normal sign in
@@ -339,12 +334,12 @@ class SteamService : Service() {
                     username = pollResult.accountName
                     loginKey = pollResult.refreshToken
 
-                    account.username = username
-                    account.loginKey = loginKey
+                    account.setUserName(username)
+                    account.setRefreshToken(loginKey)
                 } else {
                     // Auto sign in
-                    username = account.username!!
-                    loginKey = account.loginKey!!
+                    username = account.username.first()!!
+                    loginKey = account.refreshToken.first()
                 }
 
                 loginToSteam(
@@ -436,8 +431,8 @@ class SteamService : Service() {
 
                 // Handle completion
                 if (authPollResult != null) {
-                    account.username = authPollResult.accountName
-                    account.loginKey = authPollResult.refreshToken
+                    account.setUserName(authPollResult.accountName)
+                    account.setRefreshToken(authPollResult.refreshToken)
                     loginToSteam(
                         accountName = authPollResult.accountName,
                         refreshToken = authPollResult.refreshToken,
@@ -471,16 +466,20 @@ class SteamService : Service() {
         accountName: String,
         refreshToken: String? = null
     ) {
-        val loginDetails = LogOnDetails(
-            username = accountName,
-            shouldRememberPassword = true,
-            accessToken = refreshToken,
-            loginID = Utils.getUniqueId(account),
-            machineName = "Vapulla ${BuildConfig.VERSION_NAME}",
-            chatMode = ChatMode.NEW_STEAM_CHAT
-        )
+        scope.launch {
+            val uuid = Utils.getUniqueId(account)
 
-        steamUser!!.logOn(loginDetails)
+            val loginDetails = LogOnDetails(
+                username = accountName,
+                shouldRememberPassword = true,
+                accessToken = refreshToken,
+                loginID = uuid,
+                machineName = "Vapulla ${BuildConfig.VERSION_NAME}",
+                chatMode = ChatMode.NEW_STEAM_CHAT
+            )
+
+            steamUser!!.logOn(loginDetails)
+        }
     }
 
     private fun connectToSteam() {
@@ -573,7 +572,7 @@ class SteamService : Service() {
                 continuousFriendChecker()
             }
 
-            EResult.InvalidPassword -> account.loginKey = null
+            EResult.InvalidPassword -> scope.launch { account.setRefreshToken(null) }
 
             else -> Timber.w("onLoggedOn() got unknown result ${it.result}")
         }
@@ -598,17 +597,20 @@ class SteamService : Service() {
 
             val id = it.friendId.convertToUInt64()
             val friend = db.steamFriendDao().find(id) ?: return@launch
-
+            val gameName = db.steamAppDao().findApp(it.gamePlayedAppId)?.name
             // Timber.d("${it.name} is ${it.state} - ${it.lastLogOff.time} - ${it.lastLogOn.time}")
 
-            if (it.personaState != EPersonaState.Offline || it.lastLogoff.time > friend.lastLogOff) {
+            // Apply PersonaStateBuffer logic: only update if not offline, or lastLogOff is newer
+            val shouldUpdate = it.personaState != EPersonaState.Offline || it.lastLogoff.time > friend.lastLogOff
+
+            if (shouldUpdate) {
                 db.steamFriendDao().update(
                     friend.copy(
                         avatar = it.avatarHash.toHexString(),
                         gameAppID = it.gamePlayedAppId,
                         gameDataBlob = it.gameDataBlob,
                         gameID = it.gameId,
-                        gameName = db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: it.gameName,
+                        gameName = gameName ?: it.gameName,
                         lastLogOff = it.lastLogoff.time,
                         lastLogOn = it.lastLogon.time,
                         name = it.playerName,
@@ -620,14 +622,12 @@ class SteamService : Service() {
             }
 
             if (requestsToNotify.contains(it.friendId)) {
-                scope.launch {
-                    NotificationHelper.sendFriendRequestNotification(
-                        context = applicationContext,
-                        friendId = it.friendId.convertToUInt64(),
-                        friendName = it.playerName,
-                        avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString())
-                    )
-                }
+                NotificationHelper.sendFriendRequestNotification(
+                    context = applicationContext,
+                    friendId = it.friendId.convertToUInt64(),
+                    friendName = it.playerName,
+                    avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString())
+                )
                 requestsToNotify.remove(it.friendId)
             }
         }
@@ -659,9 +659,7 @@ class SteamService : Service() {
                     when {
                         existingFriend == null && isValidRelationship -> {
                             friendsToAdd.add(
-                                SteamFriend(steamId).apply {
-                                    relation = relationCode
-                                }
+                                SteamFriend(id = steamId, relation = relationCode)
                             )
 
                             // Track new friend requests for notifications
@@ -672,9 +670,7 @@ class SteamService : Service() {
 
                         existingFriend != null && isValidRelationship -> {
                             friendsToUpdate.add(
-                                existingFriend.apply {
-                                    relation = relationCode
-                                }
+                                existingFriend.copy(relation = relationCode)
                             )
                         }
 
@@ -776,16 +772,16 @@ class SteamService : Service() {
     }
 
     private val onPicsChanges: Consumer<PICSChangesCallback> = Consumer {
-        if (account.lastChangeNumber == it.currentChangeNumber) {
-            Timber.w("Change number was the same as last change number, skipping")
-            return@Consumer
-        }
-
-        Timber.d("onPicsChanges()")
-
-        account.lastChangeNumber = it.currentChangeNumber
-
         scope.launch {
+            if (account.lastChangeNumber.first() == it.currentChangeNumber) {
+                Timber.w("Change number was the same as last change number, skipping")
+                return@launch
+            }
+
+            Timber.d("onPicsChanges()")
+
+            account.setLastChangeNumber(it.currentChangeNumber)
+
             it.appChanges.values
                 .filter { value ->
                     // only queue PICS requests for apps existing in the db that have changed
@@ -799,18 +795,24 @@ class SteamService : Service() {
             val pkgsWithChanges = it.packageChanges.values
                 .filter { changeData ->
                     // only queue PICS requests for pkgs existing in the db that have changed
-                    val pkg = db.steamLicenseDao().findLicense(changeData.id) ?: return@filter false
+                    val pkg = db.steamLicenseDao().findLicense(changeData.id)
+                        ?: return@filter false
+
                     changeData.changeNumber != pkg.lastChangeNumber
                 }
+
             val pkgsForAccessTokens = pkgsWithChanges
                 .filter { value -> value.isNeedsToken }
                 .map { value -> value.id }
+
             val accessTokens = steamApps!!
                 .picsGetAccessTokens(appIds = emptyList(), packageIds = pkgsForAccessTokens)
                 .await()
                 .packageTokens
-            val picsRequest = pkgsWithChanges
-                .map { value -> PICSRequest(value.id, accessTokens[value.id] ?: 0) }
+
+            val picsRequest = pkgsWithChanges.map { value ->
+                PICSRequest(value.id, accessTokens[value.id] ?: 0)
+            }
 
             Timber.d("onPicsChanges: Queueing ${picsRequest.size} package requests")
             steamApps!!.picsGetProductInfo(apps = emptyList(), packages = picsRequest)
@@ -848,7 +850,8 @@ class SteamService : Service() {
                 .mapNotNull { app ->
                     val appFromDb = db.steamAppDao().findApp(app.id)
                     val packageId = appFromDb?.packageId ?: Int.MAX_VALUE
-                    val packageFromDb = if (packageId != Int.MAX_VALUE) db.steamLicenseDao().findLicense(packageId) else null
+                    val packageFromDb = if (packageId != Int.MAX_VALUE) db.steamLicenseDao()
+                        .findLicense(packageId) else null
                     val ownerAccountId = packageFromDb?.ownerAccountID ?: emptyList()
 
 
@@ -943,7 +946,7 @@ class SteamService : Service() {
         while (isActive && _isLoggedIn.value) {
             delay(1.minutes)
 
-            val lastChangeNumber = account.lastChangeNumber
+            val lastChangeNumber = account.lastChangeNumber.first() ?: 0
 
             Timber.d("picsGetChangesSince($lastChangeNumber)")
 

@@ -24,12 +24,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // kapt {
-        //     arguments {
-        //         arg("room.schemaLocation", "$projectDir/schemas".toString())
-        //     }
-        // }
-
         // applicationVariants.all { variant ->
         //     variant.outputs.all { output ->
         //         outputFileName = "vapulla-${variant.versionName}.apk"
@@ -69,34 +63,29 @@ android {
 }
 
 dependencies {
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.bundles.compose)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-
     // JavaSteam
     implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT") { isChanging = true }
-    // implementation(files("C:/Users/Lossy/IdeaProjects/javasteam/build/libs/javasteam-1.7.1-SNAPSHOT.jar"))
-    // implementation("commons-io:commons-io:2.19.0")
-    // implementation("org.apache.commons:commons-lang3:3.17.0")
-    // implementation("commons-validator:commons-validator:1.9.0")
-    // implementation("io.ktor:ktor-client-cio:3.2.2")
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.compose)
+    implementation(libs.bundles.koin)
+    debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.android.timber)
-    implementation(libs.nav3.runtime)
-    implementation(libs.nav3.ui)
+    implementation(libs.androidx.compose.material3.windowsizeclass)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.nav3)
+    implementation(libs.androidx.material3.adaptive)
+
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.compose.material3.windowsizeclass)
-    implementation(libs.androidx.material3.adaptive)
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
+    implementation(libs.nav3.runtime)
+    implementation(libs.nav3.ui)
 
-    implementation("androidx.preference:preference:1.2.1") // TODO Remove
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.google.protobuf:protobuf-java:4.32.1")
     implementation("com.squareup.okhttp3:okhttp:5.2.1")
     implementation("com.github.skydoves:landscapist-coil:2.6.1")
@@ -108,8 +97,6 @@ dependencies {
     implementation("androidx.room:room-paging:2.8.2")
     implementation("androidx.paging:paging-compose:3.3.6")
     ksp("androidx.room:room-compiler:2.8.2")
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
 }
 
 

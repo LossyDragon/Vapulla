@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -74,13 +75,13 @@ class LoginViewModel(
         viewModelScope.launch {
             connection.isBound.collect { bound ->
                 if (bound &&
-                    (!accountManager.username.isNullOrBlank() &&
-                            !accountManager.loginKey.isNullOrBlank())
+                    (!accountManager.username.first().isNullOrBlank() &&
+                            !accountManager.refreshToken.first().isNullOrBlank())
                 ) {
                     _uiState.update {
                         it.copy(
-                            username = accountManager.username!!,
-                            refreshToken = accountManager.loginKey!!,
+                            username = accountManager.username.first()!!,
+                            refreshToken = accountManager.refreshToken.first()!!,
                             isLoading = true
                         )
                     }

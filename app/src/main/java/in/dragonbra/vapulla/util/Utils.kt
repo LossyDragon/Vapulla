@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.util
 
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.vapulla.manager.AccountManager
+import kotlinx.coroutines.flow.first
 import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
@@ -9,7 +10,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.regex.Pattern
-
 
 object Utils {
 
@@ -82,13 +82,13 @@ object Utils {
         }
     }
 
-    fun getUniqueId(accountManager: AccountManager): Int {
-        if (accountManager.uuid == 0) {
+  suspend  fun getUniqueId(accountManager: AccountManager): Int {
+        if (accountManager.uuid.first() == null) {
             val uniqueID = UUID.randomUUID()
-            accountManager.uuid = uniqueID.hashCode()
+            accountManager.setUuid(uniqueID.hashCode())
         }
 
-        return accountManager.uuid
+        return accountManager.uuid.first()!!
     }
 
     fun printKeyValue(keyvalue: KeyValue, depth: Int) {

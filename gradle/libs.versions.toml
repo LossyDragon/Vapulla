@@ -11,7 +11,7 @@ nav3Core = "1.0.0-alpha11"
 nav3Lifecycle = "1.0.0-alpha04"
 kotlinSerialization = "2.2.20"
 kotlinxSerializationCore = "1.9.0"
-koin = "4.0.4"
+koin = "4.1.1"
 windowsizeclass = "1.4.0"
 material3Adaptive = "1.2.0-rc01"
 timber = "5.0.1"
@@ -56,6 +56,13 @@ compose = [
     "androidx-compose-ui-tooling-preview",
     "material-kolor",
 ]
+
+koin = [
+    "koin-android",
+    "koin-core",
+    "koin-androidx-compose",
+]
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

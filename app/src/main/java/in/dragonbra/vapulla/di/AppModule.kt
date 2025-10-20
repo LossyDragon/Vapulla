@@ -38,6 +38,6 @@ val appModule = module {
 
     /* ViewModels */
     viewModel { LoginViewModel(get(), get()) }
-    viewModel { HomeViewModel(get(), get(), get()) }
+    viewModel { HomeViewModel(get()) }
     viewModel { GamesViewModel(get()) }
 }

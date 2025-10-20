@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
@@ -22,53 +21,43 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
-import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.data.dao.SteamAppDao
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.SearchAppBar
 import `in`.dragonbra.vapulla.ui.composables.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.mock.mockSteamAppDao
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
-import kotlinx.coroutines.flow.flowOf
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.KoinApplicationPreview
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GamesScreen(
-    viewmodel: GamesViewModel,
+    viewModel: GamesViewModel,
     onNavDrawerAction: () -> Unit,
 ) {
-    val steamApps = viewmodel.steamApps.collectAsLazyPagingItems()
-    val searchQuery by viewmodel.searchQuery.collectAsState()
-    GamesScreenContent(
-        steamApps = steamApps,
-        searchQuery = searchQuery,
-        onSearchQueryChange = viewmodel::updateSearchQuery,
-        onNavDrawerAction = onNavDrawerAction,
-    )
-}
+    val steamApps = viewModel.steamApps.collectAsLazyPagingItems()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun GamesScreenContent(
-    steamApps: LazyPagingItems<SteamApp>,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onNavDrawerAction: () -> Unit,
-) {
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(textFieldState.text.toString()) {
-        onSearchQueryChange(textFieldState.text.toString())
+        viewModel.updateSearchQuery(textFieldState.text.toString())
     }
 
     Scaffold(
@@ -152,20 +141,23 @@ fun GamesScreenContent(
 @Preview
 @Composable
 private fun Preview() {
-    VapullaTheme {
-        val fakeSteamApps = listOf(
-            SteamApp(id = 1, name = "Counter-Strike 2", packageId = 100),
-            SteamApp(id = 2, name = "Dota 2", packageId = 101),
-            SteamApp(id = 3, name = "Team Fortress 2", packageId = 102),
-            SteamApp(id = 4, name = "Portal 2", packageId = 103),
-            SteamApp(id = 5, name = "Half-Life 2", packageId = 104),
-        )
-        val pagingData = flowOf(PagingData.from(fakeSteamApps))
-        GamesScreenContent(
-            steamApps = pagingData.collectAsLazyPagingItems(),
-            searchQuery = "",
-            onSearchQueryChange = { },
-            onNavDrawerAction = { },
-        )
+    val context = LocalContext.current
+    val previewModule = module {
+        single<SteamAppDao> { mockSteamAppDao }
+        viewModel { GamesViewModel(get()) }
     }
+    KoinApplicationPreview(
+        application = {
+            androidContext(context.applicationContext)
+            modules(previewModule)
+        },
+        content = {
+            VapullaTheme {
+                GamesScreen(
+                    viewModel = koinViewModel(),
+                    onNavDrawerAction = {}
+                )
+            }
+        }
+    )
 }

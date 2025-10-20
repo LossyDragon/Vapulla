@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.composables
 
+import android.app.Application
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,26 +27,34 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EPersonaState
+import `in`.dragonbra.vapulla.VapullaApplication
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.di.appModule
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.ui.Routes
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
+import org.koin.android.ext.koin.androidContext
+import org.koin.compose.KoinApplicationPreview
+import org.koin.compose.getKoin
+import org.koin.dsl.module
+import timber.log.Timber
 
 @Composable
 fun NavigationDrawerContent(
@@ -61,9 +70,7 @@ fun NavigationDrawerContent(
         ) {
             Spacer(Modifier.height(12.dp))
 
-            DrawerHeader(
-
-            )
+            DrawerHeader()
 
             Spacer(Modifier.height(12.dp))
 
@@ -114,29 +121,22 @@ fun NavigationDrawerContent(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DrawerHeader() {
-    val context = LocalContext.current
-    var localAccount by remember { mutableStateOf(SteamFriend(0)) }
+    val koin = getKoin()
+    val accountManager = remember(koin) { koin.get<AccountManager>() }
+    val serviceConnection = remember(koin) { koin.get<ServiceConnection>() }
+    val avatar by accountManager.accountAvatar.collectAsStateWithLifecycle(null)
+    val name by accountManager.accountName.collectAsStateWithLifecycle(null)
+    val state by accountManager.accountPersonaState.collectAsStateWithLifecycle(null)
 
-    DisposableEffect(Unit) {
-        val accountManager = AccountManager(context)
-        localAccount = localAccount.copy(
-            avatar = accountManager.avatarHash ?: Utils.Constants.MISSING_AVATAR_URL,
-            name = accountManager.nickname ?: "",
-            state = accountManager.state
+    val localUser = remember(avatar, name, state) {
+        val personaState = EPersonaState.from(state ?: 0)
+        Timber.d("Drawer Header: $name is  ${personaState.name}")
+        SteamFriend(
+            id = 0,
+            name = name ?: "",
+            avatar = avatar ?: Utils.Constants.MISSING_AVATAR_URL,
+            state = personaState
         )
-        val listener = object : AccountManager.AccountManagerListener {
-            override fun unAccountUpdate(account: AccountManager) {
-                localAccount = localAccount.copy(
-                    avatar = account.avatarHash ?: Utils.Constants.MISSING_AVATAR_URL,
-                    name = accountManager.nickname ?: "",
-                    state = account.state
-                )
-            }
-        }
-        accountManager.addListener(listener)
-        onDispose {
-            accountManager.removeListener(listener)
-        }
     }
 
     Column(
@@ -146,13 +146,13 @@ private fun DrawerHeader() {
         content = {
             FriendAvatar(
                 size = 128.dp,
-                friend = localAccount
+                friend = localUser
             )
 
             Spacer(Modifier.height(12.dp))
 
             Text(
-                text = localAccount.nameOrNickname,
+                text = localUser.nameOrNickname,
                 style = MaterialTheme.typography.titleLargeEmphasized
             )
 
@@ -162,19 +162,28 @@ private fun DrawerHeader() {
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = 0,
-                        count = 2
+                        count = 3
                     ),
-                    onClick = { TODO() },
-                    selected = localAccount.state == EPersonaState.Online,
+                    onClick = { serviceConnection.setPersonaState(EPersonaState.Online) },
+                    selected = localUser.state == EPersonaState.Online,
                     label = { Text(EPersonaState.Online.name) }
                 )
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = 1,
-                        count = 2
+                        count = 3
                     ),
-                    onClick = { TODO() },
-                    selected = localAccount.state != EPersonaState.Online,
+                    onClick = { serviceConnection.setPersonaState(EPersonaState.Away) },
+                    selected = localUser.state == EPersonaState.Away,
+                    label = { Text(EPersonaState.Away.name) }
+                )
+                SegmentedButton(
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = 2,
+                        count = 3
+                    ),
+                    onClick = { serviceConnection.setPersonaState(EPersonaState.Invisible) },
+                    selected = localUser.state == EPersonaState.Invisible,
                     label = { Text(EPersonaState.Invisible.name) }
                 )
             }
@@ -198,18 +207,34 @@ private fun DrawerItem(
     )
 }
 
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview
 @Composable
 private fun Preview() {
-    ModalNavigationDrawer(
-        drawerState = rememberDrawerState(DrawerValue.Open),
-        drawerContent = {
-            NavigationDrawerContent(
-                currentSelection = Routes.Downloads,
-                onLogOut = { },
-                onNavigationClick = { },
-            )
+    val context = LocalContext.current
+    val previewModule = module {
+        single<AccountManager> { AccountManager(context) }
+        single<ServiceConnection> { ServiceConnection(context) }
+    }
+
+    KoinApplicationPreview(
+        application = {
+            androidContext(context)
+            modules(previewModule)
         },
-        content = { }
+        {
+            VapullaTheme {
+                ModalNavigationDrawer(
+                    drawerState = rememberDrawerState(DrawerValue.Open),
+                    drawerContent = {
+                        NavigationDrawerContent(
+                            currentSelection = Routes.Downloads,
+                            onLogOut = { },
+                            onNavigationClick = { },
+                        )
+                    },
+                    content = { }
+                )
+            }
+        }
     )
 }

@@ -15,17 +15,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import timber.log.Timber
 
 class HomeViewModel(
-    db: VapullaDatabase,
-    private val serviceConnection: ServiceConnection,
-    private val accountManager: AccountManager,
+    db: SteamFriendDao,
 ) : ViewModel() {
 
     private val _stickyHeaders = MutableStateFlow(emptySet<Int>())
     val stickyHeaders: StateFlow<Set<Int>> = _stickyHeaders.asStateFlow()
 
-    val friends: StateFlow<Map<Int, List<SteamFriend>>> = db.steamFriendDao()
+    val friends: StateFlow<Map<Int, List<SteamFriend>>> = db
         .getFriendsFlow()
         .map { friends ->
             friends.filter { it.isFriend && !it.isBlocked }
@@ -54,6 +53,11 @@ class HomeViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
         )
+
+    override fun onCleared() {
+        super.onCleared()
+        Timber.d("onCleared")
+    }
 
     fun onStickyHeaderAction(value: Int) {
         val list = stickyHeaders.value.toMutableSet()

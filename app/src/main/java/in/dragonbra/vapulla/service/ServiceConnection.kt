@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.core.content.ContextCompat
+import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,5 +68,10 @@ class ServiceConnection(
     fun stopForegroundService() {
         val intent = Intent(context, SteamService::class.java)
         context.stopService(intent)
+    }
+
+    fun setPersonaState(state: EPersonaState) {
+        steamService!!.setPersonaState(state)
+
     }
 }
