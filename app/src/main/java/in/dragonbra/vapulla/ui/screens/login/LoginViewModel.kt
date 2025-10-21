@@ -183,7 +183,6 @@ class LoginViewModel(
         connection.steamService!!.handleCredentialLogin(
             username = state.username,
             password = state.password,
-            refreshToken = state.refreshToken,
             authenticator = authenticator,
         )
     }

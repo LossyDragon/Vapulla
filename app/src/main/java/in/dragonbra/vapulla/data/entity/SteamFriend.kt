@@ -60,7 +60,7 @@ data class SteamFriend(
         get() = nickname.ifEmpty { name.ifEmpty { "<unknown>" } }
 
     val isPlayingGame: Boolean
-        get() = if (isOnline) gameAppID > 0 || gameName.isEmpty().not() else false
+        get() = if (isOnline) gameName.isNotEmpty() || gameAppID != 0  else false
 
     val isPlayingGameName: String
         get() = if (isPlayingGame) {

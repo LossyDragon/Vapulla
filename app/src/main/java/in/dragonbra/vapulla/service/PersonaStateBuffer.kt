@@ -3,6 +3,7 @@ package `in`.dragonbra.vapulla.service
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.data.dao.SteamAppDao
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class PersonaStateBuffer(
     private val steamFriendDao: SteamFriendDao,
+    private val steamAppDao: SteamAppDao,
     private val scope: CoroutineScope,
 ) {
     private val map: MutableMap<SteamID, PersonaStateCallback> = ConcurrentHashMap()
@@ -77,12 +79,12 @@ class PersonaStateBuffer(
                 state.lastLogoff.time > friend.lastLogOff
     }
 
-    private fun updateFriendFromState(friend: SteamFriend, state: PersonaStateCallback) {
+    private suspend fun updateFriendFromState(friend: SteamFriend, state: PersonaStateCallback) {
         val avatarHash = state.avatarHash.toHexString()
         friend.name = state.playerName
         friend.avatar = avatarHash
         friend.state = state.personaState
-        // friend.gameName = steamAppDao.findApp(state.gamePlayedAppId)?.name ?: state.gameName
+        friend.gameName = state.gameName.ifEmpty { steamAppDao.findApp(state.gamePlayedAppId)?.name.orEmpty() }
         friend.gameAppID = state.gamePlayedAppId
         friend.lastLogOn = state.lastLogon.time
         friend.lastLogOff = state.lastLogoff.time

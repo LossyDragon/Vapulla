@@ -33,11 +33,13 @@ val appModule = module {
     single { get<VapullaDatabase>().steamAppDao() }
     single { get<VapullaDatabase>().steamLicenseDao() }
 
-    single { AccountManager(androidApplication()) }
-    single { ServiceConnection(androidApplication()) }
-
     /* ViewModels */
     viewModel { LoginViewModel(get(), get()) }
     viewModel { HomeViewModel(get()) }
-    viewModel { GamesViewModel(get()) }
+    viewModel { GamesViewModel(get(), get()) }
+
+
+    /* Other */
+    single { AccountManager(androidApplication()) }
+    single { ServiceConnection(androidApplication()) }
 }

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
@@ -21,6 +22,7 @@ class AccountManager(private val context: Context) {
         val ACCOUNT_NAME = stringPreferencesKey("account_name")
         val ACCOUNT_AVATAR_HASH = stringPreferencesKey("account_avatar_hash")
         val ACCOUNT_PERSONA_STATE = intPreferencesKey("account_state")
+        val ACCOUNT_STEAMID = longPreferencesKey("account_steamid")
 
         val LOGIN_USERNAME = stringPreferencesKey("account_username")
         val LOGIN_REFRESH_TOKEN = stringPreferencesKey("account_refresh_token")
@@ -40,6 +42,10 @@ class AccountManager(private val context: Context) {
     val uuid = context.dataStore.data
         .catch { handleException(it) }
         .map { it[LOGIN_UUID] }
+
+    val steamid = context.dataStore.data
+        .catch { handleException(it) }
+        .map { it[ACCOUNT_STEAMID] }
 
     val lastChangeNumber = context.dataStore.data
         .catch { handleException(it) }
@@ -90,6 +96,7 @@ class AccountManager(private val context: Context) {
             prefs[ACCOUNT_NAME] = localUser.playerName
             prefs[ACCOUNT_AVATAR_HASH] = localUser.avatarHash.toHexString()
             prefs[ACCOUNT_PERSONA_STATE] = localUser.personaState.code()
+            prefs[ACCOUNT_STEAMID] = localUser.friendId.convertToUInt64()
         }
     }
 

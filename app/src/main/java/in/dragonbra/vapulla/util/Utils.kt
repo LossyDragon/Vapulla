@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.util
 
+import androidx.core.text.HtmlCompat
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.vapulla.manager.AccountManager
 import kotlinx.coroutines.flow.first
@@ -29,7 +30,12 @@ object Utils {
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
 
     private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
+    private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
     private val systemZone = ZoneId.systemDefault()
+
+    // val dateFormatter = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
+
+    fun String.decodeHtml() = HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
 
     fun getAvatarURL(string: String?): String =
         string.orEmpty()
@@ -37,6 +43,12 @@ object Utils {
             ?.takeIf { str -> str.isNotEmpty() && !str.all { it == '0' } }
             ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
             ?: Constants.MISSING_AVATAR_URL
+
+    fun Long.toDateString(): String {
+        val instant = Instant.ofEpochSecond(this)
+        val localDateTime = LocalDateTime.ofInstant(instant, systemZone)
+        return localDateTime.format(dateFormatter)
+    }
 
     fun Long.toTimeString(): String {
         val instant = Instant.ofEpochMilli(this)
@@ -82,7 +94,7 @@ object Utils {
         }
     }
 
-  suspend  fun getUniqueId(accountManager: AccountManager): Int {
+    suspend fun getUniqueId(accountManager: AccountManager): Int {
         if (accountManager.uuid.first() == null) {
             val uniqueID = UUID.randomUUID()
             accountManager.setUuid(uniqueID.hashCode())
@@ -93,7 +105,8 @@ object Utils {
 
     fun printKeyValue(keyvalue: KeyValue, depth: Int) {
         if (keyvalue.children.isEmpty())
-                Timber.tag("KeyValue").d(" ".repeat(depth * 4) + " " + keyvalue.name + ": " + keyvalue.value)
+            Timber.tag("KeyValue")
+                .d(" ".repeat(depth * 4) + " " + keyvalue.name + ": " + keyvalue.value)
         else {
             Timber.tag("KeyValue").d(" ".repeat(depth * 4) + " " + keyvalue.name + ":")
             for (child in keyvalue.children) printKeyValue(child, depth + 1)

@@ -203,7 +203,7 @@ object NotificationHelper {
             val request = ImageRequest.Builder(context)
                 .data(avatarUrl)
                 .transformations(CircleCropTransformation())
-                .size(200) // Adjust size as needed for notification
+                .size(200)
                 .build()
 
             val result = imageLoader.execute(request)

@@ -140,7 +140,7 @@ class SteamService : Service() {
     private val requestsToNotify = mutableSetOf<SteamID>()
 
     private val picsRequestChannel = Channel<Int>(Channel.UNLIMITED)
-    private lateinit var  stateBuffer: PersonaStateBuffer
+    private lateinit var stateBuffer: PersonaStateBuffer
 
     private var currentAuthJob: Job? = null
 
@@ -157,7 +157,11 @@ class SteamService : Service() {
 
         Timber.i("onCreate")
 
-        stateBuffer = PersonaStateBuffer(db.steamFriendDao(), scope)
+        stateBuffer = PersonaStateBuffer(
+            steamFriendDao = db.steamFriendDao(),
+            steamAppDao = db.steamAppDao(),
+            scope = scope
+        )
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
             .setLabel("Reply")
@@ -293,7 +297,6 @@ class SteamService : Service() {
     fun handleCredentialLogin(
         username: String? = null,
         password: String? = null,
-        refreshToken: String? = null,
         authenticator: IAuthenticator,
     ) {
         Timber.d("handleCredentialLogin() - Starting and Logging into Steam")
@@ -582,7 +585,7 @@ class SteamService : Service() {
                 continuousFriendChecker()
             }
 
-            EResult.InvalidPassword -> scope.launch { account.setRefreshToken(null) }
+            EResult.InvalidPassword -> scope.launch { account.clearPreferences() }
 
             else -> Timber.w("onLoggedOn() got unknown result ${it.result}")
         }
@@ -850,66 +853,113 @@ class SteamService : Service() {
     private val onLicenseList: Consumer<LicenseListCallback> = Consumer {
         Timber.d("onLicenseList()")
 
-        return@Consumer
-
         val result = it.result
 
         if (result != EResult.OK) {
-            Timber.w("Failed to get license list.")
+            Timber.w("Failed to get license list: $result")
+            return@Consumer
         }
 
         scope.launch {
-            val licenseToAdd = it.licenseList
+            val incomingLicenses = it.licenseList
+            val existingLicenses = db.steamLicenseDao().getAllLicenses()
+
+            // Create lookup maps for efficient comparison
+            val existingLicenseMap = existingLicenses.associateBy { license -> license.packageID }
+            val incomingPackageIds = incomingLicenses.map { license -> license.packageID }.toSet()
+
+            // Find licenses that need to be added or updated
+            val licensesToProcess = it.licenseList
                 .groupBy { license -> license.packageID }
-                .map { entry ->
+                .mapNotNull { entry ->
                     val preferredAccount = entry.value.firstOrNull { value ->
                         val mySid = steamUser!!.steamID?.accountID?.toInt()
                         value.ownerAccountID == mySid
                     } ?: entry.value.first()
 
-                    SteamLicense(
-                        packageID = entry.key,
-                        lastChangeNumber = preferredAccount.lastChangeNumber,
-                        timeCreated = preferredAccount.timeCreated,
-                        timeNextProcess = preferredAccount.timeNextProcess,
-                        minuteLimit = preferredAccount.minuteLimit,
-                        minutesUsed = preferredAccount.minutesUsed,
-                        paymentMethod = preferredAccount.paymentMethod,
-                        licenseFlags = entry.value
-                            .map { value -> value.licenseFlags }
-                            .reduceOrNull { first, second ->
-                                val combined = EnumSet.copyOf(first)
-                                combined.addAll(second)
-                                combined
-                            } ?: EnumSet.noneOf(ELicenseFlags::class.java),
-                        purchaseCode = preferredAccount.purchaseCode,
-                        licenseType = preferredAccount.licenseType,
-                        territoryCode = preferredAccount.territoryCode,
-                        accessToken = preferredAccount.accessToken,
-                        ownerAccountID = entry.value.map { value -> value.ownerAccountID },
-                        masterPackageID = preferredAccount.masterPackageID,
-                    )
+                    val existingLicense = existingLicenseMap[entry.key]
+
+                    // Only process if:
+                    // 1. License doesn't exist in DB, OR
+                    // 2. License has been updated (different lastChangeNumber)
+                    if (existingLicense == null ||
+                        existingLicense.lastChangeNumber != preferredAccount.lastChangeNumber
+                    ) {
+
+                        SteamLicense(
+                            packageID = entry.key,
+                            lastChangeNumber = preferredAccount.lastChangeNumber,
+                            timeCreated = preferredAccount.timeCreated,
+                            timeNextProcess = preferredAccount.timeNextProcess,
+                            minuteLimit = preferredAccount.minuteLimit,
+                            minutesUsed = preferredAccount.minutesUsed,
+                            paymentMethod = preferredAccount.paymentMethod,
+                            licenseFlags = entry.value
+                                .map { value -> value.licenseFlags }
+                                .reduceOrNull { first, second ->
+                                    val combined = EnumSet.copyOf(first)
+                                    combined.addAll(second)
+                                    combined
+                                } ?: EnumSet.noneOf(ELicenseFlags::class.java),
+                            purchaseCode = preferredAccount.purchaseCode,
+                            licenseType = preferredAccount.licenseType,
+                            territoryCode = preferredAccount.territoryCode,
+                            accessToken = preferredAccount.accessToken,
+                            ownerAccountID = entry.value.map { value -> value.ownerAccountID },
+                            masterPackageID = preferredAccount.masterPackageID,
+                            // Preserve existing app/depot data if updating
+                            appIds = existingLicense?.appIds ?: emptyList(),
+                            depotIds = existingLicense?.depotIds ?: emptyList(),
+                        )
+                    } else {
+                        null // Skip unchanged licenses
+                    }
                 }
 
-            if (licenseToAdd.isNotEmpty()) {
-                Timber.i("Adding ${licenseToAdd.size} licenses")
-                db.steamLicenseDao().insert(licenseToAdd)
+            if (licensesToProcess.isNotEmpty()) {
+                Timber.i("Adding/updating ${licensesToProcess.size} licenses")
+                db.steamLicenseDao().insert(licensesToProcess)
             }
 
-            val licensesToRemove = db.steamLicenseDao()
-                .findStaleLicences(it.licenseList.map { value -> value.packageID })
+            // Find licenses that were removed (exist in DB but not in incoming list)
+            val licensesToRemove = existingLicenses.filter { license ->
+                license.packageID !in incomingPackageIds
+            }
 
             if (licensesToRemove.isNotEmpty()) {
-                Timber.i("Removing ${licensesToRemove.size} (stale) licenses")
-                val packageIds = licensesToRemove.map { value -> value.packageID }
+                Timber.i("Removing ${licensesToRemove.size} stale licenses")
+
+                // Clean up associated SteamApps
+                licensesToRemove.forEach { license ->
+                    // Remove apps that were only associated with this package
+                    license.appIds.forEach { appId ->
+                        val app = db.steamAppDao().findApp(appId)
+                        if (app != null && app.packageId == license.packageID) {
+                            // Reset to stub state or remove entirely
+                            db.steamAppDao().update(
+                                app.copy(
+                                    packageId = Int.MAX_VALUE,
+                                    ownerAccountId = emptyList(),
+                                    licenseFlags = EnumSet.noneOf(ELicenseFlags::class.java)
+                                )
+                            )
+                        }
+                    }
+                }
+
+                val packageIds = licensesToRemove.map { it.packageID }
                 db.steamLicenseDao().deleteStaleLicenses(packageIds)
             }
 
-            // Get PICS information with the current license database.
-            val picsRequests = db.steamLicenseDao().getAllLicenses()
-                .map { value -> PICSRequest(value.packageID, value.accessToken) }
+            // Only request PICS for NEW or UPDATED licenses
+            if (licensesToProcess.isNotEmpty()) {
+                val picsRequests = licensesToProcess.map { license ->
+                    PICSRequest(license.packageID, license.accessToken)
+                }
 
-            steamApps!!.picsGetProductInfo(apps = emptyList(), packages = picsRequests)
+                Timber.d("Requesting PICS for ${picsRequests.size} licenses")
+                steamApps!!.picsGetProductInfo(apps = emptyList(), packages = picsRequests)
+            }
         }
     }
 
@@ -949,12 +999,9 @@ class SteamService : Service() {
             db.steamFriendDao().findFriendsInGame()
                 // .also { friends -> Timber.d("Found ${friends.size} friends in game") }
                 .forEach { friend ->
-                    db.steamAppDao().findApp(friend.gameAppID)?.let { app ->
-                        if (friend.gameName != app.name) {
-                            // Timber.d("Updating ${friend.name} with game ${app.name}")
-                            db.steamFriendDao().update(friend.copy(gameName = app.name))
-                        }
-                    } ?: picsRequestChannel.send(friend.gameAppID)
+                    if (db.steamAppDao().findApp(friend.gameAppID) != null) {
+                        picsRequestChannel.send(friend.gameAppID)
+                    }
                 }
         }
     }

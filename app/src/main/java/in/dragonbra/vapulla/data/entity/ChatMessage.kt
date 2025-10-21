@@ -4,9 +4,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.text.DateFormat
-import java.util.Date
-import java.util.Locale
 
 @Entity(tableName = "chat_message", indices = [Index("friendId")])
 data class ChatMessage(
@@ -18,12 +15,8 @@ data class ChatMessage(
     var unread: Boolean,
     var timestampConfirmed: Boolean
 ) {
-    companion object {
-        private val DATE_FORMAT = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
-    }
-
-    @Ignore
-    val formattedTs = DATE_FORMAT.format(Date(timestamp)).uppercase()
+    // @Ignore
+    // val formattedTs = Utils.dateFormatter.format(Date(timestamp)).uppercase()
 
     @Ignore
     constructor(
