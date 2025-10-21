@@ -11,6 +11,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.regex.Pattern
+import kotlin.math.abs
 
 object Utils {
 
@@ -95,12 +96,11 @@ object Utils {
     }
 
     suspend fun getUniqueId(accountManager: AccountManager): Int {
-        if (accountManager.uuid.first() == null) {
-            val uniqueID = UUID.randomUUID()
-            accountManager.setUuid(uniqueID.hashCode())
+        return accountManager.uuid.first() ?: run {
+            val uniqueID = abs(UUID.randomUUID().mostSignificantBits.toInt())
+            accountManager.setUuid(uniqueID)
+            uniqueID
         }
-
-        return accountManager.uuid.first()!!
     }
 
     fun printKeyValue(keyvalue: KeyValue, depth: Int) {

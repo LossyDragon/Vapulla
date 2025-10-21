@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.ui.composables
+package `in`.dragonbra.vapulla.ui.composables.search
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth

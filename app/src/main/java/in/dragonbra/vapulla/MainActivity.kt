@@ -11,8 +11,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,7 +37,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Timber.i("Created...")
 
-        enableEdgeToEdge(navigationBarStyle = SystemBarStyle.light(TRANSPARENT, TRANSPARENT))
+        enableEdgeToEdge(
+            navigationBarStyle = SystemBarStyle.light(
+                scrim = TRANSPARENT,
+                darkScrim = TRANSPARENT
+            )
+        )
 
         setContent {
             val context = LocalContext.current
@@ -53,10 +56,9 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(permission == PackageManager.PERMISSION_GRANTED)
             }
             val launcher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission()
-            ) { isGranted ->
-                hasNotificationPermission = isGranted
-            }
+                contract = ActivityResultContracts.RequestPermission(),
+                onResult = { hasNotificationPermission = it }
+            )
             LaunchedEffect(key1 = hasNotificationPermission) {
                 if (!hasNotificationPermission) {
                     launcher.launch(Manifest.permission.POST_NOTIFICATIONS)

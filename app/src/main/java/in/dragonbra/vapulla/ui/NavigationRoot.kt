@@ -3,6 +3,7 @@ package `in`.dragonbra.vapulla.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.ui.composables.navigation.NavigationDrawer
 import `in`.dragonbra.vapulla.ui.screens.games.GamesScreen
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeScreen
@@ -71,19 +73,23 @@ fun NavigationRoot(
         }
     }
 
-    NavigationDrawer(
+    ModalNavigationDrawer(
         gesturesEnabled = backStack.last() != Routes.Login,
         drawerState = drawerState,
-        currentSelection = backStack.last(),
-        onNavigationClick = { route ->
-            backStack.removeAll { it != Routes.Home }
-            backStack.addLast(route)
-            scope.launch {
-                drawerState.close()
-            }
-        },
-        onLogOut = {
-
+        drawerContent = {
+            NavigationDrawer(
+                currentSelection = backStack.last(),
+                onLogOut = {
+                    // TODO
+                },
+                onNavigationClick = { route ->
+                    backStack.removeAll { it != Routes.Home }
+                    backStack.addLast(route)
+                    scope.launch {
+                        drawerState.close()
+                    }
+                },
+            )
         },
         content = {
             NavDisplay(

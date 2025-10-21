@@ -2,7 +2,6 @@ package `in`.dragonbra.vapulla.ui.screens.games
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,17 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
@@ -34,45 +25,59 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import `in`.dragonbra.vapulla.data.dao.SteamAppDao
 import `in`.dragonbra.vapulla.data.entity.SteamApp
-import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
-import `in`.dragonbra.vapulla.ui.composables.SearchAppBar
-import `in`.dragonbra.vapulla.ui.composables.SearchResultMessage
-import `in`.dragonbra.vapulla.ui.mock.mockSteamAppDao
+import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
+import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.screens.games.components.GameBottomSheet
+import `in`.dragonbra.vapulla.ui.screens.games.components.GameFilterButton
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
-import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.KoinApplicationPreview
-import org.koin.core.module.dsl.viewModel
-import org.koin.dsl.module
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GamesScreen(
     viewModel: GamesViewModel,
     onNavDrawerAction: () -> Unit,
 ) {
     val steamApps = viewModel.steamApps.collectAsLazyPagingItems()
+    val appTypes by viewModel.appTypes.collectAsStateWithLifecycle()
     val localAccountId by viewModel.localAccountId.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
+    GamesScreenContent(
+        steamApps = steamApps,
+        appTypes = appTypes,
+        localAccountId = localAccountId,
+        searchQuery = searchQuery,
+        onNavDrawerAction = onNavDrawerAction,
+        onSearchQuery = viewModel::updateSearchQuery,
+        onAppTypeClicked = viewModel::updateAppTypes
+    )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GamesScreenContent(
+    steamApps: LazyPagingItems<SteamApp>,
+    appTypes: Set<SteamApp.AppType>,
+    localAccountId: Long?,
+    searchQuery: String,
+    onNavDrawerAction: () -> Unit,
+    onAppTypeClicked: (SteamApp.AppType) -> Unit,
+    onSearchQuery: (String) -> Unit,
+) {
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
@@ -81,14 +86,8 @@ fun GamesScreen(
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val uriHandler = LocalUriHandler.current
 
-
-    val view = LocalView.current
-    if (view.isInEditMode) {
-        showSheet = true
-    }
-
     LaunchedEffect(textFieldState.text.toString()) {
-        viewModel.updateSearchQuery(textFieldState.text.toString())
+        onSearchQuery(textFieldState.text.toString())
     }
 
     Scaffold(
@@ -132,16 +131,7 @@ fun GamesScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text(text = "Filter") },
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Sort,
-                        contentDescription = null
-                    )
-                },
-                onClick = { showSheet = !showSheet }
-            )
+            GameFilterButton(onClick = { showSheet = !showSheet })
         },
         content = { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
@@ -188,45 +178,11 @@ fun GamesScreen(
                 }
 
                 if (showSheet) {
-                    ModalBottomSheet(
-                        onDismissRequest = { showSheet = false },
+                    GameBottomSheet(
                         sheetState = sheetState,
-                        content = {
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(4.dp),
-                                contentAlignment = Alignment.Center,
-                                content = {
-                                    Text(
-                                        text = "Not all chips will filter anything",
-                                        fontSize = 14.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            )
-
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                SteamApp.AppType.entries.forEach { category ->
-                                    val selected = viewModel.appTypes.value.contains(category)
-                                    FilterChip(
-                                        modifier = Modifier.padding(4.dp),
-                                        selected = selected,
-                                        onClick = { viewModel.updateAppTypes(category) },
-                                        label = { Text(category.name.capitalize()) },
-                                        leadingIcon = if (selected) {
-                                            { Icon(Icons.Default.Check, contentDescription = null) }
-                                        } else null
-                                    )
-                                }
-                            }
-                        }
+                        appTypes = appTypes,
+                        onDismissRequest = { showSheet = !showSheet },
+                        onAppTypeClicked = onAppTypeClicked
                     )
                 }
             }
@@ -234,29 +190,13 @@ fun GamesScreen(
     )
 }
 
-private val previewModule = module {
-    single<AccountManager> { AccountManager(androidContext()) }
-    single<SteamAppDao> { mockSteamAppDao }
-    viewModel { GamesViewModel(get(), get()) }
-}
-
 @Preview
 @Composable
 private fun Preview() {
-    val context = LocalContext.current
-
-    KoinApplicationPreview(
-        application = {
-            androidContext(context.applicationContext)
-            modules(previewModule)
-        },
-        content = {
-            VapullaTheme {
-                GamesScreen(
-                    viewModel = koinViewModel(),
-                    onNavDrawerAction = {}
-                )
-            }
-        }
-    )
+    VapullaTheme {
+        GamesScreen(
+            viewModel = koinViewModel(),
+            onNavDrawerAction = {}
+        )
+    }
 }
