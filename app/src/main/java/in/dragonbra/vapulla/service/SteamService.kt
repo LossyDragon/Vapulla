@@ -850,6 +850,8 @@ class SteamService : Service() {
     private val onLicenseList: Consumer<LicenseListCallback> = Consumer {
         Timber.d("onLicenseList()")
 
+        return@Consumer
+
         val result = it.result
 
         if (result != EResult.OK) {

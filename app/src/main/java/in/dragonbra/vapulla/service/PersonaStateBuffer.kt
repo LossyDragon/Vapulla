@@ -5,9 +5,19 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStat
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
@@ -72,7 +82,7 @@ class PersonaStateBuffer(
         friend.name = state.playerName
         friend.avatar = avatarHash
         friend.state = state.personaState
-        friend.gameName = state.gameName
+        // friend.gameName = steamAppDao.findApp(state.gamePlayedAppId)?.name ?: state.gameName
         friend.gameAppID = state.gamePlayedAppId
         friend.lastLogOn = state.lastLogon.time
         friend.lastLogOff = state.lastLogoff.time
