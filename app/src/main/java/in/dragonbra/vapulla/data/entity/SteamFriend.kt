@@ -23,7 +23,7 @@ import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+import java.util.Date
 import java.util.EnumSet
 
 private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
@@ -39,8 +39,8 @@ data class SteamFriend(
     var gameID: GameID = GameID(0),
     var gameDataBlob: ByteArray = byteArrayOf(0),
     var gameName: String = "",
-    var lastLogOn: Long = 0,
-    var lastLogOff: Long = 0,
+    var lastLogOn: Date = Date(0),
+    var lastLogOff: Date = Date(0),
     var stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
     var statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(EClientPersonaStateFlag::class.java),
     var typingTs: Long = -1,
@@ -60,7 +60,7 @@ data class SteamFriend(
         get() = nickname.ifEmpty { name.ifEmpty { "<unknown>" } }
 
     val isPlayingGame: Boolean
-        get() = if (isOnline) gameName.isNotEmpty() || gameAppID != 0  else false
+        get() = if (isOnline) gameName.isNotEmpty() || gameAppID != 0 else false
 
     val isPlayingGameName: String
         get() = if (isPlayingGame) {
@@ -70,7 +70,7 @@ data class SteamFriend(
                 relation.name
             } else {
                 if (state == EPersonaState.Offline) {
-                    lastLogOff.toTimeAgo()
+                    lastLogOff.toString()
                 } else {
                     state.name
                 }

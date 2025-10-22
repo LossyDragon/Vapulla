@@ -19,22 +19,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
-import `in`.dragonbra.vapulla.ui.mock.mockSteamFriendDao
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.coroutines.launch
-import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.KoinApplicationPreview
-import org.koin.core.module.dsl.viewModel
-import org.koin.dsl.module
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,26 +127,12 @@ fun HomeScreen(
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview() {
-    val context = LocalContext.current
-    val previewModule = module {
-        single<SteamFriendDao> { mockSteamFriendDao }
-        viewModel { HomeViewModel(get()) }
+    VapullaTheme {
+        HomeScreen(
+            viewModel = koinViewModel(),
+            onNavDrawerAction = { },
+            onFriendClick = { },
+            onFriendLongClick = { },
+        )
     }
-
-    KoinApplicationPreview(
-        application = {
-            androidContext(context.applicationContext)
-            modules(previewModule)
-        },
-        content = {
-            VapullaTheme {
-                HomeScreen(
-                    viewModel = koinViewModel(),
-                    onNavDrawerAction = { },
-                    onFriendClick = { },
-                    onFriendLongClick = { },
-                )
-            }
-        }
-    )
 }

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import androidx.core.app.RemoteInput
+import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.javasteam.enums.EPersonaState
@@ -140,7 +141,6 @@ class SteamService : Service() {
     private val requestsToNotify = mutableSetOf<SteamID>()
 
     private val picsRequestChannel = Channel<Int>(Channel.UNLIMITED)
-    private lateinit var stateBuffer: PersonaStateBuffer
 
     private var currentAuthJob: Job? = null
 
@@ -156,12 +156,6 @@ class SteamService : Service() {
         super.onCreate()
 
         Timber.i("onCreate")
-
-        stateBuffer = PersonaStateBuffer(
-            steamFriendDao = db.steamFriendDao(),
-            steamAppDao = db.steamAppDao(),
-            scope = scope
-        )
 
         remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
             .setLabel("Reply")
@@ -197,8 +191,6 @@ class SteamService : Service() {
 
         // Cancel coroutines
         scope.cancel(CancellationException("Service Destroyed"))
-
-        stateBuffer.cleanup()
 
         val intent = Intent("stop")
         sendBroadcast(intent)
@@ -244,6 +236,24 @@ class SteamService : Service() {
         val serverFile = File(filesDir, "servers.bin")
         val config = SteamConfiguration.create {
             it.withServerListProvider(FileServerListProvider(serverFile))
+            it.withDefaultPersonaStateFlags(
+                EnumSet.of(
+                    EClientPersonaStateFlag.Status,
+                    EClientPersonaStateFlag.PlayerName,
+                    EClientPersonaStateFlag.QueryPort,
+                    EClientPersonaStateFlag.SourceID,
+                    EClientPersonaStateFlag.Presence,
+                    EClientPersonaStateFlag.LastSeen,
+                    EClientPersonaStateFlag.UserClanRank,
+                    EClientPersonaStateFlag.GameExtraInfo,
+                    EClientPersonaStateFlag.GameDataBlob,
+                    EClientPersonaStateFlag.ClanData,
+                    EClientPersonaStateFlag.Facebook,
+                    EClientPersonaStateFlag.RichPresence,
+                    EClientPersonaStateFlag.Broadcast,
+                    EClientPersonaStateFlag.Watching,
+                ),
+            )
         }
 
         steamClient = SteamClient(config).also { client ->
@@ -499,7 +509,6 @@ class SteamService : Service() {
 
             _isRunning.value = true
             steamClient?.connect()
-            stateBuffer.start()
 
             NotificationHelper.updateServiceNotification(
                 context = this,
@@ -529,10 +538,6 @@ class SteamService : Service() {
             Timber.i("onDisconnected() - Disconnected from steam")
 
             stopForeground(STOP_FOREGROUND_REMOVE)
-
-            scope.launch {
-                stateBuffer.stop()
-            }
 
             _isRunning.value = false
             _isLoggedIn.value = false
@@ -598,19 +603,49 @@ class SteamService : Service() {
 
     private val onPersonaState: Consumer<PersonaStateCallback> = Consumer {
         Timber.d("onPersonaState()")
-        scope.launch {
-            if (!it.friendId.isIndividualAccount) {
-                return@launch
-            }
 
-            if (it.friendId == steamClient!!.steamID) {
-                Timber.d("Updating local user info")
+        if (!it.friendId.isIndividualAccount) {
+            return@Consumer
+        }
+
+        if (it.friendId == steamClient!!.steamID) {
+            Timber.d("Updating local user info")
+            scope.launch {
                 account.saveLocalUser(it)
+            }
+            return@Consumer
+        }
+
+        val dao = db.steamFriendDao()
+        scope.launch {
+            val dbFriend = dao.find(it.friendId.convertToUInt64())
+
+            if (dbFriend == null) {
+                Timber.d("Persona ${it.playerName} not in db to update persona state.")
                 return@launch
             }
 
-            stateBuffer.push(it)
-
+            dao.update(
+                dbFriend.copy(
+                    name = it.playerName,
+                    avatar = it.avatarHash.toHexString(),
+                    state = it.personaState,
+                    gameAppID = it.gamePlayedAppId,
+                    gameID = it.gameId,
+                    gameDataBlob = it.gameDataBlob,
+                    gameName = it.gameName.ifEmpty {
+                        if (it.gamePlayedAppId > 0) {
+                            db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: ""
+                        } else {
+                            ""
+                        }
+                    },
+                    lastLogOn = it.lastLogon,
+                    lastLogOff = it.lastLogoff,
+                    stateFlags = it.personaStateFlags,
+                    statusFlags = it.statusFlags,
+                )
+            )
 
             if (requestsToNotify.contains(it.friendId)) {
                 NotificationHelper.sendFriendRequestNotification(
@@ -627,39 +662,47 @@ class SteamService : Service() {
     private val onFriendsList: Consumer<FriendsListCallback> = Consumer {
         Timber.d("onFriendsList()")
         val dao = db.steamFriendDao()
+        val inc = it.isIncremental
 
         scope.launch {
-            it.friendList
-                .filter { friend -> friend.steamID.isIndividualAccount }
-                .forEach { friend ->
-                    val isValidRelationship = friend.relationship in listOf(
-                        EFriendRelationship.Friend,
-                        EFriendRelationship.RequestRecipient
-                    )
+            val friendsToAdd = mutableListOf<SteamFriend>()
+            val friendsToUpdate = mutableListOf<SteamFriend>()
+            val friendsToRemove = mutableListOf<SteamFriend>()
 
-                    val friendId = friend.steamID.convertToUInt64()
-                    val friendInDb = dao.find(friendId)
-                    val friendRelationship = friend.relationship
+            it.friendList.forEach { friendItem ->
+                if (!friendItem.steamID.isIndividualAccount) {
+                    return@forEach
+                }
 
-                    if (friendInDb == null) {
-                        // Not in database, add them
-                        if (isValidRelationship) {
-                            dao.insert(SteamFriend(id = friendId, relation = friendRelationship))
-                        }
+                var friend = dao.find(friendItem.steamID.convertToUInt64())
 
-                        // Track new friend requests for notifications
-                        if (it.isIncremental && friend.relationship == EFriendRelationship.RequestRecipient) {
-                            requestsToNotify.add(friend.steamID)
-                        }
+                if (friend == null) {
+                    if (friendItem.relationship == EFriendRelationship.Friend ||
+                        friendItem.relationship == EFriendRelationship.RequestRecipient
+                    ) {
+                        friend = SteamFriend(friendItem.steamID.convertToUInt64())
+                        friend.relation = friendItem.relationship
+                        friendsToAdd.add(friend)
+                    }
+                } else {
+                    if (friendItem.relationship == EFriendRelationship.Friend ||
+                        friendItem.relationship == EFriendRelationship.RequestRecipient
+                    ) {
+                        friend.relation = friendItem.relationship
+                        friendsToUpdate.add(friend)
                     } else {
-                        if (isValidRelationship) {
-
-                            dao.update(friend = friendInDb.copy(relation = friend.relationship))
-                        } else {
-                            dao.remove(friendInDb)
-                        }
+                        friendsToRemove.add(friend)
                     }
                 }
+
+                if (inc && friend!!.relation == EFriendRelationship.RequestRecipient) {
+                    requestsToNotify.add(friendItem.steamID)
+                }
+            }
+
+            dao.insert(friendsToAdd)
+            dao.update(friendsToUpdate)
+            dao.remove(friendsToRemove)
         }
     }
 
@@ -709,6 +752,11 @@ class SteamService : Service() {
         // TODO ?
     }
 
+    private val onFriendMsgEcho: Consumer<FriendMsgEchoCallback> = Consumer {
+        Timber.d("onFriendMsgEcho()")
+        // TODO ?
+    }
+
     private val onNicknameList: Consumer<NicknameListCallback> = Consumer {
         Timber.d("onNicknameList()")
         scope.launch {
@@ -738,11 +786,6 @@ class SteamService : Service() {
         scope.launch {
             db.emoticonDao().replaceAll(it.emoteList)
         }
-    }
-
-    private val onFriendMsgEcho: Consumer<FriendMsgEchoCallback> = Consumer {
-        Timber.d("onFriendMsgEcho()")
-        // TODO ?
     }
 
     private val onPicsChanges: Consumer<PICSChangesCallback> = Consumer {
@@ -994,14 +1037,22 @@ class SteamService : Service() {
     }
 
     private fun continuousFriendChecker() = scope.launch {
+        val appDao = db.steamAppDao()
+        val friendDao = db.steamFriendDao()
         while (isActive && _isLoggedIn.value) {
-            delay(5.seconds)
-            db.steamFriendDao().findFriendsInGame()
-                // .also { friends -> Timber.d("Found ${friends.size} friends in game") }
+            delay(15.seconds)
+            friendDao.findFriendsInGame()
+                .also { friends -> Timber.d("Found ${friends.size} friends in game") }
                 .forEach { friend ->
-                    if (db.steamAppDao().findApp(friend.gameAppID) != null) {
-                        picsRequestChannel.send(friend.gameAppID)
+                    if (friend.gameAppID <= 0) {
+                        return@forEach
                     }
+
+                    appDao.findApp(friend.gameAppID)?.let {
+                        if (friend.gameName != it.name) {
+                            friendDao.update(friend.copy(gameName = it.name))
+                        }
+                    } ?: picsRequestChannel.send(friend.gameAppID)
                 }
         }
     }
