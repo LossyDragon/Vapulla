@@ -64,39 +64,35 @@ android {
 
 dependencies {
     // JavaSteam
-    implementation("in.dragonbra:javasteam:1.8.0-SNAPSHOT") { isChanging = true }
+    implementation(libs.bundles.javasteam) {
+        libs.javasteam.get().let {
+            if (it.version?.contains("SNAPSHOT") == true) {
+                isChanging = true
+            }
+        }
+    }
 
+    // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.compose)
-    implementation(libs.bundles.koin)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // Navigation
+    implementation(libs.bundles.navigation)
+
+    // Images & Media
+    implementation(libs.bundles.images)
+
+    // Dependency Injection
+    implementation(libs.bundles.koin)
+
+    // Database & Storage
+    implementation(libs.bundles.database)
+    ksp(libs.room.compiler)
+
+    // Utilities
     implementation(libs.android.timber)
-    implementation(libs.androidx.compose.material3.windowsizeclass)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.nav3)
-    implementation(libs.androidx.material3.adaptive)
-
-    implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.nav3.runtime)
-    implementation(libs.nav3.ui)
-
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
-    implementation("com.google.protobuf:protobuf-java:4.32.1")
-    implementation("com.squareup.okhttp3:okhttp:5.2.1")
-    implementation("com.github.skydoves:landscapist-coil:2.6.1")
-    implementation("com.github.penfeizhou.android.animation:apng:3.0.5")
-    implementation("io.github.alexzhirkevich:qrose:1.0.1")
-    implementation("org.bouncycastle:bcprov-jdk18on:1.82")
-    implementation("androidx.room:room-runtime:2.8.2")
-    implementation("androidx.room:room-ktx:2.8.2")
-    implementation("androidx.room:room-paging:2.8.2")
-    implementation("androidx.paging:paging-compose:3.3.6")
-    ksp("androidx.room:room-compiler:2.8.2")
 }
 
 

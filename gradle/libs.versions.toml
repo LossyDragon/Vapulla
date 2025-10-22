@@ -1,68 +1,114 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.2.20"
-coreKtx = "1.17.0"
-lifecycleRuntimeKtx = "2.9.4"
-activityCompose = "1.11.0"
-composeBom = "2025.10.00"
-ksp = "2.2.20-2.0.4"
-
-nav3Core = "1.0.0-alpha11"
-nav3Lifecycle = "1.0.0-alpha04"
-kotlinSerialization = "2.2.20"
-kotlinxSerializationCore = "1.9.0"
-koin = "4.1.1"
-windowsizeclass = "1.4.0"
-material3Adaptive = "1.2.0-rc01"
-timber = "5.0.1"
-materialKolor = "3.0.1"
+activityCompose = "1.11.0" # https://mvnrepository.com/artifact/androidx.activity/activity-compose
+agp = "8.13.0" # https://mvnrepository.com/artifact/com.android.application/com.android.application.gradle.plugin
+apng = "3.0.5" # https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
+bouncycastle = "1.82" # https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+composeBom = "2025.10.00" # https://mvnrepository.com/artifact/androidx.compose/compose-bom
+datastore = "1.1.7" # https://mvnrepository.com/artifact/androidx.datastore/datastore-preferences
+javasteam = "1.8.0-SNAPSHOT" # https://mvnrepository.com/artifact/in.dragonbra/javasteam
+koin = "4.1.1" # https://mvnrepository.com/artifact/io.insert-koin/koin-android
+kotlin = "2.2.20" # https://mvnrepository.com/artifact/org.jetbrains.kotlin.android/org.jetbrains.kotlin.android.gradle.plugin
+kotlinSerialization = "2.2.20" # https://mvnrepository.com/artifact/org.jetbrains.kotlin.plugin.serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin
+kotlinxSerializationCore = "1.9.0" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm
+ksp = "2.2.20-2.0.4" # https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing-api?repo=central
+landscapist = "2.6.1" # https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
+materialKolor = "3.0.1" # https://mvnrepository.com/artifact/com.google.android.material/material
+nav3Core = "1.0.0-alpha11" # https://mvnrepository.com/artifact/androidx.navigation3/navigation3-runtime
+nav3Lifecycle = "1.0.0-alpha05" # https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-viewmodel-navigation3
+paging = "3.3.6" # https://mvnrepository.com/artifact/androidx.paging/paging-compose
+protobuf = "4.32.1" # https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+qrose = "1.0.1" # https://mvnrepository.com/artifact/io.github.alexzhirkevich/qrose
+room = "2.8.2" # https://mvnrepository.com/artifact/androidx.room/room-compiler
+timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
 
 [libraries]
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha06" } # TODO material 3 expressive
-androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
-androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
-androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+# Compose UI
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3", version = "1.5.0-alpha06" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 
-material-kolor = { group = "com.materialkolor", name = "material-kolor", version.ref = "materialKolor" }
+# Navigation
 nav3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
 nav3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
-androidx-lifecycle-viewmodel-nav3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "nav3Lifecycle" }
-androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
-androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
-kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
+nav3-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "nav3Lifecycle" }
+
+# Dependency Injection
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+
+# Serialization & Data
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationCore" }
-koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
-koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
-koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
-androidx-compose-material3-windowsizeclass = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "windowsizeclass" }
-androidx-material3-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "material3Adaptive" }
+
+# Logging
 android-timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+
+# JavaSteam & Crypto
+bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+javasteam = { module = "in.dragonbra:javasteam", version.ref = "javasteam" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+
+# Images & Media
+apng = { module = "com.github.penfeizhou.android.animation:apng", version.ref = "apng" }
+landscapist-coil = { module = "com.github.skydoves:landscapist-coil", version.ref = "landscapist" }
+qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
+
+# Database & Storage
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 
 [bundles]
 compose = [
     "androidx-activity-compose",
-    "androidx-material-icons-core",
     "androidx-compose-material3",
     "androidx-compose-ui",
     "androidx-compose-ui-graphics",
-    "androidx-material-icons-extended",
     "androidx-compose-ui-tooling-preview",
+    "androidx-material-icons-core",
+    "androidx-material-icons-extended",
     "material-kolor",
+]
+
+navigation = [
+    "nav3-runtime",
+    "nav3-ui",
+    "nav3-viewmodel",
 ]
 
 koin = [
     "koin-android",
-    "koin-core",
     "koin-androidx-compose",
+    "koin-core",
 ]
 
+javasteam = [
+    "bouncycastle",
+    "javasteam",
+    "protobuf-java",
+]
+
+images = [
+    "apng",
+    "landscapist-coil",
+    "qrose",
+]
+
+database = [
+    "datastore-preferences",
+    "paging-compose",
+    "room-paging",
+    "room-runtime",
+]
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -70,4 +116,3 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
-
