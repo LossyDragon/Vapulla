@@ -106,6 +106,11 @@ class LoginViewModel(
 
                     is LoginResult.Error -> {
                         Timber.e(result.error)
+                        _uiState.value = _uiState.value.copy(
+                            loginStep = LoginStep.CREDENTIALS,
+                            isLoading = false,
+                            qrCode = "",
+                        )
                         _snackbarMessage.emit(result.error)
                     }
 

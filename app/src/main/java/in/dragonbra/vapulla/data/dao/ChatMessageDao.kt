@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.data.dao
 
 import androidx.paging.DataSource
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -10,6 +11,17 @@ import `in`.dragonbra.vapulla.data.entity.ChatMessage
 
 @Dao
 interface ChatMessageDao {
+
+    @Query("SELECT * FROM chat_message WHERE friendId = :friendId ORDER BY timestamp ASC")
+    fun getMessagesPagingSource(friendId: Long): PagingSource<Int, ChatMessage>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessage(message: ChatMessage)
+
+    @Query("UPDATE chat_message SET unread = 0 WHERE friendId = :friendId AND fromLocal = 0")
+    suspend fun markMessagesAsRead(friendId: Long)
+
+    //
 
     @Query("SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed")
     fun find(

@@ -24,13 +24,11 @@ class EmoticonListCallback(packetMsg: IPacketMsg) : CallbackMsg() {
                     Emoticon(name = fixedName, appID = it.appid, isSticker = false)
                 },
             )
-            addAll(resp.body.stickersList.map {
-                Emoticon(
-                    name = it.name,
-                    appID = it.appid,
-                    isSticker = true
-                )
-            })
+            addAll(
+                resp.body.stickersList.map {
+                    Emoticon(name = it.name, appID = it.appid, isSticker = true)
+                }
+            )
         }
     }
 }

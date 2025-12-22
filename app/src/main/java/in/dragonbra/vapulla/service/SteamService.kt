@@ -590,7 +590,11 @@ class SteamService : Service() {
                 continuousFriendChecker()
             }
 
-            EResult.InvalidPassword -> scope.launch { account.clearPreferences() }
+            EResult.InvalidPassword,
+            EResult.AccessDenied -> scope.launch {
+                _loginResult.emit(LoginResult.Error(it.result.name))
+                account.clearPreferences()
+            }
 
             else -> Timber.w("onLoggedOn() got unknown result ${it.result}")
         }
