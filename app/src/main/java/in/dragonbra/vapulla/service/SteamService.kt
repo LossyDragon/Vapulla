@@ -684,16 +684,18 @@ class SteamService : Service() {
                     if (friendItem.relationship == EFriendRelationship.Friend ||
                         friendItem.relationship == EFriendRelationship.RequestRecipient
                     ) {
-                        friend = SteamFriend(friendItem.steamID.convertToUInt64())
-                        friend.relation = friendItem.relationship
-                        friendsToAdd.add(friend)
+                        val newFriend = SteamFriend(
+                            id = friendItem.steamID.convertToUInt64(),
+                            relation = friendItem.relationship
+                        )
+                        friendsToAdd.add(newFriend)
                     }
                 } else {
                     if (friendItem.relationship == EFriendRelationship.Friend ||
                         friendItem.relationship == EFriendRelationship.RequestRecipient
                     ) {
-                        friend.relation = friendItem.relationship
-                        friendsToUpdate.add(friend)
+                        val updatedFriend = friend.copy(relation = friendItem.relationship)
+                        friendsToUpdate.add(updatedFriend)
                     } else {
                         friendsToRemove.add(friend)
                     }
@@ -730,11 +732,11 @@ class SteamService : Service() {
 
             if (unconfirmedMessage != null) {
                 // Update existing unconfirmed message
-                unconfirmedMessage.apply {
-                    this.timestamp = timestamp
-                    this.timestampConfirmed = true
-                }
-                dao.update(unconfirmedMessage)
+                val updatedMessage = unconfirmedMessage.copy(
+                    timestamp = timestamp,
+                    timestampConfirmed = true,
+                )
+                dao.update(updatedMessage)
             } else {
                 // Insert new confirmed message
                 dao.insert(
@@ -768,9 +770,8 @@ class SteamService : Service() {
             dao.clearNicknames()
 
             val friendsToUpdate = it.nicknames.mapNotNull { nicknameInfo ->
-                dao.find(nicknameInfo.steamID.convertToUInt64())?.apply {
-                    nickname = nicknameInfo.nickname
-                }
+                dao.find(nicknameInfo.steamID.convertToUInt64())
+                    ?.copy(nickname = nicknameInfo.nickname)
             }
 
             dao.update(friendsToUpdate)

@@ -3,11 +3,13 @@ package `in`.dragonbra.vapulla.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.data.VapullaDatabase
 import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +27,7 @@ class HomeViewModel(
     private val _stickyHeaders = MutableStateFlow(emptySet<Int>())
     val stickyHeaders: StateFlow<Set<Int>> = _stickyHeaders.asStateFlow()
 
-    val friends: StateFlow<Map<Int, List<SteamFriend>>> = db
+    val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = db
         .getFriendsFlow()
         .map { friends ->
             friends.filter { it.isFriend && !it.isBlocked }
@@ -49,12 +51,14 @@ class HomeViewModel(
                         else -> R.string.headerFriendOffline
                     }
                 }
+                .mapValues { it.value.toImmutableList() }
+                .toImmutableMap()
         }
         .distinctUntilChanged()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyMap()
+            initialValue = persistentMapOf()
         )
 
     override fun onCleared() {

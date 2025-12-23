@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.data.entity
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
@@ -8,6 +9,7 @@ import `in`.dragonbra.javasteam.enums.EPaymentMethod
 import java.util.Date
 import java.util.EnumSet
 
+@Immutable
 @Entity("steam_license")
 data class SteamLicense(
     @PrimaryKey val packageID: Int,
@@ -24,7 +26,6 @@ data class SteamLicense(
     val accessToken: Long = 0,
     val ownerAccountID: List<Int> = emptyList(),
     val masterPackageID: Int = 0,
-
-    var appIds: List<Int> = emptyList(),
-    var depotIds: List<Int> = emptyList(),
+    val appIds: List<Int> = emptyList(),
+    val depotIds: List<Int> = emptyList(),
 )

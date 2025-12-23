@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.data.entity
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
@@ -9,6 +10,7 @@ import kotlinx.serialization.Serializable
 import java.util.Date
 import java.util.EnumSet
 
+@Immutable
 @Entity(tableName = "steam_app")
 data class SteamApp(
     @PrimaryKey val id: Int,

@@ -21,15 +21,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.mock.mockFriendsList
+import `in`.dragonbra.vapulla.ui.mock.mockStickyHeaders
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
@@ -40,6 +46,26 @@ fun HomeScreen(
     val friendsList by viewModel.friends.collectAsState()
     val stickyHeaders by viewModel.stickyHeaders.collectAsState()
 
+    HomeScreenContent(
+        friendsList.toImmutableMap(),
+        stickyHeaders.toImmutableSet(),
+        onNavDrawerAction = onNavDrawerAction,
+        onFriendClick = onFriendClick,
+        onFriendLongClick = onFriendLongClick,
+        onStickyHeaderAction = viewModel::onStickyHeaderAction,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenContent(
+    friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
+    stickyHeaders: ImmutableSet<Int>,
+    onNavDrawerAction: () -> Unit,
+    onFriendClick: (Long) -> Unit,
+    onFriendLongClick: (Long) -> Unit,
+    onStickyHeaderAction: (Int) -> Unit,
+) {
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
@@ -116,7 +142,7 @@ fun HomeScreen(
                     .padding(padding),
                 friendsList = friendsList,
                 stickyHeaders = stickyHeaders,
-                onStickyHeaderAction = viewModel::onStickyHeaderAction,
+                onStickyHeaderAction = onStickyHeaderAction,
                 onFriendClick = onFriendClick,
                 onFriendLongClick = onFriendLongClick,
             )
@@ -128,11 +154,13 @@ fun HomeScreen(
 @Composable
 private fun Preview() {
     VapullaTheme {
-        HomeScreen(
-            viewModel = koinViewModel(),
-            onNavDrawerAction = { },
-            onFriendClick = { },
-            onFriendLongClick = { },
+        HomeScreenContent(
+            friendsList = mockFriendsList,
+            stickyHeaders = mockStickyHeaders,
+            onNavDrawerAction = {},
+                    onFriendClick = {},
+                    onFriendLongClick = {},
+                    onStickyHeaderAction = {},
         )
     }
 }

@@ -1,22 +1,23 @@
 package `in`.dragonbra.vapulla.ui.screens.home.components
 
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 import kotlin.collections.component1
 import kotlin.collections.component2
 
 @Composable
 fun FriendList(
     modifier: Modifier,
-    friendsList: Map<Int, List<SteamFriend>>,
-    stickyHeaders: Set<Int>,
+    friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
+    stickyHeaders: ImmutableSet<Int>,
     onStickyHeaderAction: (Int) -> Unit,
     onFriendClick: (Long) -> Unit,
     onFriendLongClick: (Long) -> Unit,

@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.PersonAddAlt1
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Web
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.room.Entity
@@ -28,26 +29,27 @@ import java.util.EnumSet
 
 private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
 
+@Immutable
 @Entity(tableName = "steam_friend")
 data class SteamFriend(
-    @PrimaryKey var id: Long,
-    var name: String = "",
-    var avatar: String? = Utils.Constants.MISSING_AVATAR_URL,
-    var relation: EFriendRelationship = EFriendRelationship.None,
-    var state: EPersonaState = EPersonaState.Offline,
-    var gameAppID: Int = 0,
-    var gameID: GameID = GameID(0),
-    var gameDataBlob: ByteArray = byteArrayOf(0),
-    var gameName: String = "",
-    var lastLogOn: Date = Date(0),
-    var lastLogOff: Date = Date(0),
-    var stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
-    var statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(EClientPersonaStateFlag::class.java),
-    var typingTs: Long = -1,
-    var nickname: String = "",
-    var lastMessage: String = "",
-    var lastMessageTime: Long = -1,
-    var newMessageCount: Int = 0,
+    @PrimaryKey val id: Long,
+    val name: String = "",
+    val avatar: String? = Utils.Constants.MISSING_AVATAR_URL,
+    val relation: EFriendRelationship = EFriendRelationship.None,
+    val state: EPersonaState = EPersonaState.Offline,
+    val gameAppID: Int = 0,
+    val gameID: GameID = GameID(0),
+    val gameDataBlob: ByteArray = byteArrayOf(0),
+    val gameName: String = "",
+    val lastLogOn: Date = Date(0),
+    val lastLogOff: Date = Date(0),
+    val stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
+    val statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(EClientPersonaStateFlag::class.java),
+    val typingTs: Long = -1,
+    val nickname: String = "",
+    val lastMessage: String = "",
+    val lastMessageTime: Long = -1,
+    val newMessageCount: Int = 0,
 ) {
 
     val isOnline: Boolean
