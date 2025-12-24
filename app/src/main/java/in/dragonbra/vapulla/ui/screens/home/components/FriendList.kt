@@ -3,13 +3,23 @@ package `in`.dragonbra.vapulla.ui.screens.home.components
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.MarkChatRead
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import me.saket.swipe.SwipeAction
+import me.saket.swipe.SwipeableActionsBox
+import timber.log.Timber
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -37,7 +47,16 @@ fun FriendList(
 
                 if (header !in stickyHeaders) {
                     itemsIndexed(friends, key = { _, item -> item.id }) { idx, friend ->
-                        FriendListItem(
+                        val swipeToProfile = SwipeAction(
+                            icon = rememberVectorPainter(Icons.Default.ManageAccounts),
+                            background = MaterialTheme.colorScheme.secondary,
+                            onSwipe = {
+                                Timber.d("Swipe to profile ${friend.id}")
+                                onFriendLongClick(friend.id)
+                            }
+                        )
+
+                        SwipeableActionsBox(
                             modifier = Modifier
                                 .animateItem()
                                 .fillParentMaxWidth()
@@ -45,7 +64,8 @@ fun FriendList(
                                     onClick = { onFriendClick(friend.id) },
                                     onLongClick = { onFriendLongClick(friend.id) }
                                 ),
-                            friend = friend,
+                            endActions = listOf(swipeToProfile),
+                            content = { FriendListItem(friend = friend) }
                         )
 
                         if (idx < friends.lastIndex) {

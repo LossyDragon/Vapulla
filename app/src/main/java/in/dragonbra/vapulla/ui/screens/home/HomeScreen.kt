@@ -47,8 +47,8 @@ fun HomeScreen(
     val stickyHeaders by viewModel.stickyHeaders.collectAsState()
 
     HomeScreenContent(
-        friendsList.toImmutableMap(),
-        stickyHeaders.toImmutableSet(),
+        friendsList,
+        stickyHeaders,
         onNavDrawerAction = onNavDrawerAction,
         onFriendClick = onFriendClick,
         onFriendLongClick = onFriendLongClick,
@@ -92,11 +92,6 @@ fun HomeScreenContent(
                 onNavDrawerAction = onNavDrawerAction,
                 expandedSearchBar = {
                     if (searchQuery.isNotEmpty()) {
-                        val filteredFriends = friendsList.values.flatten().filter { friend ->
-                            friend.name.contains(searchQuery, ignoreCase = true) ||
-                                    friend.nickname.contains(searchQuery, ignoreCase = true)
-                        }
-
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = 8.dp)

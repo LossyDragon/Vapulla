@@ -7,7 +7,9 @@ import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +26,8 @@ class HomeViewModel(
     db: SteamFriendDao,
 ) : ViewModel() {
 
-    private val _stickyHeaders = MutableStateFlow(emptySet<Int>())
-    val stickyHeaders: StateFlow<Set<Int>> = _stickyHeaders.asStateFlow()
+    private val _stickyHeaders = MutableStateFlow(persistentSetOf<Int>())
+    val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
 
     val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = db
         .getFriendsFlow()
@@ -69,9 +71,9 @@ class HomeViewModel(
     fun onStickyHeaderAction(value: Int) {
         _stickyHeaders.update { current ->
             if (value in current) {
-                current - value
+                current.remove(value)
             } else {
-                current + value
+                current.add(value)
             }
         }
     }

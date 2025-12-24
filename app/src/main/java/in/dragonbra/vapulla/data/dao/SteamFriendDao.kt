@@ -21,6 +21,9 @@ interface SteamFriendDao {
     @Query("SELECT * FROM steam_friend WHERE id = :id")
     suspend fun find(id: Long): SteamFriend?
 
+    @Query("SELECT * FROM steam_friend WHERE id = :id")
+    fun findFlow(id: Long): Flow<SteamFriend?>
+
     @Update
     suspend fun update(friend: SteamFriend)
 
@@ -44,6 +47,9 @@ interface SteamFriendDao {
 
     @Delete
     suspend fun remove(friend: SteamFriend)
+
+    @Query("DELETE FROM steam_friend WHERE id = :friendId")
+    suspend fun remove(friendId: Long)
 
     @Query("DELETE FROM steam_friend")
     suspend fun delete()

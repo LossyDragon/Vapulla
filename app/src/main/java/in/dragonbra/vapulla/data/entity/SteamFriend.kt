@@ -24,6 +24,8 @@ import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import java.util.Date
 import java.util.EnumSet
 
@@ -34,7 +36,7 @@ private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
 data class SteamFriend(
     @PrimaryKey val id: Long,
     val name: String = "",
-    val avatar: String? = Utils.Constants.MISSING_AVATAR_URL,
+    val avatar: String? = Utils.Constants.ALL_ZEROS,
     val relation: EFriendRelationship = EFriendRelationship.None,
     val state: EPersonaState = EPersonaState.Offline,
     val gameAppID: Int = 0,
@@ -50,6 +52,7 @@ data class SteamFriend(
     val lastMessage: String = "",
     val lastMessageTime: Long = -1,
     val newMessageCount: Int = 0,
+    val aliases: ImmutableList<String> = persistentListOf()
 ) {
 
     val isOnline: Boolean

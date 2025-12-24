@@ -22,12 +22,14 @@ import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSChangesCal
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSProductInfoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgEchoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgHistoryCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendsListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.NicknameListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamgamecoordinator.SteamGameCoordinator
 import `in`.dragonbra.javasteam.steam.handlers.steamgameserver.SteamGameServer
 import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServer
@@ -62,6 +64,10 @@ import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.timeChunked
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
@@ -85,6 +91,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import timber.log.Timber
@@ -127,6 +136,7 @@ class SteamService : Service() {
     // Steam-related properties
     private var steamClient: SteamClient? = null
     private var steamApps: SteamApps? = null
+    private var steamFriends: SteamFriends? = null
     private var steamUser: SteamUser? = null
     private var callbackMgr: CallbackManager? = null
     private var steamThreadJob: Job? = null
@@ -143,6 +153,8 @@ class SteamService : Service() {
     private val picsRequestChannel = Channel<Int>(Channel.UNLIMITED)
 
     private var currentAuthJob: Job? = null
+
+    private val friendsListMutex = Mutex()
 
     private var binder: Binder? = ServiceBinder()
 
@@ -213,6 +225,7 @@ class SteamService : Service() {
         steamThreadJob = null
 
         steamApps = null
+        steamFriends = null
         steamUser = null
         steamClient?.disconnect()
         steamClient = null
@@ -283,6 +296,7 @@ class SteamService : Service() {
 
                 steamApps = requireNotNull(client.getHandler())
                 steamUser = requireNotNull(client.getHandler())
+                steamFriends = requireNotNull(client.getHandler())
             }
 
             // Configure handlers
@@ -301,7 +315,7 @@ class SteamService : Service() {
     }
 
     fun setPersonaState(state: EPersonaState) {
-        steamClient!!.getHandler<SteamFriends>()!!.setPersonaState(state = state)
+        steamFriends!!.setPersonaState(state = state)
     }
 
     fun handleCredentialLogin(
@@ -475,6 +489,63 @@ class SteamService : Service() {
         }
     }
 
+    // region [Region] Profile Stuff
+
+    suspend fun ignoreFriend(friendId: Long) = withContext(Dispatchers.IO) {
+        val dbFriend = db.steamFriendDao().find(friendId) ?: return@withContext
+        val friend = SteamID(friendId)
+
+        val result = if (dbFriend.relation == EFriendRelationship.Blocked) {
+            steamFriends!!.ignoreFriend(friend, false).await()
+        } else {
+            steamFriends!!.ignoreFriend(friend, true).await()
+        }
+
+        if (result.result == EResult.OK) {
+            val relation = if (dbFriend.relation == EFriendRelationship.IgnoredFriend) {
+                EFriendRelationship.Blocked
+            } else {
+                EFriendRelationship.None // TODO this should update?
+            }
+            db.steamFriendDao().update(dbFriend.copy(relation = relation))
+        }
+    }
+
+    suspend fun removeFriend(friendId: Long) = withContext(Dispatchers.IO) {
+        val friend = SteamID(friendId)
+        steamFriends!!.removeFriend(friend)
+        db.steamFriendDao().remove(friendId)
+    }
+
+    suspend fun setNickName(friendId: Long, value: String) = withContext(Dispatchers.IO) {
+        val friend = SteamID(friendId)
+        steamFriends!!.setFriendNickname(friend, value)
+    }
+
+    suspend fun requestAliasHistory(friendId: Long) = withContext(Dispatchers.IO) {
+        val friend = SteamID(friendId)
+        var aliasList = persistentListOf<String>()
+        steamFriends!!.requestAliasHistory(friend)
+        callbackMgr!!.subscribe<AliasHistoryCallback> {
+            aliasList = it.responses.flatMap { map -> map.names }
+                .map { map -> map.name }
+                .toPersistentList()
+        }.also { it.close() }
+
+        with(db.steamFriendDao()) {
+            find(friendId)?.copy(aliases = aliasList)?.also {
+                update(it)
+            }
+        }
+    }
+
+    suspend fun getProfileInfo(friendID: SteamID): ProfileInfoCallback =
+        withContext(Dispatchers.IO) {
+            steamFriends!!.requestProfileInfo(friendID).await()
+        }
+
+    // endregion
+
     fun handleQrCodeCancel() {
         Timber.i("Cancelling QR Login")
         cancelCurrentAuthOperation()
@@ -578,7 +649,7 @@ class SteamService : Service() {
                 _isLoggedIn.value = true
 
                 steamClient?.getHandler<SteamNotifications>()?.requestOfflineMessageCount()
-                steamClient?.getHandler<SteamFriends>()?.setPersonaState(EPersonaState.Online)
+                steamFriends!!.setPersonaState(EPersonaState.Online)
                 steamClient?.getHandler<VapullaHandler>()?.getEmoticonList()
 
                 scope.launch {
@@ -620,95 +691,99 @@ class SteamService : Service() {
             return@Consumer
         }
 
-        val dao = db.steamFriendDao()
         scope.launch {
-            val dbFriend = dao.find(it.friendId.convertToUInt64())
+            friendsListMutex.withLock {
+                val dao = db.steamFriendDao()
+                val dbFriend = dao.find(it.friendId.convertToUInt64())
 
-            if (dbFriend == null) {
-                Timber.d("Persona ${it.playerName} not in db to update persona state.")
-                return@launch
-            }
+                if (dbFriend == null) {
+                    Timber.d("Persona ${it.playerName} not in db to update persona state.")
+                    return@launch
+                }
 
-            dao.update(
-                dbFriend.copy(
-                    name = it.playerName,
-                    avatar = it.avatarHash.toHexString(),
-                    state = it.personaState,
-                    gameAppID = it.gamePlayedAppId,
-                    gameID = it.gameId,
-                    gameDataBlob = it.gameDataBlob,
-                    gameName = it.gameName.ifEmpty {
-                        if (it.gamePlayedAppId > 0) {
-                            db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: ""
-                        } else {
-                            ""
-                        }
-                    },
-                    lastLogOn = it.lastLogon,
-                    lastLogOff = it.lastLogoff,
-                    stateFlags = it.personaStateFlags,
-                    statusFlags = it.statusFlags,
+                dao.update(
+                    dbFriend.copy(
+                        name = it.playerName,
+                        avatar = it.avatarHash.toHexString(),
+                        state = it.personaState,
+                        gameAppID = it.gamePlayedAppId,
+                        gameID = it.gameId,
+                        gameDataBlob = it.gameDataBlob,
+                        gameName = it.gameName.ifEmpty {
+                            if (it.gamePlayedAppId > 0) {
+                                db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: ""
+                            } else {
+                                ""
+                            }
+                        },
+                        lastLogOn = it.lastLogon,
+                        lastLogOff = it.lastLogoff,
+                        stateFlags = it.personaStateFlags,
+                        statusFlags = it.statusFlags,
+                    )
                 )
-            )
 
-            if (requestsToNotify.contains(it.friendId)) {
-                NotificationHelper.sendFriendRequestNotification(
-                    context = applicationContext,
-                    friendId = it.friendId.convertToUInt64(),
-                    friendName = it.playerName,
-                    avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString())
-                )
-                requestsToNotify.remove(it.friendId)
+                if (requestsToNotify.contains(it.friendId)) {
+                    NotificationHelper.sendFriendRequestNotification(
+                        context = applicationContext,
+                        friendId = it.friendId.convertToUInt64(),
+                        friendName = it.playerName,
+                        avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString())
+                    )
+                    requestsToNotify.remove(it.friendId)
+                }
             }
         }
     }
 
     private val onFriendsList: Consumer<FriendsListCallback> = Consumer {
         Timber.d("onFriendsList()")
-        val dao = db.steamFriendDao()
         val inc = it.isIncremental
 
         scope.launch {
-            val friendsToAdd = mutableListOf<SteamFriend>()
-            val friendsToUpdate = mutableListOf<SteamFriend>()
-            val friendsToRemove = mutableListOf<SteamFriend>()
+            friendsListMutex.withLock {
+                val dao = db.steamFriendDao()
+                val friendsToAdd = mutableListOf<SteamFriend>()
+                val friendsToUpdate = mutableListOf<SteamFriend>()
+                val friendsToRemove = mutableListOf<SteamFriend>()
 
-            it.friendList.forEach { friendItem ->
-                if (!friendItem.steamID.isIndividualAccount) {
-                    return@forEach
-                }
-
-                var friend = dao.find(friendItem.steamID.convertToUInt64())
-
-                if (friend == null) {
-                    if (friendItem.relationship == EFriendRelationship.Friend ||
-                        friendItem.relationship == EFriendRelationship.RequestRecipient
-                    ) {
-                        val newFriend = SteamFriend(
-                            id = friendItem.steamID.convertToUInt64(),
-                            relation = friendItem.relationship
-                        )
-                        friendsToAdd.add(newFriend)
+                it.friendList.forEach { friendItem ->
+                    if (!friendItem.steamID.isIndividualAccount) {
+                        return@forEach
                     }
-                } else {
-                    if (friendItem.relationship == EFriendRelationship.Friend ||
-                        friendItem.relationship == EFriendRelationship.RequestRecipient
-                    ) {
-                        val updatedFriend = friend.copy(relation = friendItem.relationship)
-                        friendsToUpdate.add(updatedFriend)
+
+                    var friend = dao.find(friendItem.steamID.convertToUInt64())
+
+                    if (friend == null) {
+                        if (friendItem.relationship == EFriendRelationship.Friend ||
+                            friendItem.relationship == EFriendRelationship.RequestRecipient
+                        ) {
+                            val newFriend = SteamFriend(
+                                id = friendItem.steamID.convertToUInt64(),
+                                relation = friendItem.relationship
+                            )
+                            friendsToAdd.add(newFriend)
+                        }
                     } else {
-                        friendsToRemove.add(friend)
+                        if (friendItem.relationship == EFriendRelationship.Friend ||
+                            friendItem.relationship == EFriendRelationship.RequestRecipient
+                        ) {
+                            val updatedFriend = friend.copy(relation = friendItem.relationship)
+                            friendsToUpdate.add(updatedFriend)
+                        } else {
+                            friendsToRemove.add(friend)
+                        }
+                    }
+
+                    if (inc && friend!!.relation == EFriendRelationship.RequestRecipient) {
+                        requestsToNotify.add(friendItem.steamID)
                     }
                 }
 
-                if (inc && friend!!.relation == EFriendRelationship.RequestRecipient) {
-                    requestsToNotify.add(friendItem.steamID)
-                }
+                dao.insert(friendsToAdd)
+                dao.update(friendsToUpdate)
+                dao.remove(friendsToRemove)
             }
-
-            dao.insert(friendsToAdd)
-            dao.update(friendsToUpdate)
-            dao.remove(friendsToRemove)
         }
     }
 
@@ -781,7 +856,7 @@ class SteamService : Service() {
     private val onOfflineMessages: Consumer<OfflineMessageNotificationCallback> = Consumer {
         Timber.d("onOfflineMessages()")
         if (it.messageCount > 0) {
-            steamClient?.getHandler<SteamFriends>()?.requestOfflineMessages()
+            steamFriends!!.requestOfflineMessages()
         }
     }
 
@@ -909,12 +984,16 @@ class SteamService : Service() {
         }
 
         scope.launch {
+            delay(5.seconds)
+
             val incomingLicenses = it.licenseList
             val existingLicenses = db.steamLicenseDao().getAllLicenses()
 
             // Create lookup maps for efficient comparison
-            val existingLicenseMap = existingLicenses.associateBy { license -> license.packageID }
-            val incomingPackageIds = incomingLicenses.map { license -> license.packageID }.toSet()
+            val existingLicenseMap =
+                existingLicenses.associateBy { license -> license.packageID }
+            val incomingPackageIds =
+                incomingLicenses.map { license -> license.packageID }.toSet()
 
             // Find licenses that need to be added or updated
             val licensesToProcess = it.licenseList

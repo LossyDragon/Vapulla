@@ -27,9 +27,12 @@ import `in`.dragonbra.vapulla.ui.screens.home.HomeScreen
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginScreen
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
+import `in`.dragonbra.vapulla.ui.screens.profile.ProfileScreen
+import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.getKoin
+import org.koin.core.parameter.parametersOf
 
 sealed class Routes {
     data object Downloads : Routes()
@@ -117,18 +120,27 @@ fun NavigationRoot(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
                             onFriendClick = { friendId ->
-
                             },
                             onFriendLongClick = { friendId ->
-
+                                backStack.add(Routes.FriendProfile(friendId))
                             }
+                        )
+                    }
+                    entry<Routes.FriendProfile> {
+                        val viewModel = koinViewModel<ProfileViewModel> {
+                            parametersOf(it.id)
+                        }
+                        ProfileScreen(
+                            viewModel = viewModel,
+                            onNavDrawerAction = onNavDrawerAction,
+                            onBack = { backStack.removeLast() }
                         )
                     }
                     entry<Routes.Games> {
                         val viewModel = koinViewModel<GamesViewModel>()
                         GamesScreen(
                             viewModel = viewModel,
-                            onNavDrawerAction = onNavDrawerAction
+                            onNavDrawerAction = onNavDrawerAction,
                         )
                     }
                     entry<Routes.Downloads> {

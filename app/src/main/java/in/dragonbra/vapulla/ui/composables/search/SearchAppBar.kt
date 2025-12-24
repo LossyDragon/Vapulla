@@ -38,41 +38,56 @@ fun SearchAppBar(
 ) {
     val scope = rememberCoroutineScope()
 
-    val inputField = @Composable {
+    val collapsedInputField = @Composable {
         SearchBarDefaults.InputField(
             modifier = Modifier,
             searchBarState = searchBarState,
             textFieldState = textFieldState,
             onSearch = { scope.launch { searchBarState.animateToCollapsed() } },
+            enabled = false, // Prevents double-opening
             placeholder = {
-                if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clearAndSetSemantics {},
-                        text = "Search",
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clearAndSetSemantics {},
+                    text = "Search",
+                    textAlign = TextAlign.Center,
+                )
             },
             leadingIcon = {
-                if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                    IconButton(
-                        onClick = {
-                            textFieldState.clearText()
-                            scope.launch { searchBarState.animateToCollapsed() }
-                        },
-                        content = {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                                contentDescription = null,
-                            )
-                        }
-                    )
-                } else {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null
+                )
+            },
+            trailingIcon = {
+                Spacer(modifier = Modifier.size(24.dp))
+            }
+        )
+    }
+
+    val expandedInputField = @Composable {
+        SearchBarDefaults.InputField(
+            modifier = Modifier,
+            searchBarState = searchBarState,
+            textFieldState = textFieldState,
+            onSearch = {
+                textFieldState.clearText()
+                scope.launch { searchBarState.animateToCollapsed() }
+            },
+            placeholder = {
+                Text(text = "Search")
+            },
+            leadingIcon = {
+                IconButton(
+                    onClick = {
+                        textFieldState.clearText()
+                        scope.launch { searchBarState.animateToCollapsed() }
+                    }
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null
+                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                        contentDescription = "Close search"
                     )
                 }
             },
@@ -85,7 +100,7 @@ fun SearchAppBar(
     AppBarWithSearch(
         scrollBehavior = scrollBehavior,
         state = searchBarState,
-        inputField = inputField,
+        inputField = collapsedInputField,
         navigationIcon = {
             IconButton(
                 onClick = onNavDrawerAction,
@@ -102,7 +117,10 @@ fun SearchAppBar(
         },
     )
 
-    ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        inputField = expandedInputField
+    ) {
         expandedSearchBar()
     }
 }

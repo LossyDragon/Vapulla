@@ -19,13 +19,17 @@ object Utils {
         const val AVATAR_BASE_URL =
             "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/"
 
+        const val ALL_ZEROS = "0000000000000000000000000000000000000000"
+
         const val MISSING_AVATAR_URL =
             "${AVATAR_BASE_URL}fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
-        private const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+        const val PROFILE_URL = "https://steamcommunity.com/profiles/"
 
         const val BASE_STEAM_STORE_API_URL = "https://store.steampowered.com/api/"
         const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/app/"
+        const val EMOTICON_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
+        const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
     }
 
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
@@ -37,6 +41,12 @@ object Utils {
     // val dateFormatter = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault())
 
     fun String.decodeHtml() = HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+
+    /**
+     * Gets the profile URL from a steam id.
+     * Steam should redirect to a vanity URL if applied.
+     */
+    fun getProfileUrl(id: Long): String = "${Constants.PROFILE_URL}$id/"
 
     fun getAvatarURL(string: String?): String =
         string.orEmpty()
