@@ -3,8 +3,8 @@ package `in`.dragonbra.vapulla.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.data.dao.SteamFriendDao
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
+import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet

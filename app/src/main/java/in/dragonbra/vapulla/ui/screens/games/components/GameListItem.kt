@@ -26,7 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
-import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.toDateString

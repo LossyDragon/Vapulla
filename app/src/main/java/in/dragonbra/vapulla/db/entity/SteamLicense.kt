@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.entity
+package `in`.dragonbra.vapulla.db.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.room.Entity
@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.javasteam.enums.ELicenseType
 import `in`.dragonbra.javasteam.enums.EPaymentMethod
+import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
 
@@ -19,7 +20,7 @@ data class SteamLicense(
     val minuteLimit: Int = 0,
     val minutesUsed: Int = 0,
     val paymentMethod: EPaymentMethod = EPaymentMethod.None,
-    val licenseFlags: EnumSet<ELicenseFlags> = EnumSet.noneOf(ELicenseFlags::class.java),
+    val licenseFlags: EnumSet<ELicenseFlags> = emptyEnumSet(),
     val purchaseCode: String = "",
     val licenseType: ELicenseType = ELicenseType.NoLicense,
     val territoryCode: Int = 0,

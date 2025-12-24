@@ -6,9 +6,9 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import `in`.dragonbra.vapulla.data.dao.SteamAppDao
-import `in`.dragonbra.vapulla.data.entity.SteamApp
-import `in`.dragonbra.vapulla.data.entity.SteamApp.AppType
+import `in`.dragonbra.vapulla.db.dao.SteamAppDao
+import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamApp.AppType
 import `in`.dragonbra.vapulla.manager.AccountManager
 import java.util.EnumSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi

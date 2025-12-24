@@ -1,11 +1,12 @@
-package `in`.dragonbra.vapulla.data.entity
+package `in`.dragonbra.vapulla.db.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
-import `in`.dragonbra.vapulla.data.serializers.DateSerializer
-import `in`.dragonbra.vapulla.data.serializers.OsEnumSetSerializer
+import `in`.dragonbra.vapulla.db.serializers.DateSerializer
+import `in`.dragonbra.vapulla.db.serializers.OsEnumSetSerializer
+import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
 import kotlinx.serialization.Serializable
@@ -16,7 +17,7 @@ data class SteamApp(
     @PrimaryKey val id: Int,
     val packageId: Int = Int.MAX_VALUE,
     val ownerAccountId: List<Int> = emptyList(),
-    val licenseFlags: EnumSet<ELicenseFlags> = EnumSet.noneOf(ELicenseFlags::class.java),
+    val licenseFlags: EnumSet<ELicenseFlags> = emptyEnumSet(),
     val receivedPICS: Boolean = false,
     val lastChangeNumber: Int = 0,
     val depots: Map<Int, DepotInfo> = emptyMap(),
@@ -249,14 +250,14 @@ data class SteamApp(
                         val trimmed = it.trim()
                         entries.find { os -> os.name.equals(trimmed, ignoreCase = true) } ?: none
                     }
-                    .toCollection(EnumSet.noneOf(OS::class.java))
+                    .toCollection(emptyEnumSet())
                     .ifEmpty { EnumSet.of(none) }
             }
 
             fun from(code: Int?): EnumSet<OS> {
                 if (code == null || code == 0) return EnumSet.of(none)
 
-                return entries.filterTo(EnumSet.noneOf(OS::class.java)) { os ->
+                return entries.filterTo(emptyEnumSet()) { os ->
                     os.code != 0 && (code and os.code) == os.code
                 }
             }
@@ -302,51 +303,51 @@ data class SteamApp(
             fun from(keyValue: String?): PathType = when (keyValue?.lowercase()) {
                 "%${GameInstall.name.lowercase()}%",
                 GameInstall.name.lowercase(),
-                -> GameInstall
+                    -> GameInstall
 
                 "%${SteamUserData.name.lowercase()}%",
                 SteamUserData.name.lowercase(),
-                -> SteamUserData
+                    -> SteamUserData
 
                 "%${WinMyDocuments.name.lowercase()}%",
                 WinMyDocuments.name.lowercase(),
-                -> WinMyDocuments
+                    -> WinMyDocuments
 
                 "%${WinAppDataLocal.name.lowercase()}%",
                 WinAppDataLocal.name.lowercase(),
-                -> WinAppDataLocal
+                    -> WinAppDataLocal
 
                 "%${WinAppDataLocalLow.name.lowercase()}%",
                 WinAppDataLocalLow.name.lowercase(),
-                -> WinAppDataLocalLow
+                    -> WinAppDataLocalLow
 
                 "%${WinAppDataRoaming.name.lowercase()}%",
                 WinAppDataRoaming.name.lowercase(),
-                -> WinAppDataRoaming
+                    -> WinAppDataRoaming
 
                 "%${WinSavedGames.name.lowercase()}%",
                 WinSavedGames.name.lowercase(),
-                -> WinSavedGames
+                    -> WinSavedGames
 
                 "%${LinuxHome.name.lowercase()}%",
                 LinuxHome.name.lowercase(),
-                -> LinuxHome
+                    -> LinuxHome
 
                 "%${LinuxXdgDataHome.name.lowercase()}%",
                 LinuxXdgDataHome.name.lowercase(),
-                -> LinuxXdgDataHome
+                    -> LinuxXdgDataHome
 
                 "%${LinuxXdgConfigHome.name.lowercase()}%",
                 LinuxXdgConfigHome.name.lowercase(),
-                -> LinuxXdgConfigHome
+                    -> LinuxXdgConfigHome
 
                 "%${MacHome.name.lowercase()}%",
                 MacHome.name.lowercase(),
-                -> MacHome
+                    -> MacHome
 
                 "%${MacAppSupport.name.lowercase()}%",
                 MacAppSupport.name.lowercase(),
-                -> MacAppSupport
+                    -> MacAppSupport
 
                 else -> None
             }
@@ -439,10 +440,9 @@ data class SteamApp(
             fun fromFlags(flags: Int): EnumSet<AppType> {
                 if (flags == 0) return EnumSet.of(invalid)
 
-                return entries
-                    .filterTo(EnumSet.noneOf(AppType::class.java)) { appType ->
-                        appType.code != 0 && (flags and appType.code) == appType.code
-                    }
+                return entries.filterTo(emptyEnumSet()) { appType ->
+                    appType.code != 0 && (flags and appType.code) == appType.code
+                }
             }
 
             fun toFlags(value: EnumSet<AppType>): Int =

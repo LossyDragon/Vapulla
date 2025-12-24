@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.dao
+package `in`.dragonbra.vapulla.db.dao
 
 import androidx.paging.DataSource
 import androidx.paging.PagingSource
@@ -7,7 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import `in`.dragonbra.vapulla.data.entity.ChatMessage
+import `in`.dragonbra.vapulla.db.entity.ChatMessage
 
 @Dao
 interface ChatMessageDao {

@@ -1,7 +1,7 @@
-package `in`.dragonbra.vapulla.data.converters
+package `in`.dragonbra.vapulla.db.converters
 
 import androidx.room.TypeConverter
-import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamApp
 import java.util.EnumSet
 import kotlinx.serialization.json.Json
 

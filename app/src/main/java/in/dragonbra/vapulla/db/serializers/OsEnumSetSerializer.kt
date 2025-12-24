@@ -1,6 +1,6 @@
-package `in`.dragonbra.vapulla.data.serializers
+package `in`.dragonbra.vapulla.db.serializers
 
-import `in`.dragonbra.vapulla.data.entity.SteamApp.OS
+import `in`.dragonbra.vapulla.db.entity.SteamApp.OS
 import java.util.EnumSet
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

@@ -7,9 +7,10 @@ import android.os.IBinder
 import androidx.core.app.RemoteInput
 import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
-import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
+import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.steam.authentication.AuthPollResult
 import `in`.dragonbra.javasteam.steam.authentication.AuthSessionDetails
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
@@ -36,6 +37,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServ
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.SteamNotifications
 import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.callback.OfflineMessageNotificationCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamscreenshots.SteamScreenshots
+import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnifiedMessages
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.ChatMode
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
@@ -52,17 +54,19 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
-import `in`.dragonbra.vapulla.data.VapullaDatabase
-import `in`.dragonbra.vapulla.data.entity.ChatMessage
-import `in`.dragonbra.vapulla.data.entity.SteamApp
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
-import `in`.dragonbra.vapulla.data.entity.SteamLicense
+import `in`.dragonbra.vapulla.data.ProfileItem
+import `in`.dragonbra.vapulla.db.VapullaDatabase
+import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.db.entity.SteamLicense
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.service.handler.VapullaHandler
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.generateSteamApp
+import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import `in`.dragonbra.vapulla.util.timeChunked
 import java.io.Closeable
 import java.io.File
@@ -71,9 +75,7 @@ import kotlin.math.abs
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentList
-import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
@@ -97,7 +99,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -138,10 +139,11 @@ class SteamService : Service() {
     private var steamApps: SteamApps? = null
     private var steamFriends: SteamFriends? = null
     private var steamUser: SteamUser? = null
+    private var unifiedMessages: SteamUnifiedMessages? = null
     private var callbackMgr: CallbackManager? = null
-    private var steamThreadJob: Job? = null
     private val subscriptions: MutableSet<Closeable> = mutableSetOf()
-    private var connectedSignal: CompletableDeferred<Unit>? = null
+
+    private var player: Player? = null
 
     // State management
     private lateinit var remoteInput: RemoteInput
@@ -150,8 +152,10 @@ class SteamService : Service() {
     private var retryCount = 0
     private val requestsToNotify = mutableSetOf<SteamID>()
 
+    private var connectedSignal: CompletableDeferred<Unit>? = null
     private val picsRequestChannel = Channel<Int>(Channel.UNLIMITED)
 
+    private var steamThreadJob: Job? = null
     private var currentAuthJob: Job? = null
 
     private val friendsListMutex = Mutex()
@@ -297,6 +301,9 @@ class SteamService : Service() {
                 steamApps = requireNotNull(client.getHandler())
                 steamUser = requireNotNull(client.getHandler())
                 steamFriends = requireNotNull(client.getHandler())
+                unifiedMessages = requireNotNull(client.getHandler())
+
+                player = unifiedMessages!!.createService<Player>()
             }
 
             // Configure handlers
@@ -489,6 +496,38 @@ class SteamService : Service() {
     }
 
     // region [Region] Profile Stuff
+    suspend fun getProfileItems(friendId: Long) = withContext(Dispatchers.IO) {
+        val request = SteammessagesPlayerSteamclient.CPlayer_GetProfileItemsEquipped_Request
+            .newBuilder().apply {
+                this.steamid = friendId
+            }
+            .build()
+
+        val response = player!!.getProfileItemsEquipped(request).await()
+
+        if (response.result != EResult.OK) {
+            Timber.e("Failed to get profile items for $friendId, result: ${response.result}")
+            return@withContext
+        }
+
+        val body = response.body
+        var dbFriend = db.steamFriendDao().find(friendId)
+
+        if (dbFriend == null) {
+            Timber.i("No friend found in db to update profile items")
+            return@withContext
+        }
+
+        dbFriend = dbFriend.copy(
+            profileBackground = ProfileItem.serialize(body.profileBackground),
+            profileMiniBackground = ProfileItem.serialize(body.miniProfileBackground),
+            profileAvatarFrame = ProfileItem.serialize(body.avatarFrame),
+            profileAnimatedAvatar = ProfileItem.serialize(body.animatedAvatar),
+            profileProfileModifier = ProfileItem.serialize(body.profileModifier),
+        )
+
+        db.steamFriendDao().update(dbFriend)
+    }
 
     suspend fun ignoreFriend(friendId: Long) = withContext(Dispatchers.IO) {
         val dbFriend = db.steamFriendDao().find(friendId) ?: return@withContext
@@ -659,7 +698,7 @@ class SteamService : Service() {
 
             EResult.InvalidPassword,
             EResult.AccessDenied,
-            -> scope.launch {
+                -> scope.launch {
                 _loginResult.emit(LoginResult.Error(it.result.name))
                 account.clearPreferences()
             }
@@ -958,8 +997,7 @@ class SteamService : Service() {
                             ownerAccountId = ownerAccountId,
                             receivedPICS = true,
                             lastChangeNumber = app.changeNumber,
-                            licenseFlags = packageFromDb?.licenseFlags
-                                ?: EnumSet.noneOf(ELicenseFlags::class.java),
+                            licenseFlags = packageFromDb?.licenseFlags ?: emptyEnumSet(),
                         )
                     } else {
                         null
@@ -1027,7 +1065,7 @@ class SteamService : Service() {
                                     val combined = EnumSet.copyOf(first)
                                     combined.addAll(second)
                                     combined
-                                } ?: EnumSet.noneOf(ELicenseFlags::class.java),
+                                } ?: emptyEnumSet(),
                             purchaseCode = preferredAccount.purchaseCode,
                             licenseType = preferredAccount.licenseType,
                             territoryCode = preferredAccount.territoryCode,
@@ -1067,7 +1105,7 @@ class SteamService : Service() {
                                 app.copy(
                                     packageId = Int.MAX_VALUE,
                                     ownerAccountId = emptyList(),
-                                    licenseFlags = EnumSet.noneOf(ELicenseFlags::class.java),
+                                    licenseFlags = emptyEnumSet(),
                                 ),
                             )
                         }

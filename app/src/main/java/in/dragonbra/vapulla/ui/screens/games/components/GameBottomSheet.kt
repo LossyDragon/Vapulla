@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamApp
 
 @Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)

@@ -2,7 +2,7 @@ package `in`.dragonbra.vapulla.di
 
 import androidx.room.Room
 import `in`.dragonbra.vapulla.BuildConfig
-import `in`.dragonbra.vapulla.data.VapullaDatabase
+import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel

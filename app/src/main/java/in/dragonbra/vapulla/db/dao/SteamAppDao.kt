@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.dao
+package `in`.dragonbra.vapulla.db.dao
 
 import androidx.paging.PagingSource
 import androidx.room.Dao
@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamApp
 
 @Dao
 interface SteamAppDao {

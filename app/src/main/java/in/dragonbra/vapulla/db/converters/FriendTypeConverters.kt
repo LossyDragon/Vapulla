@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.converters
+package `in`.dragonbra.vapulla.db.converters
 
 import android.util.Base64
 import androidx.room.TypeConverter

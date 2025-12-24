@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.entity
+package `in`.dragonbra.vapulla.db.entity
 
 import androidx.compose.runtime.Immutable
 import androidx.room.Entity

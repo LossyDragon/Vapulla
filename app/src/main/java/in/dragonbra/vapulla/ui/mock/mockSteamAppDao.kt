@@ -2,8 +2,8 @@ package `in`.dragonbra.vapulla.ui.mock
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import `in`.dragonbra.vapulla.data.dao.SteamAppDao
-import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.db.dao.SteamAppDao
+import `in`.dragonbra.vapulla.db.entity.SteamApp
 
 val mockSteamAppDao = object : SteamAppDao {
     override suspend fun insert(apps: SteamApp) {}

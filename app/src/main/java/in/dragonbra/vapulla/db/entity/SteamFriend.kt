@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.entity
+package `in`.dragonbra.vapulla.db.entity
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
@@ -16,6 +16,7 @@ import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.javasteam.types.GameID
+import `in`.dragonbra.vapulla.data.ProfileItem
 import `in`.dragonbra.vapulla.ui.icons.VR
 import `in`.dragonbra.vapulla.ui.theme.friendAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendBlocked
@@ -24,12 +25,11 @@ import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-
-private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
 
 @Immutable
 @Entity(tableName = "steam_friend")
@@ -45,16 +45,19 @@ data class SteamFriend(
     val gameName: String = "",
     val lastLogOn: Date = Date(0),
     val lastLogOff: Date = Date(0),
-    val stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
-    val statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(
-        EClientPersonaStateFlag::class.java,
-    ),
+    val stateFlags: EnumSet<EPersonaStateFlag> = emptyEnumSet(),
+    val statusFlags: EnumSet<EClientPersonaStateFlag> = emptyEnumSet(),
     val typingTs: Long = -1,
     val nickname: String = "",
     val lastMessage: String = "",
     val lastMessageTime: Long = -1,
     val newMessageCount: Int = 0,
     val aliases: ImmutableList<String> = persistentListOf(),
+    val profileBackground: ProfileItem = ProfileItem(),
+    val profileMiniBackground: ProfileItem = ProfileItem(),
+    val profileAvatarFrame: ProfileItem = ProfileItem(),
+    val profileAnimatedAvatar: ProfileItem = ProfileItem(),
+    val profileProfileModifier: ProfileItem = ProfileItem(),
 ) {
 
     val isOnline: Boolean
@@ -86,8 +89,8 @@ data class SteamFriend(
 
     val isAwayOrSnooze: Boolean
         get() = state == EPersonaState.Away ||
-            state == EPersonaState.Snooze ||
-            state == EPersonaState.Busy
+                state == EPersonaState.Snooze ||
+                state == EPersonaState.Busy
 
     val isInGameAwayOrSnooze: Boolean
         get() = isPlayingGame && isAwayOrSnooze
@@ -97,8 +100,8 @@ data class SteamFriend(
 
     val isBlocked: Boolean
         get() = relation == EFriendRelationship.Blocked ||
-            relation == EFriendRelationship.Ignored ||
-            relation == EFriendRelationship.IgnoredFriend
+                relation == EFriendRelationship.Ignored ||
+                relation == EFriendRelationship.IgnoredFriend
 
     val isFriend: Boolean
         get() = relation == EFriendRelationship.Friend

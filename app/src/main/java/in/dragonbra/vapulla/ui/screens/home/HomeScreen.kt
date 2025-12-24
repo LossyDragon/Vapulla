@@ -21,7 +21,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.mock.mockFriendsList
@@ -32,9 +32,13 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.launch
+
+// TODO: Check out
+// ChatRoom.GetMyChatRoomGroups#1
+// SteamNotification.GetPreferences#1
+// FriendMessages.GetActiveMessageSessions#1
+// FriendsList.GetFavorites#1
 
 @Composable
 fun HomeScreen(

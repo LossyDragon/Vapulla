@@ -4,7 +4,7 @@ import `in`.dragonbra.javasteam.base.ClientMsgProtobuf
 import `in`.dragonbra.javasteam.base.IPacketMsg
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverFriends.CMsgClientEmoticonList
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
-import `in`.dragonbra.vapulla.data.entity.Emoticon
+import `in`.dragonbra.vapulla.db.entity.Emoticon
 
 class EmoticonListCallback(packetMsg: IPacketMsg) : CallbackMsg() {
 

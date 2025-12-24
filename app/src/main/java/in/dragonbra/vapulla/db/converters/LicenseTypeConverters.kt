@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.converters
+package `in`.dragonbra.vapulla.db.converters
 
 import androidx.room.TypeConverter
 import `in`.dragonbra.javasteam.enums.ELicenseFlags

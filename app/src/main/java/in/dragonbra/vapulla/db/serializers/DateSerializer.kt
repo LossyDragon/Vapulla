@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.data.serializers
+package `in`.dragonbra.vapulla.db.serializers
 
 import java.util.Date
 import kotlinx.serialization.KSerializer
