@@ -1,9 +1,9 @@
 package `in`.dragonbra.vapulla.broadcastreceiver
 
-import `in`.dragonbra.vapulla.service.SteamService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import `in`.dragonbra.vapulla.service.SteamService
 
 class IgnoreRequestReceiver : BroadcastReceiver() {
 
@@ -18,9 +18,12 @@ class IgnoreRequestReceiver : BroadcastReceiver() {
 
         context.startService(
             Intent(context, SteamService::class.java).apply {
-                putExtra(SteamService.EXTRA_ID, intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L))
+                putExtra(
+                    SteamService.EXTRA_ID,
+                    intent.getLongExtra(AcceptRequestReceiver.EXTRA_ID, 9L),
+                )
                 putExtra(SteamService.EXTRA_ACTION, "ignore_request")
-            }
+            },
         )
     }
 }

@@ -7,6 +7,7 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.LoginResult
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
+import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.CompletableFuture
 
 class LoginViewModel(
     private val connection: ServiceConnection,
@@ -43,7 +43,7 @@ class LoginViewModel(
 
         override fun getEmailCode(
             email: String?,
-            previousCodeWasIncorrect: Boolean
+            previousCodeWasIncorrect: Boolean,
         ): CompletableFuture<String> {
             Timber.i("Two-Factor, asking for email code")
             TODO("Email Code not implemented")
@@ -75,14 +75,16 @@ class LoginViewModel(
         viewModelScope.launch {
             connection.isBound.collect { bound ->
                 if (bound &&
-                    (!accountManager.username.first().isNullOrBlank() &&
-                            !accountManager.refreshToken.first().isNullOrBlank())
+                    (
+                        !accountManager.username.first().isNullOrBlank() &&
+                            !accountManager.refreshToken.first().isNullOrBlank()
+                        )
                 ) {
                     _uiState.update {
                         it.copy(
                             username = accountManager.username.first()!!,
                             refreshToken = accountManager.refreshToken.first()!!,
-                            isLoading = true
+                            isLoading = true,
                         )
                     }
                     Timber.d("Auto Logging in ")
@@ -119,7 +121,7 @@ class LoginViewModel(
                         _uiState.value = _uiState.value.copy(
                             loginStep = LoginStep.QRCODE,
                             isLoading = true,
-                            qrCode = result.qrCode
+                            qrCode = result.qrCode,
                         )
                     }
 

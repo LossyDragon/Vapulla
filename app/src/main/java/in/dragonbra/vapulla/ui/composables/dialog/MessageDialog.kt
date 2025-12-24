@@ -88,7 +88,7 @@ fun MessageDialog(
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun Preview_MessageDialog() {
-    VapullaTheme() {
+    VapullaTheme {
         MessageDialog(
             visible = true,
             icon = Icons.Default.Gamepad,

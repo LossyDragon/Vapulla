@@ -46,10 +46,7 @@ import `in`.dragonbra.vapulla.util.Utils
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun GamesScreen(
-    viewModel: GamesViewModel,
-    onNavDrawerAction: () -> Unit,
-) {
+fun GamesScreen(viewModel: GamesViewModel, onNavDrawerAction: () -> Unit) {
     val steamApps = viewModel.steamApps.collectAsLazyPagingItems()
     val appTypes by viewModel.appTypes.collectAsStateWithLifecycle()
     val localAccountId by viewModel.localAccountId.collectAsStateWithLifecycle()
@@ -62,10 +59,9 @@ fun GamesScreen(
         searchQuery = searchQuery,
         onNavDrawerAction = onNavDrawerAction,
         onSearchQuery = viewModel::updateSearchQuery,
-        onAppTypeClicked = viewModel::updateAppTypes
+        onAppTypeClicked = viewModel::updateAppTypes,
     )
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,25 +105,27 @@ private fun GamesScreenContent(
 
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp)
+                            contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
                             items(
                                 items = filteredApps,
-                                key = { index -> index.id }
+                                key = { index -> index.id },
                             ) { app ->
                                 Text(app.name)
                             }
 
                             if (filteredApps.isEmpty()) {
                                 item {
-                                    SearchResultMessage(message = "No friends found matching \"$searchQuery\"")
+                                    SearchResultMessage(
+                                        message = "No friends found matching \"$searchQuery\"",
+                                    )
                                 }
                             }
                         }
                     } else {
                         SearchResultMessage(message = "Start typing to search games")
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
@@ -149,15 +147,17 @@ private fun GamesScreenContent(
 
                     items(
                         count = steamApps.itemCount,
-                        key = steamApps.itemKey { it.id }
+                        key = steamApps.itemKey { it.id },
                     ) { index ->
                         steamApps[index]?.let { app ->
                             GameListItem(
                                 app = app,
                                 localAccountId = localAccountId,
                                 onGameClicked = {
-                                    uriHandler.openUri(Utils.Constants.BASE_STEAM_STORE_URL + app.id)
-                                }
+                                    uriHandler.openUri(
+                                        Utils.Constants.BASE_STEAM_STORE_URL + app.id,
+                                    )
+                                },
                             )
 
                             if (index < steamApps.itemCount) {
@@ -182,11 +182,11 @@ private fun GamesScreenContent(
                         sheetState = sheetState,
                         appTypes = appTypes,
                         onDismissRequest = { showSheet = !showSheet },
-                        onAppTypeClicked = onAppTypeClicked
+                        onAppTypeClicked = onAppTypeClicked,
                     )
                 }
             }
-        }
+        },
     )
 }
 
@@ -196,7 +196,7 @@ private fun Preview() {
     VapullaTheme {
         GamesScreen(
             viewModel = koinViewModel(),
-            onNavDrawerAction = {}
+            onNavDrawerAction = {},
         )
     }
 }

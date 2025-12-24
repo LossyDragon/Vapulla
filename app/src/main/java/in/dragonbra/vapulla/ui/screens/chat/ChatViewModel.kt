@@ -16,16 +16,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class ChatViewModel(
-    private val friendId: Long,
-    private val messageDao: ChatMessageDao,
-) : ViewModel() {
+class ChatViewModel(private val friendId: Long, private val messageDao: ChatMessageDao) :
+    ViewModel() {
 
     companion object {
         data class ChatUiState(
             val messageText: String = "",
             val showEmojiKeyboard: Boolean = false,
-            val isLoading: Boolean = false
+            val isLoading: Boolean = false,
         )
     }
 
@@ -36,9 +34,9 @@ class ChatViewModel(
         config = PagingConfig(
             pageSize = 20,
             enablePlaceholders = false,
-            prefetchDistance = 5
+            prefetchDistance = 5,
         ),
-        pagingSourceFactory = { messageDao.getMessagesPagingSource(friendId) }
+        pagingSourceFactory = { messageDao.getMessagesPagingSource(friendId) },
     ).flow.cachedIn(viewModelScope)
 
     init {
@@ -62,7 +60,7 @@ class ChatViewModel(
             friendId = friendId,
             fromLocal = true,
             unread = false,
-            timestampConfirmed = false
+            timestampConfirmed = false,
         )
 
         viewModelScope.launch {

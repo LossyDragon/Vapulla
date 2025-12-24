@@ -40,8 +40,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(
             navigationBarStyle = SystemBarStyle.light(
                 scrim = TRANSPARENT,
-                darkScrim = TRANSPARENT
-            )
+                darkScrim = TRANSPARENT,
+            ),
         )
 
         setContent {
@@ -51,13 +51,13 @@ class MainActivity : ComponentActivity() {
             var hasNotificationPermission by remember {
                 val permission = ContextCompat.checkSelfPermission(
                     context,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    Manifest.permission.POST_NOTIFICATIONS,
                 )
                 mutableStateOf(permission == PackageManager.PERMISSION_GRANTED)
             }
             val launcher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission(),
-                onResult = { hasNotificationPermission = it }
+                onResult = { hasNotificationPermission = it },
             )
             LaunchedEffect(key1 = hasNotificationPermission) {
                 if (!hasNotificationPermission) {

@@ -22,9 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
-class HomeViewModel(
-    db: SteamFriendDao,
-) : ViewModel() {
+class HomeViewModel(db: SteamFriendDao) : ViewModel() {
 
     private val _stickyHeaders = MutableStateFlow(persistentSetOf<Int>())
     val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
@@ -60,7 +58,7 @@ class HomeViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = persistentMapOf()
+            initialValue = persistentMapOf(),
         )
 
     override fun onCleared() {

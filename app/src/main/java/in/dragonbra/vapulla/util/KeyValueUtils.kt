@@ -2,26 +2,26 @@ package `in`.dragonbra.vapulla.util
 
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.vapulla.data.entity.SteamApp
+import `in`.dragonbra.vapulla.data.entity.SteamApp.AppType
+import `in`.dragonbra.vapulla.data.entity.SteamApp.BranchInfo
+import `in`.dragonbra.vapulla.data.entity.SteamApp.ConfigInfo
+import `in`.dragonbra.vapulla.data.entity.SteamApp.ControllerSupport
 import `in`.dragonbra.vapulla.data.entity.SteamApp.DepotInfo
-import `in`.dragonbra.vapulla.data.entity.SteamApp.OS
-import `in`.dragonbra.vapulla.data.entity.SteamApp.OSArch
+import `in`.dragonbra.vapulla.data.entity.SteamApp.Language
+import `in`.dragonbra.vapulla.data.entity.SteamApp.LaunchInfo
 import `in`.dragonbra.vapulla.data.entity.SteamApp.LibraryAssetsInfo
 import `in`.dragonbra.vapulla.data.entity.SteamApp.LibraryCapsuleInfo
 import `in`.dragonbra.vapulla.data.entity.SteamApp.LibraryHeroInfo
 import `in`.dragonbra.vapulla.data.entity.SteamApp.LibraryLogoInfo
-import `in`.dragonbra.vapulla.data.entity.SteamApp.UFS
 import `in`.dragonbra.vapulla.data.entity.SteamApp.ManifestInfo
-import `in`.dragonbra.vapulla.data.entity.SteamApp.Language
-import `in`.dragonbra.vapulla.data.entity.SteamApp.AppType
-import `in`.dragonbra.vapulla.data.entity.SteamApp.BranchInfo
-import `in`.dragonbra.vapulla.data.entity.SteamApp.ReleaseState
-import `in`.dragonbra.vapulla.data.entity.SteamApp.ControllerSupport
-import `in`.dragonbra.vapulla.data.entity.SteamApp.ConfigInfo
-import `in`.dragonbra.vapulla.data.entity.SteamApp.LaunchInfo
-import `in`.dragonbra.vapulla.data.entity.SteamApp.SaveFilePattern
+import `in`.dragonbra.vapulla.data.entity.SteamApp.OS
+import `in`.dragonbra.vapulla.data.entity.SteamApp.OSArch
 import `in`.dragonbra.vapulla.data.entity.SteamApp.PathType
-import timber.log.Timber
+import `in`.dragonbra.vapulla.data.entity.SteamApp.ReleaseState
+import `in`.dragonbra.vapulla.data.entity.SteamApp.SaveFilePattern
+import `in`.dragonbra.vapulla.data.entity.SteamApp.UFS
 import java.util.Date
+import timber.log.Timber
 
 /**
  * Extension functions relating to [KeyValue] as the receiver type.

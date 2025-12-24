@@ -11,7 +11,8 @@ import kotlinx.serialization.encoding.Encoder
 
 object OsEnumSetSerializer : KSerializer<EnumSet<OS>> {
 
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("EnumSet<OS>", PrimitiveKind.INT)
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("EnumSet<OS>", PrimitiveKind.INT)
 
     override fun serialize(encoder: Encoder, value: EnumSet<OS>) = encoder.encodeInt(OS.code(value))
 

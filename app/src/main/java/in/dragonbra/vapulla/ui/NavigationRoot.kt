@@ -45,9 +45,7 @@ sealed class Routes {
 }
 
 @Composable
-fun NavigationRoot(
-    modifier: Modifier = Modifier
-) {
+fun NavigationRoot(modifier: Modifier = Modifier) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val koin = getKoin()
     val connection = remember(koin) { koin.get<ServiceConnection>() }
@@ -100,7 +98,7 @@ fun NavigationRoot(
                 backStack = backStack,
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator()
+                    rememberViewModelStoreNavEntryDecorator(),
                 ),
                 sceneStrategy = SinglePaneSceneStrategy(),
                 entryProvider = entryProvider {
@@ -111,7 +109,7 @@ fun NavigationRoot(
                             onNavigateToHome = {
                                 backStack.add(Routes.Home)
                                 backStack.remove(Routes.Login)
-                            }
+                            },
                         )
                     }
                     entry<Routes.Home> {
@@ -123,7 +121,7 @@ fun NavigationRoot(
                             },
                             onFriendLongClick = { friendId ->
                                 backStack.add(Routes.FriendProfile(friendId))
-                            }
+                            },
                         )
                     }
                     entry<Routes.FriendProfile> {
@@ -133,7 +131,7 @@ fun NavigationRoot(
                         ProfileScreen(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
-                            onBack = { backStack.removeLast() }
+                            onBack = { backStack.removeLast() },
                         )
                     }
                     entry<Routes.Games> {
@@ -155,6 +153,6 @@ fun NavigationRoot(
                     }
                 },
             )
-        }
+        },
     )
 }

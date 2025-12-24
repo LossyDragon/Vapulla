@@ -9,7 +9,8 @@ import timber.log.Timber
  */
 class ReleaseTree : Timber.Tree() {
 
-    override fun isLoggable(tag: String?, priority: Int): Boolean = priority >= Log.INFO // Ignore Verbose and Debug logs.
+    override fun isLoggable(tag: String?, priority: Int): Boolean =
+        priority >= Log.INFO // Ignore Verbose and Debug logs.
 
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         if (!isLoggable(tag, priority)) {

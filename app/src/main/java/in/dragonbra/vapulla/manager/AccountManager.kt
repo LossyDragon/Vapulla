@@ -10,9 +10,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
+import java.io.IOException
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import java.io.IOException
 
 class AccountManager(private val context: Context) {
 

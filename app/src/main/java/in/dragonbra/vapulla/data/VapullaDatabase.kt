@@ -21,9 +21,14 @@ import `in`.dragonbra.vapulla.data.entity.SteamLicense
 @Database(
     entities = [SteamFriend::class, ChatMessage::class, Emoticon::class, SteamApp::class, SteamLicense::class],
     version = 7,
-    exportSchema = true
+    exportSchema = true,
 )
-@TypeConverters(FriendTypeConverters::class, LicenseTypeConverters::class, AppTypeConverters::class, ListTypeConverter::class)
+@TypeConverters(
+    FriendTypeConverters::class,
+    LicenseTypeConverters::class,
+    AppTypeConverters::class,
+    ListTypeConverter::class,
+)
 abstract class VapullaDatabase : RoomDatabase() {
     companion object {
         const val DATABASE_NAME = "vapulla.db"

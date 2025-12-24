@@ -45,10 +45,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.ImageLoader
-import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import com.skydoves.landscapist.coil.LocalCoilImageLoader
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
 import kotlinx.collections.immutable.ImmutableList
@@ -66,7 +66,7 @@ import timber.log.Timber
 fun BBCodeText(
     text: String,
     modifier: Modifier = Modifier,
-    onUrlClick: ((String) -> Unit)? = null
+    onUrlClick: ((String) -> Unit)? = null,
 ) {
     val parsedContent = remember(text) {
         parseSteamBBCode(text)
@@ -80,10 +80,7 @@ fun BBCodeText(
 }
 
 @Composable
-private fun BBCodeElement(
-    element: BBElement,
-    onUrlClick: ((String) -> Unit)?
-) {
+private fun BBCodeElement(element: BBElement, onUrlClick: ((String) -> Unit)?) {
     when (element) {
         is BBElement.Text -> {
             BBCodeTextElement(element = element, onUrlClick = onUrlClick)
@@ -97,7 +94,7 @@ private fun BBCodeElement(
                     2 -> MaterialTheme.typography.headlineMedium
                     else -> MaterialTheme.typography.headlineSmall
                 },
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -120,10 +117,7 @@ private fun BBCodeElement(
 }
 
 @Composable
-private fun BBCodeTextElement(
-    element: BBElement.Text,
-    onUrlClick: ((String) -> Unit)?
-) {
+private fun BBCodeTextElement(element: BBElement.Text, onUrlClick: ((String) -> Unit)?) {
     val uriHandler = LocalUriHandler.current
     val revealedSpoilers = remember { mutableStateMapOf<String, Boolean>() }
     val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -179,7 +173,7 @@ private fun BBCodeTextElement(
                 }
             }
         },
-        onTextLayout = { layoutResult.value = it }
+        onTextLayout = { layoutResult.value = it },
     )
 }
 
@@ -190,11 +184,11 @@ private fun BBCodeList(list: BBElement.BBList) {
             Row {
                 Text(
                     text = if (list.ordered) "${index + 1}. " else "• ",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
                     text = item,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -208,7 +202,7 @@ private fun BBCodeQuote(quote: BBElement.Quote) {
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = MaterialTheme.shapes.small
+        shape = MaterialTheme.shapes.small,
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             if (quote.author != null) {
@@ -216,14 +210,14 @@ private fun BBCodeQuote(quote: BBElement.Quote) {
                     text = "Originally posted by ${quote.author}:",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
             }
             Text(
                 text = quote.content,
                 style = MaterialTheme.typography.bodyMedium,
-                fontStyle = FontStyle.Italic
+                fontStyle = FontStyle.Italic,
             )
         }
     }
@@ -236,87 +230,90 @@ private fun BBCodeBlock(content: String) {
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         color = Color(0xFF1E1E1E),
-        shape = MaterialTheme.shapes.small
+        shape = MaterialTheme.shapes.small,
     ) {
         Text(
             text = content,
             modifier = Modifier.padding(12.dp),
             fontFamily = FontFamily.Monospace,
             color = Color(0xFFD4D4D4),
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }
 
 @Composable
 private fun buildInlineContentMap(
-    segments: ImmutableList<TextSegment>
-): Map<String, InlineTextContent> {
-    return buildMap {
-        segments.forEach { segment ->
-            when (segment) {
-                is TextSegment.Emoticon -> {
-                    put(
-                        segment.id, InlineTextContent(
-                            placeholder = Placeholder(
-                                width = 18.sp,
-                                height = 18.sp,
-                                placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-                            )
-                        ) {
-                            CoilImage(
-                                imageModel = { Utils.Constants.EMOTICON_URL + segment.name },
-                                imageOptions = ImageOptions(
-                                    contentDescription = segment.name,
-                                    contentScale = ContentScale.Fit
-                                ),
-                                modifier = Modifier.size(18.dp),
-                                loading = {
-                                    CircularProgressIndicator(modifier = Modifier.size(12.dp))
-                                },
-                                failure = {
-                                    Icon(
-                                        imageVector = Icons.Default.QuestionMark,
-                                        contentDescription = "Failed to load emoticon",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            )
-                        })
-                }
+    segments: ImmutableList<TextSegment>,
+): Map<String, InlineTextContent> = buildMap {
+    segments.forEach { segment ->
+        when (segment) {
+            is TextSegment.Emoticon -> {
+                put(
+                    segment.id,
+                    InlineTextContent(
+                        placeholder = Placeholder(
+                            width = 18.sp,
+                            height = 18.sp,
+                            placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
+                        ),
+                    ) {
+                        CoilImage(
+                            imageModel = { Utils.Constants.EMOTICON_URL + segment.name },
+                            imageOptions = ImageOptions(
+                                contentDescription = segment.name,
+                                contentScale = ContentScale.Fit,
+                            ),
+                            modifier = Modifier.size(18.dp),
+                            loading = {
+                                CircularProgressIndicator(modifier = Modifier.size(12.dp))
+                            },
+                            failure = {
+                                Icon(
+                                    imageVector = Icons.Default.QuestionMark,
+                                    contentDescription = "Failed to load emoticon",
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                        )
+                    },
+                )
+            }
 
-                is TextSegment.Sticker -> {
-                    put(
-                        segment.id, InlineTextContent(
-                            placeholder = Placeholder(
-                                width = 150.sp,
-                                height = 150.sp,
-                                placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-                            )
-                        ) {
-                            CoilImage(
-                                imageModel = { Utils.Constants.STICKER_URL + segment.type },
-                                imageOptions = ImageOptions(
-                                    contentDescription = segment.type,
-                                    contentScale = ContentScale.Fit
-                                ),
-                                modifier = Modifier.size(150.dp),
-                                loading = {
-                                    CircularProgressIndicator(modifier = Modifier.size(50.dp))
-                                },
-                                failure = {
-                                    Icon(
-                                        imageVector = Icons.Default.QuestionMark,
-                                        contentDescription = "Failed to load sticker",
-                                        modifier = Modifier.size(150.dp)
-                                    )
-                                }
-                            )
-                        })
-                }
+            is TextSegment.Sticker -> {
+                put(
+                    segment.id,
+                    InlineTextContent(
+                        placeholder = Placeholder(
+                            width = 150.sp,
+                            height = 150.sp,
+                            placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
+                        ),
+                    ) {
+                        CoilImage(
+                            imageModel = { Utils.Constants.STICKER_URL + segment.type },
+                            imageOptions = ImageOptions(
+                                contentDescription = segment.type,
+                                contentScale = ContentScale.Fit,
+                            ),
+                            modifier = Modifier.size(150.dp),
+                            loading = {
+                                CircularProgressIndicator(modifier = Modifier.size(50.dp))
+                            },
+                            failure = {
+                                Icon(
+                                    imageVector = Icons.Default.QuestionMark,
+                                    contentDescription = "Failed to load sticker",
+                                    modifier = Modifier.size(150.dp),
+                                )
+                            },
+                        )
+                    },
+                )
+            }
 
-                else -> { /* No inline content needed for other segment types */
-                }
+            else -> {
+                /* No inline content needed for other segment types */
             }
         }
     }
@@ -324,11 +321,12 @@ private fun buildInlineContentMap(
 
 private fun AnnotatedString.Builder.appendStyledText(
     element: BBElement.Text,
-    revealedSpoilers: Map<String, Boolean>
+    revealedSpoilers: Map<String, Boolean>,
 ) {
     element.segments.forEach { segment ->
         when (segment) {
             is TextSegment.Plain -> append(segment.text)
+
             is TextSegment.Styled -> {
                 withStyle(segment.style.toSpanStyle()) {
                     append(segment.text)
@@ -339,8 +337,8 @@ private fun AnnotatedString.Builder.appendStyledText(
                 withStyle(
                     SpanStyle(
                         color = Color(0xFF4A90E2),
-                        textDecoration = TextDecoration.Underline
-                    )
+                        textDecoration = TextDecoration.Underline,
+                    ),
                 ) {
                     pushStringAnnotation(tag = "URL", annotation = segment.url)
                     append(segment.text)
@@ -356,8 +354,8 @@ private fun AnnotatedString.Builder.appendStyledText(
                 withStyle(
                     SpanStyle(
                         background = if (isRevealed) Color.Unspecified else Color.Black,
-                        color = if (isRevealed) Color.Unspecified else Color.Black
-                    )
+                        color = if (isRevealed) Color.Unspecified else Color.Black,
+                    ),
                 ) {
                     append(segment.text)
                 }
@@ -399,23 +397,23 @@ data class BBStyle(
     val bold: Boolean = false,
     val italic: Boolean = false,
     val underline: Boolean = false,
-    val strikethrough: Boolean = false
+    val strikethrough: Boolean = false,
 ) {
-    fun toSpanStyle(): SpanStyle {
-        return SpanStyle(
-            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
-            fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
-            textDecoration = when {
-                underline && strikethrough -> TextDecoration.combine(
-                    listOf(TextDecoration.Underline, TextDecoration.LineThrough)
-                )
+    fun toSpanStyle(): SpanStyle = SpanStyle(
+        fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+        fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
+        textDecoration = when {
+            underline && strikethrough -> TextDecoration.combine(
+                listOf(TextDecoration.Underline, TextDecoration.LineThrough),
+            )
 
-                underline -> TextDecoration.Underline
-                strikethrough -> TextDecoration.LineThrough
-                else -> null
-            }
-        )
-    }
+            underline -> TextDecoration.Underline
+
+            strikethrough -> TextDecoration.LineThrough
+
+            else -> null
+        },
+    )
 }
 
 // Parser function
@@ -684,8 +682,8 @@ private fun parseInlineText(text: String): ImmutableList<TextSegment> {
                     listOf(
                         "[b]", "[/b]", "[i]", "[/i]", "[u]", "[/u]",
                         "[strike]", "[/strike]", "[spoiler]", "[url=",
-                        "[noparse]", "[emoticon]", "[sticker", "ː"
-                    )
+                        "[noparse]", "[emoticon]", "[sticker", "ː",
+                    ),
                 )
 
                 val textContent = if (nextTag != -1) {
@@ -790,12 +788,14 @@ private fun Preview_BBCodeText() {
                 [code]Fixed-width font, preserves spaces[/code]
                 Some ːsteamhappyː for ːsteamsadː testing.
                 Hello World! [emoticon]steamhappy[/emoticon]
-                    """.trimIndent(),
+                        """.trimIndent(),
                     )
 
                     Spacer(Modifier.height(14.dp))
 
-                    BBCodeText(text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]")
+                    BBCodeText(
+                        text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]",
+                    )
                 }
             }
         }

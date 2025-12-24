@@ -19,14 +19,14 @@ import timber.log.Timber
 class ProfileViewModel(
     friendDao: SteamFriendDao,
     private val serviceConnection: ServiceConnection,
-    friendId: Long
+    friendId: Long,
 ) : ViewModel() {
 
     val friend: StateFlow<SteamFriend?> = friendDao.findFlow(friendId)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = null,
         )
 
     private val _friendProfile = MutableStateFlow<ProfileInfoCallback?>(null)

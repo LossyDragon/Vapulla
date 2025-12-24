@@ -3,8 +3,6 @@ package `in`.dragonbra.vapulla.util
 import androidx.core.text.HtmlCompat
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.vapulla.manager.AccountManager
-import kotlinx.coroutines.flow.first
-import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -12,6 +10,8 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.regex.Pattern
 import kotlin.math.abs
+import kotlinx.coroutines.flow.first
+import timber.log.Timber
 
 object Utils {
 
@@ -48,12 +48,11 @@ object Utils {
      */
     fun getProfileUrl(id: Long): String = "${Constants.PROFILE_URL}$id/"
 
-    fun getAvatarURL(string: String?): String =
-        string.orEmpty()
-            .ifEmpty { null }
-            ?.takeIf { str -> str.isNotEmpty() && !str.all { it == '0' } }
-            ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
-            ?: Constants.MISSING_AVATAR_URL
+    fun getAvatarURL(string: String?): String = string.orEmpty()
+        .ifEmpty { null }
+        ?.takeIf { str -> str.isNotEmpty() && !str.all { it == '0' } }
+        ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
+        ?: Constants.MISSING_AVATAR_URL
 
     fun Long.toDateString(): String {
         val instant = Instant.ofEpochSecond(this)
@@ -97,7 +96,7 @@ object Utils {
             } else {
                 return message.take(result.end() - 1) + findEmotes(
                     message.substring(result.end() - 1),
-                    emoteSet
+                    emoteSet,
                 )
             }
         } else {
@@ -105,19 +104,18 @@ object Utils {
         }
     }
 
-    suspend fun getUniqueId(accountManager: AccountManager): Int {
-        return accountManager.uuid.first() ?: run {
+    suspend fun getUniqueId(accountManager: AccountManager): Int =
+        accountManager.uuid.first() ?: run {
             val uniqueID = abs(UUID.randomUUID().mostSignificantBits.toInt())
             accountManager.setUuid(uniqueID)
             uniqueID
         }
-    }
 
     fun printKeyValue(keyvalue: KeyValue, depth: Int) {
-        if (keyvalue.children.isEmpty())
+        if (keyvalue.children.isEmpty()) {
             Timber.tag("KeyValue")
                 .d(" ".repeat(depth * 4) + " " + keyvalue.name + ": " + keyvalue.value)
-        else {
+        } else {
             Timber.tag("KeyValue").d(" ".repeat(depth * 4) + " " + keyvalue.name + ":")
             for (child in keyvalue.children) printKeyValue(child, depth + 1)
         }

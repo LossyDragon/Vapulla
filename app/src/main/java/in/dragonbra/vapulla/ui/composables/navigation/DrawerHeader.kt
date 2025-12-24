@@ -35,7 +35,7 @@ internal fun DrawerHeader(
             id = 0,
             name = name,
             avatar = avatar,
-            state = state
+            state = state,
         )
     }
 
@@ -46,14 +46,14 @@ internal fun DrawerHeader(
         content = {
             FriendAvatar(
                 size = 128.dp,
-                friend = localUser
+                friend = localUser,
             )
 
             Spacer(Modifier.height(12.dp))
 
             Text(
                 text = localUser.nameOrNickname,
-                style = MaterialTheme.typography.titleLargeEmphasized
+                style = MaterialTheme.typography.titleLargeEmphasized,
             )
 
             Spacer(Modifier.height(12.dp))
@@ -62,31 +62,31 @@ internal fun DrawerHeader(
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = 0,
-                        count = 3
+                        count = 3,
                     ),
                     onClick = { onPersonaState(EPersonaState.Online) },
                     selected = localUser.state == EPersonaState.Online,
-                    label = { Text(text = "Online") }
+                    label = { Text(text = "Online") },
                 )
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = 1,
-                        count = 3
+                        count = 3,
                     ),
                     onClick = { onPersonaState(EPersonaState.Away) },
                     selected = localUser.state == EPersonaState.Away,
-                    label = { Text(text= "Away") }
+                    label = { Text(text = "Away") },
                 )
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(
                         index = 2,
-                        count = 3
+                        count = 3,
                     ),
                     onClick = { onPersonaState(EPersonaState.Invisible) },
                     selected = localUser.state == EPersonaState.Invisible,
-                    label = { Text(text = "Invisible") }
+                    label = { Text(text = "Invisible") },
                 )
             }
-        }
+        },
     )
 }

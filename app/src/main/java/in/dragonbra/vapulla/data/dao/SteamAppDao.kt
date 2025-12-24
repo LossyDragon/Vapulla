@@ -22,17 +22,17 @@ interface SteamAppDao {
 
     @Query(
         "SELECT * FROM steam_app " +
-                "WHERE id != 480 " +
-                "AND packageId != :invalidPkgId " +
-                "AND type != 0 " +
-                "AND (type & :appType) != 0 " +
-                "AND (:query = '' OR LOWER(name) LIKE '%' || LOWER(:query) || '%') " +
-                "ORDER BY LOWER(name)"
+            "WHERE id != 480 " +
+            "AND packageId != :invalidPkgId " +
+            "AND type != 0 " +
+            "AND (type & :appType) != 0 " +
+            "AND (:query = '' OR LOWER(name) LIKE '%' || LOWER(:query) || '%') " +
+            "ORDER BY LOWER(name)",
     )
     fun getAllOwnedAppsPaged(
         appType: Int,
         query: String = "",
-        invalidPkgId: Int = Int.MAX_VALUE
+        invalidPkgId: Int = Int.MAX_VALUE,
     ): PagingSource<Int, SteamApp>
 
     @Query("SELECT * FROM steam_app WHERE id = :appId")

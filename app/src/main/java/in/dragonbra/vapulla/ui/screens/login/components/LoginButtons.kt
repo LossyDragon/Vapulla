@@ -22,13 +22,10 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun LoginButtons(
-    onSignInViaCredentials: () -> Unit,
-    onSignInViaQR: () -> Unit,
-) {
+internal fun LoginButtons(onSignInViaCredentials: () -> Unit, onSignInViaQR: () -> Unit) {
     Box(
         modifier = Modifier.wrapContentSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         SplitButtonLayout(
             leadingButton = {
@@ -42,7 +39,7 @@ internal fun LoginButtons(
                         )
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                         Text("Credential Login")
-                    }
+                    },
                 )
             },
             trailingButton = {
@@ -56,9 +53,9 @@ internal fun LoginButtons(
                         )
                         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                         Text("QR Login")
-                    }
+                    },
                 )
-            }
+            },
         )
     }
 }

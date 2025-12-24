@@ -81,11 +81,7 @@ import `in`.dragonbra.vapulla.util.Utils
 import java.util.Date
 
 @Composable
-fun ProfileScreen(
-    viewModel: ProfileViewModel,
-    onNavDrawerAction: () -> Unit,
-    onBack: () -> Unit
-) {
+fun ProfileScreen(viewModel: ProfileViewModel, onNavDrawerAction: () -> Unit, onBack: () -> Unit) {
     val friend by viewModel.friend.collectAsStateWithLifecycle()
     val profile by viewModel.friendProfile.collectAsStateWithLifecycle()
 
@@ -403,7 +399,9 @@ private fun ProfileScreenContent(
                                     confirmBtnText = "Block",
                                     dismissBtnText = "Cancel",
                                     title = "Block Friend",
-                                    message = "Are you sure you want to block " + friend.nameOrNickname + "?",
+                                    message =
+                                        "Are you sure you want to block " + friend.nameOrNickname +
+                                            "?",
                                 )
                             },
                         )
@@ -418,7 +416,9 @@ private fun ProfileScreenContent(
                                     confirmBtnText = "Remove",
                                     dismissBtnText = "Cancel",
                                     title = "Remove Friend",
-                                    message = "Are you sure you want to remove " + friend.nameOrNickname + "?",
+                                    message =
+                                        "Are you sure you want to remove " + friend.nameOrNickname +
+                                            "?",
                                 )
                             },
                         )
@@ -441,7 +441,7 @@ private fun ProfileScreenContent(
                                     confirmBtnText = "Favorite",
                                     dismissBtnText = "Cancel",
                                     title = "Favorite Friend",
-                                    message = "Add ${Unit} to Favorites", // TODO
+                                    message = "Add $Unit to Favorites", // TODO
                                 )
                             },
                         )
@@ -475,7 +475,9 @@ private fun ProfileScreenContent(
                         LoadingBox()
                     } else {
                         // 'headline' doesn't seem to be used anymore
-                        CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
+                        CompositionLocalProvider(
+                            LocalTextStyle provides MaterialTheme.typography.bodyMedium,
+                        ) {
                             // Meh...
                             with(profile) {
                                 // Steam launch: Sept 12, 2003
@@ -498,7 +500,9 @@ private fun ProfileScreenContent(
                                     Text(text = "Summary:")
                                     BBCodeText(text = summary)
                                 } else {
-                                    Text(text = "Profile most likely private.\nUnable to retrieve info")
+                                    Text(
+                                        text = "Profile most likely private.\nUnable to retrieve info",
+                                    )
                                 }
                             }
                         }

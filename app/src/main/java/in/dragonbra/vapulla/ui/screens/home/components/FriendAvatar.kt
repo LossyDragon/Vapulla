@@ -29,11 +29,7 @@ import `in`.dragonbra.vapulla.util.Utils
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FriendAvatar(
-    modifier: Modifier = Modifier,
-    size: Dp = 56.dp,
-    friend: SteamFriend,
-) {
+fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 56.dp, friend: SteamFriend) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         content = {
@@ -42,7 +38,7 @@ fun FriendAvatar(
                 imageModel = { Utils.getAvatarURL(friend.avatar) },
                 imageOptions = ImageOptions(
                     contentScale = ContentScale.Crop,
-                    contentDescription = "Avatar for ${friend.name}"
+                    contentDescription = "Avatar for ${friend.name}",
                 ),
                 previewPlaceholder = painterResource(R.drawable.vapulla_background),
                 loading = { LoadingIndicator() },
@@ -50,9 +46,9 @@ fun FriendAvatar(
                     Image(
                         painter = painterResource(R.drawable.vapulla),
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
-                }
+                },
             )
 
             // Basically a 'VerticalDivider' but height constrained.
@@ -67,7 +63,7 @@ fun FriendAvatar(
                         val segmentLength = heightPx / totalSegments
 
                         PathEffect.dashPathEffect(
-                            intervals = floatArrayOf(segmentLength, segmentLength)
+                            intervals = floatArrayOf(segmentLength, segmentLength),
                         )
                     } else {
                         null
@@ -77,7 +73,7 @@ fun FriendAvatar(
                     end = Offset(4.dp.toPx() / 2, this@Canvas.size.height),
                 )
             }
-        }
+        },
     )
 }
 
@@ -92,8 +88,8 @@ private fun Preview() {
                     id = 0,
                     name = "Vapulla",
                     gameAppID = 440,
-                    state = EPersonaState.Away
-                )
+                    state = EPersonaState.Away,
+                ),
             )
         }
     }

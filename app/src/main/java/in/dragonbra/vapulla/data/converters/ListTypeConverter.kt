@@ -8,17 +8,13 @@ import kotlinx.serialization.json.Json
 
 class ListTypeConverter {
     @TypeConverter
-    fun fromIntList(value: List<Int>): String {
-        return value.joinToString(",")
-    }
+    fun fromIntList(value: List<Int>): String = value.joinToString(",")
 
     @TypeConverter
-    fun toIntList(value: String): List<Int> {
-        return if (value.isEmpty()) {
-            emptyList()
-        } else {
-            value.split(",").map { it.toInt() }
-        }
+    fun toIntList(value: String): List<Int> = if (value.isEmpty()) {
+        emptyList()
+    } else {
+        value.split(",").map { it.toInt() }
     }
 
     @TypeConverter
@@ -29,7 +25,6 @@ class ListTypeConverter {
     }
 
     @TypeConverter
-    fun toStringList(list: ImmutableList<String>?): String {
-        return Json.encodeToString(list?.toList() ?: emptyList<String>())
-    }
+    fun toStringList(list: ImmutableList<String>?): String =
+        Json.encodeToString(list?.toList() ?: emptyList<String>())
 }

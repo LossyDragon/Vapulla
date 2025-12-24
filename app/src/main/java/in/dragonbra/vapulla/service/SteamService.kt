@@ -64,6 +64,12 @@ import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.timeChunked
+import java.io.Closeable
+import java.io.File
+import java.util.EnumSet
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentList
@@ -97,12 +103,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import timber.log.Timber
-import java.io.Closeable
-import java.io.File
-import java.util.EnumSet
-import kotlin.math.abs
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 class SteamService : Service() {
 
@@ -126,7 +126,7 @@ class SteamService : Service() {
 
     // Coroutines
     private val scope = CoroutineScope(
-        context = Dispatchers.IO + SupervisorJob() + CoroutineName("SteamService")
+        context = Dispatchers.IO + SupervisorJob() + CoroutineName("SteamService"),
     )
 
     // Koin DI Injection
@@ -183,7 +183,7 @@ class SteamService : Service() {
 
         val notification = NotificationHelper.createServiceNotification(
             context = this,
-            text = "Starting..."
+            text = "Starting...",
         )
 
         startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
@@ -291,7 +291,7 @@ class SteamService : Service() {
                         mgr.subscribe(onPicsChanges),
                         mgr.subscribe(onPicsProduct),
                         mgr.subscribe(onLicenseList),
-                    )
+                    ),
                 )
 
                 steamApps = requireNotNull(client.getHandler())
@@ -376,7 +376,7 @@ class SteamService : Service() {
 
                 loginToSteam(
                     accountName = username,
-                    refreshToken = loginKey
+                    refreshToken = loginKey,
                 )
             } catch (e: CancellationException) {
                 Timber.i(e, "Credential login cancelled")
@@ -473,7 +473,6 @@ class SteamService : Service() {
                     Timber.w("QR login completed without auth result")
                     steamClient?.disconnect()
                 }
-
             } catch (e: CancellationException) {
                 Timber.i(e, "QR login cancelled")
             } catch (e: Exception) {
@@ -551,10 +550,7 @@ class SteamService : Service() {
         cancelCurrentAuthOperation()
     }
 
-    private fun loginToSteam(
-        accountName: String,
-        refreshToken: String? = null
-    ) {
+    private fun loginToSteam(accountName: String, refreshToken: String? = null) {
         scope.launch {
             val uuid = Utils.getUniqueId(account)
 
@@ -564,7 +560,7 @@ class SteamService : Service() {
                 accessToken = refreshToken,
                 loginID = uuid,
                 machineName = "Vapulla ${BuildConfig.VERSION_NAME}",
-                chatMode = ChatMode.NEW_STEAM_CHAT
+                chatMode = ChatMode.NEW_STEAM_CHAT,
             )
 
             steamUser!!.logOn(loginDetails)
@@ -583,7 +579,7 @@ class SteamService : Service() {
 
             NotificationHelper.updateServiceNotification(
                 context = this,
-                text = "Connecting"
+                text = "Connecting",
             )
 
             steamThreadJob = scope.launch {
@@ -619,7 +615,7 @@ class SteamService : Service() {
 
             NotificationHelper.updateServiceNotification(
                 context = this,
-                text = "Lost Connection"
+                text = "Lost Connection",
             )
 
             scope.launch {
@@ -636,7 +632,7 @@ class SteamService : Service() {
 
         NotificationHelper.updateServiceNotification(
             context = this,
-            text = "Connected"
+            text = "Connected",
         )
 
         connectedSignal?.complete(Unit)
@@ -662,7 +658,8 @@ class SteamService : Service() {
             }
 
             EResult.InvalidPassword,
-            EResult.AccessDenied -> scope.launch {
+            EResult.AccessDenied,
+            -> scope.launch {
                 _loginResult.emit(LoginResult.Error(it.result.name))
                 account.clearPreferences()
             }
@@ -720,7 +717,7 @@ class SteamService : Service() {
                         lastLogOff = it.lastLogoff,
                         stateFlags = it.personaStateFlags,
                         statusFlags = it.statusFlags,
-                    )
+                    ),
                 )
 
                 if (requestsToNotify.contains(it.friendId)) {
@@ -728,7 +725,7 @@ class SteamService : Service() {
                         context = applicationContext,
                         friendId = it.friendId.convertToUInt64(),
                         friendName = it.playerName,
-                        avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString())
+                        avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString()),
                     )
                     requestsToNotify.remove(it.friendId)
                 }
@@ -760,7 +757,7 @@ class SteamService : Service() {
                         ) {
                             val newFriend = SteamFriend(
                                 id = friendItem.steamID.convertToUInt64(),
-                                relation = friendItem.relationship
+                                relation = friendItem.relationship,
                             )
                             friendsToAdd.add(newFriend)
                         }
@@ -821,8 +818,8 @@ class SteamService : Service() {
                         friendId = friendId,
                         fromLocal = isFromLocal,
                         unread = message.unread,
-                        timestampConfirmed = true
-                    )
+                        timestampConfirmed = true,
+                    ),
                 )
             }
         }
@@ -947,10 +944,13 @@ class SteamService : Service() {
                 .mapNotNull { app ->
                     val appFromDb = db.steamAppDao().findApp(app.id)
                     val packageId = appFromDb?.packageId ?: Int.MAX_VALUE
-                    val packageFromDb = if (packageId != Int.MAX_VALUE) db.steamLicenseDao()
-                        .findLicense(packageId) else null
+                    val packageFromDb = if (packageId != Int.MAX_VALUE) {
+                        db.steamLicenseDao()
+                            .findLicense(packageId)
+                    } else {
+                        null
+                    }
                     val ownerAccountId = packageFromDb?.ownerAccountID ?: emptyList()
-
 
                     if (app.changeNumber != appFromDb?.lastChangeNumber) {
                         app.keyValues.generateSteamApp().copy(
@@ -1067,8 +1067,8 @@ class SteamService : Service() {
                                 app.copy(
                                     packageId = Int.MAX_VALUE,
                                     ownerAccountId = emptyList(),
-                                    licenseFlags = EnumSet.noneOf(ELicenseFlags::class.java)
-                                )
+                                    licenseFlags = EnumSet.noneOf(ELicenseFlags::class.java),
+                                ),
                             )
                         }
                     }
@@ -1115,7 +1115,7 @@ class SteamService : Service() {
                 Timber.d("Collected ${ids.size} app(s) to query PICS")
                 steamApps!!.picsGetProductInfo(
                     apps = ids.map { PICSRequest(id = it, accessToken = 0) },
-                    packages = emptyList()
+                    packages = emptyList(),
                 )
             }
     }

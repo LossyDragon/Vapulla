@@ -19,7 +19,7 @@ val appModule = module {
         Room.databaseBuilder(
             androidApplication(),
             VapullaDatabase::class.java,
-            VapullaDatabase.DATABASE_NAME
+            VapullaDatabase.DATABASE_NAME,
         ).apply {
             if (BuildConfig.DEBUG) {
                 fallbackToDestructiveMigration(true)
@@ -42,7 +42,7 @@ val appModule = module {
         ProfileViewModel(
             friendDao = get(),
             serviceConnection = get(),
-            friendId = friendId
+            friendId = friendId,
         )
     }
 

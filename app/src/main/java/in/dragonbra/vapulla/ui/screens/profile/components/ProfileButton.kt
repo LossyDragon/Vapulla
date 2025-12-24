@@ -28,11 +28,7 @@ import com.materialkolor.ktx.isLight
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
-fun ProfileButton(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-) {
+fun ProfileButton(icon: ImageVector, text: String, onClick: () -> Unit) {
     val isLight = MaterialTheme.colorScheme.background.isLight()
     Card(
         modifier = Modifier

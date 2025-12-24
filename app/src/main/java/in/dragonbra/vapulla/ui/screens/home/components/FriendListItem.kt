@@ -24,10 +24,7 @@ import `in`.dragonbra.vapulla.ui.theme.colorAccent
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
 
 @Composable
-fun FriendListItem(
-    modifier: Modifier = Modifier,
-    friend: SteamFriend
-) {
+fun FriendListItem(modifier: Modifier = Modifier, friend: SteamFriend) {
     val hasTrailingContent = friend.newMessageCount > 0 || friend.lastMessageTime > 0
 
     ListItem(
@@ -44,7 +41,7 @@ fun FriendListItem(
             { FriendTrailingContent(friend = friend) }
         } else {
             null
-        }
+        },
     )
 }
 
@@ -60,7 +57,7 @@ private fun FriendTrailingContent(friend: SteamFriend) {
             Badge(
                 containerColor = colorAccent,
                 contentColor = MaterialTheme.colorScheme.onSurface,
-                content = { Text("${friend.newMessageCount}") }
+                content = { Text("${friend.newMessageCount}") },
             )
         }
     }
@@ -80,7 +77,7 @@ private fun Preview() {
                     newMessageCount = 100,
                     lastMessage = "A Message",
                     lastMessageTime = 1760722982L,
-                )
+                ),
             )
         }
     }

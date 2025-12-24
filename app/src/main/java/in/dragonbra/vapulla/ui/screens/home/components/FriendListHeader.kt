@@ -39,7 +39,7 @@ fun FriendListHeader(
                     } else {
                         Icons.Outlined.KeyboardArrowUp
                     },
-                    contentDescription = null
+                    contentDescription = null,
                 )
             }
         },
@@ -55,7 +55,7 @@ private fun Preview_StickyHeaderItem() {
                 isCollapsed = true,
                 header = R.string.headerFriendInGame,
                 count = 60,
-                onHeaderAction = {}
+                onHeaderAction = {},
             )
             FriendListItem(
                 friend = SteamFriend(

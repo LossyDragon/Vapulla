@@ -15,14 +15,14 @@ val mockFriendsList = persistentMapOf(
             id = 1L,
             name = "Chat 1",
             relation = EFriendRelationship.Friend,
-            state = EPersonaState.Online
+            state = EPersonaState.Online,
         ),
         SteamFriend(
             id = 2L,
             name = "Chat 2",
             relation = EFriendRelationship.Friend,
-            state = EPersonaState.Away
-        )
+            state = EPersonaState.Away,
+        ),
     ),
     R.string.headerFriendInGame to persistentListOf(
         SteamFriend(
@@ -31,7 +31,7 @@ val mockFriendsList = persistentMapOf(
             relation = EFriendRelationship.Friend,
             state = EPersonaState.Online,
             gameAppID = 730,
-            gameName = "Counter-Strike 2"
+            gameName = "Counter-Strike 2",
         ),
         SteamFriend(
             id = 4L,
@@ -40,38 +40,38 @@ val mockFriendsList = persistentMapOf(
             relation = EFriendRelationship.Friend,
             state = EPersonaState.Away,
             gameAppID = 570,
-            gameName = "Dota 2"
-        )
+            gameName = "Dota 2",
+        ),
     ),
     R.string.headerFriendOnline to persistentListOf(
         SteamFriend(
             id = 5L,
             name = "Online 1",
             relation = EFriendRelationship.Friend,
-            state = EPersonaState.Online
+            state = EPersonaState.Online,
         ),
         SteamFriend(
             id = 6L,
             name = "Online 2",
             nickname = "Two",
             relation = EFriendRelationship.Friend,
-            state = EPersonaState.Away
-        )
+            state = EPersonaState.Away,
+        ),
     ),
     R.string.headerFriendOffline to persistentListOf(
         SteamFriend(
             id = 7L,
             name = "Offline 1",
             relation = EFriendRelationship.Friend,
-            state = EPersonaState.Offline
+            state = EPersonaState.Offline,
         ),
         SteamFriend(
             id = 8L,
             name = "Offline 2",
             relation = EFriendRelationship.Friend,
-            state = EPersonaState.Offline
-        )
-    )
+            state = EPersonaState.Offline,
+        ),
+    ),
 )
 
 val mockStickyHeaders: ImmutableSet<Int> = persistentSetOf()

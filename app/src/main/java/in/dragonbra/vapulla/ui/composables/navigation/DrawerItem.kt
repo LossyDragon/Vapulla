@@ -25,7 +25,7 @@ internal fun DrawerItem(
         label = { Text(text = text) },
         icon = { Icon(imageVector = imageVector, contentDescription = contentDescription) },
         selected = selected,
-        onClick = onClick
+        onClick = onClick,
     )
 }
 

@@ -44,10 +44,7 @@ import `in`.dragonbra.vapulla.ui.screens.login.components.LoginTwoFactor
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
-fun LoginScreen(
-    viewModel: LoginViewModel,
-    onNavigateToHome: () -> Unit,
-) {
+fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -55,7 +52,6 @@ fun LoginScreen(
         viewModel.snackbarMessage.collect { message ->
             snackbarHostState.showSnackbar(message)
         }
-
     }
     LaunchedEffect(Unit) {
         viewModel.navigateToHome.collect { result ->
@@ -72,7 +68,7 @@ fun LoginScreen(
         onTwoFactorChange = viewModel::onTwoFactorChange,
         onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
         onUsernameChange = viewModel::onUsernameChange,
-        onPasswordChange = viewModel::onPasswordChange
+        onPasswordChange = viewModel::onPasswordChange,
     )
 }
 
@@ -93,7 +89,7 @@ private fun LoginScreenContent(
         modifier = Modifier
             .fillMaxSize()
             .imePadding(),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -120,9 +116,9 @@ private fun LoginScreenContent(
                     targetState = uiState.loginStep,
                     transitionSpec = {
                         fadeIn(animationSpec = tween(300)) togetherWith
-                                fadeOut(animationSpec = tween(300))
+                            fadeOut(animationSpec = tween(300))
                     },
-                    label = "login_step_animation"
+                    label = "login_step_animation",
                 ) { step ->
                     when (step) {
                         LoginStep.CREDENTIALS -> {
@@ -139,7 +135,7 @@ private fun LoginScreenContent(
                                         onSignInViaCredentials = onSignInViaCredentials,
                                         onSignInViaQR = onSignInViaQR,
                                     )
-                                }
+                                },
                             )
                         }
 
@@ -147,7 +143,7 @@ private fun LoginScreenContent(
                             LoginQRCode(
                                 code = uiState.qrCode,
                                 isWaitingForConfirmation = uiState.isWaitingForConfirmation,
-                                onQrCodeCancel = onQrCodeCancel
+                                onQrCodeCancel = onQrCodeCancel,
                             )
                         }
 
@@ -160,7 +156,7 @@ private fun LoginScreenContent(
                         }
                     }
                 }
-            }
+            },
         )
     }
 }
@@ -170,24 +166,22 @@ class LoginUiStateProvider : PreviewParameterProvider<LoginUiState> {
         LoginUiState(
             loginStep = LoginStep.CREDENTIALS,
             username = "My Username",
-            password = "My Password"
+            password = "My Password",
         ),
         LoginUiState(
             loginStep = LoginStep.QRCODE,
-            qrCode = "Hello World!"
+            qrCode = "Hello World!",
         ),
         LoginUiState(
             loginStep = LoginStep.TWOFACTOR,
-            twoFactorCode = "123XYZ"
-        )
+            twoFactorCode = "123XYZ",
+        ),
     )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
-private fun Preview(
-    @PreviewParameter(LoginUiStateProvider::class) uiState: LoginUiState
-) {
+private fun Preview(@PreviewParameter(LoginUiStateProvider::class) uiState: LoginUiState) {
     VapullaTheme {
         LoginScreenContent(
             snackbarHostState = SnackbarHostState(),

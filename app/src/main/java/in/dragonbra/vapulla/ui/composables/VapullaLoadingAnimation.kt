@@ -40,7 +40,7 @@ fun VapullaLoadingAnimation(
     modifier: Modifier = Modifier,
     size: Dp = 150.dp,
     durationMillis: Int = 1000,
-    isAnimating: Boolean = true
+    isAnimating: Boolean = true,
 ) {
     var middleAnimationStarted by remember { mutableStateOf(false) }
     var bottomAnimationStarted by remember { mutableStateOf(false) }
@@ -49,28 +49,28 @@ fun VapullaLoadingAnimation(
         targetValue = if (middleAnimationStarted && isAnimating) 1f else 0f,
         animationSpec = tween(
             durationMillis = durationMillis,
-            easing = BounceEasing
+            easing = BounceEasing,
         ),
         finishedListener = {
             if (isAnimating) {
                 middleAnimationStarted = !middleAnimationStarted
             }
         },
-        label = "middleProgress"
+        label = "middleProgress",
     )
 
     val bottomProgress by animateFloatAsState(
         targetValue = if (bottomAnimationStarted && isAnimating) 1f else 0f,
         animationSpec = tween(
             durationMillis = durationMillis,
-            easing = BounceEasing
+            easing = BounceEasing,
         ),
         finishedListener = {
             if (isAnimating) {
                 bottomAnimationStarted = !bottomAnimationStarted
             }
         },
-        label = "bottomProgress"
+        label = "bottomProgress",
     )
 
     LaunchedEffect(isAnimating) {
@@ -87,7 +87,7 @@ fun VapullaLoadingAnimation(
 
     Box(
         modifier = modifier.size(size),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val canvasSize = size.toPx()
@@ -97,21 +97,21 @@ fun VapullaLoadingAnimation(
             val bottomPath = createBottomPath(bottomProgress, scale)
             drawPath(
                 path = bottomPath,
-                color = Color(0xFF546E7A)
+                color = Color(0xFF546E7A),
             )
 
             // Middle sheet (animated) - #707070 (darker gray)
             val middlePath = createMiddlePath(middleProgress, scale)
             drawPath(
                 path = middlePath,
-                color = Color(0xFF707070)
+                color = Color(0xFF707070),
             )
 
             // Top sheet (static) - #9e9e9e (lighter gray)
             val topPath = createTopPath(scale)
             drawPath(
                 path = topPath,
-                color = Color(0xFF9E9E9E)
+                color = Color(0xFF9E9E9E),
             )
         }
     }
@@ -133,14 +133,12 @@ private val BounceEasing = Easing { fraction ->
     }
 }
 
-private fun createTopPath(scale: Float): Path {
-    return Path().apply {
-        moveTo(335f * scale, 669f * scale)
-        lineTo(500f * scale, 1000f * scale)
-        lineTo(1000f * scale, 0f)
-        lineTo(669f * scale, 0f)
-        close()
-    }
+private fun createTopPath(scale: Float): Path = Path().apply {
+    moveTo(335f * scale, 669f * scale)
+    lineTo(500f * scale, 1000f * scale)
+    lineTo(1000f * scale, 0f)
+    lineTo(669f * scale, 0f)
+    close()
 }
 
 private fun createMiddlePath(progress: Float, scale: Float): Path {
@@ -183,7 +181,7 @@ private fun Preview() {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 VapullaLoadingAnimation(isAnimating = isLoading)
 

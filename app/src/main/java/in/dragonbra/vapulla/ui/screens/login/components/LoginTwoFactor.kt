@@ -39,7 +39,7 @@ internal fun LoginTwoFactor(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Numbers,
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
             )
@@ -50,7 +50,7 @@ internal fun LoginTwoFactor(
                 onClick = onTwoFactorSubmit,
                 content = {
                     Text(text = "Submit")
-                }
+                },
             )
         }
     }

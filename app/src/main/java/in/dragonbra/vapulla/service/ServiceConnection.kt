@@ -21,9 +21,7 @@ sealed class LoginResult {
     data class QRCode(val qrCode: String) : LoginResult()
 }
 
-class ServiceConnection(
-    private val context: Context
-) {
+class ServiceConnection(private val context: Context) {
     var steamService: SteamService? = null // TODO maybe interface some methods.
         private set
 
@@ -72,6 +70,5 @@ class ServiceConnection(
 
     fun setPersonaState(state: EPersonaState) {
         steamService!!.setPersonaState(state)
-
     }
 }

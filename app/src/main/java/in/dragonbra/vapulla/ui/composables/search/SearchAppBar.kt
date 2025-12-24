@@ -57,12 +57,12 @@ fun SearchAppBar(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = null
+                    contentDescription = null,
                 )
             },
             trailingIcon = {
                 Spacer(modifier = Modifier.size(24.dp))
-            }
+            },
         )
     }
 
@@ -83,17 +83,17 @@ fun SearchAppBar(
                     onClick = {
                         textFieldState.clearText()
                         scope.launch { searchBarState.animateToCollapsed() }
-                    }
+                    },
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = "Close search"
+                        contentDescription = "Close search",
                     )
                 }
             },
             trailingIcon = {
                 Spacer(modifier = Modifier.size(24.dp))
-            }
+            },
         )
     }
 
@@ -107,9 +107,9 @@ fun SearchAppBar(
                 content = {
                     Icon(
                         imageVector = Icons.Default.Menu,
-                        contentDescription = null
+                        contentDescription = null,
                     )
-                }
+                },
             )
         },
         actions = {
@@ -119,7 +119,7 @@ fun SearchAppBar(
 
     ExpandedFullScreenSearchBar(
         state = searchBarState,
-        inputField = expandedInputField
+        inputField = expandedInputField,
     ) {
         expandedSearchBar()
     }

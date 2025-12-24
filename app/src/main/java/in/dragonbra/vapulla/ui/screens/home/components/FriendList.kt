@@ -14,14 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.entity.SteamFriend
+import kotlin.collections.component1
+import kotlin.collections.component2
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import me.saket.swipe.SwipeAction
 import me.saket.swipe.SwipeableActionsBox
 import timber.log.Timber
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 @Composable
 fun FriendList(
@@ -53,7 +53,7 @@ fun FriendList(
                             onSwipe = {
                                 Timber.d("Swipe to profile ${friend.id}")
                                 onFriendLongClick(friend.id)
-                            }
+                            },
                         )
 
                         SwipeableActionsBox(
@@ -62,10 +62,10 @@ fun FriendList(
                                 .fillParentMaxWidth()
                                 .combinedClickable(
                                     onClick = { onFriendClick(friend.id) },
-                                    onLongClick = { onFriendLongClick(friend.id) }
+                                    onLongClick = { onFriendLongClick(friend.id) },
                                 ),
                             endActions = listOf(swipeToProfile),
-                            content = { FriendListItem(friend = friend) }
+                            content = { FriendListItem(friend = friend) },
                         )
 
                         if (idx < friends.lastIndex) {
@@ -74,6 +74,6 @@ fun FriendList(
                     }
                 }
             }
-        }
+        },
     )
 }

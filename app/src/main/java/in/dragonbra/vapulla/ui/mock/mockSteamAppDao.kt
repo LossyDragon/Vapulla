@@ -13,7 +13,7 @@ val mockSteamAppDao = object : SteamAppDao {
     override fun getAllOwnedAppsPaged(
         appType: Int,
         query: String,
-        invalidPkgId: Int
+        invalidPkgId: Int,
     ): PagingSource<Int, SteamApp> {
         return object : PagingSource<Int, SteamApp>() {
             override suspend fun load(params: LoadParams<Int>): LoadResult<Int, SteamApp> {
@@ -22,7 +22,11 @@ val mockSteamAppDao = object : SteamAppDao {
                     SteamApp(id = 570, name = "Dota 2", type = SteamApp.AppType.game),
                     SteamApp(id = 440, name = "Team Fortress 2", type = SteamApp.AppType.game),
                     SteamApp(id = 1091500, name = "Cyberpunk 2077", type = SteamApp.AppType.game),
-                    SteamApp(id = 1174180, name = "Red Dead Redemption 2", type = SteamApp.AppType.game)
+                    SteamApp(
+                        id = 1174180,
+                        name = "Red Dead Redemption 2",
+                        type = SteamApp.AppType.game,
+                    ),
                 ).filter {
                     query.isEmpty() || it.name.contains(query, ignoreCase = true)
                 }
@@ -30,7 +34,7 @@ val mockSteamAppDao = object : SteamAppDao {
                 return LoadResult.Page(
                     data = mockApps,
                     prevKey = null,
-                    nextKey = null
+                    nextKey = null,
                 )
             }
 

@@ -1,9 +1,9 @@
 package `in`.dragonbra.vapulla.broadcastreceiver
 
-import `in`.dragonbra.vapulla.service.SteamService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import `in`.dragonbra.vapulla.service.SteamService
 
 class BlockRequestReceiver : BroadcastReceiver() {
 
@@ -17,10 +17,10 @@ class BlockRequestReceiver : BroadcastReceiver() {
         }
 
         context.startService(
-            Intent(context, SteamService::class.java).apply { context
+            Intent(context, SteamService::class.java).apply {
                 putExtra(SteamService.EXTRA_ID, intent.getLongExtra(EXTRA_ID, 9L))
                 putExtra(SteamService.EXTRA_ACTION, "block_request")
-            }
+            },
         )
     }
 }

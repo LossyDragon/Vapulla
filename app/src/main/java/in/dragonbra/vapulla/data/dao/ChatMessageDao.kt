@@ -23,21 +23,25 @@ interface ChatMessageDao {
 
     //
 
-    @Query("SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed")
+    @Query(
+        "SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed",
+    )
     fun find(
         message: String,
         timestamp: Long,
         friendId: Long,
         fromLocal: Boolean,
-        confirmed: Boolean
+        confirmed: Boolean,
     ): ChatMessage?
 
-    @Query("SELECT * FROM chat_message WHERE message = :message AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed")
+    @Query(
+        "SELECT * FROM chat_message WHERE message = :message AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed",
+    )
     fun find(
         message: String,
         friendId: Long,
         fromLocal: Boolean,
-        confirmed: Boolean
+        confirmed: Boolean,
     ): List<ChatMessage>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

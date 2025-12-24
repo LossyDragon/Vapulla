@@ -35,7 +35,6 @@ internal fun GameBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         content = {
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -48,13 +47,13 @@ internal fun GameBottomSheet(
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
+                },
             )
 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 SteamApp.AppType.entries.forEach { category ->
                     val selected = appTypes.contains(category)
@@ -65,10 +64,12 @@ internal fun GameBottomSheet(
                         label = { Text(category.name.capitalize()) },
                         leadingIcon = if (selected) {
                             { Icon(Icons.Default.Check, contentDescription = null) }
-                        } else null
+                        } else {
+                            null
+                        },
                     )
                 }
             }
-        }
+        },
     )
 }

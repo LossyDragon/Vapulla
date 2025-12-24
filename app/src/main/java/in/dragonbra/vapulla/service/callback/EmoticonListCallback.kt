@@ -27,7 +27,7 @@ class EmoticonListCallback(packetMsg: IPacketMsg) : CallbackMsg() {
             addAll(
                 resp.body.stickersList.map {
                     Emoticon(name = it.name, appID = it.appid, isSticker = true)
-                }
+                },
             )
         }
     }

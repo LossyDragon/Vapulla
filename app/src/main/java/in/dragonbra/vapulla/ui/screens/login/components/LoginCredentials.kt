@@ -46,7 +46,7 @@ internal fun LoginCredentials(
             UsernameTextField(
                 isLoading = isLoading,
                 username = username,
-                onUsernameChange = onUsernameChange
+                onUsernameChange = onUsernameChange,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -73,7 +73,7 @@ private fun UsernameTextField(
     onUsernameChange: (String) -> Unit,
 ) {
     OutlinedTextField(
-        //modifier = Modifier.fillMaxWidth(),
+        // modifier = Modifier.fillMaxWidth(),
         enabled = !isLoading,
         singleLine = true,
         value = username,
@@ -83,7 +83,7 @@ private fun UsernameTextField(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Person,
-                contentDescription = null
+                contentDescription = null,
             )
         },
     )
@@ -109,7 +109,7 @@ private fun PasswordTextField(
             Icon(
                 painter = painterResource(id = R.drawable.ic_lock_idle_lock),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
         },
         trailingIcon = {
@@ -120,7 +120,7 @@ private fun PasswordTextField(
                     } else {
                         Icons.Default.VisibilityOff
                     },
-                    contentDescription = null
+                    contentDescription = null,
                 )
             }
         },
@@ -145,7 +145,7 @@ private fun Preview() {
                 password = "My Password",
                 onPasswordVisible = { },
                 onPasswordChange = { },
-                buttonContent = { }
+                buttonContent = { },
             )
         }
     }

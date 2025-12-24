@@ -49,8 +49,8 @@ internal fun LoginQRCode(
         shapes = QrShapes(
             darkPixel = QrPixelShape.roundCorners(radius = .25f),
             ball = QrBallShape.roundCorners(radius = .25f),
-            frame = QrFrameShape.roundCorners(corner = .25f)
-        )
+            frame = QrFrameShape.roundCorners(corner = .25f),
+        ),
     )
 
     LaunchedEffect(key1 = code) {
@@ -97,7 +97,7 @@ internal fun LoginQRCode(
                 onClick = onQrCodeCancel,
                 content = {
                     Text(text = "Cancel")
-                }
+                },
             )
         }
     }
@@ -109,9 +109,7 @@ class QrCodeStateProvider : PreviewParameterProvider<Boolean> {
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
-private fun Preview(
-    @PreviewParameter(QrCodeStateProvider::class) value: Boolean
-) {
+private fun Preview(@PreviewParameter(QrCodeStateProvider::class) value: Boolean) {
     VapullaTheme {
         Surface {
             LoginQRCode(

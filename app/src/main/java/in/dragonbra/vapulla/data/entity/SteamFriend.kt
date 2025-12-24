@@ -24,10 +24,10 @@ import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import java.util.Date
 import java.util.EnumSet
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 private typealias EPersonaStateFlags = EnumSet<EPersonaStateFlag>
 
@@ -46,13 +46,15 @@ data class SteamFriend(
     val lastLogOn: Date = Date(0),
     val lastLogOff: Date = Date(0),
     val stateFlags: EPersonaStateFlags = EnumSet.noneOf(EPersonaStateFlag::class.java),
-    val statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(EClientPersonaStateFlag::class.java),
+    val statusFlags: EnumSet<EClientPersonaStateFlag> = EnumSet.noneOf(
+        EClientPersonaStateFlag::class.java,
+    ),
     val typingTs: Long = -1,
     val nickname: String = "",
     val lastMessage: String = "",
     val lastMessageTime: Long = -1,
     val newMessageCount: Int = 0,
-    val aliases: ImmutableList<String> = persistentListOf()
+    val aliases: ImmutableList<String> = persistentListOf(),
 ) {
 
     val isOnline: Boolean
@@ -84,8 +86,8 @@ data class SteamFriend(
 
     val isAwayOrSnooze: Boolean
         get() = state == EPersonaState.Away ||
-                state == EPersonaState.Snooze ||
-                state == EPersonaState.Busy
+            state == EPersonaState.Snooze ||
+            state == EPersonaState.Busy
 
     val isInGameAwayOrSnooze: Boolean
         get() = isPlayingGame && isAwayOrSnooze
@@ -95,8 +97,8 @@ data class SteamFriend(
 
     val isBlocked: Boolean
         get() = relation == EFriendRelationship.Blocked ||
-                relation == EFriendRelationship.Ignored ||
-                relation == EFriendRelationship.IgnoredFriend
+            relation == EFriendRelationship.Ignored ||
+            relation == EFriendRelationship.IgnoredFriend
 
     val isFriend: Boolean
         get() = relation == EFriendRelationship.Friend

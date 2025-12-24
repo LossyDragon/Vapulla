@@ -60,8 +60,8 @@ fun GameListItem(
                                     in 50..74 -> Color(0xFFFF9800)
                                     in 75..100 -> Color.Green
                                     else -> Color.Gray
-                                }
-                            )
+                                },
+                            ),
                         ) {
                             append(app.metacriticScore.toString())
                         }
@@ -77,29 +77,31 @@ fun GameListItem(
                 loading = {
                     Box(
                         contentAlignment = Alignment.Center,
-                        content = { LoadingIndicator() }
+                        content = { LoadingIndicator() },
                     )
                 },
                 previewPlaceholder = painterResource(R.drawable.vapulla_background),
                 failure = {
                     Box(
                         modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.BrokenImage,
                             contentDescription = "Failed to load image",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                }
+                },
             )
         },
         trailingContent = if (!app.ownerAccountId.contains(localAccountId?.toInt())) {
             {
                 Icon(imageVector = Icons.Outlined.Groups, contentDescription = null)
             }
-        } else null
+        } else {
+            null
+        },
 
     )
 }
@@ -118,7 +120,7 @@ private fun Preview() {
                 developer = "Valve",
                 publisher = "Valve",
             ),
-            onGameClicked = {}
+            onGameClicked = {},
         )
     }
 }

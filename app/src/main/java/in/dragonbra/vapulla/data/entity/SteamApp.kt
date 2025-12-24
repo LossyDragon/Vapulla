@@ -6,9 +6,9 @@ import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.vapulla.data.serializers.DateSerializer
 import `in`.dragonbra.vapulla.data.serializers.OsEnumSetSerializer
-import kotlinx.serialization.Serializable
 import java.util.Date
 import java.util.EnumSet
+import kotlinx.serialization.Serializable
 
 @Immutable
 @Entity(tableName = "steam_app")
@@ -91,20 +91,18 @@ data class SteamApp(
         get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$clientTgaHash.tga"
 
     // source: https://github.com/Nemirtingas/games-infos/blob/3915100198bac34553b3c862f9e295d277f5520a/steam_retriever/Program.cs#L589C43-L589C89
-    fun getSmallCapsuleUrl(language: Language = Language.english): String? {
-        return smallCapsule[language]?.let {
+    fun getSmallCapsuleUrl(language: Language = Language.english): String? =
+        smallCapsule[language]?.let {
             "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
         }
-    }
 
-    fun getHeaderImageUrl(language: Language = Language.english): String? {
-        return headerImage[language]?.let {
+    fun getHeaderImageUrl(language: Language = Language.english): String? =
+        headerImage[language]?.let {
             "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
         }
-    }
 
-    fun getCapsuleUrl(language: Language = Language.english, large: Boolean = false): String? {
-        return if (large) {
+    fun getCapsuleUrl(language: Language = Language.english, large: Boolean = false): String? =
+        if (large) {
             libraryAssets.libraryCapsule.image2x[language]?.let {
                 "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
             }
@@ -113,10 +111,9 @@ data class SteamApp(
                 "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
             }
         }
-    }
 
-    fun getHeroUrl(language: Language = Language.english, large: Boolean = false): String? {
-        return if (large) {
+    fun getHeroUrl(language: Language = Language.english, large: Boolean = false): String? =
+        if (large) {
             libraryAssets.libraryHero.image2x[language]?.let {
                 "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
             }
@@ -125,10 +122,9 @@ data class SteamApp(
                 "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
             }
         }
-    }
 
-    fun getLogoUrl(language: Language = Language.english, large: Boolean = false): String? {
-        return if (large) {
+    fun getLogoUrl(language: Language = Language.english, large: Boolean = false): String? =
+        if (large) {
             libraryAssets.libraryLogo.image2x[language]?.let {
                 "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
             }
@@ -137,7 +133,6 @@ data class SteamApp(
                 "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
             }
         }
-    }
 
     @Serializable
     data class UFS(
@@ -147,11 +142,7 @@ data class SteamApp(
     )
 
     @Serializable
-    data class SaveFilePattern(
-        val root: PathType,
-        val path: String,
-        val pattern: String,
-    )
+    data class SaveFilePattern(val root: PathType, val path: String, val pattern: String)
 
     @Serializable
     data class ConfigInfo(
@@ -212,12 +203,7 @@ data class SteamApp(
     )
 
     @Serializable
-    data class ManifestInfo(
-        val name: String,
-        val gid: Long,
-        val size: Long,
-        val download: Long,
-    )
+    data class ManifestInfo(val name: String, val gid: Long, val size: Long, val download: Long)
 
     @Serializable
     data class BranchInfo(
@@ -313,58 +299,56 @@ data class SteamApp(
         companion object {
             val DEFAULT = SteamUserData
 
-            fun from(keyValue: String?): PathType {
-                return when (keyValue?.lowercase()) {
-                    "%${GameInstall.name.lowercase()}%",
-                    GameInstall.name.lowercase(),
-                        -> GameInstall
+            fun from(keyValue: String?): PathType = when (keyValue?.lowercase()) {
+                "%${GameInstall.name.lowercase()}%",
+                GameInstall.name.lowercase(),
+                -> GameInstall
 
-                    "%${SteamUserData.name.lowercase()}%",
-                    SteamUserData.name.lowercase(),
-                        -> SteamUserData
+                "%${SteamUserData.name.lowercase()}%",
+                SteamUserData.name.lowercase(),
+                -> SteamUserData
 
-                    "%${WinMyDocuments.name.lowercase()}%",
-                    WinMyDocuments.name.lowercase(),
-                        -> WinMyDocuments
+                "%${WinMyDocuments.name.lowercase()}%",
+                WinMyDocuments.name.lowercase(),
+                -> WinMyDocuments
 
-                    "%${WinAppDataLocal.name.lowercase()}%",
-                    WinAppDataLocal.name.lowercase(),
-                        -> WinAppDataLocal
+                "%${WinAppDataLocal.name.lowercase()}%",
+                WinAppDataLocal.name.lowercase(),
+                -> WinAppDataLocal
 
-                    "%${WinAppDataLocalLow.name.lowercase()}%",
-                    WinAppDataLocalLow.name.lowercase(),
-                        -> WinAppDataLocalLow
+                "%${WinAppDataLocalLow.name.lowercase()}%",
+                WinAppDataLocalLow.name.lowercase(),
+                -> WinAppDataLocalLow
 
-                    "%${WinAppDataRoaming.name.lowercase()}%",
-                    WinAppDataRoaming.name.lowercase(),
-                        -> WinAppDataRoaming
+                "%${WinAppDataRoaming.name.lowercase()}%",
+                WinAppDataRoaming.name.lowercase(),
+                -> WinAppDataRoaming
 
-                    "%${WinSavedGames.name.lowercase()}%",
-                    WinSavedGames.name.lowercase()
-                        -> WinSavedGames
+                "%${WinSavedGames.name.lowercase()}%",
+                WinSavedGames.name.lowercase(),
+                -> WinSavedGames
 
-                    "%${LinuxHome.name.lowercase()}%",
-                    LinuxHome.name.lowercase()
-                        -> LinuxHome
+                "%${LinuxHome.name.lowercase()}%",
+                LinuxHome.name.lowercase(),
+                -> LinuxHome
 
-                    "%${LinuxXdgDataHome.name.lowercase()}%",
-                    LinuxXdgDataHome.name.lowercase()
-                        -> LinuxXdgDataHome
+                "%${LinuxXdgDataHome.name.lowercase()}%",
+                LinuxXdgDataHome.name.lowercase(),
+                -> LinuxXdgDataHome
 
-                    "%${LinuxXdgConfigHome.name.lowercase()}%",
-                    LinuxXdgConfigHome.name.lowercase()
-                        -> LinuxXdgConfigHome
+                "%${LinuxXdgConfigHome.name.lowercase()}%",
+                LinuxXdgConfigHome.name.lowercase(),
+                -> LinuxXdgConfigHome
 
-                    "%${MacHome.name.lowercase()}%",
-                    MacHome.name.lowercase()
-                        -> MacHome
+                "%${MacHome.name.lowercase()}%",
+                MacHome.name.lowercase(),
+                -> MacHome
 
-                    "%${MacAppSupport.name.lowercase()}%",
-                    MacAppSupport.name.lowercase()
-                        -> MacAppSupport
+                "%${MacAppSupport.name.lowercase()}%",
+                MacAppSupport.name.lowercase(),
+                -> MacAppSupport
 
-                    else -> None
-                }
+                else -> None
             }
         }
     }

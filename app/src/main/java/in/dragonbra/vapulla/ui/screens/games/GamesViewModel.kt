@@ -10,6 +10,7 @@ import `in`.dragonbra.vapulla.data.dao.SteamAppDao
 import `in`.dragonbra.vapulla.data.entity.SteamApp
 import `in`.dragonbra.vapulla.data.entity.SteamApp.AppType
 import `in`.dragonbra.vapulla.manager.AccountManager
+import java.util.EnumSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import timber.log.Timber
-import java.util.EnumSet
 
 class GamesViewModel(
     private val steamAppDao: SteamAppDao,
@@ -31,7 +31,7 @@ class GamesViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = null,
         )
 
     private val _searchQuery = MutableStateFlow("")
@@ -51,9 +51,9 @@ class GamesViewModel(
                 pagingSourceFactory = {
                     steamAppDao.getAllOwnedAppsPaged(
                         appType = flags,
-                        query = query
+                        query = query,
                     )
-                }
+                },
             ).flow
         }.flatMapLatest { it }.cachedIn(viewModelScope)
 

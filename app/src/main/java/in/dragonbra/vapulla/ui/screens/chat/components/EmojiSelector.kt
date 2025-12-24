@@ -49,31 +49,31 @@ fun EmojiStickerSelectorComponent(
     selectedTab: EmojiStickerSelector,
     onTabSelected: (EmojiStickerSelector) -> Unit,
     onEmoticonSelected: (Emoticon) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier,
         tonalElevation = 2.dp,
-        contentColor = MaterialTheme.colorScheme.secondary
+        contentColor = MaterialTheme.colorScheme.secondary,
     ) {
         Column {
             // Tab selector
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 ExtendedSelectorInnerButton(
                     text = "Emoticons",
                     onClick = { onTabSelected(EmojiStickerSelector.EMOTICONS) },
                     selected = selectedTab == EmojiStickerSelector.EMOTICONS,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 ExtendedSelectorInnerButton(
                     text = "Stickers",
                     onClick = { onTabSelected(EmojiStickerSelector.STICKERS) },
                     selected = selectedTab == EmojiStickerSelector.STICKERS,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
 
@@ -87,9 +87,10 @@ fun EmojiStickerSelectorComponent(
                         onEmoticonSelected = onEmoticonSelected,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .padding(16.dp),
                     )
                 }
+
                 EmojiStickerSelector.STICKERS -> {
                     // StickerGrid(
                     //     stickers = stickers,
@@ -109,11 +110,14 @@ fun ExtendedSelectorInnerButton(
     text: String,
     onClick: () -> Unit,
     selected: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colors = ButtonDefaults.buttonColors(
-        containerColor = if (selected) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-        else Color.Transparent,
+        containerColor = if (selected) {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+        } else {
+            Color.Transparent
+        },
         disabledContainerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
         disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.74f),
@@ -137,17 +141,17 @@ fun ExtendedSelectorInnerButton(
 fun EmoticonGrid(
     emoticons: List<Emoticon>,
     onEmoticonSelected: (Emoticon) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (emoticons.isEmpty()) {
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "No emoticons available",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
         }
         return
@@ -158,43 +162,39 @@ fun EmoticonGrid(
         modifier = modifier,
         contentPadding = PaddingValues(4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(emoticons) { emoticon ->
             EmoticonItem(
                 emoticon = emoticon,
-                onClick = { onEmoticonSelected(emoticon) }
+                onClick = { onEmoticonSelected(emoticon) },
             )
         }
     }
 }
 
 @Composable
-fun EmoticonItem(
-    emoticon: Emoticon,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun EmoticonItem(emoticon: Emoticon, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier
             .size(48.dp),
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        contentColor = MaterialTheme.colorScheme.onSurface
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(4.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             // Placeholder representation - you'd replace this with actual emoticon images
             Text(
                 text = emoticon.name.take(2).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 textAlign = TextAlign.Center,
-                maxLines = 1
+                maxLines = 1,
             )
         }
     }
@@ -207,16 +207,16 @@ class EmojiSelectorStateProvider : PreviewParameterProvider<EmojiStickerSelector
 @Preview(showBackground = true, heightDp = 300, widthDp = 360)
 @Composable
 fun EmojiStickerSelectorOnlyPreview(
-    @PreviewParameter(EmojiSelectorStateProvider::class) value: EmojiStickerSelector
+    @PreviewParameter(EmojiSelectorStateProvider::class) value: EmojiStickerSelector,
 ) {
     MaterialTheme {
         EmojiStickerSelectorComponent(
             emoticons = listOf(),
             selectedTab = value,
-            onTabSelected = {  },
+            onTabSelected = { },
             onEmoticonSelected = { /* Handle selection */ },
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxSize(),
         )
     }
 }

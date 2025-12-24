@@ -71,7 +71,7 @@ private fun NavigationDrawerContent(
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) {
             Spacer(Modifier.height(12.dp))
 
@@ -145,7 +145,7 @@ private fun Preview() {
                     onNavigationClick = { },
                 )
             },
-            content = { }
+            content = { },
         )
     }
 }

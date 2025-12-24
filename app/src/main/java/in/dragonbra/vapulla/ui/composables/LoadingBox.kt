@@ -15,13 +15,11 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun LoadingBox(
-    modifier: Modifier = Modifier
-) {
+fun LoadingBox(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,
-        content = { LoadingIndicator(modifier = Modifier.padding(16.dp)) }
+        content = { LoadingIndicator(modifier = Modifier.padding(16.dp)) },
     )
 }
 

@@ -25,8 +25,8 @@ import androidx.core.view.WindowCompat
 @Composable
 fun VapullaTheme(
     seedColor: Color = colorPrimary,
-    isDarkTheme: Boolean =  true,
-    content: @Composable () -> Unit
+    isDarkTheme: Boolean = true,
+    content: @Composable () -> Unit,
 ) {
     val darkColorScheme = darkColorScheme(primary = seedColor)
     val shapes = Shapes(largeIncreased = RoundedCornerShape(36.0.dp))
@@ -42,6 +42,7 @@ fun VapullaTheme(
         }
 
         isDarkTheme -> darkColorScheme
+
         else -> expressiveLightColorScheme()
     }
 
@@ -60,6 +61,6 @@ fun VapullaTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
         shapes = shapes,
-        content = content
+        content = content,
     )
 }

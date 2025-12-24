@@ -11,20 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SearchResultMessage(
-    message: String,
-) {
+fun SearchResultMessage(message: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(32.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
-

@@ -25,7 +25,6 @@ interface SteamLicenseDao {
     @Query("UPDATE steam_license SET depotIds = :depotIds WHERE packageId = :packageId")
     suspend fun updateDepots(packageId: Int, depotIds: List<Int>)
 
-
     @Query("SELECT * FROM steam_license WHERE packageId NOT IN (:packageIds)")
     suspend fun findStaleLicences(packageIds: List<Int>): List<SteamLicense>
 

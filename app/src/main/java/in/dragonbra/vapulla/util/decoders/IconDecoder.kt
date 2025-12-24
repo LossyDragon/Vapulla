@@ -16,10 +16,7 @@ import timber.log.Timber
  */
 
 // .ico file decoder
-class IconDecoder(
-    private val source: SourceResult,
-    private val options: Options,
-) : Decoder {
+class IconDecoder(private val source: SourceResult, private val options: Options) : Decoder {
 
     override suspend fun decode(): DecodeResult? {
         return try {

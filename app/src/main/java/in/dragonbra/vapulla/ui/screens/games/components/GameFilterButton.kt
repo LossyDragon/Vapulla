@@ -8,17 +8,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
 @Composable
-fun GameFilterButton(
-    onClick: () -> Unit,
-) {
+fun GameFilterButton(onClick: () -> Unit) {
     ExtendedFloatingActionButton(
         text = { Text(text = "Filter") },
         icon = {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                contentDescription = null
+                contentDescription = null,
             )
         },
-        onClick = onClick
+        onClick = onClick,
     )
 }

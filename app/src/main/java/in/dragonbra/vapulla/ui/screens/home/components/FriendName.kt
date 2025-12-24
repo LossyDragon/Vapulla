@@ -86,8 +86,8 @@ private fun Preview() {
                     id = 0,
                     name = "Actual Name",
                     nickname = "Nick Name",
-                    state = EPersonaState.Away
-                )
+                    state = EPersonaState.Away,
+                ),
             )
         }
     }

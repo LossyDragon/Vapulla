@@ -76,7 +76,7 @@ fun HomeScreenContent(
         if (searchQuery.isNotEmpty()) {
             friendsList.values.flatten().filter { friend ->
                 friend.name.contains(searchQuery, ignoreCase = true) ||
-                        friend.nickname.contains(searchQuery, ignoreCase = true)
+                    friend.nickname.contains(searchQuery, ignoreCase = true)
             }
         } else {
             emptyList()
@@ -94,7 +94,7 @@ fun HomeScreenContent(
                     if (searchQuery.isNotEmpty()) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp)
+                            contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
                             items(filteredFriends, key = { it.id }) { friend ->
                                 FriendListItem(
@@ -110,7 +110,7 @@ fun HomeScreenContent(
                                                 onFriendLongClick(friend.id)
                                                 textFieldState.clearText()
                                                 scope.launch { searchBarState.animateToCollapsed() }
-                                            }
+                                            },
                                         ),
                                     friend = friend,
                                 )
@@ -119,7 +119,7 @@ fun HomeScreenContent(
                             if (filteredFriends.isEmpty()) {
                                 item {
                                     SearchResultMessage(
-                                        message = "No friends found matching \"$searchQuery\""
+                                        message = "No friends found matching \"$searchQuery\"",
                                     )
                                 }
                             }
@@ -127,7 +127,7 @@ fun HomeScreenContent(
                     } else {
                         SearchResultMessage(message = "Start typing to search friends")
                     }
-                }
+                },
             )
         },
         content = { padding ->
@@ -141,7 +141,7 @@ fun HomeScreenContent(
                 onFriendClick = onFriendClick,
                 onFriendLongClick = onFriendLongClick,
             )
-        }
+        },
     )
 }
 
@@ -153,9 +153,9 @@ private fun Preview() {
             friendsList = mockFriendsList,
             stickyHeaders = mockStickyHeaders,
             onNavDrawerAction = {},
-                    onFriendClick = {},
-                    onFriendLongClick = {},
-                    onStickyHeaderAction = {},
+            onFriendClick = {},
+            onFriendLongClick = {},
+            onStickyHeaderAction = {},
         )
     }
 }
