@@ -21,6 +21,8 @@ import androidx.navigation3.ui.NavDisplay
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.ui.composables.navigation.NavigationDrawer
+import `in`.dragonbra.vapulla.ui.screens.chat.ChatScreen
+import `in`.dragonbra.vapulla.ui.screens.chat.ChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.games.GamesScreen
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeScreen
@@ -47,8 +49,7 @@ sealed class Routes {
 @Composable
 fun NavigationRoot(modifier: Modifier = Modifier) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val koin = getKoin()
-    val connection = remember(koin) { koin.get<ServiceConnection>() }
+    val connection: ServiceConnection = getKoin().get()
     val scope = rememberCoroutineScope()
 
     val backStack = remember {
@@ -81,7 +82,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
             NavigationDrawer(
                 currentSelection = backStack.last(),
                 onLogOut = {
-                    // TODO
+                    connection.steamService!!.logOut()
                 },
                 onNavigationClick = { route ->
                     backStack.removeAll { it != Routes.Home }
@@ -102,6 +103,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                 ),
                 sceneStrategy = SinglePaneSceneStrategy(),
                 entryProvider = entryProvider {
+                    /* Login */
                     entry<Routes.Login> {
                         val viewModel = koinViewModel<LoginViewModel>()
                         LoginScreen(
@@ -112,18 +114,31 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             },
                         )
                     }
+                    /* Main Screen */
                     entry<Routes.Home> {
                         val viewModel = koinViewModel<HomeViewModel>()
                         HomeScreen(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
                             onFriendClick = { friendId ->
+                                backStack.add(Routes.FriendChat(friendId))
                             },
                             onFriendLongClick = { friendId ->
                                 backStack.add(Routes.FriendProfile(friendId))
                             },
                         )
                     }
+                    /* Chat */
+                    entry<Routes.FriendChat> {
+                        val viewModel = koinViewModel<ChatViewModel> {
+                            parametersOf(it.id)
+                        }
+                        ChatScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLast() },
+                        )
+                    }
+                    /* Profile */
                     entry<Routes.FriendProfile> {
                         val viewModel = koinViewModel<ProfileViewModel> {
                             parametersOf(it.id)
@@ -134,6 +149,7 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             onBack = { backStack.removeLast() },
                         )
                     }
+                    /* Games */
                     entry<Routes.Games> {
                         val viewModel = koinViewModel<GamesViewModel>()
                         GamesScreen(
@@ -141,11 +157,13 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             onNavDrawerAction = onNavDrawerAction,
                         )
                     }
+                    /* Downloads */
                     entry<Routes.Downloads> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("Downloads")
                         }
                     }
+                    /* Settings */
                     entry<Routes.Settings> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("Settings")

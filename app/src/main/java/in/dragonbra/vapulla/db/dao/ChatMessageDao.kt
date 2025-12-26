@@ -21,8 +21,6 @@ interface ChatMessageDao {
     @Query("UPDATE chat_message SET unread = 0 WHERE friendId = :friendId AND fromLocal = 0")
     suspend fun markMessagesAsRead(friendId: Long)
 
-    //
-
     @Query(
         "SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp AND friendId = :friendId AND fromLocal = :fromLocal AND timestampConfirmed = :confirmed",
     )

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.ksp) apply false
     alias(libs.plugins.kotlinter) apply false
+    alias(libs.plugins.stability.analyzer) apply false
 }
 
 configurations.configureEach {

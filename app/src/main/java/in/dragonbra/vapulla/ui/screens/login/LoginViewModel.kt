@@ -63,9 +63,6 @@ class LoginViewModel(
     }
 
     init {
-        connection.bindService()
-        connection.startForegroundService()
-
         viewModelScope.launch {
             SteamService.isLoading.collect { loading ->
                 _uiState.value = _uiState.value.copy(isLoading = loading)

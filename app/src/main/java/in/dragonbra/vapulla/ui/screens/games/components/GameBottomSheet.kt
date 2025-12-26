@@ -21,13 +21,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.vapulla.db.entity.SteamApp
+import kotlinx.collections.immutable.ImmutableSet
 
 @Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun GameBottomSheet(
     sheetState: SheetState,
-    appTypes: Set<SteamApp.AppType>,
+    appTypes: ImmutableSet<SteamApp.AppType>,
     onDismissRequest: () -> Unit,
     onAppTypeClicked: (SteamApp.AppType) -> Unit,
 ) {

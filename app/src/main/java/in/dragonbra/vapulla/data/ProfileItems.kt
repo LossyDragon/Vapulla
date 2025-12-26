@@ -7,7 +7,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 @Immutable
-data class ProfileItem(
+data class ProfileItems(
     val communityItemId: Long = 0L,
     val imageSmall: String = "",
     val imageLarge: String = "",
@@ -26,14 +26,11 @@ data class ProfileItem(
     val tiled: Boolean = false,
 ) {
     @Immutable
-    data class ProfileColor(
-        val styleName: String = "",
-        val color: String = "",
-    )
+    data class ProfileColor(val styleName: String = "", val color: String = "")
 
     companion object {
-        fun serialize(item: SteammessagesPlayerSteamclient.ProfileItem): ProfileItem {
-            return ProfileItem(
+        fun deserialize(item: SteammessagesPlayerSteamclient.ProfileItem): ProfileItems =
+            ProfileItems(
                 communityItemId = item.communityitemid,
                 imageSmall = item.imageSmall,
                 imageLarge = item.imageLarge,
@@ -56,6 +53,5 @@ data class ProfileItem(
                 }.toImmutableList(),
                 tiled = item.tiled,
             )
-        }
     }
 }

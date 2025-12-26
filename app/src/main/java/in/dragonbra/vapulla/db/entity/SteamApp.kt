@@ -303,51 +303,51 @@ data class SteamApp(
             fun from(keyValue: String?): PathType = when (keyValue?.lowercase()) {
                 "%${GameInstall.name.lowercase()}%",
                 GameInstall.name.lowercase(),
-                    -> GameInstall
+                -> GameInstall
 
                 "%${SteamUserData.name.lowercase()}%",
                 SteamUserData.name.lowercase(),
-                    -> SteamUserData
+                -> SteamUserData
 
                 "%${WinMyDocuments.name.lowercase()}%",
                 WinMyDocuments.name.lowercase(),
-                    -> WinMyDocuments
+                -> WinMyDocuments
 
                 "%${WinAppDataLocal.name.lowercase()}%",
                 WinAppDataLocal.name.lowercase(),
-                    -> WinAppDataLocal
+                -> WinAppDataLocal
 
                 "%${WinAppDataLocalLow.name.lowercase()}%",
                 WinAppDataLocalLow.name.lowercase(),
-                    -> WinAppDataLocalLow
+                -> WinAppDataLocalLow
 
                 "%${WinAppDataRoaming.name.lowercase()}%",
                 WinAppDataRoaming.name.lowercase(),
-                    -> WinAppDataRoaming
+                -> WinAppDataRoaming
 
                 "%${WinSavedGames.name.lowercase()}%",
                 WinSavedGames.name.lowercase(),
-                    -> WinSavedGames
+                -> WinSavedGames
 
                 "%${LinuxHome.name.lowercase()}%",
                 LinuxHome.name.lowercase(),
-                    -> LinuxHome
+                -> LinuxHome
 
                 "%${LinuxXdgDataHome.name.lowercase()}%",
                 LinuxXdgDataHome.name.lowercase(),
-                    -> LinuxXdgDataHome
+                -> LinuxXdgDataHome
 
                 "%${LinuxXdgConfigHome.name.lowercase()}%",
                 LinuxXdgConfigHome.name.lowercase(),
-                    -> LinuxXdgConfigHome
+                -> LinuxXdgConfigHome
 
                 "%${MacHome.name.lowercase()}%",
                 MacHome.name.lowercase(),
-                    -> MacHome
+                -> MacHome
 
                 "%${MacAppSupport.name.lowercase()}%",
                 MacAppSupport.name.lowercase(),
-                    -> MacAppSupport
+                -> MacAppSupport
 
                 else -> None
             }

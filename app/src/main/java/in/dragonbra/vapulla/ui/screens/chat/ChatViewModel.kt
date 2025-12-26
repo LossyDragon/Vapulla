@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.chat
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -7,7 +8,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import `in`.dragonbra.vapulla.db.dao.ChatMessageDao
+import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,14 +19,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class ChatViewModel(private val friendId: Long, private val messageDao: ChatMessageDao) :
-    ViewModel() {
+class ChatViewModel(
+    private val friendId: Long,
+    private val friendDao: SteamFriendDao,
+    private val messageDao: ChatMessageDao,
+) : ViewModel() {
 
     companion object {
+        @Immutable
         data class ChatUiState(
             val messageText: String = "",
             val showEmojiKeyboard: Boolean = false,
             val isLoading: Boolean = false,
+            val friend: SteamFriend? = null,
         )
     }
 
@@ -42,7 +50,12 @@ class ChatViewModel(private val friendId: Long, private val messageDao: ChatMess
     init {
         Timber.d("Chat Init $friendId")
         viewModelScope.launch {
+            friendDao.findFlow(friendId).collect { friend ->
+                _uiState.update { it.copy(friend = friend) }
+            }
+
             messageDao.markMessagesAsRead(friendId)
+            // TODO ack messages via steam.
         }
     }
 

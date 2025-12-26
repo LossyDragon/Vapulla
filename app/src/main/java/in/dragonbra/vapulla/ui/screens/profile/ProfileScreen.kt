@@ -68,6 +68,7 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
@@ -100,7 +101,7 @@ fun ProfileScreen(viewModel: ProfileViewModel, onNavDrawerAction: () -> Unit, on
 @Composable
 private fun ProfileScreenContent(
     friend: SteamFriend,
-    profile: ProfileInfoCallback?,
+    profile: ProfileInfo?,
     onBack: () -> Unit,
     onAlias: () -> Unit,
     onBlock: (Long) -> Unit,

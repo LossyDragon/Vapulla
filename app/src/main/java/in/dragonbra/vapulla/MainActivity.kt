@@ -25,17 +25,26 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.skydoves.landscapist.coil.LocalCoilImageLoader
+import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.ui.NavigationRoot
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.util.decoders.IconDecoder
 import okio.Path.Companion.toOkioPath
+import org.koin.android.ext.android.inject
+import org.koin.compose.getKoin
 import timber.log.Timber
 
 class MainActivity : ComponentActivity() {
+
+    private val serviceConnection: ServiceConnection by inject()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.i("Created...")
+
+        serviceConnection.bindService()
+        serviceConnection.startForegroundService()
 
         enableEdgeToEdge(
             navigationBarStyle = SystemBarStyle.light(
@@ -95,5 +104,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceConnection.unBindService()
     }
 }

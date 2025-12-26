@@ -1,14 +1,14 @@
 package `in`.dragonbra.vapulla.db.converters
 
 import androidx.room.TypeConverter
-import `in`.dragonbra.vapulla.data.ProfileItem
+import `in`.dragonbra.vapulla.data.ProfileItems
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class ProfileTypeConverter {
     @TypeConverter
-    fun fromProfileItem(profileItem: ProfileItem): String {
+    fun fromProfileItem(profileItem: ProfileItems): String {
         val serializable = SerializableProfileItem(
             communityItemId = profileItem.communityItemId,
             imageSmall = profileItem.imageSmall,
@@ -33,9 +33,9 @@ class ProfileTypeConverter {
     }
 
     @TypeConverter
-    fun toProfileItem(value: String): ProfileItem {
+    fun toProfileItem(value: String): ProfileItems {
         val serializable = Json.decodeFromString<SerializableProfileItem>(value)
-        return ProfileItem(
+        return ProfileItems(
             communityItemId = serializable.communityItemId,
             imageSmall = serializable.imageSmall,
             imageLarge = serializable.imageLarge,
@@ -51,7 +51,7 @@ class ProfileTypeConverter {
             movieMp4Small = serializable.movieMp4Small,
             equippedFlags = serializable.equippedFlags,
             profileColors = serializable.profileColors.map {
-                ProfileItem.ProfileColor(it.styleName, it.color)
+                ProfileItems.ProfileColor(it.styleName, it.color)
             }.toImmutableList(),
             tiled = serializable.tiled,
         )
@@ -78,8 +78,5 @@ class ProfileTypeConverter {
     )
 
     @Serializable
-    private data class SerializableProfileColor(
-        val styleName: String,
-        val color: String,
-    )
+    private data class SerializableProfileColor(val styleName: String, val color: String)
 }

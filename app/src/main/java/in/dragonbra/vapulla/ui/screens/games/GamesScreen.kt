@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
+import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -43,6 +44,9 @@ import `in`.dragonbra.vapulla.ui.screens.games.components.GameFilterButton
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.coroutines.flow.flowOf
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -67,7 +71,7 @@ fun GamesScreen(viewModel: GamesViewModel, onNavDrawerAction: () -> Unit) {
 @Composable
 private fun GamesScreenContent(
     steamApps: LazyPagingItems<SteamApp>,
-    appTypes: Set<SteamApp.AppType>,
+    appTypes: ImmutableSet<SteamApp.AppType>,
     localAccountId: Long?,
     searchQuery: String,
     onNavDrawerAction: () -> Unit,
@@ -192,11 +196,50 @@ private fun GamesScreenContent(
 
 @Preview
 @Composable
-private fun Preview() {
+private fun GamesScreenContentPreview() {
+    val sampleApps = flowOf(
+        PagingData.from(
+            listOf(
+                SteamApp(
+                    id = 440,
+                    name = "Team Fortress 2",
+                    type = SteamApp.AppType.game,
+                    releaseDate = 1191999600,
+                    metacriticScore = 92,
+                    developer = "Valve",
+                    publisher = "Valve",
+                ),
+                SteamApp(
+                    id = 730,
+                    name = "Counter-Strike 2",
+                    type = SteamApp.AppType.game,
+                    releaseDate = 1695254400,
+                    metacriticScore = 87,
+                    developer = "Valve",
+                    publisher = "Valve",
+                ),
+                SteamApp(
+                    id = 570,
+                    name = "Dota 2",
+                    type = SteamApp.AppType.game,
+                    releaseDate = 1373414400,
+                    metacriticScore = 90,
+                    developer = "Valve",
+                    publisher = "Valve",
+                ),
+            ),
+        ),
+    ).collectAsLazyPagingItems()
+
     VapullaTheme {
-        GamesScreen(
-            viewModel = koinViewModel(),
+        GamesScreenContent(
+            steamApps = sampleApps,
+            appTypes = persistentSetOf(),
+            localAccountId = null,
+            searchQuery = "",
             onNavDrawerAction = {},
+            onAppTypeClicked = {},
+            onSearchQuery = {},
         )
     }
 }

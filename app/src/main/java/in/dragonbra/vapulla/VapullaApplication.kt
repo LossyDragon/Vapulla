@@ -5,7 +5,9 @@ import android.app.Application
 import android.os.StrictMode
 import `in`.dragonbra.javasteam.util.log.LogListener
 import `in`.dragonbra.javasteam.util.log.LogManager
-import `in`.dragonbra.vapulla.di.appModule
+import `in`.dragonbra.vapulla.di.AppModules
+import `in`.dragonbra.vapulla.di.DatabaseModules
+import `in`.dragonbra.vapulla.di.ViewModelModules
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.ReleaseTree
 import org.koin.android.ext.koin.androidContext
@@ -58,7 +60,7 @@ class VapullaApplication : Application() {
 
         startKoin {
             androidContext(androidContext = this@VapullaApplication)
-            modules(modules = appModule)
+            modules(modules = listOf(AppModules, ViewModelModules, DatabaseModules))
         }
     }
 }

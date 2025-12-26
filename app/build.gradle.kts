@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlinter)
+    alias(libs.plugins.stability.analyzer)
 }
 
 android {

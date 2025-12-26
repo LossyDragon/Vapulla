@@ -2,11 +2,13 @@ package `in`.dragonbra.vapulla.ui.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
+import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,13 +30,16 @@ class ProfileViewModel(
             initialValue = null,
         )
 
-    private val _friendProfile = MutableStateFlow<ProfileInfoCallback?>(null)
-    val friendProfile: StateFlow<ProfileInfoCallback?> = _friendProfile.asStateFlow()
+    private val _friendProfile = MutableStateFlow<ProfileInfo?>(null)
+    val friendProfile: StateFlow<ProfileInfo?> = _friendProfile.asStateFlow()
 
     init {
         viewModelScope.launch {
-            val friendId = SteamID(friendId)
-            _friendProfile.value = serviceConnection.steamService!!.getProfileInfo(friendId)
+            val friendId = friendId.toSteamID()
+            val response = serviceConnection.steamService!!.getProfileInfo(friendId)
+            if (response.result == EResult.OK) {
+                _friendProfile.value = ProfileInfo.deserialize(response)
+            }
         }
     }
 

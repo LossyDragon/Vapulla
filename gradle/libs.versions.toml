@@ -20,6 +20,7 @@ paging = "3.3.6" # https://mvnrepository.com/artifact/androidx.paging/paging-com
 protobuf = "4.33.2" # https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
 qrose = "1.0.1" # https://mvnrepository.com/artifact/io.github.alexzhirkevich/qrose
 room = "2.8.4" # https://mvnrepository.com/artifact/androidx.room/room-compiler
+stability-analyzer = "0.6.6" # https://mvnrepository.com/artifact/com.github.skydoves.compose.stability.analyzer/com.github.skydoves.compose.stability.analyzer.gradle.plugin
 timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
 
 [libraries]
@@ -118,3 +119,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization" }
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version.ref = "stability-analyzer" }

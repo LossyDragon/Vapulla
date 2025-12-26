@@ -54,7 +54,7 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver.Companion.KEY_TEXT_REPLY
-import `in`.dragonbra.vapulla.data.ProfileItem
+import `in`.dragonbra.vapulla.data.ProfileItems
 import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
 import `in`.dragonbra.vapulla.db.entity.SteamApp
@@ -67,6 +67,8 @@ import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
+import `in`.dragonbra.vapulla.util.helpers.toLong
+import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import `in`.dragonbra.vapulla.util.timeChunked
 import java.io.Closeable
 import java.io.File
@@ -325,6 +327,10 @@ class SteamService : Service() {
         steamFriends!!.setPersonaState(state = state)
     }
 
+    fun logOut() {
+        steamUser!!.logOff()
+    }
+
     fun handleCredentialLogin(
         username: String? = null,
         password: String? = null,
@@ -519,11 +525,11 @@ class SteamService : Service() {
         }
 
         dbFriend = dbFriend.copy(
-            profileBackground = ProfileItem.serialize(body.profileBackground),
-            profileMiniBackground = ProfileItem.serialize(body.miniProfileBackground),
-            profileAvatarFrame = ProfileItem.serialize(body.avatarFrame),
-            profileAnimatedAvatar = ProfileItem.serialize(body.animatedAvatar),
-            profileProfileModifier = ProfileItem.serialize(body.profileModifier),
+            profileBackground = ProfileItems.deserialize(body.profileBackground),
+            profileMiniBackground = ProfileItems.deserialize(body.miniProfileBackground),
+            profileAvatarFrame = ProfileItems.deserialize(body.avatarFrame),
+            profileAnimatedAvatar = ProfileItems.deserialize(body.animatedAvatar),
+            profileProfileModifier = ProfileItems.deserialize(body.profileModifier),
         )
 
         db.steamFriendDao().update(dbFriend)
@@ -531,7 +537,7 @@ class SteamService : Service() {
 
     suspend fun ignoreFriend(friendId: Long) = withContext(Dispatchers.IO) {
         val dbFriend = db.steamFriendDao().find(friendId) ?: return@withContext
-        val friend = SteamID(friendId)
+        val friend = friendId.toSteamID()
 
         val result = if (dbFriend.relation == EFriendRelationship.Blocked) {
             steamFriends!!.ignoreFriend(friend, false).await()
@@ -550,18 +556,18 @@ class SteamService : Service() {
     }
 
     suspend fun removeFriend(friendId: Long) = withContext(Dispatchers.IO) {
-        val friend = SteamID(friendId)
+        val friend = friendId.toSteamID()
         steamFriends!!.removeFriend(friend)
         db.steamFriendDao().remove(friendId)
     }
 
     suspend fun setNickName(friendId: Long, value: String) = withContext(Dispatchers.IO) {
-        val friend = SteamID(friendId)
+        val friend = friendId.toSteamID()
         steamFriends!!.setFriendNickname(friend, value)
     }
 
     suspend fun requestAliasHistory(friendId: Long) = withContext(Dispatchers.IO) {
-        val friend = SteamID(friendId)
+        val friend = friendId.toSteamID()
         var aliasList = persistentListOf<String>()
         steamFriends!!.requestAliasHistory(friend)
         callbackMgr!!.subscribe<AliasHistoryCallback> {
@@ -698,7 +704,7 @@ class SteamService : Service() {
 
             EResult.InvalidPassword,
             EResult.AccessDenied,
-                -> scope.launch {
+            -> scope.launch {
                 _loginResult.emit(LoginResult.Error(it.result.name))
                 account.clearPreferences()
             }
@@ -730,7 +736,7 @@ class SteamService : Service() {
         scope.launch {
             friendsListMutex.withLock {
                 val dao = db.steamFriendDao()
-                val dbFriend = dao.find(it.friendId.convertToUInt64())
+                val dbFriend = dao.find(it.friendId.toLong())
 
                 if (dbFriend == null) {
                     Timber.d("Persona ${it.playerName} not in db to update persona state.")
@@ -762,7 +768,7 @@ class SteamService : Service() {
                 if (requestsToNotify.contains(it.friendId)) {
                     NotificationHelper.sendFriendRequestNotification(
                         context = applicationContext,
-                        friendId = it.friendId.convertToUInt64(),
+                        friendId = it.friendId.toLong(),
                         friendName = it.playerName,
                         avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString()),
                     )
@@ -788,14 +794,14 @@ class SteamService : Service() {
                         return@forEach
                     }
 
-                    var friend = dao.find(friendItem.steamID.convertToUInt64())
+                    var friend = dao.find(friendItem.steamID.toLong())
 
                     if (friend == null) {
                         if (friendItem.relationship == EFriendRelationship.Friend ||
                             friendItem.relationship == EFriendRelationship.RequestRecipient
                         ) {
                             val newFriend = SteamFriend(
-                                id = friendItem.steamID.convertToUInt64(),
+                                id = friendItem.steamID.toLong(),
                                 relation = friendItem.relationship,
                             )
                             friendsToAdd.add(newFriend)
@@ -826,7 +832,7 @@ class SteamService : Service() {
     private val onFriendMsgHistory: Consumer<FriendMsgHistoryCallback> = Consumer {
         Timber.d("onFriendMsgHistory()")
         val dao = db.chatMessageDao()
-        val friendId = it.steamID.convertToUInt64()
+        val friendId = it.steamID.toLong()
 
         it.messages.forEach { message ->
             val isFromLocal = it.steamID != message.steamID
@@ -881,7 +887,7 @@ class SteamService : Service() {
             dao.clearNicknames()
 
             val friendsToUpdate = it.nicknames.mapNotNull { nicknameInfo ->
-                dao.find(nicknameInfo.steamID.convertToUInt64())
+                dao.find(nicknameInfo.steamID.toLong())
                     ?.copy(nickname = nicknameInfo.nickname)
             }
 

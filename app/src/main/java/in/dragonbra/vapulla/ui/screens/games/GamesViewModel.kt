@@ -11,6 +11,8 @@ import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamApp.AppType
 import `in`.dragonbra.vapulla.manager.AccountManager
 import java.util.EnumSet
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,10 +24,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import timber.log.Timber
 
-class GamesViewModel(
-    private val steamAppDao: SteamAppDao,
-    private val accountManager: AccountManager,
-) : ViewModel() {
+class GamesViewModel(private val steamAppDao: SteamAppDao, accountManager: AccountManager) :
+    ViewModel() {
 
     val localAccountId: StateFlow<Long?> = accountManager.steamid
         .stateIn(
@@ -37,8 +37,8 @@ class GamesViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _appTypes = MutableStateFlow(emptySet<AppType>())
-    val appTypes: StateFlow<Set<AppType>> = _appTypes.asStateFlow()
+    private val _appTypes = MutableStateFlow(persistentSetOf<AppType>())
+    val appTypes: StateFlow<ImmutableSet<AppType>> = _appTypes.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val steamApps: Flow<PagingData<SteamApp>> =
@@ -63,9 +63,9 @@ class GamesViewModel(
 
     fun updateAppTypes(appType: AppType) {
         _appTypes.value = if (_appTypes.value.contains(appType)) {
-            _appTypes.value - appType
+            _appTypes.value.remove(appType)
         } else {
-            _appTypes.value + appType
+            _appTypes.value.add(appType)
         }
     }
 

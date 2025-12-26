@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
+import `in`.dragonbra.vapulla.util.helpers.toLong
 import java.io.IOException
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -96,7 +97,7 @@ class AccountManager(private val context: Context) {
             prefs[ACCOUNT_NAME] = localUser.playerName
             prefs[ACCOUNT_AVATAR_HASH] = localUser.avatarHash.toHexString()
             prefs[ACCOUNT_PERSONA_STATE] = localUser.personaState.code()
-            prefs[ACCOUNT_STEAMID] = localUser.friendId.convertToUInt64()
+            prefs[ACCOUNT_STEAMID] = localUser.friendId.toLong()
         }
     }
 
