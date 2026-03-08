@@ -48,6 +48,8 @@ object Utils {
      */
     fun getProfileUrl(id: Long): String = "${Constants.PROFILE_URL}$id/"
 
+    fun String.toAvatarURL() = getAvatarURL(this)
+
     fun getAvatarURL(string: String?): String = string.orEmpty()
         .ifEmpty { null }
         ?.takeIf { str -> str.isNotEmpty() && !str.all { it == '0' } }

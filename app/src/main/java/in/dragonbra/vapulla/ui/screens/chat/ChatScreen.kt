@@ -69,6 +69,8 @@ import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatMessageItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.Utils.getAvatarURL
+import `in`.dragonbra.vapulla.util.Utils.toAvatarURL
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
@@ -126,7 +128,7 @@ private fun ChatScreenContent(
                                 .clip(CircleShape)
                                 .background(Color.DarkGray)
                                 .size(48.dp),
-                            imageModel = { Utils.getAvatarURL(uiState.friend!!.avatar) },
+                            imageModel = { uiState.friend?.avatar?.toAvatarURL() },
                             imageOptions = ImageOptions(
                                 contentScale = ContentScale.Crop,
                                 contentDescription = null,
@@ -138,7 +140,7 @@ private fun ChatScreenContent(
                         Column {
                             // TODO CompositionLocal of status color
                             Text(
-                                text = uiState.friend!!.nameOrNickname,
+                                text = uiState.friend?.nameOrNickname.orEmpty(),
                                 style = MaterialTheme.typography.titleLarge,
                             )
                             Text(
