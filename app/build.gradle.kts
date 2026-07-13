@@ -9,16 +9,31 @@ plugins {
     alias(libs.plugins.stability.analyzer)
 }
 
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(1, TimeUnit.SECONDS)
+    resolutionStrategy.cacheDynamicVersionsFor(1, TimeUnit.SECONDS)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 android {
     namespace = "in.dragonbra.vapulla"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
         applicationId = "in.dragonbra.vapulla"
-        minSdk = 36
-        targetSdk = 36
+        minSdk = 35
+        targetSdk = 37
 
         versionCode = 5
         versionName = "1.0.0"
@@ -43,18 +58,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget = JvmTarget.JVM_11
-        }
-    }
-
-    ksp {
-        arg("room.schemaLocation", "$projectDir/schemas")
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
@@ -96,7 +101,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation("me.saket.swipe:swipe:1.3.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.1")
 }
 
 

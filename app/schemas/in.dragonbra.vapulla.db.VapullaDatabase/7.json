@@ -1,0 +1,737 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "f616da5d95be1f056b975af5bea78b0a",
+    "entities": [
+      {
+        "tableName": "steam_friend",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `avatar` TEXT, `relation` INTEGER NOT NULL, `state` INTEGER NOT NULL, `gameAppID` INTEGER NOT NULL, `gameID` INTEGER NOT NULL, `gameDataBlob` BLOB NOT NULL, `gameName` TEXT NOT NULL, `lastLogOn` INTEGER NOT NULL, `lastLogOff` INTEGER NOT NULL, `stateFlags` INTEGER NOT NULL, `statusFlags` INTEGER NOT NULL, `typingTs` INTEGER NOT NULL, `nickname` TEXT NOT NULL, `lastMessage` TEXT NOT NULL, `lastMessageTime` INTEGER NOT NULL, `newMessageCount` INTEGER NOT NULL, `aliases` TEXT NOT NULL, `profileBackground` TEXT NOT NULL, `profileMiniBackground` TEXT NOT NULL, `profileAvatarFrame` TEXT NOT NULL, `profileAnimatedAvatar` TEXT NOT NULL, `profileProfileModifier` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatar",
+            "columnName": "avatar",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "relation",
+            "columnName": "relation",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameAppID",
+            "columnName": "gameAppID",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameID",
+            "columnName": "gameID",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameDataBlob",
+            "columnName": "gameDataBlob",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameName",
+            "columnName": "gameName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLogOn",
+            "columnName": "lastLogOn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastLogOff",
+            "columnName": "lastLogOff",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateFlags",
+            "columnName": "stateFlags",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "statusFlags",
+            "columnName": "statusFlags",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typingTs",
+            "columnName": "typingTs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nickname",
+            "columnName": "nickname",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastMessage",
+            "columnName": "lastMessage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastMessageTime",
+            "columnName": "lastMessageTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "newMessageCount",
+            "columnName": "newMessageCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliases",
+            "columnName": "aliases",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileBackground",
+            "columnName": "profileBackground",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileMiniBackground",
+            "columnName": "profileMiniBackground",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileAvatarFrame",
+            "columnName": "profileAvatarFrame",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileAnimatedAvatar",
+            "columnName": "profileAnimatedAvatar",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileProfileModifier",
+            "columnName": "profileProfileModifier",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "chat_message",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `message` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `friendId` INTEGER NOT NULL, `fromLocal` INTEGER NOT NULL, `unread` INTEGER NOT NULL, `timestampConfirmed` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "friendId",
+            "columnName": "friendId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromLocal",
+            "columnName": "fromLocal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unread",
+            "columnName": "unread",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestampConfirmed",
+            "columnName": "timestampConfirmed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_chat_message_friendId",
+            "unique": false,
+            "columnNames": [
+              "friendId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_chat_message_friendId` ON `${TABLE_NAME}` (`friendId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "emoticon",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `appID` INTEGER NOT NULL, `isSticker` INTEGER NOT NULL, PRIMARY KEY(`name`))",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appID",
+            "columnName": "appID",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isSticker",
+            "columnName": "isSticker",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "name"
+          ]
+        }
+      },
+      {
+        "tableName": "steam_app",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `packageId` INTEGER NOT NULL, `ownerAccountId` TEXT NOT NULL, `licenseFlags` INTEGER NOT NULL, `receivedPICS` INTEGER NOT NULL, `lastChangeNumber` INTEGER NOT NULL, `depots` TEXT NOT NULL, `branches` TEXT NOT NULL, `name` TEXT NOT NULL, `type` INTEGER NOT NULL, `osList` INTEGER NOT NULL, `releaseState` INTEGER NOT NULL, `releaseDate` INTEGER NOT NULL, `metacriticScore` INTEGER NOT NULL, `metacriticFullUrl` TEXT NOT NULL, `logoHash` TEXT NOT NULL, `logoSmallHash` TEXT NOT NULL, `iconHash` TEXT NOT NULL, `clientIconHash` TEXT NOT NULL, `clientTgaHash` TEXT NOT NULL, `smallCapsule` TEXT NOT NULL, `headerImage` TEXT NOT NULL, `libraryAssets` TEXT NOT NULL, `primaryGenre` INTEGER NOT NULL, `reviewScore` INTEGER NOT NULL, `reviewPercentage` INTEGER NOT NULL, `controllerSupport` INTEGER NOT NULL, `demoOfAppId` INTEGER NOT NULL, `developer` TEXT NOT NULL, `publisher` TEXT NOT NULL, `homepageUrl` TEXT NOT NULL, `gameManualUrl` TEXT NOT NULL, `loadAllBeforeLaunch` INTEGER NOT NULL, `dlcAppIds` TEXT NOT NULL, `isFreeApp` INTEGER NOT NULL, `dlcForAppId` INTEGER NOT NULL, `mustOwnAppToPurchase` INTEGER NOT NULL, `dlcAvailableOnStore` INTEGER NOT NULL, `optionalDlc` INTEGER NOT NULL, `gameDir` TEXT NOT NULL, `installScript` TEXT NOT NULL, `noServers` INTEGER NOT NULL, `order` INTEGER NOT NULL, `primaryCache` INTEGER NOT NULL, `validOSList` INTEGER NOT NULL, `thirdPartyCdKey` INTEGER NOT NULL, `visibleOnlyWhenInstalled` INTEGER NOT NULL, `visibleOnlyWhenSubscribed` INTEGER NOT NULL, `launchEulaUrl` TEXT NOT NULL, `requireDefaultInstallFolder` INTEGER NOT NULL, `contentType` INTEGER NOT NULL, `installDir` TEXT NOT NULL, `useLaunchCmdLine` INTEGER NOT NULL, `launchWithoutWorkshopUpdates` INTEGER NOT NULL, `useMms` INTEGER NOT NULL, `installScriptSignature` TEXT NOT NULL, `installScriptOverride` INTEGER NOT NULL, `config` TEXT NOT NULL, `ufs` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageId",
+            "columnName": "packageId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerAccountId",
+            "columnName": "ownerAccountId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "licenseFlags",
+            "columnName": "licenseFlags",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedPICS",
+            "columnName": "receivedPICS",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastChangeNumber",
+            "columnName": "lastChangeNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "depots",
+            "columnName": "depots",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "branches",
+            "columnName": "branches",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "osList",
+            "columnName": "osList",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "releaseState",
+            "columnName": "releaseState",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "releaseDate",
+            "columnName": "releaseDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metacriticScore",
+            "columnName": "metacriticScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metacriticFullUrl",
+            "columnName": "metacriticFullUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logoHash",
+            "columnName": "logoHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logoSmallHash",
+            "columnName": "logoSmallHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "iconHash",
+            "columnName": "iconHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientIconHash",
+            "columnName": "clientIconHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientTgaHash",
+            "columnName": "clientTgaHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "smallCapsule",
+            "columnName": "smallCapsule",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "headerImage",
+            "columnName": "headerImage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "libraryAssets",
+            "columnName": "libraryAssets",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryGenre",
+            "columnName": "primaryGenre",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewScore",
+            "columnName": "reviewScore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reviewPercentage",
+            "columnName": "reviewPercentage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "controllerSupport",
+            "columnName": "controllerSupport",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "demoOfAppId",
+            "columnName": "demoOfAppId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "developer",
+            "columnName": "developer",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publisher",
+            "columnName": "publisher",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "homepageUrl",
+            "columnName": "homepageUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameManualUrl",
+            "columnName": "gameManualUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loadAllBeforeLaunch",
+            "columnName": "loadAllBeforeLaunch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dlcAppIds",
+            "columnName": "dlcAppIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFreeApp",
+            "columnName": "isFreeApp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dlcForAppId",
+            "columnName": "dlcForAppId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mustOwnAppToPurchase",
+            "columnName": "mustOwnAppToPurchase",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dlcAvailableOnStore",
+            "columnName": "dlcAvailableOnStore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "optionalDlc",
+            "columnName": "optionalDlc",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameDir",
+            "columnName": "gameDir",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installScript",
+            "columnName": "installScript",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noServers",
+            "columnName": "noServers",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "order",
+            "columnName": "order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryCache",
+            "columnName": "primaryCache",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "validOSList",
+            "columnName": "validOSList",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thirdPartyCdKey",
+            "columnName": "thirdPartyCdKey",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visibleOnlyWhenInstalled",
+            "columnName": "visibleOnlyWhenInstalled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visibleOnlyWhenSubscribed",
+            "columnName": "visibleOnlyWhenSubscribed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "launchEulaUrl",
+            "columnName": "launchEulaUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "requireDefaultInstallFolder",
+            "columnName": "requireDefaultInstallFolder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentType",
+            "columnName": "contentType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installDir",
+            "columnName": "installDir",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "useLaunchCmdLine",
+            "columnName": "useLaunchCmdLine",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "launchWithoutWorkshopUpdates",
+            "columnName": "launchWithoutWorkshopUpdates",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "useMms",
+            "columnName": "useMms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installScriptSignature",
+            "columnName": "installScriptSignature",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installScriptOverride",
+            "columnName": "installScriptOverride",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "config",
+            "columnName": "config",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ufs",
+            "columnName": "ufs",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "steam_license",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`packageID` INTEGER NOT NULL, `lastChangeNumber` INTEGER NOT NULL, `timeCreated` INTEGER NOT NULL, `timeNextProcess` INTEGER NOT NULL, `minuteLimit` INTEGER NOT NULL, `minutesUsed` INTEGER NOT NULL, `paymentMethod` INTEGER NOT NULL, `licenseFlags` INTEGER NOT NULL, `purchaseCode` TEXT NOT NULL, `licenseType` INTEGER NOT NULL, `territoryCode` INTEGER NOT NULL, `accessToken` INTEGER NOT NULL, `ownerAccountID` TEXT NOT NULL, `masterPackageID` INTEGER NOT NULL, `appIds` TEXT NOT NULL, `depotIds` TEXT NOT NULL, PRIMARY KEY(`packageID`))",
+        "fields": [
+          {
+            "fieldPath": "packageID",
+            "columnName": "packageID",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastChangeNumber",
+            "columnName": "lastChangeNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeCreated",
+            "columnName": "timeCreated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeNextProcess",
+            "columnName": "timeNextProcess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minuteLimit",
+            "columnName": "minuteLimit",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minutesUsed",
+            "columnName": "minutesUsed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paymentMethod",
+            "columnName": "paymentMethod",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "licenseFlags",
+            "columnName": "licenseFlags",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "purchaseCode",
+            "columnName": "purchaseCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "licenseType",
+            "columnName": "licenseType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "territoryCode",
+            "columnName": "territoryCode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accessToken",
+            "columnName": "accessToken",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerAccountID",
+            "columnName": "ownerAccountID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "masterPackageID",
+            "columnName": "masterPackageID",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appIds",
+            "columnName": "appIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "depotIds",
+            "columnName": "depotIds",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "packageID"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f616da5d95be1f056b975af5bea78b0a')"
+    ]
+  }
+}

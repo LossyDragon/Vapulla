@@ -63,14 +63,13 @@ class GamesViewModel(private val steamAppDao: SteamAppDao, accountManager: Accou
 
     fun updateAppTypes(appType: AppType) {
         _appTypes.value = if (_appTypes.value.contains(appType)) {
-            _appTypes.value.remove(appType)
+            _appTypes.value.removing(appType)
         } else {
-            _appTypes.value.add(appType)
+            _appTypes.value.adding(appType)
         }
     }
 
     override fun onCleared() {
-        super.onCleared()
         Timber.d("onCleared")
     }
 }

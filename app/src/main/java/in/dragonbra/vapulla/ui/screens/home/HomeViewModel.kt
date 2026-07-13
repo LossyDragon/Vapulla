@@ -62,16 +62,15 @@ class HomeViewModel(db: SteamFriendDao) : ViewModel() {
         )
 
     override fun onCleared() {
-        super.onCleared()
         Timber.d("onCleared")
     }
 
     fun onStickyHeaderAction(value: Int) {
         _stickyHeaders.update { current ->
             if (value in current) {
-                current.remove(value)
+                current.removing(value)
             } else {
-                current.add(value)
+                current.adding(value)
             }
         }
     }

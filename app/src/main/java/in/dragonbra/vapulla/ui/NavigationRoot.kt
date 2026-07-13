@@ -101,7 +101,6 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator(),
                 ),
-                sceneStrategy = SinglePaneSceneStrategy(),
                 entryProvider = entryProvider {
                     /* Login */
                     entry<Routes.Login> {

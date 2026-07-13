@@ -6,8 +6,3 @@ plugins {
     alias(libs.plugins.kotlinter) apply false
     alias(libs.plugins.stability.analyzer) apply false
 }
-
-configurations.configureEach {
-    resolutionStrategy.cacheChangingModulesFor(1, TimeUnit.SECONDS)
-    resolutionStrategy.cacheDynamicVersionsFor(1, TimeUnit.SECONDS)
-}
