@@ -51,6 +51,7 @@ internal fun LoginQRCode(
             ball = QrBallShape.roundCorners(radius = .25f),
             frame = QrFrameShape.roundCorners(corner = .25f),
         ),
+        scale = 0.875f,
     )
 
     LaunchedEffect(key1 = code) {
@@ -81,7 +82,7 @@ internal fun LoginQRCode(
                         } else {
                             Image(
                                 modifier = Modifier
-                                    .size(150.dp)
+                                    .size(192.dp)
                                     .background(Color.White),
                                 painter = painter,
                                 contentDescription = null,
