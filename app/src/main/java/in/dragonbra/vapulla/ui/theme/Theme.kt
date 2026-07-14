@@ -24,11 +24,11 @@ import androidx.core.view.WindowCompat
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VapullaTheme(
-    seedColor: Color = colorPrimary,
+    // seedColor: Color = colorPrimary,
     isDarkTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val darkColorScheme = darkColorScheme(primary = seedColor)
+    val darkColorScheme = darkColorScheme(/*primary = seedColor*/)
     val shapes = Shapes(largeIncreased = RoundedCornerShape(36.0.dp))
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 

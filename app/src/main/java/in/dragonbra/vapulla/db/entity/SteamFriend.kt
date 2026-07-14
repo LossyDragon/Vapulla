@@ -128,6 +128,7 @@ data class SteamFriend(
             else -> null
         }
 
+    // Custom equals/hashCode only because gameDataBlob (ByteArray) needs content comparison.
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -152,18 +153,12 @@ data class SteamFriend(
         if (statusFlags != other.statusFlags) return false
         if (nickname != other.nickname) return false
         if (lastMessage != other.lastMessage) return false
-        if (isOnline != other.isOnline) return false
-        if (isOffline != other.isOffline) return false
-        if (isPlayingGame != other.isPlayingGame) return false
-        if (isAwayOrSnooze != other.isAwayOrSnooze) return false
-        if (isInGameAwayOrSnooze != other.isInGameAwayOrSnooze) return false
-        if (isRequestRecipient != other.isRequestRecipient) return false
-        if (isBlocked != other.isBlocked) return false
-        if (isFriend != other.isFriend) return false
-        if (nameOrNickname != other.nameOrNickname) return false
-        if (isPlayingGameName != other.isPlayingGameName) return false
-        if (statusColor != other.statusColor) return false
-        if (statusIcon != other.statusIcon) return false
+        if (aliases != other.aliases) return false
+        if (profileBackground != other.profileBackground) return false
+        if (profileMiniBackground != other.profileMiniBackground) return false
+        if (profileAvatarFrame != other.profileAvatarFrame) return false
+        if (profileAnimatedAvatar != other.profileAnimatedAvatar) return false
+        if (profileProfileModifier != other.profileProfileModifier) return false
 
         return true
     }
@@ -187,18 +182,12 @@ data class SteamFriend(
         result = 31 * result + statusFlags.hashCode()
         result = 31 * result + nickname.hashCode()
         result = 31 * result + lastMessage.hashCode()
-        result = 31 * result + isOnline.hashCode()
-        result = 31 * result + isOffline.hashCode()
-        result = 31 * result + isPlayingGame.hashCode()
-        result = 31 * result + isAwayOrSnooze.hashCode()
-        result = 31 * result + isInGameAwayOrSnooze.hashCode()
-        result = 31 * result + isRequestRecipient.hashCode()
-        result = 31 * result + isBlocked.hashCode()
-        result = 31 * result + isFriend.hashCode()
-        result = 31 * result + nameOrNickname.hashCode()
-        result = 31 * result + isPlayingGameName.hashCode()
-        result = 31 * result + statusColor.hashCode()
-        result = 31 * result + (statusIcon?.hashCode() ?: 0)
+        result = 31 * result + aliases.hashCode()
+        result = 31 * result + profileBackground.hashCode()
+        result = 31 * result + profileMiniBackground.hashCode()
+        result = 31 * result + profileAvatarFrame.hashCode()
+        result = 31 * result + profileAnimatedAvatar.hashCode()
+        result = 31 * result + profileProfileModifier.hashCode()
         return result
     }
 }

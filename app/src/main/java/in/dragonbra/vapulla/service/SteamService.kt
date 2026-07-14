@@ -23,7 +23,6 @@ import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSChangesCal
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSProductInfoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.AliasHistoryCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgEchoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendMsgHistoryCallback
@@ -76,7 +75,6 @@ import java.util.EnumSet
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -305,7 +303,7 @@ class SteamService : Service() {
                 steamFriends = requireNotNull(client.getHandler())
                 unifiedMessages = requireNotNull(client.getHandler())
 
-                player = unifiedMessages!!.createService<Player>()
+                player = unifiedMessages!!.createService()
             }
 
             // Configure handlers
@@ -568,13 +566,11 @@ class SteamService : Service() {
 
     suspend fun requestAliasHistory(friendId: Long) = withContext(Dispatchers.IO) {
         val friend = friendId.toSteamID()
-        var aliasList = persistentListOf<String>()
-        steamFriends!!.requestAliasHistory(friend)
-        callbackMgr!!.subscribe<AliasHistoryCallback> {
-            aliasList = it.responses.flatMap { map -> map.names }
-                .map { map -> map.name }
-                .toPersistentList()
-        }.also { it.close() }
+        val aliasList = steamFriends!!.requestAliasHistory(friend).await()
+            .responses
+            .flatMap { response -> response.names }
+            .map { name -> name.name }
+            .toPersistentList()
 
         with(db.steamFriendDao()) {
             find(friendId)?.copy(aliases = aliasList)?.also {
@@ -743,27 +739,31 @@ class SteamService : Service() {
                     return@launch
                 }
 
-                dao.update(
-                    dbFriend.copy(
-                        name = it.playerName,
-                        avatar = it.avatarHash.toHexString(),
-                        state = it.personaState,
-                        gameAppID = it.gamePlayedAppId,
-                        gameID = it.gameId,
-                        gameDataBlob = it.gameDataBlob,
-                        gameName = it.gameName.ifEmpty {
-                            if (it.gamePlayedAppId > 0) {
-                                db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: ""
-                            } else {
-                                ""
-                            }
-                        },
-                        lastLogOn = it.lastLogon,
-                        lastLogOff = it.lastLogoff,
-                        stateFlags = it.personaStateFlags,
-                        statusFlags = it.statusFlags,
-                    ),
+                val updatedFriend = dbFriend.copy(
+                    name = it.playerName,
+                    avatar = it.avatarHash.toHexString(),
+                    state = it.personaState,
+                    gameAppID = it.gamePlayedAppId,
+                    gameID = it.gameId,
+                    gameDataBlob = it.gameDataBlob,
+                    gameName = it.gameName.ifEmpty {
+                        if (it.gamePlayedAppId > 0) {
+                            db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: ""
+                        } else {
+                            ""
+                        }
+                    },
+                    lastLogOn = it.lastLogon,
+                    lastLogOff = it.lastLogoff,
+                    stateFlags = it.personaStateFlags,
+                    statusFlags = it.statusFlags,
                 )
+
+                // Skip the write when nothing changed, otherwise every persona tick
+                // invalidates the friends flow and re-runs the whole home pipeline.
+                if (updatedFriend != dbFriend) {
+                    dao.update(updatedFriend)
+                }
 
                 if (requestsToNotify.contains(it.friendId)) {
                     NotificationHelper.sendFriendRequestNotification(
@@ -817,7 +817,7 @@ class SteamService : Service() {
                         }
                     }
 
-                    if (inc && friend!!.relation == EFriendRelationship.RequestRecipient) {
+                    if (inc && friendItem.relationship == EFriendRelationship.RequestRecipient) {
                         requestsToNotify.add(friendItem.steamID)
                     }
                 }
@@ -884,11 +884,17 @@ class SteamService : Service() {
         Timber.d("onNicknameList()")
         scope.launch {
             val dao = db.steamFriendDao()
-            dao.clearNicknames()
+            val nicknames = it.nicknames.associate { info ->
+                info.steamID.toLong() to info.nickname
+            }
 
-            val friendsToUpdate = it.nicknames.mapNotNull { nicknameInfo ->
-                dao.find(nicknameInfo.steamID.toLong())
-                    ?.copy(nickname = nicknameInfo.nickname)
+            // Only clear rows losing their nickname; rows keeping one are set below.
+            dao.clearNicknamesExcept(nicknames.keys.toList())
+
+            val friendsToUpdate = nicknames.mapNotNull { (id, nickname) ->
+                dao.find(id)
+                    ?.takeIf { friend -> friend.nickname != nickname }
+                    ?.copy(nickname = nickname)
             }
 
             dao.update(friendsToUpdate)
@@ -940,14 +946,22 @@ class SteamService : Service() {
                     changeData.changeNumber != pkg.lastChangeNumber
                 }
 
+            if (pkgsWithChanges.isEmpty()) {
+                return@launch
+            }
+
             val pkgsForAccessTokens = pkgsWithChanges
                 .filter { value -> value.isNeedsToken }
                 .map { value -> value.id }
 
-            val accessTokens = steamApps!!
-                .picsGetAccessTokens(appIds = emptyList(), packageIds = pkgsForAccessTokens)
-                .await()
-                .packageTokens
+            val accessTokens = if (pkgsForAccessTokens.isNotEmpty()) {
+                steamApps!!
+                    .picsGetAccessTokens(appIds = emptyList(), packageIds = pkgsForAccessTokens)
+                    .await()
+                    .packageTokens
+            } else {
+                emptyMap()
+            }
 
             val picsRequest = pkgsWithChanges.map { value ->
                 PICSRequest(value.id, accessTokens[value.id] ?: 0)

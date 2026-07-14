@@ -20,13 +20,14 @@ fun <T> Flow<T>.timeChunked(maxBatchSize: Int, duration: Duration = 1.seconds): 
         coroutineScope {
             val buffer = ArrayList<T>(maxBatchSize)
             var ticker: ReceiveChannel<Unit>? = null
+            var upstreamClosed = false
 
             val upstream = produce {
                 collect { send(it) }
             }
 
             try {
-                while (isActive) {
+                while (isActive && !upstreamClosed) {
                     when {
                         buffer.size >= maxBatchSize -> {
                             emit(ArrayList(buffer))
@@ -43,11 +44,12 @@ fun <T> Flow<T>.timeChunked(maxBatchSize: Int, duration: Duration = 1.seconds): 
                                         ticker = customTicker(duration)
                                     }
                                 } ?: run {
-                                    // Handle upstream completion
+                                    // Upstream completed, flush what's left and stop
                                     if (buffer.isNotEmpty()) {
                                         emit(ArrayList(buffer))
+                                        buffer.clear()
                                     }
-                                    return@onReceiveCatching
+                                    upstreamClosed = true
                                 }
                             }
 

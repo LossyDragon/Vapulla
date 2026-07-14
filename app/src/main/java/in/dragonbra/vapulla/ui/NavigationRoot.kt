@@ -66,12 +66,10 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
         }
     }
 
-    LaunchedEffect(backStack) {
+    LaunchedEffect(backStack.lastOrNull()) {
         // Ensure the Nav Drawer is closed on Login.
-        if (backStack.last() == Routes.Login) {
-            scope.launch {
-                drawerState.close()
-            }
+        if (backStack.lastOrNull() == Routes.Login) {
+            drawerState.close()
         }
     }
 

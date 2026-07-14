@@ -99,9 +99,8 @@ dependencies {
     // Utilities
     implementation(libs.android.timber)
     implementation(libs.kotlinx.serialization.json)
-
-    implementation("me.saket.swipe:swipe:1.3.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.1")
+    implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.swipe)
 }
 
 

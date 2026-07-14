@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -89,6 +90,11 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
         messages = messages,
         textFieldState = textFieldState,
         onBack = onBack,
+        onSendClick = {
+            viewModel.sendMessage(textFieldState.text.toString())
+            textFieldState.clearText()
+        },
+        onEmojiClick = { viewModel.toggleEmojiKeyboard() },
     )
 }
 
@@ -99,6 +105,8 @@ private fun ChatScreenContent(
     messages: LazyPagingItems<ChatMessage>,
     textFieldState: TextFieldState,
     onBack: () -> Unit,
+    onSendClick: () -> Unit = { },
+    onEmojiClick: () -> Unit = { },
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -175,8 +183,8 @@ private fun ChatScreenContent(
             ChatInputBox(
                 textFieldState = textFieldState,
                 showEmojiKeyboard = uiState.showEmojiKeyboard,
-                onSendClick = { },
-                onEmojiClick = { },
+                onSendClick = onSendClick,
+                onEmojiClick = onEmojiClick,
             )
         },
         content = { paddingValues ->

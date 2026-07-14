@@ -36,8 +36,8 @@ interface SteamFriendDao {
     @Query("SELECT * FROM steam_friend")
     fun getFriendsFlow(): Flow<List<SteamFriend>>
 
-    @Query("UPDATE steam_friend SET nickname = ''")
-    suspend fun clearNicknames()
+    @Query("UPDATE steam_friend SET nickname = '' WHERE nickname != '' AND id NOT IN (:ids)")
+    suspend fun clearNicknamesExcept(ids: List<Long>)
 
     @Query("SELECT * FROM steam_friend WHERE gameAppID > 0")
     suspend fun findFriendsInGame(): List<SteamFriend>

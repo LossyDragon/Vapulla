@@ -53,7 +53,8 @@ class ChatViewModel(
             friendDao.findFlow(friendId).collect { friend ->
                 _uiState.update { it.copy(friend = friend) }
             }
-
+        }
+        viewModelScope.launch {
             messageDao.markMessagesAsRead(friendId)
             // TODO ack messages via steam.
         }
@@ -91,7 +92,6 @@ class ChatViewModel(
     }
 
     fun insertEmoji(emoji: String) {
-        val currentText = _uiState.value.messageText
-        _uiState.update { it.copy(messageText = currentText + emoji) }
+        _uiState.update { it.copy(messageText = it.messageText + emoji) }
     }
 }
