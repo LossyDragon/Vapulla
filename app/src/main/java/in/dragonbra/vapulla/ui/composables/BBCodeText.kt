@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +54,6 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
 
@@ -119,60 +120,76 @@ private fun BBCodeElement(element: BBElement, onUrlClick: ((String) -> Unit)?) {
 @Composable
 private fun BBCodeTextElement(element: BBElement.Text, onUrlClick: ((String) -> Unit)?) {
     val uriHandler = LocalUriHandler.current
-    val revealedSpoilers = remember { mutableStateMapOf<String, Boolean>() }
+    val revealedSpoilers = remember(element) { mutableStateMapOf<String, Boolean>() }
     val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
 
-    val inlineContent = buildInlineContentMap(element.segments)
+    val inlineContent = remember(element) { buildInlineContentMap(element.segments) }
 
-    val annotatedString = buildAnnotatedString {
-        appendStyledText(element, revealedSpoilers)
+    // Most chat messages have no links or spoilers; skip tap handling entirely for those.
+    val isInteractive = remember(element) {
+        element.segments.any { it is TextSegment.Link || it is TextSegment.Spoiler }
+    }
+
+    // derivedStateOf tracks reads of revealedSpoilers, so the string is rebuilt
+    // only when a spoiler is toggled, not on every recomposition.
+    val annotatedString by remember(element) {
+        derivedStateOf {
+            buildAnnotatedString { appendStyledText(element, revealedSpoilers) }
+        }
+    }
+
+    val tapModifier = if (isInteractive) {
+        // Keyed on element (not annotatedString) so spoiler toggles don't cancel
+        // the gesture detector; annotation ranges are unaffected by the toggle.
+        Modifier.pointerInput(element, onUrlClick) {
+            detectTapGestures { offset ->
+                val layout = layoutResult.value ?: return@detectTapGestures
+                val position = layout.getOffsetForPosition(offset)
+
+                // Check for URL click first
+                annotatedString
+                    .getStringAnnotations(TAG_URL, position, position)
+                    .firstOrNull()
+                    ?.let { annotation ->
+                        val url = annotation.item
+                        if (onUrlClick != null) {
+                            onUrlClick(url)
+                        } else {
+                            // Ensure URL has a scheme
+                            val fullUrl = if (!url.startsWith("http://") &&
+                                !url.startsWith("https://")
+                            ) {
+                                "https://$url"
+                            } else {
+                                url
+                            }
+                            try {
+                                uriHandler.openUri(fullUrl)
+                            } catch (e: Exception) {
+                                Timber.e(e)
+                            }
+                        }
+                        return@detectTapGestures
+                    }
+
+                // Check for spoiler click
+                annotatedString
+                    .getStringAnnotations(TAG_SPOILER, position, position)
+                    .firstOrNull()
+                    ?.let { annotation ->
+                        revealedSpoilers[annotation.item] =
+                            !(revealedSpoilers[annotation.item] ?: false)
+                    }
+            }
+        }
+    } else {
+        Modifier
     }
 
     Text(
         text = annotatedString,
         inlineContent = inlineContent,
-        modifier = Modifier.pointerInput(annotatedString) {
-            detectTapGestures { offset ->
-                layoutResult.value?.let { layout ->
-                    val position = layout.getOffsetForPosition(offset)
-
-                    // Check for URL click first
-                    annotatedString
-                        .getStringAnnotations("URL", position, position)
-                        .firstOrNull()
-                        ?.let { annotation ->
-                            val url = annotation.item
-                            if (onUrlClick != null) {
-                                onUrlClick(url)
-                            } else {
-                                // Ensure URL has a scheme
-                                val fullUrl = if (!url.startsWith("http://") &&
-                                    !url.startsWith("https://")
-                                ) {
-                                    "https://$url"
-                                } else {
-                                    url
-                                }
-                                try {
-                                    uriHandler.openUri(fullUrl)
-                                } catch (e: Exception) {
-                                    Timber.e(e)
-                                }
-                            }
-                            return@detectTapGestures
-                        }
-
-                    // Check for spoiler click
-                    annotatedString
-                        .getStringAnnotations("spoiler", position, position)
-                        .firstOrNull()
-                        ?.let { annotation ->
-                            revealedSpoilers[annotation.item] =
-                                !(revealedSpoilers[annotation.item] ?: false)
-                        }
-                }
-            }
-        },
+        modifier = tapModifier,
         onTextLayout = { layoutResult.value = it },
     )
 }
@@ -242,7 +259,6 @@ private fun BBCodeBlock(content: String) {
     }
 }
 
-@Composable
 private fun buildInlineContentMap(
     segments: ImmutableList<TextSegment>,
 ): Map<String, InlineTextContent> = buildMap {
@@ -336,21 +352,20 @@ private fun AnnotatedString.Builder.appendStyledText(
             is TextSegment.Link -> {
                 withStyle(
                     SpanStyle(
-                        color = Color(0xFF4A90E2),
+                        color = LINK_COLOR,
                         textDecoration = TextDecoration.Underline,
                     ),
                 ) {
-                    pushStringAnnotation(tag = "URL", annotation = segment.url)
+                    pushStringAnnotation(tag = TAG_URL, annotation = segment.url)
                     append(segment.text)
                     pop()
                 }
             }
 
             is TextSegment.Spoiler -> {
-                val spoilerId = "spoiler_${segment.text.hashCode()}"
-                val isRevealed = revealedSpoilers[spoilerId] ?: false
+                val isRevealed = revealedSpoilers[segment.id] ?: false
 
-                pushStringAnnotation("spoiler", spoilerId)
+                pushStringAnnotation(TAG_SPOILER, segment.id)
                 withStyle(
                     SpanStyle(
                         background = if (isRevealed) Color.Unspecified else Color.Black,
@@ -387,7 +402,7 @@ sealed class TextSegment {
     data class Plain(val text: String) : TextSegment()
     data class Styled(val text: String, val style: BBStyle) : TextSegment()
     data class Link(val text: String, val url: String) : TextSegment()
-    data class Spoiler(val text: String) : TextSegment()
+    data class Spoiler(val text: String, val id: String) : TextSegment()
     data class Emoticon(val name: String, val id: String) : TextSegment()
     data class Sticker(val type: String, val id: String) : TextSegment()
 }
@@ -399,6 +414,9 @@ data class BBStyle(
     val underline: Boolean = false,
     val strikethrough: Boolean = false,
 ) {
+    val isPlain: Boolean
+        get() = !bold && !italic && !underline && !strikethrough
+
     fun toSpanStyle(): SpanStyle = SpanStyle(
         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
         fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
@@ -416,343 +434,366 @@ data class BBStyle(
     )
 }
 
-// Parser function
+private const val TAG_URL = "URL"
+private const val TAG_SPOILER = "spoiler"
+private val LINK_COLOR = Color(0xFF4A90E2)
+
+// U+02D0, the delimiter Steam uses for emoticons (ːsteamhappyː)
+private const val EMOTICON_DELIMITER = 'ː'
+
+// Compiled once; matching is anchored with matchAt() during parsing.
+@Suppress("RegExpRedundantEscape")
+private val STICKER_REGEX = Regex("""\[sticker type="([^"]+)"[^\]]*\]\[/sticker\]""")
+
+/**
+ * Parses Steam BB Code into a list of block-level elements.
+ *
+ * Single forward pass over the input — the cursor always advances, so malformed
+ * input (unclosed tags, a bare `hr` tag, etc.) degrades to literal text instead
+ * of dropping content or looping.
+ */
 private fun parseSteamBBCode(input: String): ImmutableList<BBElement> {
     val elements = mutableListOf<BBElement>()
-    var remainingText = input
+    var inlineStart = 0
+    var pos = 0
 
-    while (remainingText.isNotEmpty()) {
-        // Try to match block-level elements first
-        when {
-            remainingText.startsWith("[h1]") -> {
-                val (content, rest) = extractTag(remainingText, "h1")
-                if (content != null) {
-                    elements.add(BBElement.Header(1, content))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            remainingText.startsWith("[h2]") -> {
-                val (content, rest) = extractTag(remainingText, "h2")
-                if (content != null) {
-                    elements.add(BBElement.Header(2, content))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            remainingText.startsWith("[h3]") -> {
-                val (content, rest) = extractTag(remainingText, "h3")
-                if (content != null) {
-                    elements.add(BBElement.Header(3, content))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            remainingText.startsWith("[hr][/hr]") -> {
-                elements.add(BBElement.HorizontalRule)
-                remainingText = remainingText.substring("[hr][/hr]".length)
-            }
-
-            remainingText.startsWith("[list]") -> {
-                val (content, rest) = extractTag(remainingText, "list")
-                if (content != null) {
-                    val items = content.split("[*]")
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                        .toImmutableList()
-                    elements.add(BBElement.BBList(items, ordered = false))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            remainingText.startsWith("[olist]") -> {
-                val (content, rest) = extractTag(remainingText, "olist")
-                if (content != null) {
-                    val items = content.split("[*]")
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                        .toImmutableList()
-                    elements.add(BBElement.BBList(items, ordered = true))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            remainingText.startsWith("[quote") -> {
-                val (content, rest, author) = extractQuote(remainingText)
-                if (content != null) {
-                    elements.add(BBElement.Quote(content, author))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            remainingText.startsWith("[code]") -> {
-                val (content, rest) = extractTag(remainingText, "code")
-                if (content != null) {
-                    elements.add(BBElement.Code(content))
-                    remainingText = rest
-                } else {
-                    break
-                }
-            }
-
-            else -> {
-                // Parse inline text until we hit a block-level tag
-                val nextBlockTag = findNextBlockTag(remainingText)
-                val textContent = if (nextBlockTag != -1) {
-                    remainingText.substring(0, nextBlockTag)
-                } else {
-                    remainingText
-                }
-
-                if (textContent.isNotEmpty()) {
-                    val segments = parseInlineText(textContent)
-                    elements.add(BBElement.Text(segments))
-                }
-
-                remainingText = if (nextBlockTag != -1) {
-                    remainingText.substring(nextBlockTag)
-                } else {
-                    ""
-                }
+    fun flushInlineUpTo(end: Int) {
+        if (end > inlineStart) {
+            val segments = parseInlineText(input, inlineStart, end)
+            if (segments.isNotEmpty()) {
+                elements.add(BBElement.Text(segments))
             }
         }
     }
+
+    while (pos < input.length) {
+        val bracket = input.indexOf('[', pos)
+        if (bracket == -1) {
+            break
+        }
+
+        val block = tryParseBlock(input, bracket)
+        if (block != null) {
+            flushInlineUpTo(bracket)
+            elements.add(block.element)
+            inlineStart = block.endIndex
+            pos = block.endIndex
+        } else {
+            // Not a valid block tag here; leave it for the inline parser.
+            pos = bracket + 1
+        }
+    }
+
+    flushInlineUpTo(input.length)
 
     return elements.toImmutableList()
 }
 
-private fun findNextBlockTag(text: String): Int {
-    val blockTags = listOf("[h1]", "[h2]", "[h3]", "[hr]", "[list]", "[olist]", "[quote", "[code]")
-    return blockTags.mapNotNull { tag ->
-        val index = text.indexOf(tag)
-        if (index >= 0) index else null
-    }.minOrNull() ?: -1
+private class BlockMatch(val element: BBElement, val endIndex: Int)
+
+private fun tryParseBlock(text: String, pos: Int): BlockMatch? = when {
+    text.startsWith("[h1]", pos) -> extractTagBlock(text, pos, "[h1]", "[/h1]") {
+        BBElement.Header(1, it)
+    }
+
+    text.startsWith("[h2]", pos) -> extractTagBlock(text, pos, "[h2]", "[/h2]") {
+        BBElement.Header(2, it)
+    }
+
+    text.startsWith("[h3]", pos) -> extractTagBlock(text, pos, "[h3]", "[/h3]") {
+        BBElement.Header(3, it)
+    }
+
+    text.startsWith("[hr]", pos) -> {
+        // Accept both "[hr][/hr]" and a bare "[hr]"
+        val end = if (text.startsWith("[hr][/hr]", pos)) pos + 9 else pos + 4
+        BlockMatch(BBElement.HorizontalRule, end)
+    }
+
+    text.startsWith("[list]", pos) -> extractTagBlock(text, pos, "[list]", "[/list]") {
+        BBElement.BBList(splitListItems(it), ordered = false)
+    }
+
+    text.startsWith("[olist]", pos) -> extractTagBlock(text, pos, "[olist]", "[/olist]") {
+        BBElement.BBList(splitListItems(it), ordered = true)
+    }
+
+    text.startsWith("[quote", pos) -> extractQuote(text, pos)
+
+    text.startsWith("[code]", pos) -> extractTagBlock(text, pos, "[code]", "[/code]") {
+        BBElement.Code(it)
+    }
+
+    else -> null
 }
 
-@Suppress("RegExpRedundantEscape")
-private fun parseInlineText(text: String): ImmutableList<TextSegment> {
+private inline fun extractTagBlock(
+    text: String,
+    pos: Int,
+    openTag: String,
+    closeTag: String,
+    build: (String) -> BBElement,
+): BlockMatch? {
+    val contentStart = pos + openTag.length
+    val closeIndex = text.indexOf(closeTag, contentStart)
+    if (closeIndex == -1) {
+        return null
+    }
+
+    val content = text.substring(contentStart, closeIndex)
+    return BlockMatch(build(content), closeIndex + closeTag.length)
+}
+
+private fun splitListItems(content: String): ImmutableList<String> = content
+    .split("[*]")
+    .map { it.trim() }
+    .filter { it.isNotEmpty() }
+    .toImmutableList()
+
+private const val TRAILING_PUNCTUATION = ".,;:!?)"
+
+private fun isUrlStart(text: String, index: Int): Boolean =
+    text.startsWith("http://", index) || text.startsWith("https://", index)
+
+private fun isUrlTerminator(c: Char): Boolean =
+    c.isWhitespace() || c == '[' || c == EMOTICON_DELIMITER || c == '"'
+
+/**
+ * Parses a quote tag, with or without an author attribute, anchored at [pos].
+ */
+private fun extractQuote(text: String, pos: Int): BlockMatch? {
+    val author: String?
+    val contentStart: Int
+
+    when {
+        text.startsWith("[quote]", pos) -> {
+            author = null
+            contentStart = pos + 7
+        }
+
+        text.startsWith("[quote=", pos) -> {
+            val bracketEnd = text.indexOf(']', pos + 7)
+            if (bracketEnd == -1) {
+                return null
+            }
+            author = text.substring(pos + 7, bracketEnd)
+            contentStart = bracketEnd + 1
+        }
+
+        else -> return null
+    }
+
+    val closeIndex = text.indexOf("[/quote]", contentStart)
+    if (closeIndex == -1) {
+        return null
+    }
+
+    val content = text.substring(contentStart, closeIndex)
+    return BlockMatch(BBElement.Quote(content, author), closeIndex + 8)
+}
+
+/**
+ * Parses inline BB Code within [start, end) of [text] into segments.
+ * Consecutive same-styled characters are coalesced into a single segment.
+ */
+private fun parseInlineText(text: String, start: Int, end: Int): ImmutableList<TextSegment> {
     val segments = mutableListOf<TextSegment>()
-    var remaining = text
-    var currentStyle = BBStyle()
+    val buffer = StringBuilder()
+    var style = BBStyle()
+    var spoilerCount = 0
+    var pos = start
 
-    while (remaining.isNotEmpty()) {
+    fun flushBuffer() {
+        if (buffer.isNotEmpty()) {
+            val run = buffer.toString()
+            segments.add(
+                if (style.isPlain) TextSegment.Plain(run) else TextSegment.Styled(run, style),
+            )
+            buffer.clear()
+        }
+    }
+
+    // Buffered text was appended under the old style, so flush before switching.
+    fun updateStyle(newStyle: BBStyle) {
+        flushBuffer()
+        style = newStyle
+    }
+
+    // Returns the index of `target` if it fits entirely inside [pos, end), else -1.
+    fun indexOfWithin(target: String, from: Int): Int {
+        val index = text.indexOf(target, from)
+        return if (index != -1 && index + target.length <= end) index else -1
+    }
+
+    while (pos < end) {
+        val c = text[pos]
+
+        // Bare http(s):// URLs become clickable links.
+        if (c == 'h' && isUrlStart(text, pos)) {
+            var urlEnd = pos
+            while (urlEnd < end && !isUrlTerminator(text[urlEnd])) {
+                urlEnd++
+            }
+            // Don't swallow sentence punctuation trailing the URL.
+            while (urlEnd > pos && text[urlEnd - 1] in TRAILING_PUNCTUATION) {
+                urlEnd--
+            }
+            flushBuffer()
+            val url = text.substring(pos, urlEnd)
+            segments.add(TextSegment.Link(url, url))
+            pos = urlEnd
+            continue
+        }
+
+        // Fast path: copy the run of ordinary characters in one append.
+        if (c != '[' && c != EMOTICON_DELIMITER) {
+            var next = pos + 1
+            while (next < end &&
+                text[next] != '[' &&
+                text[next] != EMOTICON_DELIMITER &&
+                !(text[next] == 'h' && isUrlStart(text, next))
+            ) {
+                next++
+            }
+            buffer.append(text, pos, next)
+            pos = next
+            continue
+        }
+
+        // Emoticons with colon format: ːemoticonː
+        if (c == EMOTICON_DELIMITER) {
+            val closeIndex = text.indexOf(EMOTICON_DELIMITER, pos + 1)
+            if (closeIndex != -1 && closeIndex < end) {
+                flushBuffer()
+                val name = text.substring(pos + 1, closeIndex)
+                segments.add(TextSegment.Emoticon(name, "emoticon_$name"))
+                pos = closeIndex + 1
+            } else {
+                buffer.append(c)
+                pos++
+            }
+            continue
+        }
+
+        // c == '[' — try each inline tag; unknown tags fall through as literal text.
         when {
-            // Emoticons with colon format: ːemoticonː
-            remaining.startsWith("ː") -> {
-                val endColon = remaining.indexOf("ː", startIndex = 1)
-                if (endColon != -1) {
-                    val emoticonName = remaining.substring(1, endColon)
-                    val emoticonId = "emoticon_$emoticonName"
+            text.startsWith("[b]", pos) -> {
+                updateStyle(style.copy(bold = true))
+                pos += 3
+            }
 
-                    segments.add(TextSegment.Emoticon(emoticonName, emoticonId))
+            text.startsWith("[/b]", pos) -> {
+                updateStyle(style.copy(bold = false))
+                pos += 4
+            }
 
-                    remaining = remaining.substring(endColon + 1)
+            text.startsWith("[i]", pos) -> {
+                updateStyle(style.copy(italic = true))
+                pos += 3
+            }
+
+            text.startsWith("[/i]", pos) -> {
+                updateStyle(style.copy(italic = false))
+                pos += 4
+            }
+
+            text.startsWith("[u]", pos) -> {
+                updateStyle(style.copy(underline = true))
+                pos += 3
+            }
+
+            text.startsWith("[/u]", pos) -> {
+                updateStyle(style.copy(underline = false))
+                pos += 4
+            }
+
+            text.startsWith("[strike]", pos) -> {
+                updateStyle(style.copy(strikethrough = true))
+                pos += 8
+            }
+
+            text.startsWith("[/strike]", pos) -> {
+                updateStyle(style.copy(strikethrough = false))
+                pos += 9
+            }
+
+            text.startsWith("[spoiler]", pos) -> {
+                val closeIndex = indexOfWithin("[/spoiler]", pos + 9)
+                if (closeIndex != -1) {
+                    flushBuffer()
+                    val spoilerText = text.substring(pos + 9, closeIndex)
+                    segments.add(TextSegment.Spoiler(spoilerText, "spoiler_${spoilerCount++}"))
+                    pos = closeIndex + 10
                 } else {
-                    // No closing colon, treat as plain text
-                    segments.add(TextSegment.Plain("ː"))
-                    remaining = remaining.substring(1)
+                    buffer.append(c)
+                    pos++
+                }
+            }
+
+            text.startsWith("[url=", pos) -> {
+                val urlEnd = indexOfWithin("]", pos + 5)
+                val closeIndex = if (urlEnd != -1) indexOfWithin("[/url]", urlEnd + 1) else -1
+                if (closeIndex != -1) {
+                    flushBuffer()
+                    val url = text.substring(pos + 5, urlEnd)
+                    val linkText = text.substring(urlEnd + 1, closeIndex)
+                    segments.add(TextSegment.Link(linkText, url))
+                    pos = closeIndex + 6
+                } else {
+                    buffer.append(c)
+                    pos++
+                }
+            }
+
+            text.startsWith("[noparse]", pos) -> {
+                val closeIndex = indexOfWithin("[/noparse]", pos + 9)
+                if (closeIndex != -1) {
+                    buffer.append(text, pos + 9, closeIndex)
+                    pos = closeIndex + 10
+                } else {
+                    buffer.append(c)
+                    pos++
                 }
             }
 
             // Emoticons with tag format: [emoticon]name[/emoticon]
-            remaining.startsWith("[emoticon]") -> {
-                val endTag = remaining.indexOf("[/emoticon]")
-                if (endTag != -1) {
-                    val emoticonName = remaining.substring(10, endTag)
-                    val emoticonId = "emoticon_$emoticonName"
-
-                    segments.add(TextSegment.Emoticon(emoticonName, emoticonId))
-
-                    remaining = remaining.substring(endTag + 11)
+            text.startsWith("[emoticon]", pos) -> {
+                val closeIndex = indexOfWithin("[/emoticon]", pos + 10)
+                if (closeIndex != -1) {
+                    flushBuffer()
+                    val name = text.substring(pos + 10, closeIndex)
+                    segments.add(TextSegment.Emoticon(name, "emoticon_$name"))
+                    pos = closeIndex + 11
                 } else {
-                    segments.add(TextSegment.Plain(remaining.take(1)))
-                    remaining = remaining.drop(1)
+                    buffer.append(c)
+                    pos++
                 }
             }
 
             // Stickers: [sticker type="name"][/sticker]
-            remaining.startsWith("[sticker") -> {
-                val stickerMatch =
-                    Regex("""\[sticker type="([^"]+)"[^\]]*\]\[/sticker\]""").find(remaining)
-                if (stickerMatch != null) {
-                    val stickerType = stickerMatch.groupValues[1]
-                    val stickerId = "sticker_$stickerType"
-
-                    segments.add(TextSegment.Sticker(stickerType, stickerId))
-
-                    remaining = remaining.substring(stickerMatch.value.length)
+            text.startsWith("[sticker", pos) -> {
+                val match = STICKER_REGEX.matchAt(text, pos)
+                if (match != null && match.range.last < end) {
+                    flushBuffer()
+                    val type = match.groupValues[1]
+                    segments.add(TextSegment.Sticker(type, "sticker_$type"))
+                    pos = match.range.last + 1
                 } else {
-                    segments.add(TextSegment.Plain(remaining.take(1)))
-                    remaining = remaining.drop(1)
-                }
-            }
-
-            remaining.startsWith("[b]") -> {
-                currentStyle = currentStyle.copy(bold = true)
-                remaining = remaining.substring(3)
-            }
-
-            remaining.startsWith("[/b]") -> {
-                currentStyle = currentStyle.copy(bold = false)
-                remaining = remaining.substring(4)
-            }
-
-            remaining.startsWith("[i]") -> {
-                currentStyle = currentStyle.copy(italic = true)
-                remaining = remaining.substring(3)
-            }
-
-            remaining.startsWith("[/i]") -> {
-                currentStyle = currentStyle.copy(italic = false)
-                remaining = remaining.substring(4)
-            }
-
-            remaining.startsWith("[u]") -> {
-                currentStyle = currentStyle.copy(underline = true)
-                remaining = remaining.substring(3)
-            }
-
-            remaining.startsWith("[/u]") -> {
-                currentStyle = currentStyle.copy(underline = false)
-                remaining = remaining.substring(4)
-            }
-
-            remaining.startsWith("[strike]") -> {
-                currentStyle = currentStyle.copy(strikethrough = true)
-                remaining = remaining.substring(8)
-            }
-
-            remaining.startsWith("[/strike]") -> {
-                currentStyle = currentStyle.copy(strikethrough = false)
-                remaining = remaining.substring(9)
-            }
-
-            remaining.startsWith("[spoiler]") -> {
-                val endTag = remaining.indexOf("[/spoiler]")
-                if (endTag != -1) {
-                    val spoilerText = remaining.substring(9, endTag)
-                    segments.add(TextSegment.Spoiler(spoilerText))
-                    remaining = remaining.substring(endTag + 10)
-                } else {
-                    segments.add(TextSegment.Plain(remaining))
-                    remaining = ""
-                }
-            }
-
-            remaining.startsWith("[url=") -> {
-                val urlMatch = Regex("""\[url=([^\]]+)\]([^\[]+)\[/url\]""").find(remaining)
-                if (urlMatch != null) {
-                    val url = urlMatch.groupValues[1]
-                    val linkText = urlMatch.groupValues[2]
-                    segments.add(TextSegment.Link(linkText, url))
-                    remaining = remaining.substring(urlMatch.value.length)
-                } else {
-                    segments.add(TextSegment.Plain(remaining.take(1)))
-                    remaining = remaining.drop(1)
-                }
-            }
-
-            remaining.startsWith("[noparse]") -> {
-                val endTag = remaining.indexOf("[/noparse]")
-                if (endTag != -1) {
-                    val content = remaining.substring(9, endTag)
-                    segments.add(TextSegment.Plain(content))
-                    remaining = remaining.substring(endTag + 10)
-                } else {
-                    segments.add(TextSegment.Plain(remaining))
-                    remaining = ""
+                    buffer.append(c)
+                    pos++
                 }
             }
 
             else -> {
-                // Find next tag
-                val nextTag = remaining.indexOfAny(
-                    listOf(
-                        "[b]", "[/b]", "[i]", "[/i]", "[u]", "[/u]",
-                        "[strike]", "[/strike]", "[spoiler]", "[url=",
-                        "[noparse]", "[emoticon]", "[sticker", "ː",
-                    ),
-                )
-
-                val textContent = if (nextTag != -1) {
-                    remaining.take(nextTag)
-                } else {
-                    remaining
-                }
-
-                if (textContent.isNotEmpty()) {
-                    if (currentStyle == BBStyle()) {
-                        segments.add(TextSegment.Plain(textContent))
-                    } else {
-                        segments.add(TextSegment.Styled(textContent, currentStyle))
-                    }
-                }
-
-                remaining = if (nextTag != -1) {
-                    remaining.substring(nextTag)
-                } else {
-                    ""
-                }
+                buffer.append(c)
+                pos++
             }
         }
     }
 
+    flushBuffer()
+
     return segments.toImmutableList()
-}
-
-private fun extractTag(text: String, tagName: String): Pair<String?, String> {
-    val openTag = "[$tagName]"
-    val closeTag = "[/$tagName]"
-
-    if (!text.startsWith(openTag)) {
-        return null to text
-    }
-
-    val endIndex = text.indexOf(closeTag)
-    if (endIndex == -1) {
-        return null to text
-    }
-
-    val content = text.substring(openTag.length, endIndex)
-    val remaining = text.substring(endIndex + closeTag.length)
-
-    return content to remaining
-}
-
-@Suppress("RegExpRedundantEscape")
-private fun extractQuote(text: String): Triple<String?, String, String?> {
-    val simpleQuoteRegex = Regex("""\[quote\](.*?)\[/quote\]""", RegexOption.DOT_MATCHES_ALL)
-    val authorQuoteRegex =
-        Regex("""\[quote=([^\]]+)\](.*?)\[/quote\]""", RegexOption.DOT_MATCHES_ALL)
-
-    val authorMatch = authorQuoteRegex.find(text)
-    if (authorMatch != null) {
-        val author = authorMatch.groupValues[1]
-        val content = authorMatch.groupValues[2]
-        val remaining = text.substring(authorMatch.value.length)
-        return Triple(content, remaining, author)
-    }
-
-    val simpleMatch = simpleQuoteRegex.find(text)
-    if (simpleMatch != null) {
-        val content = simpleMatch.groupValues[1]
-        val remaining = text.substring(simpleMatch.value.length)
-        return Triple(content, remaining, null)
-    }
-
-    return Triple(null, text, null)
 }
 
 @Preview

@@ -73,6 +73,7 @@ import java.io.Closeable
 import java.io.File
 import java.util.EnumSet
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.toPersistentList
@@ -462,7 +463,7 @@ class SteamService : Service() {
                         authPollResult = authSession.pollAuthSessionStatus().await()
                         if (authPollResult == null && isWaitingForQRAuth) {
                             ensureActive()
-                            delay(authSession.pollingInterval.toLong())
+                            delay(authSession.pollingInterval.toLong().milliseconds)
                         }
                     } catch (e: Exception) {
                         if (isWaitingForQRAuth) {

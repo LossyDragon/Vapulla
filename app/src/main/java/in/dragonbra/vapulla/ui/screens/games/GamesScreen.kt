@@ -14,8 +14,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +48,6 @@ import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun GamesScreen(viewModel: GamesViewModel, onNavDrawerAction: () -> Unit) {
@@ -79,7 +79,11 @@ private fun GamesScreenContent(
     onSearchQuery: (String) -> Unit,
 ) {
     var showSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+
+    )
 
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()

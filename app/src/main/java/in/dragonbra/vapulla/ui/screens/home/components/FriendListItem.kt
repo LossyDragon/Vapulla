@@ -34,7 +34,7 @@ fun FriendListItem(modifier: Modifier = Modifier, friend: SteamFriend) {
             headlineColor = friend.statusColor,
             supportingColor = friend.statusColor,
         ),
-        headlineContent = { FriendName(friend = friend) },
+        content = { FriendName(friend = friend) },
         supportingContent = { Text(text = friend.isPlayingGameName) },
         leadingContent = { FriendAvatar(friend = friend) },
         trailingContent = if (hasTrailingContent) {

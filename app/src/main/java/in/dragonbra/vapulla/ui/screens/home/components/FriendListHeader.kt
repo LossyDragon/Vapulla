@@ -30,7 +30,7 @@ fun FriendListHeader(
 ) {
     ListItem(
         modifier = modifier.clickable(onClick = onHeaderAction),
-        headlineContent = { Text(text = stringResource(header) + " ($count)") },
+        content = { Text(text = stringResource(header) + " ($count)") },
         trailingContent = {
             IconButton(onClick = onHeaderAction) {
                 Icon(

@@ -42,7 +42,7 @@ fun GameListItem(
     ListItem(
         modifier = modifier.clickable(onClick = onGameClicked),
         overlineContent = { Text(text = app.type.name.uppercase()) },
-        headlineContent = { Text(text = app.name.decodeHtml()) },
+        content = { Text(text = app.name.decodeHtml()) },
         supportingContent = {
             Column {
                 Text(text = "Developer: ${app.developer.decodeHtml()}")
