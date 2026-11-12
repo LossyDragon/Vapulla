@@ -149,7 +149,7 @@ private fun GamesScreenContent(
                 ) {
                     stickyHeader {
                         ListItem(
-                            headlineContent = { Text(text = "${steamApps.itemCount} games") },
+                            content = { Text(text = "${steamApps.itemCount} games") },
                         )
                     }
 
