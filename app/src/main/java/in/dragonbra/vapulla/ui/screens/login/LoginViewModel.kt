@@ -73,6 +73,12 @@ class LoginViewModel(
     }
 
     init {
+        // Steam ended the previous session (revoked, signed in elsewhere, ...): say so,
+        // since otherwise the user lands here with no explanation.
+        SteamService.takeSignOutReason()?.let { reason ->
+            _uiState.update { it.copy(error = reason) }
+        }
+
         viewModelScope.launch {
             SteamService.isLoading.collect { loading ->
                 _uiState.value = _uiState.value.copy(isLoading = loading)

@@ -3,14 +3,10 @@ Vapulla TODO
 
 To Verify
 ---------------------------------------------
-- Typing indicator: "typing..." in the chat header, and our typing reaching the friend
-- Tapping a real message notification opens that friend's chat
-- Notification inline reply, and the friend request Accept / Ignore / Block actions
-- Image upload to a group channel (friend chat upload is confirmed)
+- Friend request notification actions: Accept / Ignore / Block
 - Reconnect after a dropped connection
-- Log out, and QR sign-in, since SteamService was split up
-- Saved token is cleared on AccessDenied / Revoked / InvalidPassword
-- Floating day header while scrolling a group channel
+- Saved token is cleared on AccessDenied / InvalidPassword (Revoked is confirmed)
+- Sign-in screen says why when Steam ends a session ("Signed out by Steam: Revoked")
 - Channel last-message previews for tags other than stickers (image, spoiler, flip, ...)
 - Emoticon tab while its images are still loading (sticker tab is confirmed)
 

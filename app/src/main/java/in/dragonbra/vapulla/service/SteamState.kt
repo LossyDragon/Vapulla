@@ -17,4 +17,11 @@ internal object SteamState {
     val isLoggedIn = MutableStateFlow(false)
 
     val loginResult = MutableSharedFlow<LoginResult>()
+
+    /**
+     * Why Steam ended the last session, when it was not the user signing out. Held as state
+     * rather than sent through [loginResult], because the login screen that shows it does
+     * not exist yet at the moment the session ends.
+     */
+    val signOutReason = MutableStateFlow<String?>(null)
 }

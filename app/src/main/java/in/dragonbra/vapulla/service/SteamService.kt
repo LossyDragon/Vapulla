@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import timber.log.Timber
@@ -78,6 +79,12 @@ class SteamService : Service() {
         val isRunning: StateFlow<Boolean> = SteamState.isRunning.asStateFlow()
         val isLoggedIn: StateFlow<Boolean> = SteamState.isLoggedIn.asStateFlow()
         val loginResult: SharedFlow<LoginResult> = SteamState.loginResult.asSharedFlow()
+
+        /**
+         * Why Steam ended the last session, if it did and nobody has been told yet. Reading
+         * it clears it, so the reason is shown once.
+         */
+        fun takeSignOutReason(): String? = SteamState.signOutReason.getAndUpdate { null }
     }
 
     // Coroutines. A failed job is logged instead of taking the whole process down.

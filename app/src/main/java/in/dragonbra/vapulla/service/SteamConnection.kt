@@ -105,6 +105,10 @@ class SteamConnection(
     @Volatile
     private var loginErrorReported = false
 
+    /** True from the user asking to sign out until the next sign-in attempt. */
+    @Volatile
+    private var userSignedOut = false
+
     private var connectedSignal: CompletableDeferred<Unit>? = null
 
     private var steamThreadJob: Job? = null
@@ -116,6 +120,7 @@ class SteamConnection(
     /** Starts a sign-in attempt: replaces any current client with a new one and connects it. */
     fun open() {
         loginErrorReported = false
+        userSignedOut = false
         initializeSteamClient()
         connectToSteam()
     }
@@ -154,6 +159,7 @@ class SteamConnection(
     fun logOut(clearCredentials: Boolean = true) {
         Timber.i("logOut(clearCredentials=$clearCredentials)")
         resumeOnReconnect = false
+        userSignedOut = true
 
         scope.launch {
             if (clearCredentials) {
@@ -469,6 +475,7 @@ class SteamConnection(
         when (it.result) {
             EResult.OK -> {
                 SteamState.isLoggedIn.value = true
+                SteamState.signOutReason.value = null
 
                 // NOTE: the legacy offline-message path used to start here and is no longer
                 // exercised anywhere in the app:
@@ -524,6 +531,12 @@ class SteamConnection(
     private val onLoggedOff: Consumer<LoggedOffCallback> = Consumer {
         Timber.d("onLoggedOff() result ${it.result}")
         resumeOnReconnect = false
+
+        // Steam ended the session rather than the user signing out. Leave the
+        // reason for the login screen, which is about to be shown.
+        if (it.result != EResult.OK && !userSignedOut) {
+            SteamState.signOutReason.value = "Signed out by Steam: ${it.result.name}"
+        }
 
         // Steam ending the session for one of these reasons (access removed while signed in,
         // say) also ends the token, so do not offer it again at the next sign-in.
