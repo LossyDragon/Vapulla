@@ -78,14 +78,16 @@ choose Authorized Devices, select `PC Steam Client - "Vapulla <version>"` and ta
 Access.
 
 Use it at your own risk. This is an unofficial client using an unofficial library, and it is
-development software.
+development software. It is developed and tested against the maintainer's
+[personal main Steam account](https://steamcommunity.com/id/LossyDragon/).
 
 ## AI usage
 
 AI coding assistants were used to write code in this repository, always under heavy human
 intervention: the maintainer decides what is built, directs and corrects the changes, and
-tests them on a device against a real Steam account. Treat the code as you would any other
-sample code and review it before relying on it.
+tests them on an emulator and a physical device.
+
+Treat the code as you would any other sample code and review it before relying on it.
 
 ## Contributing
 
@@ -95,7 +97,8 @@ it in the pull request.
 
 ## Credits and license
 
-Vapulla was started by Long Tran, the author of JavaSteam, and is maintained by LossyDragon.
+Vapulla was started by Long Tran, the original author of JavaSteam. Both JavaSteam and this
+fork of Vapulla are now maintained by LossyDragon.
 
 Licensed under the Apache License 2.0, see [LICENSE](LICENSE). Licenses of bundled third-party
 work are in [third_party.txt](third_party.txt).
