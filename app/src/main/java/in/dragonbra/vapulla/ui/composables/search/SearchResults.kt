@@ -10,12 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * A centred one-line message for empty or error states. Pass a `fillMaxSize()` modifier with
+ * the scaffold padding to centre it on a whole screen; by default it sits at the top.
+ */
 @Composable
-fun SearchResultMessage(message: String) {
+fun SearchResultMessage(message: String, modifier: Modifier = Modifier.fillMaxWidth()) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
+        modifier = modifier.padding(32.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

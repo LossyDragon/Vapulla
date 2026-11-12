@@ -8,29 +8,29 @@ import `in`.dragonbra.javasteam.steam.handlers.ClientMsgHandler
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 
+/**
+ * App-specific JavaSteam handler for messages the library does not cover itself.
+ * Currently that is only the emoticon list.
+ */
 class VapullaHandler : ClientMsgHandler() {
 
-    companion object {
-        fun getCallback(packetMsg: IPacketMsg): CallbackMsg? = when (packetMsg.msgType) {
-            EMsg.ClientEmoticonList -> EmoticonListCallback(packetMsg)
-            else -> null
-        }
-    }
-
-    /**
-     * Handles a client message. This should not be called directly.
-     * @param packetMsg The packet message that contains the data.
-     */
     override fun handleMsg(packetMsg: IPacketMsg) {
         val callback = getCallback(packetMsg) ?: return
-
         client.postCallback(callback)
     }
 
+    /** Asks Steam for the account's emoticons; answered with an [EmoticonListCallback]. */
     fun getEmoticonList() {
         ClientMsgProtobuf<CMsgClientGetEmoticonList.Builder>(
             CMsgClientGetEmoticonList::class.java,
             EMsg.ClientGetEmoticonList,
         ).also(client::send)
+    }
+
+    private companion object {
+        fun getCallback(packetMsg: IPacketMsg): CallbackMsg? = when (packetMsg.msgType) {
+            EMsg.ClientEmoticonList -> EmoticonListCallback(packetMsg)
+            else -> null
+        }
     }
 }

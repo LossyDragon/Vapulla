@@ -9,7 +9,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
-import coil.ImageLoader
+import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.transform.CircleCropTransformation
@@ -17,12 +17,12 @@ import `in`.dragonbra.vapulla.MainActivity
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
+import `in`.dragonbra.vapulla.broadcastreceiver.FriendRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
+/** Notification channels and the notifications the app posts. */
 object NotificationHelper {
 
     const val CHANNEL_FRIEND_MESSAGES = "friend_messages"
@@ -30,6 +30,9 @@ object NotificationHelper {
     const val CHANNEL_FOREGROUND_SERVICE = "foreground_service"
 
     const val NOTIFICATION_ID_SERVICE = 1
+
+    private const val AVATAR_TIMEOUT_MS = 5_000L
+    private const val AVATAR_SIZE_PX = 200
 
     fun createNotificationChannels(context: Context) {
         val channels = listOf(
@@ -43,7 +46,6 @@ object NotificationHelper {
                 enableVibration(true)
                 setShowBadge(true)
             },
-
             NotificationChannel(
                 CHANNEL_FRIEND_REQUESTS,
                 "Friend Requests",
@@ -54,7 +56,6 @@ object NotificationHelper {
                 enableVibration(true)
                 setShowBadge(true)
             },
-
             NotificationChannel(
                 CHANNEL_FOREGROUND_SERVICE,
                 "Foreground Service",
@@ -67,10 +68,10 @@ object NotificationHelper {
             },
         )
 
-        val manager = context.getSystemService(NotificationManager::class.java)
-        channels.forEach { manager.createNotificationChannel(it) }
+        channels.forEach { context.notificationManager.createNotificationChannel(it) }
     }
 
+    /** The persistent notification the foreground service runs under. */
     fun createServiceNotification(context: Context, text: String): Notification =
         NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
             .setContentTitle(context.getString(R.string.app_name))
@@ -82,9 +83,10 @@ object NotificationHelper {
             .build()
 
     fun updateServiceNotification(context: Context, text: String) {
-        val notification = createServiceNotification(context, text)
-        val manager = context.getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID_SERVICE, notification)
+        context.notificationManager.notify(
+            NOTIFICATION_ID_SERVICE,
+            createServiceNotification(context, text),
+        )
     }
 
     fun sendFriendMessageNotification(
@@ -101,10 +103,13 @@ object NotificationHelper {
             .setAutoCancel(true)
             .build()
 
-        val manager = context.getSystemService(NotificationManager::class.java)
-        manager.notify(notificationId, notification)
+        context.notificationManager.notify(notificationId, notification)
     }
 
+    /**
+     * Posts a friend request with Accept, Ignore and Block actions. The sender's avatar is
+     * loaded for the large icon when it arrives within [AVATAR_TIMEOUT_MS].
+     */
     suspend fun sendFriendRequestNotification(
         context: Context,
         friendId: Long,
@@ -113,42 +118,10 @@ object NotificationHelper {
     ) {
         val notificationId = friendId.toInt()
 
-        // Load avatar bitmap using Coil
         val avatarBitmap = avatarUrl?.let { url ->
-            withTimeoutOrNull(5000L) {
-                loadAvatarBitmap(context, url)
-            }
+            withTimeoutOrNull(AVATAR_TIMEOUT_MS) { loadAvatarBitmap(context, url) }
         }
 
-        // Create pending intents for actions
-        val acceptPendingIntent = PendingIntent.getBroadcast(
-            context,
-            notificationId,
-            Intent(context, AcceptRequestReceiver::class.java).apply {
-                putExtra(AcceptRequestReceiver.EXTRA_ID, friendId)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val ignorePendingIntent = PendingIntent.getBroadcast(
-            context,
-            notificationId,
-            Intent(context, IgnoreRequestReceiver::class.java).apply {
-                putExtra(IgnoreRequestReceiver.EXTRA_ID, friendId)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val blockPendingIntent = PendingIntent.getBroadcast(
-            context,
-            notificationId,
-            Intent(context, BlockRequestReceiver::class.java).apply {
-                putExtra(BlockRequestReceiver.EXTRA_ID, friendId)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        // Create content intent to open the app
         val contentIntent = PendingIntent.getActivity(
             context,
             0,
@@ -156,7 +129,6 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        // Build notification
         val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_REQUESTS)
             .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
             .setSmallIcon(R.drawable.ic_add_friend)
@@ -169,43 +141,48 @@ object NotificationHelper {
             .addAction(
                 R.drawable.ic_check,
                 "Accept",
-                acceptPendingIntent,
+                requestActionIntent<AcceptRequestReceiver>(context, friendId, notificationId),
             )
             .addAction(
                 R.drawable.ic_close,
                 "Ignore",
-                ignorePendingIntent,
+                requestActionIntent<IgnoreRequestReceiver>(context, friendId, notificationId),
             )
             .addAction(
                 R.drawable.ic_block,
                 "Block",
-                blockPendingIntent,
+                requestActionIntent<BlockRequestReceiver>(context, friendId, notificationId),
             )
             .build()
 
-        val manager = context.getSystemService(NotificationManager::class.java)
-        manager.notify(notificationId, notification)
+        context.notificationManager.notify(notificationId, notification)
     }
 
-    private suspend fun loadAvatarBitmap(context: Context, avatarUrl: String): Bitmap? =
-        withContext(Dispatchers.IO) {
-            try {
-                val imageLoader = ImageLoader.Builder(context).build()
-                val request = ImageRequest.Builder(context)
-                    .data(avatarUrl)
-                    .transformations(CircleCropTransformation())
-                    .size(200)
-                    .build()
+    /** Broadcast to one of the [FriendRequestReceiver] subclasses carrying the friend's ID. */
+    private inline fun <reified R : FriendRequestReceiver> requestActionIntent(
+        context: Context,
+        friendId: Long,
+        requestCode: Int,
+    ): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        requestCode,
+        Intent(context, R::class.java).putExtra(FriendRequestReceiver.EXTRA_ID, friendId),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
-                val result = imageLoader.execute(request)
-                if (result is SuccessResult) {
-                    result.drawable.toBitmap()
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                Timber.e(e)
-                null
-            }
-        }
+    private suspend fun loadAvatarBitmap(context: Context, avatarUrl: String): Bitmap? = try {
+        val request = ImageRequest.Builder(context)
+            .data(avatarUrl)
+            .transformations(CircleCropTransformation())
+            .size(AVATAR_SIZE_PX)
+            .build()
+
+        (context.imageLoader.execute(request) as? SuccessResult)?.drawable?.toBitmap()
+    } catch (e: Exception) {
+        Timber.e(e, "Failed to load avatar for notification")
+        null
+    }
+
+    private val Context.notificationManager: NotificationManager
+        get() = getSystemService(NotificationManager::class.java)
 }

@@ -24,18 +24,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.materialkolor.ktx.isLight
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/** Square icon-and-label action tile used on the profile screen. */
 @Composable
 fun ProfileButton(icon: ImageVector, text: String, onClick: () -> Unit) {
-    val isLight = MaterialTheme.colorScheme.background.isLight()
     Card(
         modifier = Modifier
             .size(72.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (isLight) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSecondary,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
     ) {
         Column(

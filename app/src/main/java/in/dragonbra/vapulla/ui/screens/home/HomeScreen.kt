@@ -1,12 +1,12 @@
 package `in`.dragonbra.vapulla.ui.screens.home
 
 import android.content.res.Configuration
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,6 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.ui.composables.exceptBottom
+import `in`.dragonbra.vapulla.ui.composables.groupedListShape
+import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.mock.mockFriendsList
@@ -98,25 +101,25 @@ fun HomeScreenContent(
                     if (searchQuery.isNotEmpty()) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(vertical = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            items(filteredFriends, key = { it.id }) { friend ->
+                            itemsIndexed(filteredFriends, key = { _, it ->
+                                it.id
+                            }) { index, friend ->
                                 FriendListItem(
-                                    modifier = Modifier
-                                        .fillParentMaxWidth()
-                                        .combinedClickable(
-                                            onClick = {
-                                                onFriendClick(friend.id)
-                                                textFieldState.clearText()
-                                                scope.launch { searchBarState.animateToCollapsed() }
-                                            },
-                                            onLongClick = {
-                                                onFriendLongClick(friend.id)
-                                                textFieldState.clearText()
-                                                scope.launch { searchBarState.animateToCollapsed() }
-                                            },
-                                        ),
                                     friend = friend,
+                                    shape = groupedListShape(index, filteredFriends.size),
+                                    onClick = {
+                                        onFriendClick(friend.id)
+                                        textFieldState.clearText()
+                                        scope.launch { searchBarState.animateToCollapsed() }
+                                    },
+                                    onLongClick = {
+                                        onFriendLongClick(friend.id)
+                                        textFieldState.clearText()
+                                        scope.launch { searchBarState.animateToCollapsed() }
+                                    },
                                 )
                             }
 
@@ -138,7 +141,8 @@ fun HomeScreenContent(
             FriendList(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
+                    .padding(padding.exceptBottom()),
+                contentPadding = listContentPadding(padding, vertical = 4.dp),
                 friendsList = friendsList,
                 stickyHeaders = stickyHeaders,
                 onStickyHeaderAction = onStickyHeaderAction,

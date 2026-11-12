@@ -6,6 +6,10 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverF
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackMsg
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 
+/**
+ * The emoticons and stickers the account owns, from `ClientEmoticonList`. Emoticon names
+ * arrive wrapped in colons (`:steamhappy:`); the wrapper is stripped here.
+ */
 class EmoticonListCallback(packetMsg: IPacketMsg) : CallbackMsg() {
 
     val emoteList: List<Emoticon>
@@ -17,18 +21,12 @@ class EmoticonListCallback(packetMsg: IPacketMsg) : CallbackMsg() {
         )
         jobID = resp.targetJobID
 
-        emoteList = buildList {
-            addAll(
-                resp.body.emoticonsList.map {
-                    val fixedName = it.name.substring(1, it.name.length - 1)
-                    Emoticon(name = fixedName, appID = it.appid, isSticker = false)
-                },
-            )
-            addAll(
-                resp.body.stickersList.map {
-                    Emoticon(name = it.name, appID = it.appid, isSticker = true)
-                },
-            )
+        val emoticons = resp.body.emoticonsList.map {
+            Emoticon(name = it.name.removeSurrounding(":"), appID = it.appid, isSticker = false)
         }
+        val stickers = resp.body.stickersList.map {
+            Emoticon(name = it.name, appID = it.appid, isSticker = true)
+        }
+        emoteList = emoticons + stickers
     }
 }

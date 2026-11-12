@@ -19,21 +19,23 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+@Immutable
+data class ChatUiState(
+    val messageText: String = "",
+    val showEmojiKeyboard: Boolean = false,
+    val isLoading: Boolean = false,
+    val friend: SteamFriend? = null,
+)
+
+/**
+ * Chat with one friend. Messages are paged out of the database; sending stores the message
+ * locally as unconfirmed until Steam echoes it back in the history.
+ */
 class ChatViewModel(
     private val friendId: Long,
     private val friendDao: SteamFriendDao,
     private val messageDao: ChatMessageDao,
 ) : ViewModel() {
-
-    companion object {
-        @Immutable
-        data class ChatUiState(
-            val messageText: String = "",
-            val showEmojiKeyboard: Boolean = false,
-            val isLoading: Boolean = false,
-            val friend: SteamFriend? = null,
-        )
-    }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -87,8 +89,9 @@ class ChatViewModel(
         _uiState.update { it.copy(messageText = text) }
     }
 
-    fun toggleEmojiKeyboard(hide: Boolean? = null) {
-        _uiState.update { it.copy(showEmojiKeyboard = hide ?: !it.showEmojiKeyboard) }
+    /** Toggles the emoji keyboard, or forces it when [show] is given. */
+    fun toggleEmojiKeyboard(show: Boolean? = null) {
+        _uiState.update { it.copy(showEmojiKeyboard = show ?: !it.showEmojiKeyboard) }
     }
 
     fun insertEmoji(emoji: String) {

@@ -7,22 +7,19 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.core.content.ContextCompat
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 
-sealed class LoginResult {
-    object Loading : LoginResult()
-    object Success : LoginResult()
-    object QRCodeEnded : LoginResult()
-    data class Error(var error: String) : LoginResult()
-    data class QRCode(val qrCode: String) : LoginResult()
-}
-
+/**
+ * App-wide handle to the bound [SteamService]. Injected as a singleton so the activity binds
+ * once and view models reach the service through [steamService].
+ */
 class ServiceConnection(private val context: Context) {
-    var steamService: SteamService? = null // TODO maybe interface some methods.
+
+    /** The bound service, or null while unbound. */
+    var steamService: SteamService? = null
         private set
 
     private val _isBound = MutableStateFlow(false)
@@ -30,8 +27,7 @@ class ServiceConnection(private val context: Context) {
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-            val localBinder = binder as SteamService.ServiceBinder
-            steamService = localBinder.service
+            steamService = (binder as SteamService.ServiceBinder).service
             _isBound.value = true
             Timber.d("Service connected")
         }
@@ -44,31 +40,27 @@ class ServiceConnection(private val context: Context) {
     }
 
     fun bindService() {
-        if (!isBound.value) {
-            val intent = Intent(context, SteamService::class.java)
-            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        }
+        if (isBound.value) return
+        val intent = Intent(context, SteamService::class.java)
+        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
     fun unBindService() {
-        if (isBound.value) {
-            context.unbindService(serviceConnection)
-            _isBound.value = false
-            steamService = null
-        }
+        if (!isBound.value) return
+        context.unbindService(serviceConnection)
+        _isBound.value = false
+        steamService = null
     }
 
     fun startForegroundService() {
-        val intent = Intent(context, SteamService::class.java)
-        ContextCompat.startForegroundService(context, intent)
+        ContextCompat.startForegroundService(context, Intent(context, SteamService::class.java))
     }
 
     fun stopForegroundService() {
-        val intent = Intent(context, SteamService::class.java)
-        context.stopService(intent)
+        context.stopService(Intent(context, SteamService::class.java))
     }
 
     fun setPersonaState(state: EPersonaState) {
-        steamService!!.setPersonaState(state)
+        checkNotNull(steamService) { "SteamService is not bound" }.setPersonaState(state)
     }
 }

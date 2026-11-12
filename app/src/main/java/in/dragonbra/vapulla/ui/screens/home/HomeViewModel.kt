@@ -24,6 +24,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
+/**
+ * Friends list state: friends grouped into the sticky-header sections (requests, in game,
+ * online, offline), sorted within each, plus which sections are collapsed.
+ */
 class HomeViewModel(db: SteamFriendDao) : ViewModel() {
 
     private val _stickyHeaders = MutableStateFlow(persistentSetOf<Int>())

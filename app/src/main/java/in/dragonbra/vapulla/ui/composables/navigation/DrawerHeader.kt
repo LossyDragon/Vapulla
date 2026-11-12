@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
-import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -27,10 +27,11 @@ internal fun DrawerHeader(
     avatar: String,
     name: String,
     state: EPersonaState,
+    level: Int?,
     onPersonaState: (EPersonaState) -> Unit,
 ) {
+    // The header reuses the friend components, so wrap the local user in a SteamFriend.
     val localUser = remember(avatar, name, state) {
-        Timber.d("Drawer Header: $name is  ${state.name}")
         SteamFriend(
             id = 0,
             name = name,
@@ -55,6 +56,15 @@ internal fun DrawerHeader(
                 text = localUser.nameOrNickname,
                 style = MaterialTheme.typography.titleLargeEmphasized,
             )
+
+            if (level != null) {
+                Spacer(Modifier.height(6.dp))
+                InfoPill(
+                    text = "Level $level",
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
 
             Spacer(Modifier.height(12.dp))
 

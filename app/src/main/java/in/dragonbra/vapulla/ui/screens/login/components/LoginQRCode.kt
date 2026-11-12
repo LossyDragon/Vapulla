@@ -3,27 +3,26 @@ package `in`.dragonbra.vapulla.ui.screens.login.components
 import android.content.res.Configuration
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -43,7 +42,6 @@ internal fun LoginQRCode(
     isWaitingForConfirmation: Boolean,
     onQrCodeCancel: () -> Unit,
 ) {
-    var isCodeEmpty by rememberSaveable { mutableStateOf(false) }
     val painter = rememberQrCodePainter(
         data = code,
         shapes = QrShapes(
@@ -54,52 +52,60 @@ internal fun LoginQRCode(
         scale = 0.875f,
     )
 
-    LaunchedEffect(key1 = code) {
-        isCodeEmpty = code.isBlank()
-    }
-
-    Card {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Crossfade(isWaitingForConfirmation) { value ->
-                when (value) {
-                    true -> {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            LoadingIndicator(modifier = Modifier.size(150.dp))
-
-                            Text(text = "Use the Steam Mobile App\nto confirm your sign in...")
-                        }
-                    }
-
-                    false -> {
-                        if (isCodeEmpty) {
-                            LoadingIndicator(modifier = Modifier.size(150.dp))
-                        } else {
-                            Image(
-                                modifier = Modifier
-                                    .size(192.dp)
-                                    .background(Color.White),
-                                painter = painter,
-                                contentDescription = null,
-                            )
-                        }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Crossfade(
+            targetState = isWaitingForConfirmation || code.isBlank(),
+            label = "qr_state",
+        ) { busy ->
+            Box(
+                modifier = Modifier.size(240.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (busy) {
+                    LoadingIndicator(modifier = Modifier.size(120.dp))
+                } else {
+                    // QR codes need a light quiet zone, so this stays white in both themes.
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = Color.White,
+                    ) {
+                        Image(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            painter = painter,
+                            contentDescription = "Sign-in QR code",
+                        )
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = if (isWaitingForConfirmation) {
+                "Confirm the sign-in in the Steam mobile app"
+            } else {
+                "Steam app → Steam Guard → Scan a QR code"
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
 
-            Button(
-                onClick = onQrCodeCancel,
-                content = {
-                    Text(text = "Cancel")
-                },
-            )
+        OutlinedButton(
+            onClick = onQrCodeCancel,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = ButtonDefaults.MediumContainerHeight),
+            shapes = ButtonDefaults.shapes(),
+            contentPadding = ButtonDefaults.MediumContentPadding,
+        ) {
+            Text(text = "Cancel", style = MaterialTheme.typography.titleMedium)
         }
     }
 }

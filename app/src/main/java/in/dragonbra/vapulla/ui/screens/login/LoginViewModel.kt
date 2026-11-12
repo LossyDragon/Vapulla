@@ -19,6 +19,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+/**
+ * Drives the login screen. Signs in automatically when a saved refresh token exists, and
+ * otherwise relays credential or QR sign-in to [SteamService] and reflects its progress.
+ */
 class LoginViewModel(
     private val connection: ServiceConnection,
     private val accountManager: AccountManager,
@@ -33,21 +37,27 @@ class LoginViewModel(
     private val _navigateToHome = MutableSharedFlow<Boolean>()
     val navigateToHome: SharedFlow<Boolean> = _navigateToHome.asSharedFlow()
 
-    // private val submitChannel = Channel<String>()
+    /** Completed by [onTwoFactorSubmit] while JavaSteam waits for a Steam Guard code. */
+    private var pendingGuardCode: CompletableFuture<String>? = null
 
+    /**
+     * Answers JavaSteam's Steam Guard prompts. Codes are asked for on the two-factor step and
+     * handed back through [pendingGuardCode]; mobile confirmation just shows a waiting state.
+     */
     private val authenticator = object : IAuthenticator {
-        override fun getDeviceCode(previousCodeWasIncorrect: Boolean): CompletableFuture<String> {
-            Timber.i("Two-Factor, device code")
-            TODO("Device Code not implemented")
-        }
+        override fun getDeviceCode(previousCodeWasIncorrect: Boolean): CompletableFuture<String> =
+            requestGuardCode(
+                "Enter the code from your Steam Guard mobile app",
+                previousCodeWasIncorrect,
+            )
 
         override fun getEmailCode(
             email: String?,
             previousCodeWasIncorrect: Boolean,
-        ): CompletableFuture<String> {
-            Timber.i("Two-Factor, asking for email code")
-            TODO("Email Code not implemented")
-        }
+        ): CompletableFuture<String> = requestGuardCode(
+            "Enter the code Steam sent to ${email ?: "your email"}",
+            previousCodeWasIncorrect,
+        )
 
         override fun acceptDeviceConfirmation(): CompletableFuture<Boolean> {
             Timber.i("Two-Factor, device confirmation")
@@ -157,7 +167,36 @@ class LoginViewModel(
     }
 
     fun onTwoFactorSubmit() {
-        TODO()
+        val code = _uiState.value.twoFactorCode.trim()
+        val pending = pendingGuardCode ?: return
+        if (code.isEmpty()) return
+
+        pendingGuardCode = null
+        _uiState.update { it.copy(isLoading = true) }
+        pending.complete(code)
+    }
+
+    private fun requestGuardCode(
+        message: String,
+        previousCodeWasIncorrect: Boolean,
+    ): CompletableFuture<String> {
+        Timber.i("Steam Guard code requested (previous incorrect: $previousCodeWasIncorrect)")
+        val future = CompletableFuture<String>()
+        pendingGuardCode = future
+
+        _uiState.update {
+            it.copy(
+                loginStep = LoginStep.TWOFACTOR,
+                isLoading = false,
+                twoFactorCode = "",
+                twoFactorMessage = message,
+                previousCodeWasIncorrect = previousCodeWasIncorrect,
+            )
+        }
+        if (previousCodeWasIncorrect) {
+            viewModelScope.launch { _snackbarMessage.emit("That code was incorrect, try again") }
+        }
+        return future
     }
 
     fun onSignInViaQR() {

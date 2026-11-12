@@ -8,10 +8,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Games
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalDrawerSheet
@@ -33,6 +37,7 @@ import `in`.dragonbra.vapulla.ui.Routes
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import org.koin.compose.getKoin
 
+/** The drawer doubles as the table of contents of JavaSteam features the app shows off. */
 @Composable
 fun NavigationDrawer(
     currentSelection: Routes,
@@ -45,12 +50,14 @@ fun NavigationDrawer(
     val avatar by accountManager.accountAvatar.collectAsStateWithLifecycle(null)
     val name by accountManager.accountName.collectAsStateWithLifecycle(null)
     val state by accountManager.accountPersonaState.collectAsStateWithLifecycle(null)
+    val level by accountManager.accountLevel.collectAsStateWithLifecycle(null)
 
     NavigationDrawerContent(
         currentSelection = currentSelection,
         avatar = avatar,
         name = name,
         state = state,
+        level = level,
         onLogOut = onLogOut,
         onPersonaState = serviceConnection::setPersonaState,
         onNavigationClick = onNavigationClick,
@@ -63,6 +70,7 @@ private fun NavigationDrawerContent(
     avatar: String?,
     name: String?,
     state: Int?,
+    level: Int?,
     onLogOut: () -> Unit,
     onPersonaState: (EPersonaState) -> Unit,
     onNavigationClick: (Routes) -> Unit,
@@ -79,13 +87,12 @@ private fun NavigationDrawerContent(
                 avatar = avatar ?: "",
                 name = name ?: "",
                 state = EPersonaState.from(state ?: 0),
+                level = level,
                 onPersonaState = onPersonaState,
             )
 
             Spacer(Modifier.height(12.dp))
-
             HorizontalDivider()
-
             Spacer(Modifier.height(12.dp))
 
             DrawerItem(
@@ -94,14 +101,24 @@ private fun NavigationDrawerContent(
                 selected = currentSelection == Routes.Home,
                 onClick = { onNavigationClick(Routes.Home) },
             )
-
+            DrawerItem(
+                text = "Group Chats",
+                imageVector = Icons.Outlined.Forum,
+                selected = currentSelection == Routes.ChatRooms,
+                onClick = { onNavigationClick(Routes.ChatRooms) },
+            )
             DrawerItem(
                 text = "Library",
                 imageVector = Icons.Outlined.Games,
                 selected = currentSelection == Routes.Games,
                 onClick = { onNavigationClick(Routes.Games) },
             )
-
+            DrawerItem(
+                text = "Server Browser",
+                imageVector = Icons.Outlined.Dns,
+                selected = currentSelection == Routes.ServerBrowser,
+                onClick = { onNavigationClick(Routes.ServerBrowser) },
+            )
             DrawerItem(
                 text = "Downloads",
                 imageVector = Icons.Outlined.Download,
@@ -112,12 +129,23 @@ private fun NavigationDrawerContent(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             DrawerItem(
+                text = "Sessions",
+                imageVector = Icons.Outlined.Devices,
+                selected = currentSelection == Routes.Sessions,
+                onClick = { onNavigationClick(Routes.Sessions) },
+            )
+            DrawerItem(
+                text = "Network Log",
+                imageVector = Icons.Outlined.Terminal,
+                selected = currentSelection == Routes.NetworkLog,
+                onClick = { onNavigationClick(Routes.NetworkLog) },
+            )
+            DrawerItem(
                 text = "Settings",
                 imageVector = Icons.Outlined.Settings,
                 selected = currentSelection == Routes.Settings,
                 onClick = { onNavigationClick(Routes.Settings) },
             )
-
             DrawerItem(
                 text = "Log Out",
                 imageVector = Icons.AutoMirrored.Outlined.Logout,
@@ -140,6 +168,7 @@ private fun Preview() {
                     avatar = null,
                     name = stringResource(R.string.app_name),
                     state = 2,
+                    level = 42,
                     onLogOut = { },
                     onPersonaState = { },
                     onNavigationClick = { },

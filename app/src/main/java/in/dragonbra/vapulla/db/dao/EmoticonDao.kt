@@ -15,6 +15,7 @@ interface EmoticonDao {
     @Query("DELETE FROM emoticon")
     suspend fun deleteAll()
 
+    /** Steam sends the full list each time, so the table is swapped wholesale. */
     @Transaction
     suspend fun replaceAll(emoticons: List<Emoticon>) {
         deleteAll()

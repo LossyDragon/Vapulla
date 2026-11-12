@@ -1,0 +1,390 @@
+package `in`.dragonbra.vapulla.ui.screens.gamedetail
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.Cloud
+import androidx.compose.material.icons.outlined.Construction
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.coil.CoilImage
+import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.steamStoreAssetUrl
+import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.exceptBottom
+import `in`.dragonbra.vapulla.ui.composables.groupedListShape
+import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
+import `in`.dragonbra.vapulla.util.Utils.minutesToPlaytime
+import `in`.dragonbra.vapulla.util.Utils.toDateString
+import `in`.dragonbra.vapulla.util.Utils.toFileSize
+import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+
+@Composable
+fun GameDetailScreen(
+    viewModel: GameDetailViewModel,
+    onBack: () -> Unit,
+    onOpenCloud: (Int) -> Unit,
+    onOpenWorkshop: (Int) -> Unit,
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
+    }
+
+    GameDetailContent(
+        uiState = uiState,
+        snackbarHostState = snackbarHostState,
+        onBack = onBack,
+        onOpenCloud = onOpenCloud,
+        onOpenWorkshop = onOpenWorkshop,
+        onRequestFreeLicense = viewModel::requestFreeLicense,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun GameDetailContent(
+    uiState: GameDetailUiState,
+    snackbarHostState: SnackbarHostState,
+    onBack: () -> Unit,
+    onOpenCloud: (Int) -> Unit,
+    onOpenWorkshop: (Int) -> Unit,
+    onRequestFreeLicense: () -> Unit,
+) {
+    val uriHandler = LocalUriHandler.current
+    val app = uiState.app
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = app?.name?.decodeHtml().orEmpty(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                navigationIcon = { BackButton(onClick = onBack) },
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+        if (app == null) {
+            LoadingBox(modifier = Modifier.fillMaxSize().padding(padding))
+            return@Scaffold
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding.exceptBottom()),
+            contentPadding = listContentPadding(padding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item { HeaderArt(app) }
+
+            item { Pills(app, uiState) }
+
+            item {
+                ActionRow(
+                    app = app,
+                    onStore = { uriHandler.openUri(Utils.Constants.BASE_STEAM_STORE_URL + app.id) },
+                    onCloud = { onOpenCloud(app.id) },
+                    onWorkshop = { onOpenWorkshop(app.id) },
+                    onFreeLicense = onRequestFreeLicense,
+                )
+            }
+
+            item { Section(title = "Details") { DetailRows(app, uiState) } }
+
+            if (app.branches.isNotEmpty()) {
+                item { Section(title = "Branches") { BranchRows(app) } }
+            }
+
+            if (app.depots.isNotEmpty()) {
+                item { Section(title = "Depots") { DepotRows(app) } }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeaderArt(app: SteamApp) {
+    val url = app.getHeaderImageUrl()
+        ?: steamStoreAssetUrl(app.id, "header.jpg")
+    CoilImage(
+        imageModel = { url },
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(460f / 215f)
+            .clip(MaterialTheme.shapes.extraLarge),
+        imageOptions = ImageOptions(contentScale = ContentScale.Crop),
+        previewPlaceholder = painterResource(R.drawable.vapulla_background),
+        loading = { LoadingBox(modifier = Modifier.fillMaxSize()) },
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun Pills(app: SteamApp, uiState: GameDetailUiState) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        InfoPill(
+            text = app.type.name.uppercase(),
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+        if (app.releaseDate > 0) InfoPill(text = app.releaseDate.toDateString())
+        if (app.metacriticScore > 0) {
+            InfoPill(
+                text = "${app.metacriticScore} Metacritic",
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        uiState.playersNow?.let { players ->
+            InfoPill(
+                text = "%,d playing now".format(players),
+                icon = Icons.Outlined.Groups,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        if (uiState.isLoadingExtras) {
+            LoadingIndicator(modifier = Modifier.padding(start = 4.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ActionRow(
+    app: SteamApp,
+    onStore: () -> Unit,
+    onCloud: () -> Unit,
+    onWorkshop: () -> Unit,
+    onFreeLicense: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Only offer what PICS says the app supports; the screens would just be empty otherwise.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (app.hasCloudSaves) {
+                FilledTonalButton(
+                    onClick = onCloud,
+                    modifier = Modifier.weight(1f),
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Icon(Icons.Outlined.Cloud, contentDescription = null)
+                    Text(text = "  Cloud saves")
+                }
+            }
+            if (app.workshopVisible) {
+                FilledTonalButton(
+                    onClick = onWorkshop,
+                    modifier = Modifier.weight(1f),
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Icon(Icons.Outlined.Construction, contentDescription = null)
+                    Text(text = "  Workshop")
+                }
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = onStore,
+                modifier = Modifier.weight(1f),
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Icon(Icons.Outlined.Storefront, contentDescription = null)
+                Text(text = "  Store page")
+            }
+            if (app.isFreeApp) {
+                Button(
+                    onClick = onFreeLicense,
+                    modifier = Modifier.weight(1f),
+                    shapes = ButtonDefaults.shapes(),
+                ) {
+                    Icon(Icons.Outlined.CardGiftcard, contentDescription = null)
+                    Text(text = "  Free license")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Section(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+        content()
+    }
+}
+
+/** Key/value rows in one grouped container. Values that are empty are skipped. */
+@Composable
+private fun DetailList(rows: List<Pair<String, String>>) {
+    val visible = rows.filter { it.second.isNotBlank() }
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        visible.forEachIndexed { index, (label, value) ->
+            Surface(
+                shape = groupedListShape(index, visible.size),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 16.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DetailRows(app: SteamApp, uiState: GameDetailUiState) {
+    uiState.achievements?.takeIf { it.total > 0 }?.let { progress ->
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = "Achievements", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = "${progress.unlocked} / ${progress.total}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                LinearWavyProgressIndicator(
+                    progress = { progress.percentage / 100f },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+
+    DetailList(
+        listOf(
+            "Playtime" to
+                if (app.playtimeForever > 0) app.playtimeForever.minutesToPlaytime() else "",
+            "Last played" to if (app.lastPlayed > 0) (app.lastPlayed * 1000).toTimeAgo() else "",
+            "Developer" to app.developer.decodeHtml(),
+            "Publisher" to app.publisher.decodeHtml(),
+            "Platforms" to app.osList.filter { it != SteamApp.OS.none }.joinToString { it.name },
+            "Controller" to
+                app.controllerSupport.name.takeIf {
+                    app.controllerSupport !=
+                        SteamApp.ControllerSupport.none
+                }.orEmpty(),
+            "Release state" to app.releaseState.name,
+            "Reviews" to if (app.reviewPercentage > 0) "${app.reviewPercentage}% positive" else "",
+            "App ID" to app.id.toString(),
+        ),
+    )
+}
+
+@Composable
+private fun BranchRows(app: SteamApp) {
+    DetailList(
+        app.branches.values
+            .sortedByDescending { it.timeUpdated }
+            .map { branch ->
+                val lock = if (branch.pwdRequired) " 🔒" else ""
+                "${branch.name}$lock" to
+                    "build ${branch.buildId} · ${(branch.timeUpdated.time / 1000).toDateString()}"
+            },
+    )
+}
+
+/** One row per depot with its OS and the public manifest size, the hook for a downloader. */
+@Composable
+private fun DepotRows(app: SteamApp) {
+    DetailList(
+        app.depots.values
+            .sortedBy { it.depotId }
+            .map { depot ->
+                val os = depot.osList.filter {
+                    it != SteamApp.OS.none
+                }.joinToString { it.name }.ifEmpty { "any" }
+                val size =
+                    depot.manifests["public"]?.size?.takeIf { it > 0 }?.toFileSize()
+                        ?: "no public manifest"
+                "Depot ${depot.depotId}" to "$os · $size"
+            },
+    )
+}

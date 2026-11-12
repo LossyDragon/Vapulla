@@ -12,9 +12,14 @@ import androidx.datastore.preferences.preferencesDataStore
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
 import `in`.dragonbra.vapulla.util.helpers.toLong
 import java.io.IOException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
+/**
+ * Persists the signed-in account: the login name and refresh token used to sign in again,
+ * the local user's persona as last reported by Steam, and the PICS change number.
+ */
 class AccountManager(private val context: Context) {
 
     private companion object {
@@ -24,6 +29,7 @@ class AccountManager(private val context: Context) {
         val ACCOUNT_AVATAR_HASH = stringPreferencesKey("account_avatar_hash")
         val ACCOUNT_PERSONA_STATE = intPreferencesKey("account_state")
         val ACCOUNT_STEAMID = longPreferencesKey("account_steamid")
+        val ACCOUNT_LEVEL = intPreferencesKey("account_level")
 
         val LOGIN_USERNAME = stringPreferencesKey("account_username")
         val LOGIN_REFRESH_TOKEN = stringPreferencesKey("account_refresh_token")
@@ -32,47 +38,30 @@ class AccountManager(private val context: Context) {
         val LAST_CHANGE_NUMBER = intPreferencesKey("last_change_number")
     }
 
-    val username = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[LOGIN_USERNAME] }
+    val username: Flow<String?> = preference(LOGIN_USERNAME)
+    val refreshToken: Flow<String?> = preference(LOGIN_REFRESH_TOKEN)
+    val uuid: Flow<Int?> = preference(LOGIN_UUID)
+    val steamid: Flow<Long?> = preference(ACCOUNT_STEAMID)
+    val lastChangeNumber: Flow<Int?> = preference(LAST_CHANGE_NUMBER)
+    val accountName: Flow<String?> = preference(ACCOUNT_NAME)
+    val accountAvatar: Flow<String?> = preference(ACCOUNT_AVATAR_HASH)
+    val accountPersonaState: Flow<Int?> = preference(ACCOUNT_PERSONA_STATE)
+    val accountLevel: Flow<Int?> = preference(ACCOUNT_LEVEL)
 
-    val refreshToken = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[LOGIN_REFRESH_TOKEN] }
+    /** Steam level from `Player.GetGameBadgeLevels`, refreshed on each login. */
+    suspend fun setLevel(level: Int) {
+        context.dataStore.edit { it[ACCOUNT_LEVEL] = level }
+    }
 
-    val uuid = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[LOGIN_UUID] }
-
-    val steamid = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[ACCOUNT_STEAMID] }
-
-    val lastChangeNumber = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[LAST_CHANGE_NUMBER] }
-
-    val accountName = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[ACCOUNT_NAME] }
-
-    val accountAvatar = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[ACCOUNT_AVATAR_HASH] }
-
-    val accountPersonaState = context.dataStore.data
-        .catch { handleException(it) }
-        .map { it[ACCOUNT_PERSONA_STATE] }
-
-    suspend fun setUserName(name: String) {
-        context.dataStore.edit { prefs ->
-            prefs[LOGIN_USERNAME] = name
-        }
+    suspend fun setUsername(name: String) {
+        context.dataStore.edit { it[LOGIN_USERNAME] = name }
     }
 
     suspend fun setRefreshToken(token: String?) {
         context.dataStore.edit { prefs ->
-            if (token != null) {
+            if (token !=
+                null
+            ) {
                 prefs[LOGIN_REFRESH_TOKEN] = token
             } else {
                 prefs.remove(LOGIN_REFRESH_TOKEN)
@@ -81,17 +70,14 @@ class AccountManager(private val context: Context) {
     }
 
     suspend fun setUuid(uuid: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[LOGIN_UUID] = uuid
-        }
+        context.dataStore.edit { it[LOGIN_UUID] = uuid }
     }
 
     suspend fun setLastChangeNumber(value: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[LAST_CHANGE_NUMBER] = value
-        }
+        context.dataStore.edit { it[LAST_CHANGE_NUMBER] = value }
     }
 
+    /** Stores the local user's persona from the [PersonaStateCallback] Steam sends about us. */
     suspend fun saveLocalUser(localUser: PersonaStateCallback) {
         context.dataStore.edit { prefs ->
             prefs[ACCOUNT_NAME] = localUser.playerName
@@ -102,16 +88,16 @@ class AccountManager(private val context: Context) {
     }
 
     suspend fun clearPreferences() {
-        context.dataStore.edit {
-            it.clear()
-        }
+        context.dataStore.edit { it.clear() }
     }
 
-    private fun handleException(exception: Throwable): Preferences {
-        if (exception is IOException) {
-            return emptyPreferences()
-        } else {
-            throw exception
+    /**
+     * One preference as a flow. A failed read of the backing file yields empty preferences
+     * instead of ending the flow; any other error still propagates.
+     */
+    private fun <T> preference(key: Preferences.Key<T>): Flow<T?> = context.dataStore.data
+        .catch { error ->
+            if (error is IOException) emit(emptyPreferences()) else throw error
         }
-    }
+        .map { it[key] }
 }

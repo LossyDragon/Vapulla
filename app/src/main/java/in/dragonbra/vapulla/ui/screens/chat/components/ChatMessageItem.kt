@@ -14,7 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.util.Utils.toTimeString
 
+/** One chat bubble, aligned right for messages we sent and left for the friend's. */
 @Composable
 internal fun ChatMessageItem(
     message: ChatMessage,
@@ -48,10 +50,7 @@ internal fun ChatMessageItem(
                 )
 
                 Text(
-                    text = java.text.SimpleDateFormat(
-                        "HH:mm",
-                        java.util.Locale.getDefault(),
-                    ).format(java.util.Date(message.timestamp)),
+                    text = message.timestamp.toTimeString(),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isFromLocal) {
                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)

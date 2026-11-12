@@ -103,7 +103,7 @@ fun EmojiStickerSelectorComponent(
                 EmojiStickerSelector.STICKERS -> {
                     EmoticonGrid(
                         emoticons = emoticons.filter { it.isSticker }.toPersistentList(),
-                        onStickerSelected = onStickerSelected,
+                        onEmoticonSelected = onStickerSelected,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
@@ -114,12 +114,12 @@ fun EmojiStickerSelectorComponent(
     }
 }
 
+/** Grid of emoticons or stickers; [onEmoticonSelected] fires for whichever was tapped. */
 @Composable
 fun EmoticonGrid(
-    modifier: Modifier = Modifier,
     emoticons: ImmutableList<Emoticon>,
-    onEmoticonSelected: (Emoticon) -> Unit = { },
-    onStickerSelected: (Emoticon) -> Unit = { },
+    onEmoticonSelected: (Emoticon) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (emoticons.isEmpty()) {
         Box(

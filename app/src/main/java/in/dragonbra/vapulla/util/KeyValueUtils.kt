@@ -24,15 +24,13 @@ import java.util.Date
 import timber.log.Timber
 
 /**
- * Extension functions relating to [KeyValue] as the receiver type.
+ * Maps a PICS app info [KeyValue] tree (the `appinfo` VDF Steam sends) to a [SteamApp].
+ * Missing nodes read as empty values, so partial app info still produces a row.
  */
-
 fun KeyValue.generateSteamApp(): SteamApp {
     val commonNode = this["common"]
     val extendedNode = this["extended"]
-    val commonExtendedNode = commonNode["extended"]
     val configNode = this["config"]
-    val commonConfigNode = commonNode["config"]
     val depotsNode = this["depots"]
     val libraryAssetsNode = commonNode["library_assets_full"]
 
@@ -98,36 +96,37 @@ fun KeyValue.generateSteamApp(): SteamApp {
         reviewScore = commonNode["review_score"].asByte(),
         reviewPercentage = commonNode["review_percentage"].asByte(),
         controllerSupport = ControllerSupport.from(commonNode["controller_support"].value),
-        demoOfAppId = commonExtendedNode["demoofappid"].asInteger(),
+        workshopVisible = commonNode["workshop_visible"].asBoolean(),
+        demoOfAppId = extendedNode["demoofappid"].asInteger(),
         developer = extendedNode["developer"].value.orEmpty(),
         publisher = extendedNode["publisher"].value.orEmpty(),
         homepageUrl = extendedNode["homepage"].value.orEmpty(),
-        gameManualUrl = commonExtendedNode["gamemanualurl"].value.orEmpty(),
-        loadAllBeforeLaunch = commonExtendedNode["loadallbeforelaunch"].asBoolean(),
+        gameManualUrl = extendedNode["gamemanualurl"].value.orEmpty(),
+        loadAllBeforeLaunch = extendedNode["loadallbeforelaunch"].asBoolean(),
         dlcAppIds = emptyList(),
-        isFreeApp = commonExtendedNode["isfreeapp"].asBoolean(),
-        dlcForAppId = commonExtendedNode["dlcforappid"].asInteger(),
-        mustOwnAppToPurchase = commonExtendedNode["mustownapptopurchase"].asInteger(),
-        dlcAvailableOnStore = commonExtendedNode["dlcavailableonstore"].asBoolean(),
-        optionalDlc = commonExtendedNode["optionaldlc"].asBoolean(),
-        gameDir = commonExtendedNode["gamedir"].value.orEmpty(),
-        installScript = commonExtendedNode["installscript"].value.orEmpty(),
-        noServers = commonExtendedNode["noservers"].asBoolean(),
-        order = commonExtendedNode["order"].asBoolean(),
-        primaryCache = commonExtendedNode["primarycache"].asInteger(),
-        validOSList = OS.from(commonExtendedNode["validoslist"].value),
-        thirdPartyCdKey = commonExtendedNode["thirdpartycdkey"].asBoolean(),
-        visibleOnlyWhenInstalled = commonExtendedNode["visibleonlywheninstalled"].asBoolean(),
-        visibleOnlyWhenSubscribed = commonExtendedNode["visibleonlywhensubscribed"].asBoolean(),
-        launchEulaUrl = commonExtendedNode["launcheula"].value.orEmpty(),
-        requireDefaultInstallFolder = commonConfigNode["requiredefaultinstallfolder"].asBoolean(),
-        contentType = commonConfigNode["contentType"].asInteger(),
-        installDir = commonConfigNode["installdir"].value.orEmpty(),
-        useLaunchCmdLine = commonConfigNode["uselaunchcommandline"].asBoolean(),
-        launchWithoutWorkshopUpdates = commonConfigNode["launchwithoutworkshopupdates"].asBoolean(),
-        useMms = commonConfigNode["usemms"].asBoolean(),
-        installScriptSignature = commonConfigNode["installscriptsignature"].value.orEmpty(),
-        installScriptOverride = commonConfigNode["installscriptoverride"].asBoolean(),
+        isFreeApp = extendedNode["isfreeapp"].asBoolean(),
+        dlcForAppId = extendedNode["dlcforappid"].asInteger(),
+        mustOwnAppToPurchase = extendedNode["mustownapptopurchase"].asInteger(),
+        dlcAvailableOnStore = extendedNode["dlcavailableonstore"].asBoolean(),
+        optionalDlc = extendedNode["optionaldlc"].asBoolean(),
+        gameDir = extendedNode["gamedir"].value.orEmpty(),
+        installScript = extendedNode["installscript"].value.orEmpty(),
+        noServers = extendedNode["noservers"].asBoolean(),
+        order = extendedNode["order"].asBoolean(),
+        primaryCache = extendedNode["primarycache"].asInteger(),
+        validOSList = OS.from(extendedNode["validoslist"].value),
+        thirdPartyCdKey = extendedNode["thirdpartycdkey"].asBoolean(),
+        visibleOnlyWhenInstalled = extendedNode["visibleonlywheninstalled"].asBoolean(),
+        visibleOnlyWhenSubscribed = extendedNode["visibleonlywhensubscribed"].asBoolean(),
+        launchEulaUrl = extendedNode["launcheula"].value.orEmpty(),
+        requireDefaultInstallFolder = configNode["requiredefaultinstallfolder"].asBoolean(),
+        contentType = configNode["contentType"].asInteger(),
+        installDir = configNode["installdir"].value.orEmpty(),
+        useLaunchCmdLine = configNode["uselaunchcommandline"].asBoolean(),
+        launchWithoutWorkshopUpdates = configNode["launchwithoutworkshopupdates"].asBoolean(),
+        useMms = configNode["usemms"].asBoolean(),
+        installScriptSignature = configNode["installscriptsignature"].value.orEmpty(),
+        installScriptOverride = configNode["installscriptoverride"].asBoolean(),
         config = ConfigInfo(
             installDir = configNode["installdir"].value.orEmpty(),
             launch = configNode["launch"].children.map {
@@ -172,22 +171,15 @@ private fun List<KeyValue>.toLangImgMap(): Map<Language, String> = asSequence().
         ?.let { it to kv.value!! }
 }.toMap()
 
+/** Debug helper: logs the whole [KeyValue] tree, one indented line per node. */
 @Suppress("unused")
 fun KeyValue.printAllKeyValues(depth: Int = 0) {
-    val parent = this
-    var tabString = ""
+    val indent = "\t".repeat(depth + 1)
 
-    for (i in 0..depth) {
-        tabString += "\t"
-    }
-
-    if (parent.children.isNotEmpty()) {
-        Timber.i("$tabString${parent.name}")
-
-        for (child in parent.children) {
-            child.printAllKeyValues(depth + 1)
-        }
+    if (children.isEmpty()) {
+        Timber.i("$indent$name: $value")
     } else {
-        Timber.i("$tabString${parent.name}: ${parent.value}")
+        Timber.i("$indent$name")
+        children.forEach { it.printAllKeyValues(depth + 1) }
     }
 }

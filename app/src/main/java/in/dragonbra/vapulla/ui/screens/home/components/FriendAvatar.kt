@@ -1,19 +1,16 @@
 package `in`.dragonbra.vapulla.ui.screens.home.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,52 +24,30 @@ import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 
+/**
+ * Avatar with Material 3 Expressive rounding. Presence is conveyed by the row's name colour
+ * and status line, so the avatar itself stays clean.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 56.dp, friend: SteamFriend) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        content = {
-            CoilImage(
-                modifier = modifier.size(size = size),
-                imageModel = { Utils.getAvatarURL(friend.avatar) },
-                imageOptions = ImageOptions(
-                    contentScale = ContentScale.Crop,
-                    contentDescription = "Avatar for ${friend.name}",
-                ),
-                previewPlaceholder = painterResource(R.drawable.vapulla_background),
-                loading = { LoadingIndicator() },
-                failure = {
-                    Image(
-                        painter = painterResource(R.drawable.vapulla),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                },
+fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 52.dp, friend: SteamFriend) {
+    CoilImage(
+        modifier = modifier
+            .size(size)
+            .clip(MaterialTheme.shapes.large),
+        imageModel = { Utils.getAvatarURL(friend.avatar) },
+        imageOptions = ImageOptions(
+            contentScale = ContentScale.Crop,
+            contentDescription = "Avatar for ${friend.name}",
+        ),
+        previewPlaceholder = painterResource(R.drawable.vapulla_background),
+        loading = { LoadingIndicator() },
+        failure = {
+            Image(
+                painter = painterResource(R.drawable.vapulla),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
             )
-
-            // Basically a 'VerticalDivider' but height constrained.
-            Canvas(Modifier.size(height = size, width = 4.dp)) {
-                drawLine(
-                    color = friend.statusColor,
-                    pathEffect = if (friend.isAwayOrSnooze) {
-                        val heightPx = this@Canvas.size.height
-                        val numberOfDashes = 7
-                        val numberOfGaps = numberOfDashes - 1
-                        val totalSegments = numberOfDashes + numberOfGaps
-                        val segmentLength = heightPx / totalSegments
-
-                        PathEffect.dashPathEffect(
-                            intervals = floatArrayOf(segmentLength, segmentLength),
-                        )
-                    } else {
-                        null
-                    },
-                    strokeWidth = 4.dp.toPx(),
-                    start = Offset(4.dp.toPx() / 2, 0f),
-                    end = Offset(4.dp.toPx() / 2, this@Canvas.size.height),
-                )
-            }
         },
     )
 }

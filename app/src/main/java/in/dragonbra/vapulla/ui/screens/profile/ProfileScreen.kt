@@ -70,29 +70,34 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfo
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.service.api.FavoriteBadge
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.dialog.DialogType
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialog
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialogState
 import `in`.dragonbra.vapulla.ui.screens.profile.components.ProfileButton
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.Utils.toDateString
 import java.util.Date
 
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel, onNavDrawerAction: () -> Unit, onBack: () -> Unit) {
     val friend by viewModel.friend.collectAsStateWithLifecycle()
     val profile by viewModel.friendProfile.collectAsStateWithLifecycle()
+    val favoriteBadge by viewModel.favoriteBadge.collectAsStateWithLifecycle()
 
     ProfileScreenContent(
         friend = friend ?: SteamFriend(id = 0),
         profile = profile,
+        favoriteBadge = favoriteBadge,
         onBack = onBack,
         onAlias = viewModel::onAlias,
         onBlock = viewModel::onBlock,
         onRemove = viewModel::onRemove,
-        onNickName = viewModel::onNickName,
+        onNickname = viewModel::onNickname,
         onChat = { },
     )
 }
@@ -102,12 +107,13 @@ fun ProfileScreen(viewModel: ProfileViewModel, onNavDrawerAction: () -> Unit, on
 private fun ProfileScreenContent(
     friend: SteamFriend,
     profile: ProfileInfo?,
+    favoriteBadge: FavoriteBadge?,
     onBack: () -> Unit,
     onAlias: () -> Unit,
-    onBlock: (Long) -> Unit,
-    onRemove: (Long) -> Unit,
+    onBlock: () -> Unit,
+    onRemove: () -> Unit,
     onChat: (Long) -> Unit,
-    onNickName: (String) -> Unit,
+    onNickname: (String) -> Unit,
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -115,61 +121,32 @@ private fun ProfileScreenContent(
     var msgDialogState by rememberSaveable(stateSaver = MessageDialogState.Saver) {
         mutableStateOf(MessageDialogState(false))
     }
+    val dismissDialog = { msgDialogState = MessageDialogState(visible = false) }
 
-    val onDismissRequest: (() -> Unit)?
-    val onDismissClick: (() -> Unit)?
-    val onConfirmClick: (() -> Unit)?
+    // One confirmation dialog serves every destructive action; the type says which one.
+    val confirmDialog = {
+        when (msgDialogState.type) {
+            DialogType.FRIEND_BLOCK -> onBlock()
 
-    when (msgDialogState.type) {
-        DialogType.FRIEND_BLOCK -> {
-            onConfirmClick = {
-                onBlock(friend.id)
-                msgDialogState = MessageDialogState(visible = false)
-            }
-            onDismissRequest = { msgDialogState = MessageDialogState(visible = false) }
-            onDismissClick = { msgDialogState = MessageDialogState(visible = false) }
-        }
+            DialogType.FRIEND_REMOVE -> onRemove()
 
-        DialogType.FRIEND_REMOVE -> {
-            onConfirmClick = {
-                onRemove(friend.id)
-                msgDialogState = MessageDialogState(visible = false)
-            }
-            onDismissRequest = { msgDialogState = MessageDialogState(visible = false) }
-            onDismissClick = { msgDialogState = MessageDialogState(visible = false) }
-        }
-
-        DialogType.FRIEND_FAVORITE -> {
-            onConfirmClick = {
+            DialogType.FRIEND_FAVORITE ->
                 Toast.makeText(context, "Favorite TODO", Toast.LENGTH_SHORT).show()
-                msgDialogState = MessageDialogState(visible = false)
-            }
-            onDismissRequest = { msgDialogState = MessageDialogState(visible = false) }
-            onDismissClick = { msgDialogState = MessageDialogState(visible = false) }
-        }
 
-        DialogType.FRIEND_UN_FAVORITE -> {
-            onConfirmClick = {
+            DialogType.FRIEND_UN_FAVORITE ->
                 Toast.makeText(context, "Un-Favorite TODO", Toast.LENGTH_SHORT).show()
-                msgDialogState = MessageDialogState(visible = false)
-            }
-            onDismissRequest = { msgDialogState = MessageDialogState(visible = false) }
-            onDismissClick = { msgDialogState = MessageDialogState(visible = false) }
-        }
 
-        else -> {
-            onDismissRequest = null
-            onDismissClick = null
-            onConfirmClick = null
+            DialogType.NONE -> Unit
         }
+        dismissDialog()
     }
 
     MessageDialog(
         visible = msgDialogState.visible,
-        onDismissRequest = onDismissRequest,
-        onConfirmClick = onConfirmClick,
+        onDismissRequest = dismissDialog,
+        onConfirmClick = confirmDialog,
         confirmBtnText = msgDialogState.confirmBtnText,
-        onDismissClick = onDismissClick,
+        onDismissClick = dismissDialog,
         dismissBtnText = msgDialogState.dismissBtnText,
         icon = msgDialogState.type.icon,
         title = msgDialogState.title,
@@ -210,7 +187,7 @@ private fun ProfileScreenContent(
                 TextButton(
                     onClick = {
                         setNickNameDialog = false
-                        onNickName(newNickName)
+                        onNickname(newNickName)
                     },
                     content = { Text(text = "OK") },
                 )
@@ -318,12 +295,22 @@ private fun ProfileScreenContent(
             )
 
             Text(
-                text = friend.isPlayingGameName,
+                text = friend.statusText,
                 color = if (isLight) Color.Unspecified else friend.statusColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleLarge,
             )
+
+            if (favoriteBadge != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                InfoPill(
+                    text = "Favorite badge · level ${favoriteBadge.level}" +
+                        if (favoriteBadge.appId > 0) " · app ${favoriteBadge.appId}" else "",
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -441,7 +428,7 @@ private fun ProfileScreenContent(
                                     confirmBtnText = "Favorite",
                                     dismissBtnText = "Cancel",
                                     title = "Favorite Friend",
-                                    message = "Add $Unit to Favorites", // TODO
+                                    message = "Add ${friend.nameOrNickname} to favorites?",
                                 )
                             },
                         )
@@ -462,7 +449,7 @@ private fun ProfileScreenContent(
 
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isLight) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSecondary,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
             ) {
                 Column(
@@ -474,37 +461,11 @@ private fun ProfileScreenContent(
                     if (profile == null) {
                         LoadingBox()
                     } else {
-                        // 'headline' doesn't seem to be used anymore
+                        // Steam ignores the 'headline' field nowadays, so it is not shown.
                         CompositionLocalProvider(
                             LocalTextStyle provides MaterialTheme.typography.bodyMedium,
                         ) {
-                            // Meh...
-                            with(profile) {
-                                // Steam launch: Sept 12, 2003
-                                val isValid = timeCreated.after(Date(1063267200000L))
-                                if (isValid) {
-                                    if (realName.isNotEmpty()) {
-                                        Text(text = "Name: $realName")
-                                    }
-                                    if (cityName.isNotEmpty()) {
-                                        Text(text = "City: $cityName")
-                                    }
-                                    if (stateName.isNotEmpty()) {
-                                        Text(text = "State: $stateName")
-                                    }
-                                    if (stateName.isNotEmpty()) {
-                                        Text(text = "Country: $countryName")
-                                    }
-                                    Text(text = "Created: $timeCreated")
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(text = "Summary:")
-                                    BBCodeText(text = summary)
-                                } else {
-                                    Text(
-                                        text = "Profile most likely private.\nUnable to retrieve info",
-                                    )
-                                }
-                            }
+                            ProfileDetails(profile)
                         }
                     }
                 }
@@ -513,5 +474,27 @@ private fun ProfileScreenContent(
             // Bottom scroll padding
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+/** Steam's launch date. A profile "created" before it means Steam returned no real data. */
+private val STEAM_LAUNCH = Date(1063267200000L)
+
+@Composable
+private fun ProfileDetails(profile: ProfileInfo) {
+    if (!profile.timeCreated.after(STEAM_LAUNCH)) {
+        Text(text = "Profile most likely private.\nUnable to retrieve info")
+        return
+    }
+
+    with(profile) {
+        if (realName.isNotEmpty()) Text(text = "Name: $realName")
+        if (cityName.isNotEmpty()) Text(text = "City: $cityName")
+        if (stateName.isNotEmpty()) Text(text = "State: $stateName")
+        if (countryName.isNotEmpty()) Text(text = "Country: $countryName")
+        Text(text = "Created: ${(timeCreated.time / 1000).toDateString()}")
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = "Summary:")
+        BBCodeText(text = summary)
     }
 }

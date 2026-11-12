@@ -1,11 +1,11 @@
 package `in`.dragonbra.vapulla.data
 
 import androidx.compose.runtime.Immutable
-import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import java.util.Date
 
+/** The public profile fields Steam returns for a user, as shown on the profile screen. */
 @Immutable
 data class ProfileInfo(
     val steamID: SteamID,
@@ -18,7 +18,7 @@ data class ProfileInfo(
     val summary: String,
 ) {
     companion object {
-        fun deserialize(response: ProfileInfoCallback): ProfileInfo = ProfileInfo(
+        fun from(response: ProfileInfoCallback): ProfileInfo = ProfileInfo(
             steamID = response.steamID,
             timeCreated = response.timeCreated,
             realName = response.realName,

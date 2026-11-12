@@ -1,9 +1,10 @@
 package `in`.dragonbra.vapulla.ui.screens.games.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -15,11 +16,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import kotlinx.collections.immutable.ImmutableSet
 
@@ -35,42 +33,47 @@ internal fun GameBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        content = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp),
-                contentAlignment = Alignment.Center,
-                content = {
-                    Text(
-                        text = "Not all chips will filter anything",
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "Filter by type",
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text = "Pick one or more. With nothing picked, only games are shown.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                SteamApp.AppType.entries.forEach { category ->
-                    val selected = appTypes.contains(category)
-                    FilterChip(
-                        modifier = Modifier.padding(4.dp),
-                        selected = selected,
-                        onClick = { onAppTypeClicked(category) },
-                        label = { Text(category.name.capitalize()) },
-                        leadingIcon = if (selected) {
-                            { Icon(Icons.Default.Check, contentDescription = null) }
-                        } else {
-                            null
-                        },
-                    )
-                }
+                SteamApp.AppType.entries
+                    .filter { it != SteamApp.AppType.invalid }
+                    .forEach { category ->
+                        val selected = appTypes.contains(category)
+                        FilterChip(
+                            selected = selected,
+                            onClick = { onAppTypeClicked(category) },
+                            label = { Text(category.name.capitalize()) },
+                            leadingIcon = if (selected) {
+                                { Icon(Icons.Default.Check, contentDescription = null) }
+                            } else {
+                                null
+                            },
+                        )
+                    }
             }
-        },
-    )
+        }
+    }
 }

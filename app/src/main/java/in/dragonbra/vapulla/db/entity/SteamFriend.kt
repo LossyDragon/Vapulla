@@ -25,12 +25,17 @@ import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
 import `in`.dragonbra.vapulla.ui.theme.friendOffline
 import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
+/**
+ * A friend (or pending request) as mirrored from Steam, plus the chat and profile extras the
+ * app tracks for them. The `is*` helpers drive the friends list grouping and colours.
+ */
 @Immutable
 @Entity(tableName = "steam_friend")
 data class SteamFriend(
@@ -43,6 +48,8 @@ data class SteamFriend(
     val gameID: GameID = GameID(0),
     val gameDataBlob: ByteArray = byteArrayOf(0),
     val gameName: String = "",
+    /** Rich presence key/values from the game (e.g. `status`, `steam_display`). */
+    val richPresence: Map<String, String> = emptyMap(),
     val lastLogOn: Date = Date(0),
     val lastLogOff: Date = Date(0),
     val stateFlags: EnumSet<EPersonaStateFlag> = emptyEnumSet(),
@@ -72,19 +79,34 @@ data class SteamFriend(
     val isPlayingGame: Boolean
         get() = if (isOnline) gameName.isNotEmpty() || gameAppID != 0 else false
 
-    val isPlayingGameName: String
-        get() = if (isPlayingGame) {
-            gameName.ifEmpty { "Playing game id: $gameAppID" }
-        } else {
-            if (isBlocked) {
-                relation.name
-            } else {
-                if (state == EPersonaState.Offline) {
-                    lastLogOff.toString()
-                } else {
-                    state.name
-                }
+    /**
+     * The game's own presence line (`status`), when it publishes a readable one. Some games
+     * send unresolved localisation tokens such as `#Steam_Citadel_InGame`; those are skipped.
+     */
+    val richPresenceStatus: String
+        get() = richPresence["status"].orEmpty().takeUnless { it.startsWith("#") }.orEmpty()
+
+    /** One line describing what the friend is doing, or when they were last seen. */
+    val statusText: String
+        get() = when {
+            isBlocked -> relation.name
+
+            isRequestRecipient -> "Wants to be your friend"
+
+            isPlayingGame -> {
+                val game = gameName.ifEmpty { "Playing game id: $gameAppID" }
+                if (richPresenceStatus.isNotEmpty()) "$game · $richPresenceStatus" else game
             }
+
+            isOffline -> if (lastLogOff.time >
+                0
+            ) {
+                "Last online ${lastLogOff.time.toTimeAgo()}"
+            } else {
+                "Offline"
+            }
+
+            else -> state.name
         }
 
     val isAwayOrSnooze: Boolean
@@ -149,6 +171,7 @@ data class SteamFriend(
         if (gameID != other.gameID) return false
         if (!gameDataBlob.contentEquals(other.gameDataBlob)) return false
         if (gameName != other.gameName) return false
+        if (richPresence != other.richPresence) return false
         if (stateFlags != other.stateFlags) return false
         if (statusFlags != other.statusFlags) return false
         if (nickname != other.nickname) return false
@@ -178,6 +201,7 @@ data class SteamFriend(
         result = 31 * result + gameID.hashCode()
         result = 31 * result + gameDataBlob.contentHashCode()
         result = 31 * result + gameName.hashCode()
+        result = 31 * result + richPresence.hashCode()
         result = 31 * result + stateFlags.hashCode()
         result = 31 * result + statusFlags.hashCode()
         result = 31 * result + nickname.hashCode()

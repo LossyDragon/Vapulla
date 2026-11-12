@@ -2,18 +2,23 @@ package `in`.dragonbra.vapulla.ui.screens.login
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -28,16 +33,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.ui.composables.VapullaLoadingAnimation
-import `in`.dragonbra.vapulla.ui.screens.login.components.LoginButtons
 import `in`.dragonbra.vapulla.ui.screens.login.components.LoginCredentials
 import `in`.dragonbra.vapulla.ui.screens.login.components.LoginQRCode
 import `in`.dragonbra.vapulla.ui.screens.login.components.LoginTwoFactor
@@ -94,70 +99,96 @@ private fun LoginScreenContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            content = {
-                var passwordVisible by rememberSaveable { mutableStateOf(false) }
+        ) {
+            var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
-                VapullaLoadingAnimation(isAnimating = uiState.isLoading)
+            VapullaLoadingAnimation(isAnimating = uiState.isLoading, size = 120.dp)
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                    fontSize = 48.sp,
-                )
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.displaySmallEmphasized,
+            )
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-                AnimatedContent(
-                    targetState = uiState.loginStep,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith
-                            fadeOut(animationSpec = tween(300))
-                    },
-                    label = "login_step_animation",
-                ) { step ->
-                    when (step) {
-                        LoginStep.CREDENTIALS -> {
-                            LoginCredentials(
-                                isLoading = uiState.isLoading,
-                                username = uiState.username,
-                                onUsernameChange = onUsernameChange,
-                                passwordVisible = passwordVisible,
-                                password = uiState.password,
-                                onPasswordVisible = { passwordVisible = it },
-                                onPasswordChange = onPasswordChange,
-                                buttonContent = {
-                                    LoginButtons(
-                                        onSignInViaCredentials = onSignInViaCredentials,
-                                        onSignInViaQR = onSignInViaQR,
-                                    )
-                                },
-                            )
-                        }
+            Text(
+                text = when (uiState.loginStep) {
+                    LoginStep.CREDENTIALS -> "Sign in with your Steam account"
 
-                        LoginStep.QRCODE -> {
-                            LoginQRCode(
-                                code = uiState.qrCode,
-                                isWaitingForConfirmation = uiState.isWaitingForConfirmation,
-                                onQrCodeCancel = onQrCodeCancel,
-                            )
-                        }
+                    LoginStep.QRCODE -> "Scan the code with the Steam mobile app"
 
-                        LoginStep.TWOFACTOR -> {
-                            LoginTwoFactor(
-                                code = uiState.twoFactorCode,
-                                onTwoFactorChange = onTwoFactorChange,
-                                onTwoFactorSubmit = onTwoFactorSubmit,
-                            )
-                        }
+                    LoginStep.TWOFACTOR -> uiState.twoFactorMessage.ifEmpty {
+                        "Enter your Steam Guard code"
                     }
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+
+            // Fixed-height slot so the form does not jump when the indicator appears.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                val indicatorAlpha by animateFloatAsState(
+                    targetValue = if (uiState.isLoading) 1f else 0f,
+                    label = "loading_indicator_alpha",
+                )
+                if (indicatorAlpha > 0f) {
+                    LinearWavyProgressIndicator(
+                        modifier = Modifier
+                            .widthIn(max = 200.dp)
+                            .fillMaxWidth()
+                            .alpha(indicatorAlpha),
+                    )
                 }
-            },
-        )
+            }
+
+            AnimatedContent(
+                targetState = uiState.loginStep,
+                modifier = Modifier.widthIn(max = 420.dp),
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(300)) togetherWith
+                        fadeOut(animationSpec = tween(300))
+                },
+                label = "login_step_animation",
+            ) { step ->
+                when (step) {
+                    LoginStep.CREDENTIALS -> LoginCredentials(
+                        isLoading = uiState.isLoading,
+                        username = uiState.username,
+                        onUsernameChange = onUsernameChange,
+                        passwordVisible = passwordVisible,
+                        password = uiState.password,
+                        onPasswordVisible = { passwordVisible = it },
+                        onPasswordChange = onPasswordChange,
+                        onSignInViaCredentials = onSignInViaCredentials,
+                        onSignInViaQR = onSignInViaQR,
+                    )
+
+                    LoginStep.QRCODE -> LoginQRCode(
+                        code = uiState.qrCode,
+                        isWaitingForConfirmation = uiState.isWaitingForConfirmation,
+                        onQrCodeCancel = onQrCodeCancel,
+                    )
+
+                    LoginStep.TWOFACTOR -> LoginTwoFactor(
+                        code = uiState.twoFactorCode,
+                        onTwoFactorChange = onTwoFactorChange,
+                        onTwoFactorSubmit = onTwoFactorSubmit,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -167,6 +198,11 @@ class LoginUiStateProvider : PreviewParameterProvider<LoginUiState> {
             loginStep = LoginStep.CREDENTIALS,
             username = "My Username",
             password = "My Password",
+        ),
+        LoginUiState(
+            loginStep = LoginStep.CREDENTIALS,
+            username = "My Username",
+            isLoading = true,
         ),
         LoginUiState(
             loginStep = LoginStep.QRCODE,

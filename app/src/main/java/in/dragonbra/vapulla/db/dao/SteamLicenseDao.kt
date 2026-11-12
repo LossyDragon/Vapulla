@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import `in`.dragonbra.vapulla.db.entity.SteamLicense
+import `in`.dragonbra.vapulla.db.entity.SteamLicenseInfo
 
 @Dao
 interface SteamLicenseDao {
@@ -30,6 +31,17 @@ interface SteamLicenseDao {
 
     @Query("SELECT * FROM steam_license WHERE packageId = :packageId")
     suspend fun findLicense(packageId: Int): SteamLicense?
+
+    /**
+     * Batched lookup of the few columns needed when stamping ownership onto PICS apps and when
+     * checking for package changes. Callers should chunk [packageIds] to stay well under
+     * SQLite's bound-parameter limit.
+     */
+    @Query(
+        "SELECT packageID, lastChangeNumber, ownerAccountID, licenseFlags " +
+            "FROM steam_license WHERE packageID IN (:packageIds)",
+    )
+    suspend fun findLicenseInfo(packageIds: List<Int>): List<SteamLicenseInfo>
 
     @Query("DELETE FROM steam_license WHERE packageId IN (:packageIds)")
     suspend fun deleteStaleLicenses(packageIds: List<Int>)

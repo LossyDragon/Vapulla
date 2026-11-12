@@ -8,59 +8,62 @@ import `in`.dragonbra.javasteam.util.log.LogManager
 import `in`.dragonbra.vapulla.di.AppModules
 import `in`.dragonbra.vapulla.di.DatabaseModules
 import `in`.dragonbra.vapulla.di.ViewModelModules
+import `in`.dragonbra.vapulla.manager.SettingsManager
+import `in`.dragonbra.vapulla.service.NetworkLog
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.ReleaseTree
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import timber.log.Timber
 
+/** Sets up logging, JavaSteam log forwarding, notification channels and Koin. */
 class VapullaApplication : Application() {
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @SuppressLint("NewApi")
     override fun onCreate() {
         super.onCreate()
 
-        // Application debugging & logging
         if (BuildConfig.DEBUG) {
             StrictMode.setVmPolicy(
                 StrictMode.VmPolicy.Builder()
-                    .detectLeakedClosableObjects() // Detect when Closeable objects are not properly closed
-                    .penaltyLog() // Log violations to logcat
+                    .detectLeakedClosableObjects()
+                    .penaltyLog()
                     .build(),
             )
-
-            // StrictMode.setThreadPolicy(
-            //     StrictMode.ThreadPolicy.Builder()
-            //         .detectAll() // Detect all violations (disk reads/writes, network operations, etc.)
-            //         .penaltyLog() // Log violations to logcat
-            //         .build(),
-            // )
-
-            val tree = Timber.DebugTree()
-            Timber.plant(tree = tree)
-        } else {
-            val tree = ReleaseTree()
-            Timber.plant(tree = tree)
         }
 
-        // JavaSteam logging
-        val listener = object : LogListener {
-            override fun onLog(clazz: Class<*>, message: String?, throwable: Throwable?) {
-                Timber.tag(tag = clazz.simpleName).i(t = throwable, message = message)
-            }
+        Timber.plant(if (BuildConfig.DEBUG) Timber.DebugTree() else ReleaseTree())
 
-            override fun onError(clazz: Class<*>, message: String?, throwable: Throwable?) {
-                Timber.tag(tag = clazz.simpleName).e(t = throwable, message = message)
-            }
-        }
-        LogManager.addListener(listener)
+        // Route JavaSteam's own logging through Timber, tagged with the originating class.
+        LogManager.addListener(
+            object : LogListener {
+                override fun onLog(clazz: Class<*>, message: String?, throwable: Throwable?) {
+                    Timber.tag(clazz.simpleName).i(throwable, message)
+                }
 
-        // Create notification channels
+                override fun onError(clazz: Class<*>, message: String?, throwable: Throwable?) {
+                    Timber.tag(clazz.simpleName).e(throwable, message)
+                }
+            },
+        )
+
         NotificationHelper.createNotificationChannels(this)
 
         startKoin {
-            androidContext(androidContext = this@VapullaApplication)
-            modules(modules = listOf(AppModules, ViewModelModules, DatabaseModules))
+            androidContext(this@VapullaApplication)
+            modules(AppModules, ViewModelModules, DatabaseModules)
+        }
+
+        // The network log is a plain object, so its size is pushed in rather than injected.
+        appScope.launch {
+            get<SettingsManager>().settings.collect { NetworkLog.maxEntries = it.networkLogSize }
         }
     }
 }

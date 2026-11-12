@@ -7,8 +7,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
-import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamApp.AppType
+import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.manager.AccountManager
 import java.util.EnumSet
 import kotlinx.collections.immutable.ImmutableSet
@@ -41,7 +41,7 @@ class GamesViewModel(private val steamAppDao: SteamAppDao, accountManager: Accou
     val appTypes: StateFlow<ImmutableSet<AppType>> = _appTypes.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val steamApps: Flow<PagingData<SteamApp>> =
+    val steamApps: Flow<PagingData<SteamAppListItem>> =
         combine(appTypes, searchQuery) { selectedTypes, query ->
             val typesToUse = selectedTypes.ifEmpty { setOf(AppType.game) }
             val flags = AppType.toFlags(EnumSet.copyOf(typesToUse))

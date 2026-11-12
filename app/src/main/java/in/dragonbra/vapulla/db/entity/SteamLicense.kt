@@ -10,6 +10,10 @@ import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
 
+/**
+ * A Steam package (license) the account can use, including ones shared with it. [appIds] and
+ * [depotIds] are filled in later from the package's PICS data.
+ */
 @Immutable
 @Entity("steam_license")
 data class SteamLicense(
@@ -25,6 +29,7 @@ data class SteamLicense(
     val licenseType: ELicenseType = ELicenseType.NoLicense,
     val territoryCode: Int = 0,
     val accessToken: Long = 0,
+    /** Every account that holds this license, ours first when we own it. */
     val ownerAccountID: List<Int> = emptyList(),
     val masterPackageID: Int = 0,
     val appIds: List<Int> = emptyList(),

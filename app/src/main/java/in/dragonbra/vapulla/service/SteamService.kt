@@ -1,10 +1,12 @@
 package `in`.dragonbra.vapulla.service
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import androidx.core.app.RemoteInput
+import androidx.room.withTransaction
 import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
@@ -60,6 +62,14 @@ import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.db.entity.SteamLicense
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
+import `in`.dragonbra.vapulla.service.api.CloudApi
+import `in`.dragonbra.vapulla.service.api.LibraryApi
+import `in`.dragonbra.vapulla.service.api.ProfileApi
+import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
+import `in`.dragonbra.vapulla.service.api.SessionsApi
+import `in`.dragonbra.vapulla.service.api.SteamApis
+import `in`.dragonbra.vapulla.service.api.WorkshopApi
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.service.handler.VapullaHandler
 import `in`.dragonbra.vapulla.util.NotificationHelper
@@ -106,12 +116,50 @@ import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import timber.log.Timber
 
+/**
+ * Foreground service that owns the JavaSteam client for the whole app.
+ *
+ * It signs in (credentials or QR), keeps the connection alive, and mirrors what Steam sends
+ * (friends, presence, chat history, licenses and PICS app info) into the Room database, which
+ * the UI observes. Screens reach it through [ServiceConnection]; notification actions reach it
+ * through [actionIntent].
+ */
 class SteamService : Service() {
 
     companion object {
         const val EXTRA_ACTION = "action"
         const val EXTRA_MESSAGE = "message"
         const val EXTRA_ID = "id"
+
+        /** Log off and stop the service. */
+        const val ACTION_STOP = "stop"
+
+        /** Send [EXTRA_MESSAGE] to the friend in [EXTRA_ID]. */
+        const val ACTION_REPLY = "reply"
+
+        /** Accept the friend request from [EXTRA_ID]. */
+        const val ACTION_ACCEPT_REQUEST = "accept_request"
+
+        /** Decline the friend request from [EXTRA_ID]. */
+        const val ACTION_IGNORE_REQUEST = "ignore_request"
+
+        /** Decline the friend request from [EXTRA_ID] and block them. */
+        const val ACTION_BLOCK_REQUEST = "block_request"
+
+        /** Builds the start intent for one of the `ACTION_*` commands. */
+        fun actionIntent(
+            context: Context,
+            action: String,
+            friendId: Long? = null,
+            message: CharSequence? = null,
+        ): Intent = Intent(context, SteamService::class.java).apply {
+            putExtra(EXTRA_ACTION, action)
+            friendId?.let { putExtra(EXTRA_ID, it) }
+            message?.let { putExtra(EXTRA_MESSAGE, it) }
+        }
+
+        /** Max ids per `WHERE id IN (...)` query, kept well under SQLite's bound-parameter limit. */
+        private const val SQL_IN_CHUNK_SIZE = 500
 
         private val _isLoading = MutableStateFlow(false)
         val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -145,6 +193,10 @@ class SteamService : Service() {
     private val subscriptions: MutableSet<Closeable> = mutableSetOf()
 
     private var player: Player? = null
+
+    /** Showcase APIs; available while connected. */
+    var apis: SteamApis? = null
+        private set
 
     // State management
     private lateinit var remoteInput: RemoteInput
@@ -183,9 +235,6 @@ class SteamService : Service() {
         super.onStartCommand(intent, flags, startId)
         Timber.i("onStartCommand")
 
-        val data = intent?.getStringExtra("extra_data")
-        Timber.d("Received data: $data") // TODO re-add notification intents.
-
         val notification = NotificationHelper.createServiceNotification(
             context = this,
             text = "Starting...",
@@ -193,7 +242,29 @@ class SteamService : Service() {
 
         startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
 
+        intent?.getStringExtra(EXTRA_ACTION)?.let { action -> handleAction(action, intent) }
+
         return START_STICKY
+    }
+
+    /** Runs a notification action sent through [actionIntent]. */
+    private fun handleAction(action: String, intent: Intent) {
+        val friendId = intent.getLongExtra(EXTRA_ID, 0L)
+        Timber.d("handleAction($action) for $friendId")
+
+        val friends = steamFriends ?: run {
+            Timber.w("Ignoring action '$action': not connected")
+            return
+        }
+
+        when (action) {
+            ACTION_STOP -> logOut()
+            ACTION_ACCEPT_REQUEST -> friends.addFriend(friendId.toSteamID())
+            ACTION_IGNORE_REQUEST -> friends.removeFriend(friendId.toSteamID())
+            ACTION_BLOCK_REQUEST -> friends.ignoreFriend(friendId.toSteamID(), setIgnore = true)
+            ACTION_REPLY -> Timber.w("Reply action is not implemented yet")
+            else -> Timber.w("Unknown action '$action'")
+        }
     }
 
     override fun onDestroy() {
@@ -208,9 +279,6 @@ class SteamService : Service() {
 
         // Cancel coroutines
         scope.cancel(CancellationException("Service Destroyed"))
-
-        val intent = Intent("stop")
-        sendBroadcast(intent)
     }
 
     private fun cancelCurrentAuthOperation() {
@@ -232,6 +300,7 @@ class SteamService : Service() {
         steamApps = null
         steamFriends = null
         steamUser = null
+        apis = null
         steamClient?.disconnect()
         steamClient = null
         callbackMgr = null
@@ -307,18 +376,40 @@ class SteamService : Service() {
                 player = unifiedMessages!!.createService()
             }
 
-            // Configure handlers
+            // Configure handlers. Only the ones no screen uses are dropped.
             with(client) {
                 addHandler<VapullaHandler>()
 
                 removeHandler<SteamCloud>()
                 removeHandler<SteamGameCoordinator>()
                 removeHandler<SteamGameServer>()
-                removeHandler<SteamMasterServer>()
                 removeHandler<SteamScreenshots>()
-                removeHandler<SteamUserStats>()
                 removeHandler<SteamWorkshop>()
             }
+
+            val unified = requireNotNull(unifiedMessages)
+            val localSteamId = { client.steamID }
+            apis = SteamApis(
+                library = LibraryApi(
+                    steamApps = requireNotNull(client.getHandler()),
+                    userStats = requireNotNull(client.getHandler<SteamUserStats>()),
+                    player = requireNotNull(player),
+                    localSteamId = localSteamId,
+                ),
+                profile = ProfileApi(requireNotNull(player)),
+                chatRooms = ChatRoomsApi(
+                    chatRoom = unified.createService(),
+                    friends = requireNotNull(steamFriends),
+                    callbacks = requireNotNull(callbackMgr),
+                ),
+                servers = ServerBrowserApi(requireNotNull(client.getHandler<SteamMasterServer>())),
+                cloud = CloudApi(unified.createService()),
+                workshop = WorkshopApi(unified.createService()),
+                sessions = SessionsApi(unified.createService(), localSteamId),
+            )
+
+            // Feed the in-app packet log; see NetworkLog.
+            client.setDebugNetworkListener(NetworkLog)
         }
     }
 
@@ -378,7 +469,7 @@ class SteamService : Service() {
                     username = pollResult.accountName
                     loginKey = pollResult.refreshToken
 
-                    account.setUserName(username)
+                    account.setUsername(username)
                     account.setRefreshToken(loginKey)
                 } else {
                     // Auto sign in
@@ -475,7 +566,7 @@ class SteamService : Service() {
 
                 // Handle completion
                 if (authPollResult != null) {
-                    account.setUserName(authPollResult.accountName)
+                    account.setUsername(authPollResult.accountName)
                     account.setRefreshToken(authPollResult.refreshToken)
                     loginToSteam(
                         accountName = authPollResult.accountName,
@@ -524,11 +615,11 @@ class SteamService : Service() {
         }
 
         dbFriend = dbFriend.copy(
-            profileBackground = ProfileItems.deserialize(body.profileBackground),
-            profileMiniBackground = ProfileItems.deserialize(body.miniProfileBackground),
-            profileAvatarFrame = ProfileItems.deserialize(body.avatarFrame),
-            profileAnimatedAvatar = ProfileItems.deserialize(body.animatedAvatar),
-            profileProfileModifier = ProfileItems.deserialize(body.profileModifier),
+            profileBackground = ProfileItems.from(body.profileBackground),
+            profileMiniBackground = ProfileItems.from(body.miniProfileBackground),
+            profileAvatarFrame = ProfileItems.from(body.avatarFrame),
+            profileAnimatedAvatar = ProfileItems.from(body.animatedAvatar),
+            profileProfileModifier = ProfileItems.from(body.profileModifier),
         )
 
         db.steamFriendDao().update(dbFriend)
@@ -560,7 +651,7 @@ class SteamService : Service() {
         db.steamFriendDao().remove(friendId)
     }
 
-    suspend fun setNickName(friendId: Long, value: String) = withContext(Dispatchers.IO) {
+    suspend fun setNickname(friendId: Long, value: String) = withContext(Dispatchers.IO) {
         val friend = friendId.toSteamID()
         steamFriends!!.setFriendNickname(friend, value)
     }
@@ -687,6 +778,30 @@ class SteamService : Service() {
                 _isLoggedIn.value = true
 
                 steamClient?.getHandler<SteamNotifications>()?.requestOfflineMessageCount()
+
+                // Presence stored from the previous session is stale, and Steam only pushes
+                // state for friends who are online now, so everyone must start out offline.
+                // This queues on friendsListMutex well before the first persona push, which
+                // follows the friends list and a network round trip.
+                scope.launch {
+                    friendsListMutex.withLock {
+                        val dao = db.steamFriendDao()
+                        val reset = dao.findWithPresence().map { friend ->
+                            val offline = SteamFriend(id = friend.id)
+                            friend.copy(
+                                state = offline.state,
+                                gameAppID = offline.gameAppID,
+                                gameID = offline.gameID,
+                                gameDataBlob = offline.gameDataBlob,
+                                gameName = offline.gameName,
+                                stateFlags = offline.stateFlags,
+                            )
+                        }
+                        Timber.d("onLoggedOn: resetting stored presence of %d friends", reset.size)
+                        dao.update(reset)
+                    }
+                }
+
                 steamFriends!!.setPersonaState(EPersonaState.Online)
                 steamClient?.getHandler<VapullaHandler>()?.getEmoticonList()
 
@@ -697,6 +812,8 @@ class SteamService : Service() {
                 continuousPicsChanges()
                 continuousPicsChecker()
                 continuousFriendChecker()
+                syncPlaytime()
+                syncAccountLevel()
             }
 
             EResult.InvalidPassword,
@@ -716,7 +833,21 @@ class SteamService : Service() {
     }
 
     private val onPersonaState: Consumer<PersonaStateCallback> = Consumer {
-        Timber.d("onPersonaState()")
+        // After the friends list arrives, JavaSteam sends ClientRequestFriendData for every
+        // friend. Steam answers with profile-only messages in which persona_state and the game
+        // fields are absent on the wire. Real presence for online friends arrives in separate
+        // pushes, in no fixed order relative to those replies, so a reply must never overwrite
+        // a stored state.
+        val profileOnly = !it.hasPersonaState
+
+        Timber.d(
+            "onPersonaState() id=%d name='%s' state=%s game=%d profileOnly=%b",
+            it.friendId.toLong(),
+            it.playerName,
+            it.personaState,
+            it.gamePlayedAppId,
+            profileOnly,
+        )
 
         if (!it.friendId.isIndividualAccount) {
             return@Consumer
@@ -740,29 +871,46 @@ class SteamService : Service() {
                     return@launch
                 }
 
-                val updatedFriend = dbFriend.copy(
+                val withProfile = dbFriend.copy(
                     name = it.playerName,
                     avatar = it.avatarHash.toHexString(),
-                    state = it.personaState,
-                    gameAppID = it.gamePlayedAppId,
-                    gameID = it.gameId,
-                    gameDataBlob = it.gameDataBlob,
-                    gameName = it.gameName.ifEmpty {
-                        if (it.gamePlayedAppId > 0) {
-                            db.steamAppDao().findApp(it.gamePlayedAppId)?.name ?: ""
-                        } else {
-                            ""
-                        }
-                    },
                     lastLogOn = it.lastLogon,
                     lastLogOff = it.lastLogoff,
-                    stateFlags = it.personaStateFlags,
                     statusFlags = it.statusFlags,
                 )
+
+                val updatedFriend = if (profileOnly) {
+                    withProfile
+                } else {
+                    withProfile.copy(
+                        state = it.personaState,
+                        gameAppID = it.gamePlayedAppId,
+                        gameID = it.gameId,
+                        gameDataBlob = it.gameDataBlob,
+                        richPresence = it.richPresence.associate { kv -> kv.key to kv.value },
+                        gameName = it.gameName.ifEmpty {
+                            if (it.gamePlayedAppId > 0) {
+                                db.steamAppDao().findAppName(it.gamePlayedAppId) ?: ""
+                            } else {
+                                ""
+                            }
+                        },
+                        stateFlags = it.personaStateFlags,
+                    )
+                }
 
                 // Skip the write when nothing changed, otherwise every persona tick
                 // invalidates the friends flow and re-runs the whole home pipeline.
                 if (updatedFriend != dbFriend) {
+                    if (updatedFriend.state != dbFriend.state) {
+                        Timber.d(
+                            "onPersonaState: %d '%s' %s -> %s",
+                            dbFriend.id,
+                            updatedFriend.name,
+                            dbFriend.state,
+                            updatedFriend.state,
+                        )
+                    }
                     dao.update(updatedFriend)
                 }
 
@@ -823,6 +971,14 @@ class SteamService : Service() {
                     }
                 }
 
+                Timber.d(
+                    "onFriendsList: incremental=%b received=%d add=%d update=%d remove=%d",
+                    inc,
+                    it.friendList.size,
+                    friendsToAdd.size,
+                    friendsToUpdate.size,
+                    friendsToRemove.size,
+                )
                 dao.insert(friendsToAdd)
                 dao.update(friendsToUpdate)
                 dao.remove(friendsToRemove)
@@ -928,23 +1084,36 @@ class SteamService : Service() {
 
             account.setLastChangeNumber(it.currentChangeNumber)
 
+            // Only queue PICS requests for apps existing in the db that have changed.
+            // Lookups are batched and select only the columns needed for the comparison.
             it.appChanges.values
-                .filter { value ->
-                    // only queue PICS requests for apps existing in the db that have changed
-                    val app = db.steamAppDao().findApp(value.id) ?: return@filter false
-                    value.changeNumber != app.lastChangeNumber
+                .chunked(SQL_IN_CHUNK_SIZE)
+                .flatMap { chunk ->
+                    val known = db.steamAppDao()
+                        .findChangeInfo(chunk.map { change -> change.id })
+                        .associateBy { info -> info.id }
+
+                    chunk.filter { change ->
+                        val app = known[change.id] ?: return@filter false
+                        change.changeNumber != app.lastChangeNumber
+                    }
                 }
                 .map { value -> value.id }
                 .also { value -> Timber.d("onPicsChanges: Queueing ${value.size} app requests") }
                 .forEach { value -> picsRequestChannel.send(value) }
 
+            // Only queue PICS requests for pkgs existing in the db that have changed.
             val pkgsWithChanges = it.packageChanges.values
-                .filter { changeData ->
-                    // only queue PICS requests for pkgs existing in the db that have changed
-                    val pkg = db.steamLicenseDao().findLicense(changeData.id)
-                        ?: return@filter false
+                .chunked(SQL_IN_CHUNK_SIZE)
+                .flatMap { chunk ->
+                    val known = db.steamLicenseDao()
+                        .findLicenseInfo(chunk.map { change -> change.id })
+                        .associateBy { info -> info.packageID }
 
-                    changeData.changeNumber != pkg.lastChangeNumber
+                    chunk.filter { change ->
+                        val pkg = known[change.id] ?: return@filter false
+                        change.changeNumber != pkg.lastChangeNumber
+                    }
                 }
 
             if (pkgsWithChanges.isEmpty()) {
@@ -973,62 +1142,82 @@ class SteamService : Service() {
         }
     }
 
-    private val onPicsProduct: Consumer<PICSProductInfoCallback> = Consumer {
+    private val onPicsProduct: Consumer<PICSProductInfoCallback> = Consumer { callback ->
         Timber.d("onPicsProduct()")
 
         scope.launch {
-            Timber.i("onPicsProduct: Received PICS of ${it.packages.size} package(s)")
-            it.packages.values.forEach { pkg ->
-                val appIds = pkg.keyValues["appids"].children.map { it.asInteger() }
-                db.steamLicenseDao().updateApps(pkg.id, appIds)
+            val appDao = db.steamAppDao()
+            val licenseDao = db.steamLicenseDao()
 
-                val depotIds = pkg.keyValues["depotids"].children.map { it.asInteger() }
-                db.steamLicenseDao().updateDepots(pkg.id, depotIds)
+            if (callback.packages.isNotEmpty()) {
+                Timber.i("onPicsProduct: Received PICS of ${callback.packages.size} package(s)")
 
-                // Insert a stub row (or update) of SteamApps to the database.
-                appIds.forEach { appid ->
-                    val steamApp = db.steamAppDao().findApp(appid)?.copy(packageId = pkg.id)
-                    if (steamApp != null) {
-                        db.steamAppDao().update(steamApp)
-                    } else {
-                        val stubSteamApp = SteamApp(id = appid, packageId = pkg.id)
-                        db.steamAppDao().insert(stubSteamApp)
+                val appIdsToRequest = mutableListOf<Int>()
+
+                // One transaction for the whole batch: Room's invalidation tracker then notifies
+                // observers (e.g. the paged games list) once, instead of once per statement.
+                db.withTransaction {
+                    callback.packages.values.forEach { pkg ->
+                        val appIds = pkg.keyValues["appids"].children.map { it.asInteger() }
+                        licenseDao.updateApps(pkg.id, appIds)
+
+                        val depotIds = pkg.keyValues["depotids"].children.map { it.asInteger() }
+                        licenseDao.updateDepots(pkg.id, depotIds)
+
+                        // Insert a stub row for apps we don't know yet, then point every app
+                        // in this package at it. This replaces a per-app SELECT * + full-row
+                        // UPDATE that re-serialized every JSON column just to set packageId.
+                        appDao.insertIfAbsent(appIds.map { SteamApp(id = it, packageId = pkg.id) })
+                        appDao.updatePackageId(pkg.id, appIds)
+
+                        appIdsToRequest += appIds
                     }
-
-                    picsRequestChannel.send(appid)
                 }
+
+                appIdsToRequest.forEach { picsRequestChannel.send(it) }
             }
 
-            Timber.i("onPicsProduct: Received PICS of ${it.apps.size} apps(s)")
-            it.apps.values
-                .mapNotNull { app ->
-                    val appFromDb = db.steamAppDao().findApp(app.id)
-                    val packageId = appFromDb?.packageId ?: Int.MAX_VALUE
-                    val packageFromDb = if (packageId != Int.MAX_VALUE) {
-                        db.steamLicenseDao()
-                            .findLicense(packageId)
-                    } else {
-                        null
-                    }
-                    val ownerAccountId = packageFromDb?.ownerAccountID ?: emptyList()
+            if (callback.apps.isNotEmpty()) {
+                Timber.i("onPicsProduct: Received PICS of ${callback.apps.size} apps(s)")
 
-                    if (app.changeNumber != appFromDb?.lastChangeNumber) {
-                        app.keyValues.generateSteamApp().copy(
-                            packageId = packageId,
-                            ownerAccountId = ownerAccountId,
-                            receivedPICS = true,
-                            lastChangeNumber = app.changeNumber,
-                            licenseFlags = packageFromDb?.licenseFlags ?: emptyEnumSet(),
-                        )
-                    } else {
-                        null
+                // Batch the lookups and select only the columns needed to decide what changed,
+                // instead of a SELECT * (with JSON decoding of every column) per app.
+                val changeInfoById = callback.apps.keys
+                    .chunked(SQL_IN_CHUNK_SIZE)
+                    .flatMap { ids -> appDao.findChangeInfo(ids) }
+                    .associateBy { info -> info.id }
+
+                val licenseByPackageId = changeInfoById.values
+                    .map { info -> info.packageId }
+                    .filter { packageId -> packageId != Int.MAX_VALUE }
+                    .distinct()
+                    .chunked(SQL_IN_CHUNK_SIZE)
+                    .flatMap { ids -> licenseDao.findLicenseInfo(ids) }
+                    .associateBy { license -> license.packageID }
+
+                val apps = callback.apps.values.mapNotNull { app ->
+                    val changeInfo = changeInfoById[app.id]
+                    if (app.changeNumber == changeInfo?.lastChangeNumber) {
+                        return@mapNotNull null
                     }
+
+                    val packageId = changeInfo?.packageId ?: Int.MAX_VALUE
+                    val license = licenseByPackageId[packageId]
+
+                    app.keyValues.generateSteamApp().copy(
+                        packageId = packageId,
+                        ownerAccountId = license?.ownerAccountID ?: emptyList(),
+                        receivedPICS = true,
+                        lastChangeNumber = app.changeNumber,
+                        licenseFlags = license?.licenseFlags ?: emptyEnumSet(),
+                    )
                 }
-                .takeIf { apps -> apps.isNotEmpty() }
-                ?.also { apps ->
+
+                if (apps.isNotEmpty()) {
                     Timber.d("Inserting ${apps.size} PICS apps to database")
-                    db.steamAppDao().insert(apps)
+                    appDao.insert(apps)
                 }
+            }
         }
     }
 
@@ -1047,6 +1236,7 @@ class SteamService : Service() {
 
             val incomingLicenses = it.licenseList
             val existingLicenses = db.steamLicenseDao().getAllLicenses()
+            val myAccountId = steamUser?.steamID?.accountID?.toInt()
 
             // Create lookup maps for efficient comparison
             val existingLicenseMap =
@@ -1054,14 +1244,14 @@ class SteamService : Service() {
             val incomingPackageIds =
                 incomingLicenses.map { license -> license.packageID }.toSet()
 
-            // Find licenses that need to be added or updated
+            // Find licenses that need to be added or updated. A package can be licensed to
+            // several accounts (family sharing); prefer our own copy for the details.
             val licensesToProcess = it.licenseList
                 .groupBy { license -> license.packageID }
                 .mapNotNull { entry ->
-                    val preferredAccount = entry.value.firstOrNull { value ->
-                        val mySid = steamUser!!.steamID?.accountID?.toInt()
-                        value.ownerAccountID == mySid
-                    } ?: entry.value.first()
+                    val preferredAccount = entry.value
+                        .firstOrNull { value -> value.ownerAccountID == myAccountId }
+                        ?: entry.value.first()
 
                     val existingLicense = existingLicenseMap[entry.key]
 
@@ -1080,13 +1270,9 @@ class SteamService : Service() {
                             minuteLimit = preferredAccount.minuteLimit,
                             minutesUsed = preferredAccount.minutesUsed,
                             paymentMethod = preferredAccount.paymentMethod,
-                            licenseFlags = entry.value
-                                .map { value -> value.licenseFlags }
-                                .reduceOrNull { first, second ->
-                                    val combined = EnumSet.copyOf(first)
-                                    combined.addAll(second)
-                                    combined
-                                } ?: emptyEnumSet(),
+                            licenseFlags = entry.value.fold(emptyEnumSet()) { flags, value ->
+                                flags.apply { addAll(value.licenseFlags) }
+                            },
                             purchaseCode = preferredAccount.purchaseCode,
                             licenseType = preferredAccount.licenseType,
                             territoryCode = preferredAccount.territoryCode,
@@ -1146,6 +1332,15 @@ class SteamService : Service() {
                 Timber.d("Requesting PICS for ${picsRequests.size} licenses")
                 steamApps!!.picsGetProductInfo(apps = emptyList(), packages = picsRequests)
             }
+
+            // Resume an interrupted ingest. Package info creates stub app rows and queues their
+            // app info; if the process died before the replies arrived, nothing else would
+            // ever ask again because the licenses themselves are unchanged.
+            val awaitingPics = db.steamAppDao().findAppsAwaitingPics()
+            if (awaitingPics.isNotEmpty()) {
+                Timber.i("Resuming PICS for ${awaitingPics.size} apps still without app info")
+                awaitingPics.forEach { picsRequestChannel.send(it) }
+            }
         }
     }
 
@@ -1179,6 +1374,34 @@ class SteamService : Service() {
             }
     }
 
+    /** Stores the account's Steam level for the drawer header. */
+    private fun syncAccountLevel() = scope.launch {
+        runCatching { requireNotNull(apis).profile.badgeLevels() }
+            .onFailure { Timber.w(it, "Steam level sync failed") }
+            .getOrNull()
+            ?.let { account.setLevel(it.playerLevel) }
+    }
+
+    /** Copies playtime and last-played from `Player.GetOwnedGames` onto the stored apps. */
+    private fun syncPlaytime() = scope.launch {
+        val games = runCatching { requireNotNull(apis).library.ownedGames() }
+            .onFailure { Timber.w(it, "Playtime sync failed") }
+            .getOrNull() ?: return@launch
+
+        val appDao = db.steamAppDao()
+        db.withTransaction {
+            games.forEach { game ->
+                appDao.updatePlaytime(
+                    game.appId,
+                    game.playtimeForever,
+                    game.playtimeTwoWeeks,
+                    game.lastPlayed,
+                )
+            }
+        }
+        Timber.d("Synced playtime for ${games.size} games")
+    }
+
     private fun continuousFriendChecker() = scope.launch {
         val appDao = db.steamAppDao()
         val friendDao = db.steamFriendDao()
@@ -1191,9 +1414,9 @@ class SteamService : Service() {
                         return@forEach
                     }
 
-                    appDao.findApp(friend.gameAppID)?.let {
-                        if (friend.gameName != it.name) {
-                            friendDao.update(friend.copy(gameName = it.name))
+                    appDao.findAppName(friend.gameAppID)?.let { name ->
+                        if (friend.gameName != name) {
+                            friendDao.update(friend.copy(gameName = name))
                         }
                     } ?: picsRequestChannel.send(friend.gameAppID)
                 }

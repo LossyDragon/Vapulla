@@ -6,6 +6,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
+/**
+ * One equipped profile item (background, avatar frame, animated avatar, ...) as returned by
+ * Steam's `Player.GetProfileItemsEquipped`. An empty instance means nothing is equipped.
+ */
 @Immutable
 data class ProfileItems(
     val communityItemId: Long = 0L,
@@ -29,29 +33,25 @@ data class ProfileItems(
     data class ProfileColor(val styleName: String = "", val color: String = "")
 
     companion object {
-        fun deserialize(item: SteammessagesPlayerSteamclient.ProfileItem): ProfileItems =
-            ProfileItems(
-                communityItemId = item.communityitemid,
-                imageSmall = item.imageSmall,
-                imageLarge = item.imageLarge,
-                name = item.name,
-                itemTitle = item.itemTitle,
-                itemDescription = item.itemDescription,
-                appId = item.appid,
-                itemType = item.itemType,
-                itemClass = item.itemClass,
-                movieWebm = item.movieWebm,
-                movieMp4 = item.movieMp4,
-                movieWebmSmall = item.movieWebmSmall,
-                movieMp4Small = item.movieMp4Small,
-                equippedFlags = item.equippedFlags,
-                profileColors = item.profileColorsList.map {
-                    ProfileColor(
-                        styleName = it.styleName,
-                        color = it.color,
-                    )
-                }.toImmutableList(),
-                tiled = item.tiled,
-            )
+        fun from(item: SteammessagesPlayerSteamclient.ProfileItem): ProfileItems = ProfileItems(
+            communityItemId = item.communityitemid,
+            imageSmall = item.imageSmall,
+            imageLarge = item.imageLarge,
+            name = item.name,
+            itemTitle = item.itemTitle,
+            itemDescription = item.itemDescription,
+            appId = item.appid,
+            itemType = item.itemType,
+            itemClass = item.itemClass,
+            movieWebm = item.movieWebm,
+            movieMp4 = item.movieMp4,
+            movieWebmSmall = item.movieWebmSmall,
+            movieMp4Small = item.movieMp4Small,
+            equippedFlags = item.equippedFlags,
+            profileColors = item.profileColorsList
+                .map { ProfileColor(styleName = it.styleName, color = it.color) }
+                .toImmutableList(),
+            tiled = item.tiled,
+        )
     }
 }

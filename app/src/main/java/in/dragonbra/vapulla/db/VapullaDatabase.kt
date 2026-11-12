@@ -19,9 +19,13 @@ import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.db.entity.SteamLicense
 
+/**
+ * The app's single Room database. Everything the UI shows is read from here; the service
+ * writes into it as Steam sends updates.
+ */
 @Database(
     entities = [SteamFriend::class, ChatMessage::class, Emoticon::class, SteamApp::class, SteamLicense::class],
-    version = 7,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(

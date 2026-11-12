@@ -23,29 +23,53 @@ import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.ui.composables.navigation.NavigationDrawer
 import `in`.dragonbra.vapulla.ui.screens.chat.ChatScreen
 import `in`.dragonbra.vapulla.ui.screens.chat.ChatViewModel
+import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsScreen
+import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsViewModel
+import `in`.dragonbra.vapulla.ui.screens.cloud.CloudFilesScreen
+import `in`.dragonbra.vapulla.ui.screens.cloud.CloudFilesViewModel
+import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailScreen
+import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailViewModel
 import `in`.dragonbra.vapulla.ui.screens.games.GamesScreen
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeScreen
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginScreen
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
+import `in`.dragonbra.vapulla.ui.screens.networklog.NetworkLogScreen
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileScreen
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
+import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserScreen
+import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserViewModel
+import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsScreen
+import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsViewModel
+import `in`.dragonbra.vapulla.ui.screens.settings.SettingsScreen
+import `in`.dragonbra.vapulla.ui.screens.settings.SettingsViewModel
+import `in`.dragonbra.vapulla.ui.screens.workshop.WorkshopScreen
+import `in`.dragonbra.vapulla.ui.screens.workshop.WorkshopViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.getKoin
 import org.koin.core.parameter.parametersOf
 
+/** Navigation 3 destinations. The data classes carry the friend's 64-bit Steam ID. */
 sealed class Routes {
     data object Downloads : Routes()
     data object Games : Routes()
     data object Home : Routes()
     data object Login : Routes()
     data object Settings : Routes()
+    data object ChatRooms : Routes()
+    data object ServerBrowser : Routes()
+    data object Sessions : Routes()
+    data object NetworkLog : Routes()
     data class FriendChat(val id: Long) : Routes()
     data class FriendProfile(val id: Long) : Routes()
+    data class GameDetail(val appId: Int) : Routes()
+    data class CloudFiles(val appId: Int) : Routes()
+    data class Workshop(val appId: Int) : Routes()
 }
 
+/** Hosts the navigation drawer and the single-pane back stack of [Routes]. */
 @Composable
 fun NavigationRoot(modifier: Modifier = Modifier) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -53,7 +77,8 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     val backStack = remember {
-        // TODO this may be flawed.
+        // Skip the login screen when the service is already signed in (e.g. after the
+        // activity was recreated while the foreground service kept running).
         val route = if (SteamService.isLoggedIn.value) Routes.Home else Routes.Login
         mutableStateListOf(route)
     }
@@ -152,7 +177,49 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                         GamesScreen(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
+                            onGameClick = { appId -> backStack.add(Routes.GameDetail(appId)) },
                         )
+                    }
+                    entry<Routes.GameDetail> {
+                        val viewModel =
+                            koinViewModel<GameDetailViewModel> { parametersOf(it.appId) }
+                        GameDetailScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLast() },
+                            onOpenCloud = { appId -> backStack.add(Routes.CloudFiles(appId)) },
+                            onOpenWorkshop = { appId -> backStack.add(Routes.Workshop(appId)) },
+                        )
+                    }
+                    entry<Routes.CloudFiles> {
+                        val viewModel =
+                            koinViewModel<CloudFilesViewModel> { parametersOf(it.appId) }
+                        CloudFilesScreen(viewModel = viewModel, onBack = { backStack.removeLast() })
+                    }
+                    entry<Routes.Workshop> {
+                        val viewModel = koinViewModel<WorkshopViewModel> { parametersOf(it.appId) }
+                        WorkshopScreen(viewModel = viewModel, onBack = { backStack.removeLast() })
+                    }
+                    /* Showcase screens reachable from the drawer */
+                    entry<Routes.ChatRooms> {
+                        val viewModel = koinViewModel<ChatRoomsViewModel>()
+                        ChatRoomsScreen(
+                            viewModel = viewModel,
+                            onNavDrawerAction = onNavDrawerAction,
+                        )
+                    }
+                    entry<Routes.ServerBrowser> {
+                        val viewModel = koinViewModel<ServerBrowserViewModel>()
+                        ServerBrowserScreen(
+                            viewModel = viewModel,
+                            onNavDrawerAction = onNavDrawerAction,
+                        )
+                    }
+                    entry<Routes.Sessions> {
+                        val viewModel = koinViewModel<SessionsViewModel>()
+                        SessionsScreen(viewModel = viewModel, onNavDrawerAction = onNavDrawerAction)
+                    }
+                    entry<Routes.NetworkLog> {
+                        NetworkLogScreen(onNavDrawerAction = onNavDrawerAction)
                     }
                     /* Downloads */
                     entry<Routes.Downloads> {
@@ -160,11 +227,9 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             Text("Downloads")
                         }
                     }
-                    /* Settings */
                     entry<Routes.Settings> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Settings")
-                        }
+                        val viewModel = koinViewModel<SettingsViewModel>()
+                        SettingsScreen(viewModel = viewModel, onNavDrawerAction = onNavDrawerAction)
                     }
                 },
             )

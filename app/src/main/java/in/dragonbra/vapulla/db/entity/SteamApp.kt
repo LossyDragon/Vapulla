@@ -11,6 +11,11 @@ import java.util.Date
 import java.util.EnumSet
 import kotlinx.serialization.Serializable
 
+/**
+ * A Steam app from PICS, keyed by app ID. Rows start as stubs created from a license's app
+ * list and are filled in once the app's PICS info arrives ([receivedPICS]). The structured
+ * fields (depots, branches, assets, config, ufs) are stored as JSON columns.
+ */
 @Immutable
 @Entity(tableName = "steam_app")
 data class SteamApp(
@@ -20,6 +25,12 @@ data class SteamApp(
     val licenseFlags: EnumSet<ELicenseFlags> = emptyEnumSet(),
     val receivedPICS: Boolean = false,
     val lastChangeNumber: Int = 0,
+    /** Minutes played in total, from `Player.GetOwnedGames`. */
+    val playtimeForever: Int = 0,
+    /** Minutes played in the last two weeks. */
+    val playtimeTwoWeeks: Int = 0,
+    /** Epoch seconds of the last session, 0 when never played. */
+    val lastPlayed: Long = 0L,
     val depots: Map<Int, DepotInfo> = emptyMap(),
     val branches: Map<String, BranchInfo> = emptyMap(),
     // Common
@@ -42,6 +53,8 @@ data class SteamApp(
     val reviewScore: Byte = 0,
     val reviewPercentage: Byte = 0,
     val controllerSupport: ControllerSupport = ControllerSupport.none,
+    /** True when the app has a public Steam Workshop (`common/workshop_visible`). */
+    val workshopVisible: Boolean = false,
 
     // Extended
     val demoOfAppId: Int = Int.MAX_VALUE,
@@ -80,6 +93,10 @@ data class SteamApp(
     val ufs: UFS = UFS(),
 ) {
 
+    /** Steam Cloud is enabled when PICS gives the app a storage quota or file limit. */
+    val hasCloudSaves: Boolean
+        get() = ufs.quota > 0 || ufs.maxNumFiles > 0
+
     val logoUrl: String
         get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$logoHash.jpg"
     val logoSmallUrl: String
@@ -94,22 +111,22 @@ data class SteamApp(
     // source: https://github.com/Nemirtingas/games-infos/blob/3915100198bac34553b3c862f9e295d277f5520a/steam_retriever/Program.cs#L589C43-L589C89
     fun getSmallCapsuleUrl(language: Language = Language.english): String? =
         smallCapsule[language]?.let {
-            "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
+            steamStoreAssetUrl(id, it)
         }
 
     fun getHeaderImageUrl(language: Language = Language.english): String? =
         headerImage[language]?.let {
-            "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
+            steamStoreAssetUrl(id, it)
         }
 
     fun getCapsuleUrl(language: Language = Language.english, large: Boolean = false): String? =
         if (large) {
             libraryAssets.libraryCapsule.image2x[language]?.let {
-                "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
+                steamStoreAssetUrl(id, it)
             }
         } else {
             libraryAssets.libraryCapsule.image[language]?.let {
-                "https://cdn.akamai.steamstatic.com/steam/apps/$id/$it"
+                steamStoreAssetUrl(id, it)
             }
         }
 
@@ -238,8 +255,7 @@ data class SteamApp(
         ;
 
         companion object {
-            fun code(value: EnumSet<OS>) = value.map { it.code }
-                .reduceOrNull { first, second -> first or second } ?: none.code
+            fun code(value: EnumSet<OS>): Int = value.fold(none.code) { acc, os -> acc or os.code }
 
             fun from(keyValue: String?): EnumSet<OS> {
                 if (keyValue.isNullOrEmpty()) return EnumSet.of(none)
@@ -300,56 +316,10 @@ data class SteamApp(
         companion object {
             val DEFAULT = SteamUserData
 
-            fun from(keyValue: String?): PathType = when (keyValue?.lowercase()) {
-                "%${GameInstall.name.lowercase()}%",
-                GameInstall.name.lowercase(),
-                -> GameInstall
-
-                "%${SteamUserData.name.lowercase()}%",
-                SteamUserData.name.lowercase(),
-                -> SteamUserData
-
-                "%${WinMyDocuments.name.lowercase()}%",
-                WinMyDocuments.name.lowercase(),
-                -> WinMyDocuments
-
-                "%${WinAppDataLocal.name.lowercase()}%",
-                WinAppDataLocal.name.lowercase(),
-                -> WinAppDataLocal
-
-                "%${WinAppDataLocalLow.name.lowercase()}%",
-                WinAppDataLocalLow.name.lowercase(),
-                -> WinAppDataLocalLow
-
-                "%${WinAppDataRoaming.name.lowercase()}%",
-                WinAppDataRoaming.name.lowercase(),
-                -> WinAppDataRoaming
-
-                "%${WinSavedGames.name.lowercase()}%",
-                WinSavedGames.name.lowercase(),
-                -> WinSavedGames
-
-                "%${LinuxHome.name.lowercase()}%",
-                LinuxHome.name.lowercase(),
-                -> LinuxHome
-
-                "%${LinuxXdgDataHome.name.lowercase()}%",
-                LinuxXdgDataHome.name.lowercase(),
-                -> LinuxXdgDataHome
-
-                "%${LinuxXdgConfigHome.name.lowercase()}%",
-                LinuxXdgConfigHome.name.lowercase(),
-                -> LinuxXdgConfigHome
-
-                "%${MacHome.name.lowercase()}%",
-                MacHome.name.lowercase(),
-                -> MacHome
-
-                "%${MacAppSupport.name.lowercase()}%",
-                MacAppSupport.name.lowercase(),
-                -> MacAppSupport
-
-                else -> None
+            /** Accepts the bare name or Steam's `%Name%` placeholder form, case-insensitively. */
+            fun from(keyValue: String?): PathType {
+                val name = keyValue?.trim('%') ?: return None
+                return entries.find { it.name.equals(name, ignoreCase = true) } ?: None
             }
         }
     }
@@ -451,4 +421,15 @@ data class SteamApp(
             fun fromCode(code: Int): AppType = entries.find { it.code == code } ?: invalid
         }
     }
+}
+
+/**
+ * Builds the URL of a store asset referenced by PICS. Values that carry a content hash
+ * (e.g. `abc123/header.jpg`) are served from the shared store_item_assets CDN; bare file
+ * names (e.g. `header.jpg`) still live on the classic per-app path.
+ */
+fun steamStoreAssetUrl(appId: Int, asset: String): String = if (asset.contains('/')) {
+    "https://shared.steamstatic.com/store_item_assets/steam/apps/$appId/$asset"
+} else {
+    "https://cdn.akamai.steamstatic.com/steam/apps/$appId/$asset"
 }

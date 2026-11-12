@@ -3,11 +3,12 @@ package `in`.dragonbra.vapulla.ui.screens.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.enums.EResult
-import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.service.api.FavoriteBadge
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,10 +18,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+/** Profile screen state for one friend: the stored row plus the profile Steam returns. */
 class ProfileViewModel(
     friendDao: SteamFriendDao,
     private val serviceConnection: ServiceConnection,
-    friendId: Long,
+    private val friendId: Long,
 ) : ViewModel() {
 
     val friend: StateFlow<SteamFriend?> = friendDao.findFlow(friendId)
@@ -33,13 +35,24 @@ class ProfileViewModel(
     private val _friendProfile = MutableStateFlow<ProfileInfo?>(null)
     val friendProfile: StateFlow<ProfileInfo?> = _friendProfile.asStateFlow()
 
+    private val _favoriteBadge = MutableStateFlow<FavoriteBadge?>(null)
+    val favoriteBadge: StateFlow<FavoriteBadge?> = _favoriteBadge.asStateFlow()
+
+    private val service: SteamService
+        get() = checkNotNull(serviceConnection.steamService) { "SteamService is not bound" }
+
     init {
         viewModelScope.launch {
-            val friendId = friendId.toSteamID()
-            val response = serviceConnection.steamService!!.getProfileInfo(friendId)
+            val response = service.getProfileInfo(friendId.toSteamID())
             if (response.result == EResult.OK) {
-                _friendProfile.value = ProfileInfo.deserialize(response)
+                _friendProfile.value = ProfileInfo.from(response)
             }
+        }
+        viewModelScope.launch {
+            _favoriteBadge.value =
+                runCatching { service.apis?.profile?.favoriteBadge(friendId.toSteamID()) }
+                    .onFailure { Timber.w(it, "GetFavoriteBadge failed") }
+                    .getOrNull()
         }
     }
 
@@ -48,27 +61,19 @@ class ProfileViewModel(
         Timber.d("onCleared")
     }
 
-    fun onBlock(friendId: Long) {
-        viewModelScope.launch {
-            serviceConnection.steamService!!.ignoreFriend(friendId)
-        }
+    fun onBlock() {
+        viewModelScope.launch { service.ignoreFriend(friendId) }
     }
 
-    fun onRemove(friendId: Long) {
-        viewModelScope.launch {
-            serviceConnection.steamService!!.removeFriend(friendId)
-        }
+    fun onRemove() {
+        viewModelScope.launch { service.removeFriend(friendId) }
     }
 
-    fun onNickName(value: String) {
-        viewModelScope.launch {
-            serviceConnection.steamService!!.setNickName(friend.value!!.id, value)
-        }
+    fun onNickname(value: String) {
+        viewModelScope.launch { service.setNickname(friendId, value) }
     }
 
     fun onAlias() {
-        viewModelScope.launch {
-            serviceConnection.steamService!!.requestAliasHistory(friend.value!!.id)
-        }
+        viewModelScope.launch { service.requestAliasHistory(friendId) }
     }
 }

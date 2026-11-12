@@ -101,7 +101,7 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatScreenContent(
-    uiState: ChatViewModel.Companion.ChatUiState,
+    uiState: ChatUiState,
     messages: LazyPagingItems<ChatMessage>,
     textFieldState: TextFieldState,
     onBack: () -> Unit,
@@ -146,14 +146,14 @@ private fun ChatScreenContent(
                             previewPlaceholder = painterResource(R.drawable.vapulla_background),
                         )
                         Column {
-                            // TODO CompositionLocal of status color
                             Text(
                                 text = uiState.friend?.nameOrNickname.orEmpty(),
                                 style = MaterialTheme.typography.titleLarge,
                             )
                             Text(
-                                text = "Online",
+                                text = uiState.friend?.statusText.orEmpty(),
                                 style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -356,7 +356,7 @@ private fun Preview() {
             onBack = { },
             messages = messages,
             textFieldState = TextFieldState("Hello World!"),
-            uiState = ChatViewModel.Companion.ChatUiState(
+            uiState = ChatUiState(
                 messageText = "Hello World!",
                 showEmojiKeyboard = true,
                 friend = SteamFriend(

@@ -42,6 +42,10 @@ interface SteamFriendDao {
     @Query("SELECT * FROM steam_friend WHERE gameAppID > 0")
     suspend fun findFriendsInGame(): List<SteamFriend>
 
+    /** Friends whose stored presence is anything other than plain offline. */
+    @Query("SELECT * FROM steam_friend WHERE state != 0 OR gameAppID != 0 OR gameName != ''")
+    suspend fun findWithPresence(): List<SteamFriend>
+
     @Delete
     suspend fun remove(list: List<SteamFriend>)
 
