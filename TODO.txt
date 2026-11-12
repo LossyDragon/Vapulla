@@ -1,0 +1,59 @@
+Vapulla TODO
+============
+
+To Verify
+---------------------------------------------
+- Typing indicator: "typing..." in the chat header, and our typing reaching the friend
+- Tapping a real message notification opens that friend's chat
+- Notification inline reply, and the friend request Accept / Ignore / Block actions
+- Image upload to a group channel (friend chat upload is confirmed)
+- Reconnect after a dropped connection
+- Log out, and QR sign-in, since SteamService was split up
+- Saved token is cleared on AccessDenied / Revoked / InvalidPassword
+- Floating day header while scrolling a group channel
+- Channel last-message previews for tags other than stickers (image, spoiler, flip, ...)
+- Emoticon tab while its images are still loading (sticker tab is confirmed)
+
+Issues or Bugs
+-------------------
+- Block / unblock logic in FriendsApi.ignoreFriend looks wrong (see the TODO there)
+- PICS app access tokens are always requested as 0
+- TryAnotherCM returns to sign-in instead of trying another CM
+- Database is not cleared on log out
+- Friend request notification only opens the app, not the profile
+- "Append nicknames" setting is not applied in the chat header or profile
+- Recent Chats cut-off is only re-evaluated when the list rebuilds
+- Two identical messages in the same second are stored as one
+- Group chat: nothing is stored, no notifications, collapsed groups do not update live
+- Group "Members" is Steam's active member count; no total is available
+- Group avatars from chat_group_avatar_sha do not load (see ChatRoomsApi)
+- Downloads screen is a placeholder
+- Is "Expired" another EResult that should clear the saved token?
+
+To Tidy Up
+--------
+- No unit tests; ChatPreview and TokenCipher are the obvious first candidates
+- 16 lint errors left, all long lines plus the mockSteamFriendDao.kt file name
+- Rename ui/mock/mockSteamFriendDao.kt (it only holds preview data now)
+- AccountManager.clearPreferences() is unused
+
+Feature Ideas
+----------------------------------------------------
+- Depot downloader (javasteam-depotdownloader): depots, manifests, download progress
+- Game Coordinator (TF2 / CS2 / Dota 2 / Deadlock modules)
+- Family groups: members, shared library
+- Inventory service: owned items
+- Store browsing: store page for any app, including unowned games
+- Screenshots: list and upload
+- Cloud: upload and delete (currently read-only)
+- Lobbies (SteamMatchmaking) next to the server browser
+- Game notifications and parental settings (read-only)
+- Web API: game news on the game detail screen
+- Auth ticket generation
+- Group chat: member list, reactions, mentions
+- Typing indicator in the friends list
+- Video upload in chat (the uploader accepts WebM / MPEG / OGV)
+
+DECIDED AGAINST
+---------------
+- Steam Guard / TwoFactor: too sensitive for accounts, and no push notifications for MFA
