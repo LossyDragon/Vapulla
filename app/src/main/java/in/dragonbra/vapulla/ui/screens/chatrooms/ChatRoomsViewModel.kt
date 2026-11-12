@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.api.ChatGroup
+import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
+import `in`.dragonbra.vapulla.service.api.GroupChatMessage
+import `in`.dragonbra.vapulla.util.toChatPreview
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentListOf
@@ -25,33 +28,48 @@ data class ChatRoomsUiState(
     val error: String? = null,
 )
 
-/** Group chats the account belongs to, from the `ChatRoom` unified service. */
+/**
+ * Group chats the account belongs to, from the `ChatRoom` unified service. A group that is
+ * expanded shows its channels with their last message, which is kept live: while expanded,
+ * Steam is asked to push the group's messages, and each one replaces its channel's preview.
+ */
 class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatRoomsUiState())
     val uiState: StateFlow<ChatRoomsUiState> = _uiState.asStateFlow()
 
+    private val chatRooms: ChatRoomsApi?
+        get() = connection.steamService?.apis?.chatRooms
+
     init {
         refresh()
+
+        viewModelScope.launch {
+            chatRooms?.incoming?.collect(::showAsLastMessage)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Stop the pushes this screen asked for; an open channel keeps its own hold.
+        _uiState.value.expanded.forEach { chatRooms?.releaseGroup(it) }
     }
 
     fun refresh() {
         viewModelScope.launch {
             Timber.d("Refreshing group chats")
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val apis = connection.steamService?.apis
-            if (apis == null) {
+            val api = chatRooms
+            if (api == null) {
                 _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
                 return@launch
             }
 
-            runCatching { apis.chatRooms.myGroups() }
+            runCatching { api.myGroups() }
                 .onSuccess { groups ->
                     _uiState.update {
                         it.copy(
-                            groups = groups.sortedBy { g ->
-                                g.name.lowercase()
-                            }.toImmutableList(),
+                            groups = groups.sortedBy { g -> g.name.lowercase() }.toImmutableList(),
                             isLoading = false,
                         )
                     }
@@ -59,26 +77,44 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
                 .onFailure { error ->
                     Timber.w(error, "GetMyChatRoomGroups failed")
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error =
-                                error.message ?: "Request failed",
-                        )
+                        it.copy(isLoading = false, error = error.message ?: "Request failed")
                     }
                 }
         }
     }
 
     fun toggleExpanded(groupId: Long) {
+        val expand = groupId !in _uiState.value.expanded
+
+        // Live previews only make sense for channels that are on screen.
+        if (expand) chatRooms?.holdGroup(groupId) else chatRooms?.releaseGroup(groupId)
+
         _uiState.update {
-            val expanded = if (groupId in
-                it.expanded
-            ) {
-                it.expanded.remove(groupId)
-            } else {
-                it.expanded.add(groupId)
-            }
-            it.copy(expanded = expanded)
+            it.copy(
+                expanded = if (expand) it.expanded.add(groupId) else it.expanded.remove(groupId),
+            )
+        }
+    }
+
+    /** Puts a pushed message into its channel's row as the new last message. */
+    private fun showAsLastMessage(message: GroupChatMessage) {
+        _uiState.update { state ->
+            state.copy(
+                groups = state.groups.map { group ->
+                    if (group.groupId != message.groupId) return@map group
+
+                    group.copy(
+                        rooms = group.rooms.map { room ->
+                            if (room.chatId != message.chatId) return@map room
+
+                            room.copy(
+                                lastMessage = message.message.toChatPreview(),
+                                timeLastMessage = message.timestamp / 1000,
+                            )
+                        }.toImmutableList(),
+                    )
+                }.toImmutableList(),
+            )
         }
     }
 }

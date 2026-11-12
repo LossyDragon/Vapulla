@@ -90,7 +90,7 @@ internal fun LoginQRCode(
             text = if (isWaitingForConfirmation) {
                 "Confirm the sign-in in the Steam mobile app"
             } else {
-                "Steam app → Steam Guard → Scan a QR code"
+                "Steam app > Steam Guard > Scan a QR code"
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

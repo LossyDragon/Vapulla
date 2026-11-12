@@ -1,10 +1,12 @@
 package `in`.dragonbra.vapulla.di
 
+import `in`.dragonbra.vapulla.ui.screens.achievements.AchievementsViewModel
 import `in`.dragonbra.vapulla.ui.screens.chat.ChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsViewModel
 import `in`.dragonbra.vapulla.ui.screens.cloud.CloudFilesViewModel
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailViewModel
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
+import `in`.dragonbra.vapulla.ui.screens.groupchat.GroupChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
@@ -19,7 +21,7 @@ import org.koin.dsl.module
 /** One view model per screen. Parameters are the friend's Steam ID or the app ID. */
 val ViewModelModules = module {
     viewModel { LoginViewModel(get(), get()) }
-    viewModel { HomeViewModel(get()) }
+    viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { GamesViewModel(get(), get()) }
     viewModel { ChatRoomsViewModel(get()) }
     viewModel { ServerBrowserViewModel(get(), get(), get()) }
@@ -30,6 +32,20 @@ val ViewModelModules = module {
             friendId = friendId,
             friendDao = get(),
             messageDao = get(),
+            emoticonDao = get(),
+            connection = get(),
+            application = androidApplication(),
+        )
+    }
+    viewModel { (groupId: Long, chatId: Long, groupName: String, roomName: String) ->
+        GroupChatViewModel(
+            groupId = groupId,
+            chatId = chatId,
+            groupName = groupName,
+            roomName = roomName,
+            emoticonDao = get(),
+            connection = get(),
+            application = androidApplication(),
         )
     }
     viewModel { (friendId: Long) ->
@@ -41,6 +57,13 @@ val ViewModelModules = module {
     }
     viewModel { (appId: Int) ->
         GameDetailViewModel(
+            appId = appId,
+            appDao = get(),
+            connection = get(),
+        )
+    }
+    viewModel { (appId: Int) ->
+        AchievementsViewModel(
             appId = appId,
             appDao = get(),
             connection = get(),

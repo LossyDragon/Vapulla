@@ -9,6 +9,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
+import `in`.dragonbra.vapulla.service.api.FriendsApi
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,9 +42,12 @@ class ProfileViewModel(
     private val service: SteamService
         get() = checkNotNull(serviceConnection.steamService) { "SteamService is not bound" }
 
+    private val friends: FriendsApi
+        get() = checkNotNull(service.apis) { "Not connected to Steam" }.friends
+
     init {
         viewModelScope.launch {
-            val response = service.getProfileInfo(friendId.toSteamID())
+            val response = friends.getProfileInfo(friendId.toSteamID())
             if (response.result == EResult.OK) {
                 _friendProfile.value = ProfileInfo.from(response)
             }
@@ -62,18 +66,18 @@ class ProfileViewModel(
     }
 
     fun onBlock() {
-        viewModelScope.launch { service.ignoreFriend(friendId) }
+        viewModelScope.launch { friends.ignoreFriend(friendId) }
     }
 
     fun onRemove() {
-        viewModelScope.launch { service.removeFriend(friendId) }
+        viewModelScope.launch { friends.removeFriend(friendId) }
     }
 
     fun onNickname(value: String) {
-        viewModelScope.launch { service.setNickname(friendId, value) }
+        viewModelScope.launch { friends.setNickname(friendId, value) }
     }
 
     fun onAlias() {
-        viewModelScope.launch { service.requestAliasHistory(friendId) }
+        viewModelScope.launch { friends.requestAliasHistory(friendId) }
     }
 }

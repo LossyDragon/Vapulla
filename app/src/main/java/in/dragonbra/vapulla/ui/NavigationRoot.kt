@@ -21,6 +21,8 @@ import androidx.navigation3.ui.NavDisplay
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.ui.composables.navigation.NavigationDrawer
+import `in`.dragonbra.vapulla.ui.screens.achievements.AchievementsScreen
+import `in`.dragonbra.vapulla.ui.screens.achievements.AchievementsViewModel
 import `in`.dragonbra.vapulla.ui.screens.chat.ChatScreen
 import `in`.dragonbra.vapulla.ui.screens.chat.ChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsScreen
@@ -31,6 +33,8 @@ import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailScreen
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailViewModel
 import `in`.dragonbra.vapulla.ui.screens.games.GamesScreen
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
+import `in`.dragonbra.vapulla.ui.screens.groupchat.GroupChatScreen
+import `in`.dragonbra.vapulla.ui.screens.groupchat.GroupChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeScreen
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginScreen
@@ -67,11 +71,22 @@ sealed class Routes {
     data class GameDetail(val appId: Int) : Routes()
     data class CloudFiles(val appId: Int) : Routes()
     data class Workshop(val appId: Int) : Routes()
+    data class Achievements(val appId: Int) : Routes()
+    data class GroupChat(
+        val groupId: Long,
+        val chatId: Long,
+        val groupName: String,
+        val roomName: String,
+    ) : Routes()
 }
 
 /** Hosts the navigation drawer and the single-pane back stack of [Routes]. */
 @Composable
-fun NavigationRoot(modifier: Modifier = Modifier) {
+fun NavigationRoot(
+    modifier: Modifier = Modifier,
+    openChat: Long? = null,
+    onChatOpened: () -> Unit = {},
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val connection: ServiceConnection = getKoin().get()
     val scope = rememberCoroutineScope()
@@ -91,6 +106,34 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
         }
     }
 
+    // Return to sign-in whenever the service stops being signed in: after logging out, or
+    // once a dropped connection could not be re-established.
+    LaunchedEffect(Unit) {
+        SteamService.isLoggedIn.collect { loggedIn ->
+            if (!loggedIn && backStack.lastOrNull() != Routes.Login) {
+                backStack.add(Routes.Login)
+                backStack.removeAll { it != Routes.Login }
+            }
+        }
+    }
+
+    // A tapped message notification asks for a chat. Home being on the stack means we are
+    // signed in; until then (the app was started by the tap and is still signing in) the
+    // request waits, and is carried out as soon as Home appears.
+    val signedIn = Routes.Home in backStack
+    LaunchedEffect(openChat, signedIn) {
+        if (openChat != null && signedIn) {
+            val chat = Routes.FriendChat(openChat)
+            if (backStack.lastOrNull() != chat) {
+                // Back from the chat leads to the friends list, whatever was open before.
+                backStack.removeAll { it != Routes.Home }
+                backStack.add(chat)
+            }
+            drawerState.close()
+            onChatOpened()
+        }
+    }
+
     LaunchedEffect(backStack.lastOrNull()) {
         // Ensure the Nav Drawer is closed on Login.
         if (backStack.lastOrNull() == Routes.Login) {
@@ -105,11 +148,14 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
             NavigationDrawer(
                 currentSelection = backStack.last(),
                 onLogOut = {
-                    connection.steamService!!.logOut()
+                    connection.steamService?.logOut()
                 },
                 onNavigationClick = { route ->
+                    // Home is the root of the stack, so going there only pops back to it.
                     backStack.removeAll { it != Routes.Home }
-                    backStack.addLast(route)
+                    if (route != Routes.Home || backStack.isEmpty()) {
+                        backStack.addLast(route)
+                    }
                     scope.launch {
                         drawerState.close()
                     }
@@ -188,6 +234,9 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                             onBack = { backStack.removeLast() },
                             onOpenCloud = { appId -> backStack.add(Routes.CloudFiles(appId)) },
                             onOpenWorkshop = { appId -> backStack.add(Routes.Workshop(appId)) },
+                            onOpenAchievements = { appId ->
+                                backStack.add(Routes.Achievements(appId))
+                            },
                         )
                     }
                     entry<Routes.CloudFiles> {
@@ -199,12 +248,47 @@ fun NavigationRoot(modifier: Modifier = Modifier) {
                         val viewModel = koinViewModel<WorkshopViewModel> { parametersOf(it.appId) }
                         WorkshopScreen(viewModel = viewModel, onBack = { backStack.removeLast() })
                     }
+                    entry<Routes.Achievements> {
+                        val viewModel =
+                            koinViewModel<AchievementsViewModel> { parametersOf(it.appId) }
+                        AchievementsScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLast() },
+                        )
+                    }
                     /* Showcase screens reachable from the drawer */
                     entry<Routes.ChatRooms> {
                         val viewModel = koinViewModel<ChatRoomsViewModel>()
                         ChatRoomsScreen(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
+                            onRoomClick = { group, room ->
+                                backStack.add(
+                                    Routes.GroupChat(
+                                        groupId = group.groupId,
+                                        chatId = room.chatId,
+                                        groupName = group.name,
+                                        roomName = room.name,
+                                    ),
+                                )
+                            },
+                        )
+                    }
+                    entry<Routes.GroupChat> {
+                        val viewModel = koinViewModel<GroupChatViewModel> {
+                            parametersOf(it.groupId, it.chatId, it.groupName, it.roomName)
+                        }
+                        GroupChatScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLast() },
+                            // Replaces this entry rather than adding one, so Back always
+                            // returns to Group Chats however many channels were visited.
+                            onSwitchChannel = { room ->
+                                backStack[backStack.lastIndex] = it.copy(
+                                    chatId = room.chatId,
+                                    roomName = room.name,
+                                )
+                            },
                         )
                     }
                     entry<Routes.ServerBrowser> {

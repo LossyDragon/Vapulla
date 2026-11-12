@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
 
 /** One chat bubble, aligned right for messages we sent and left for the friend's. */
@@ -39,7 +40,7 @@ internal fun ChatMessageItem(
             Column(
                 modifier = Modifier.padding(12.dp),
             ) {
-                Text(
+                BBCodeText(
                     text = message.message,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (isFromLocal) {

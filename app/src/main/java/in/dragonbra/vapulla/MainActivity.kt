@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color.TRANSPARENT
 import android.os.Bundle
@@ -29,12 +30,14 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.skydoves.landscapist.coil.LocalCoilImageLoader
 import `in`.dragonbra.vapulla.manager.AppSettings
+import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.ui.NavigationRoot
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.util.decoders.IconDecoder
+import kotlinx.coroutines.flow.MutableStateFlow
 import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.android.inject
 import timber.log.Timber
@@ -45,12 +48,45 @@ import timber.log.Timber
  */
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private const val EXTRA_OPEN_CHAT = "open_chat"
+        private const val EXTRA_REQUEST_TIME = "open_chat_time"
+        private const val STATE_HANDLED_REQUEST = "handled_open_chat"
+
+        /**
+         * Opens the app on the chat with [friendId]. An activity that already exists is reused
+         * and gets the request through [onNewIntent]; otherwise a new one starts with it.
+         */
+        fun openChatIntent(context: Context, friendId: Long): Intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+                .putExtra(EXTRA_OPEN_CHAT, friendId)
+                // Tells one tap from the next, see handledRequest.
+                .putExtra(EXTRA_REQUEST_TIME, System.currentTimeMillis())
+    }
+
     private val serviceConnection: ServiceConnection by inject()
     private val settingsManager: SettingsManager by inject()
+
+    /** The friend whose chat a tapped notification asked for, until navigation has opened it. */
+    private val chatToOpen = MutableStateFlow<Long?>(null)
+
+    /**
+     * The request time of the newest open-chat intent acted on. The system hands an old intent
+     * back whenever it recreates the activity, and this keeps it from reopening that chat.
+     */
+    private var handledRequest = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.i("Created...")
+
+        handledRequest = savedInstanceState?.getLong(STATE_HANDLED_REQUEST, -1L) ?: -1L
+        readOpenChat(intent)
 
         serviceConnection.bindService()
         serviceConnection.startForegroundService()
@@ -64,16 +100,49 @@ class MainActivity : ComponentActivity() {
 
             val imageLoader = rememberVapullaImageLoader(LocalContext.current)
 
-            CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
-                val settings by settingsManager.settings.collectAsStateWithLifecycle(AppSettings())
+            val settings by settingsManager.settings.collectAsStateWithLifecycle(AppSettings())
 
+            CompositionLocalProvider(
+                LocalCoilImageLoader provides imageLoader,
+                LocalAppSettings provides settings,
+            ) {
                 VapullaTheme(
                     isDarkTheme = settings.darkTheme,
                     useDynamicColor = settings.dynamicColor,
                 ) {
-                    NavigationRoot(modifier = Modifier.fillMaxSize())
+                    val openChat by chatToOpen.collectAsStateWithLifecycle()
+
+                    NavigationRoot(
+                        modifier = Modifier.fillMaxSize(),
+                        openChat = openChat,
+                        onChatOpened = { chatToOpen.value = null },
+                    )
                 }
             }
+        }
+    }
+
+    /** A notification tapped while the activity already exists arrives here. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        readOpenChat(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(STATE_HANDLED_REQUEST, handledRequest)
+    }
+
+    private fun readOpenChat(intent: Intent?) {
+        val friendId = intent?.getLongExtra(EXTRA_OPEN_CHAT, 0L) ?: 0L
+        val requestTime = intent?.getLongExtra(EXTRA_REQUEST_TIME, 0L) ?: 0L
+        Timber.d("readOpenChat: friend=$friendId request=$requestTime handled=$handledRequest")
+
+        // A recreated activity is handed the intent it was first started with, which may be a
+        // tap it acted on long ago. Only a tap newer than the last one handled counts.
+        if (friendId != 0L && requestTime > handledRequest) {
+            handledRequest = requestTime
+            chatToOpen.value = friendId
         }
     }
 

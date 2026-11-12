@@ -4,11 +4,12 @@ import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Badge
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -97,11 +98,26 @@ private fun FriendTrailingContent(friend: SteamFriend) {
             )
         }
         if (friend.newMessageCount > 0) {
-            Badge(
-                containerColor = MaterialTheme.colorScheme.primary,
+            // A rounded square echoing the avatar: half its size, so half its corner radius
+            // (the avatar is 52dp with the large shape, this is 26dp with the small one).
+            // Material's Badge is a fixed pill meant for sitting on an icon, hence a Surface.
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                content = { Text("${friend.newMessageCount}") },
-            )
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 26.dp, minHeight = 26.dp)
+                        .padding(horizontal = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "${friend.newMessageCount}",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
         }
     }
 }

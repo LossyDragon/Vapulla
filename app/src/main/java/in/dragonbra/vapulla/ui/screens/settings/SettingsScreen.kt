@@ -53,6 +53,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onNavDrawerAction: () -> Unit) 
         onServerTimeout = viewModel::setServerTimeoutMs,
         onWorkshopPageSize = viewModel::setWorkshopPageSize,
         onNetworkLogSize = viewModel::setNetworkLogSize,
+        onRecentChatsDays = viewModel::setRecentChatsDays,
+        onAppendNicknames = viewModel::setAppendNicknames,
         onReset = viewModel::resetToDefaults,
     )
 }
@@ -68,6 +70,8 @@ private fun SettingsContent(
     onServerTimeout: (Int) -> Unit,
     onWorkshopPageSize: (Int) -> Unit,
     onNetworkLogSize: (Int) -> Unit,
+    onRecentChatsDays: (Int) -> Unit,
+    onAppendNicknames: (Boolean) -> Unit,
     onReset: () -> Unit,
 ) {
     Scaffold(
@@ -134,6 +138,29 @@ private fun SettingsContent(
                         label = { "$it ms" },
                         shape = groupedListShape(1, 2),
                         onValueChange = onServerTimeout,
+                    )
+                }
+            }
+
+            item {
+                Section(title = "Friends") {
+                    SwitchRow(
+                        title = "Append nicknames",
+                        subtitle = if (settings.appendNicknames) {
+                            "Shown as Name (Nickname)"
+                        } else {
+                            "Shown as Nickname*"
+                        },
+                        checked = settings.appendNicknames,
+                        shape = groupedListShape(0, 2),
+                        onCheckedChange = onAppendNicknames,
+                    )
+                    ChoiceRow(
+                        title = "Recent chats: days to look back",
+                        options = AppSettings.RECENT_CHATS_DAYS,
+                        selected = settings.recentChatsDays,
+                        shape = groupedListShape(1, 2),
+                        onSelect = onRecentChatsDays,
                     )
                 }
             }

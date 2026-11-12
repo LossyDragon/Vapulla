@@ -3,8 +3,11 @@ package `in`.dragonbra.vapulla.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.db.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.manager.SettingsManager
+import kotlin.time.Duration.Companion.days
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -25,41 +29,81 @@ import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
 /**
- * Friends list state: friends grouped into the sticky-header sections (requests, in game,
- * online, offline), sorted within each, plus which sections are collapsed.
+ * Friends list state: friends grouped into the sticky-header sections (requests, recent chats,
+ * in game, online, offline), sorted within each, plus which sections are collapsed.
  */
-class HomeViewModel(db: SteamFriendDao) : ViewModel() {
+class HomeViewModel(
+    db: SteamFriendDao,
+    chatDao: ChatMessageDao,
+    settingsManager: SettingsManager,
+) : ViewModel() {
 
     private val _stickyHeaders = MutableStateFlow(persistentSetOf<Int>())
     val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
 
-    val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = db
-        .getFriendsFlow()
-        .map { friends ->
-            friends.filter { it.isFriend && !it.isBlocked }
-                .sortedWith(
-                    compareBy(
-                        { it.isRequestRecipient.not() },
-                        { it.isPlayingGame.not() },
-                        { it.isInGameAwayOrSnooze },
-                        { it.isOnline.not() },
-                        { it.isAwayOrSnooze },
-                        { it.isOffline.not() },
-                        { it.nameOrNickname.lowercase() },
-                    ),
-                )
-                .groupBy { friend ->
-                    // Group with Sticky Headers
-                    when {
-                        friend.isRequestRecipient -> R.string.headerFriendRecent
-                        friend.isPlayingGame || friend.isInGameAwayOrSnooze -> R.string.headerFriendInGame
-                        friend.isOnline || friend.isAwayOrSnooze -> R.string.headerFriendOnline
-                        else -> R.string.headerFriendOffline
-                    }
+    val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = combine(
+        db.getFriendsFlow(),
+        chatDao.chatSummaries(),
+        settingsManager.settings.map { it.recentChatsDays }.distinctUntilChanged(),
+    ) { friends, chats, recentDays ->
+        // Friends with a stored message newer than the cut-off, mapped to that message's
+        // time. The cut-off is taken when the list is rebuilt, which any presence change or
+        // new message triggers, so it never lags by much. An unread message keeps a chat
+        // listed whatever its age, so it cannot go unnoticed.
+        val cutOff = System.currentTimeMillis() - recentDays.days.inWholeMilliseconds
+        val recentChats = chats
+            .filter { it.timestamp >= cutOff || it.unread > 0 }
+            .associate { it.friendId to it.timestamp }
+
+        val unreadCounts = chats
+            .filter { it.unread > 0 }
+            .associate { it.friendId to it.unread }
+
+        friends.filter { it.isFriend && !it.isBlocked }
+            // The row's counter; it clears when the chat is opened and its messages are read.
+            .map { friend ->
+                val unread = unreadCounts[friend.id] ?: 0
+                if (friend.newMessageCount ==
+                    unread
+                ) {
+                    friend
+                } else {
+                    friend.copy(newMessageCount = unread)
                 }
-                .mapValues { it.value.toImmutableList() }
-                .toImmutableMap()
-        }
+            }
+            .sortedWith(
+                compareBy(
+                    { it.isRequestRecipient.not() },
+                    { it.id !in recentChats },
+                    // Newest conversation first; 0 for everyone outside Recent Chats.
+                    { -(recentChats[it.id] ?: 0L) },
+                    { it.isPlayingGame.not() },
+                    { it.isInGameAwayOrSnooze },
+                    { it.isOnline.not() },
+                    { it.isAwayOrSnooze },
+                    { it.isOffline.not() },
+                    { it.nameOrNickname.lowercase() },
+                ),
+            )
+            .groupBy { friend ->
+                // Group with Sticky Headers. A friend sits in exactly one section, so a
+                // recent chat is listed there instead of under its presence.
+                when {
+                    friend.isRequestRecipient -> R.string.headerFriendRequests
+
+                    friend.id in recentChats -> R.string.headerFriendRecent
+
+                    friend.isPlayingGame || friend.isInGameAwayOrSnooze ->
+                        R.string.headerFriendInGame
+
+                    friend.isOnline || friend.isAwayOrSnooze -> R.string.headerFriendOnline
+
+                    else -> R.string.headerFriendOffline
+                }
+            }
+            .mapValues { it.value.toImmutableList() }
+            .toImmutableMap()
+    }
         .distinctUntilChanged()
         .flowOn(Dispatchers.Default)
         .stateIn(

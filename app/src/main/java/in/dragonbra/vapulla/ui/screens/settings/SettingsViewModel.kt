@@ -26,6 +26,8 @@ class SettingsViewModel(private val manager: SettingsManager) : ViewModel() {
     fun setWorkshopPageSize(size: Int) = save { manager.setWorkshopPageSize(size) }
 
     fun setNetworkLogSize(size: Int) = save { manager.setNetworkLogSize(size) }
+    fun setRecentChatsDays(days: Int) = save { manager.setRecentChatsDays(days) }
+    fun setAppendNicknames(enabled: Boolean) = save { manager.setAppendNicknames(enabled) }
 
     fun resetToDefaults() = save { manager.resetToDefaults() }
 

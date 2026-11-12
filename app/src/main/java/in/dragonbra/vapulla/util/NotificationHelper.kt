@@ -8,6 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
+import androidx.core.app.RemoteInput
+import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -19,6 +22,7 @@ import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.FriendRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver
+import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
@@ -30,6 +34,9 @@ object NotificationHelper {
     const val CHANNEL_FOREGROUND_SERVICE = "foreground_service"
 
     const val NOTIFICATION_ID_SERVICE = 1
+
+    /** Keeps chat notifications apart from friend requests, which share the friend's ID. */
+    private const val TAG_FRIEND_MESSAGE = "friend_message"
 
     private const val AVATAR_TIMEOUT_MS = 5_000L
     private const val AVATAR_SIZE_PX = 200
@@ -71,12 +78,23 @@ object NotificationHelper {
         channels.forEach { context.notificationManager.createNotificationChannel(it) }
     }
 
-    /** The persistent notification the foreground service runs under. */
+    /** The persistent notification the foreground service runs under; tapping it opens the app. */
     fun createServiceNotification(context: Context, text: String): Notification =
         NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_vapulla)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    // The launcher's own intent, so an app that is already open is brought
+                    // back as it was instead of getting a second activity on top.
+                    context.packageManager.getLaunchIntentForPackage(context.packageName)
+                        ?: Intent(context, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -89,21 +107,84 @@ object NotificationHelper {
         )
     }
 
-    fun sendFriendMessageNotification(
+    /**
+     * Posts a chat message from a friend with an inline Reply action. Messages from the same
+     * friend are collected into one conversation notification until it is cleared.
+     */
+    suspend fun sendFriendMessageNotification(
         context: Context,
+        friendId: Long,
         friendName: String,
         message: String,
-        notificationId: Int,
+        avatarUrl: String? = null,
     ) {
-        val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_MESSAGES)
-            .setContentTitle(friendName)
-            .setContentText(message)
-            .setSmallIcon(R.drawable.ic_message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+        val notificationId = friendId.toInt()
+
+        val avatarBitmap = avatarUrl?.let { url ->
+            withTimeoutOrNull(AVATAR_TIMEOUT_MS) { loadAvatarBitmap(context, url) }
+        }
+
+        val sender = Person.Builder()
+            .setName(friendName)
+            .setKey(friendId.toString())
+            .setIcon(avatarBitmap?.let(IconCompat::createWithBitmap))
             .build()
 
-        context.notificationManager.notify(notificationId, notification)
+        // Carry on the conversation already shown for this friend, if there is one.
+        val style = context.notificationManager.activeNotifications
+            .firstOrNull { it.tag == TAG_FRIEND_MESSAGE && it.id == notificationId }
+            ?.let {
+                NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(
+                    it.notification,
+                )
+            }
+            ?: NotificationCompat.MessagingStyle(Person.Builder().setName("You").build())
+
+        style.addMessage(message, System.currentTimeMillis(), sender)
+
+        // Tapping opens this friend's chat. The request code is per friend, otherwise every
+        // message notification would share one intent and open the same chat.
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            MainActivity.openChatIntent(context, friendId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        // Mutable, because the system writes the typed reply into the intent.
+        val replyIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId,
+            Intent(context, ReplyReceiver::class.java).putExtra(ReplyReceiver.EXTRA_ID, friendId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+        )
+
+        val replyAction = NotificationCompat.Action
+            .Builder(R.drawable.ic_message, "Reply", replyIntent)
+            .addRemoteInput(
+                RemoteInput.Builder(ReplyReceiver.KEY_TEXT_REPLY).setLabel("Reply").build(),
+            )
+            .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+            .setShowsUserInterface(false)
+            .build()
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_MESSAGES)
+            .setStyle(style)
+            .setSmallIcon(R.drawable.ic_message)
+            .setLargeIcon(avatarBitmap)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .addAction(replyAction)
+            .build()
+
+        context.notificationManager.notify(TAG_FRIEND_MESSAGE, notificationId, notification)
+    }
+
+    /** Removes the chat notification for a friend, e.g. once their chat has been read. */
+    fun cancelFriendMessageNotification(context: Context, friendId: Long) {
+        context.notificationManager.cancel(TAG_FRIEND_MESSAGE, friendId.toInt())
     }
 
     /**

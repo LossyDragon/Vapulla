@@ -61,6 +61,7 @@ class ServiceConnection(private val context: Context) {
     }
 
     fun setPersonaState(state: EPersonaState) {
-        checkNotNull(steamService) { "SteamService is not bound" }.setPersonaState(state)
+        val service = checkNotNull(steamService) { "SteamService is not bound" }
+        service.apis?.friends?.setPersonaState(state)
     }
 }

@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.manager
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -27,8 +28,16 @@ data class AppSettings(
     val workshopPageSize: Int = 20,
     /** Packets kept in the in-app network log. */
     val networkLogSize: Int = 500,
+    /** How many days back a chat counts as recent in the friends list. */
+    val recentChatsDays: Int = 7,
+    /**
+     * How a friend with a nickname is listed: "Name (Nickname)" when true, otherwise the
+     * nickname alone, marked with an asterisk.
+     */
+    val appendNicknames: Boolean = true,
 ) {
     companion object {
+        val RECENT_CHATS_DAYS = listOf(1, 5, 7, 30)
         val MAX_SERVERS_RANGE = 25..500
         const val MAX_SERVERS_STEP = 25
         val SERVER_TIMEOUT_RANGE = 500..5000
@@ -37,6 +46,12 @@ data class AppSettings(
         val NETWORK_LOG_SIZES = listOf(100, 250, 500, 1000)
     }
 }
+
+/**
+ * The current [AppSettings], provided once at the root so leaf composables (a friend's name,
+ * say) can follow a setting without it being passed down through every screen.
+ */
+val LocalAppSettings = staticCompositionLocalOf { AppSettings() }
 
 /** Persists [AppSettings] in their own DataStore, separate from the account preferences. */
 class SettingsManager(private val context: Context) {
@@ -50,6 +65,8 @@ class SettingsManager(private val context: Context) {
         val SERVER_TIMEOUT_MS = intPreferencesKey("server_timeout_ms")
         val WORKSHOP_PAGE_SIZE = intPreferencesKey("workshop_page_size")
         val NETWORK_LOG_SIZE = intPreferencesKey("network_log_size")
+        val RECENT_CHATS_DAYS = intPreferencesKey("recent_chats_days")
+        val APPEND_NICKNAMES = booleanPreferencesKey("append_nicknames")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -65,20 +82,19 @@ class SettingsManager(private val context: Context) {
                 serverTimeoutMs = prefs[SERVER_TIMEOUT_MS] ?: defaults.serverTimeoutMs,
                 workshopPageSize = prefs[WORKSHOP_PAGE_SIZE] ?: defaults.workshopPageSize,
                 networkLogSize = prefs[NETWORK_LOG_SIZE] ?: defaults.networkLogSize,
+                recentChatsDays = prefs[RECENT_CHATS_DAYS] ?: defaults.recentChatsDays,
+                appendNicknames = prefs[APPEND_NICKNAMES] ?: defaults.appendNicknames,
             )
         }
 
     suspend fun setDarkTheme(enabled: Boolean) = set(DARK_THEME, enabled)
-
     suspend fun setDynamicColor(enabled: Boolean) = set(DYNAMIC_COLOR, enabled)
-
     suspend fun setMaxServers(count: Int) = set(MAX_SERVERS, count)
-
     suspend fun setServerTimeoutMs(timeout: Int) = set(SERVER_TIMEOUT_MS, timeout)
-
     suspend fun setWorkshopPageSize(size: Int) = set(WORKSHOP_PAGE_SIZE, size)
-
     suspend fun setNetworkLogSize(size: Int) = set(NETWORK_LOG_SIZE, size)
+    suspend fun setRecentChatsDays(days: Int) = set(RECENT_CHATS_DAYS, days)
+    suspend fun setAppendNicknames(enabled: Boolean) = set(APPEND_NICKNAMES, enabled)
 
     /** Clears every stored value so [settings] falls back to [AppSettings] defaults. */
     suspend fun resetToDefaults() {

@@ -63,6 +63,36 @@ data class ChatRoomInfo(
     val timeLastMessage: Long,
 )
 
+/**
+ * One line of a group chat channel, from `ChatRoom.GetMessageHistory` or pushed by
+ * `ChatRoomClient.NotifyIncomingChatMessage`.
+ */
+@Immutable
+data class GroupChatMessage(
+    val groupId: Long,
+    val chatId: Long,
+    val senderId: Long,
+    val senderName: String,
+    /** Full avatar URL, or empty when Steam did not tell us the sender's avatar. */
+    val senderAvatarUrl: String,
+    /** BB Code text; for a server message, a sentence describing what happened. */
+    val message: String,
+    /** Epoch milliseconds. */
+    val timestamp: Long,
+    /** Tells apart messages sent within the same second. */
+    val ordinal: Int,
+    val fromLocal: Boolean,
+    /** Someone joined, left and the like, rather than something a member wrote. */
+    val isServerMessage: Boolean,
+) {
+    /** Unique within a channel. */
+    val key: String get() = "$timestamp:$ordinal"
+}
+
+/** One page of channel history, newest first. */
+@Immutable
+data class GroupChatPage(val messages: ImmutableList<GroupChatMessage>, val moreAvailable: Boolean)
+
 /** A game server from the master server list, enriched with its A2S_INFO reply when reachable. */
 @Immutable
 data class GameServer(
@@ -137,4 +167,35 @@ data class AuthSession(
     val lastSeen: Long,
     val lastSeenCity: String,
     val lastSeenCountry: String,
+)
+
+/** One achievement of a game with the account's own state, from `SteamUserStats.getUserStats`. */
+@Immutable
+data class Achievement(
+    /** The API name, which is what Steam keys everything else by. */
+    val name: String,
+    val title: String,
+    val description: String,
+    /** Full URL of the coloured icon when unlocked, of the grey one when locked. */
+    val iconUrl: String,
+    val unlocked: Boolean,
+    /** Epoch seconds, 0 while locked. */
+    val unlockTime: Long,
+    val hidden: Boolean,
+    /** Share of all players who have it, 0 to 100; null when Steam did not report it. */
+    val globalPercent: Float?,
+    /** Progress towards a stat-linked achievement and its target; null when it has none. */
+    val progress: Float?,
+    val progressMax: Float?,
+)
+
+/** One of the numbers a game tracks for the account, already formatted for display. */
+@Immutable
+data class GameStat(val name: String, val value: String)
+
+/** The account's achievements and stats for one game. */
+@Immutable
+data class GameStats(
+    val achievements: ImmutableList<Achievement>,
+    val stats: ImmutableList<GameStat>,
 )

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Construction
@@ -68,6 +69,7 @@ fun GameDetailScreen(
     onBack: () -> Unit,
     onOpenCloud: (Int) -> Unit,
     onOpenWorkshop: (Int) -> Unit,
+    onOpenAchievements: (Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -82,6 +84,7 @@ fun GameDetailScreen(
         onBack = onBack,
         onOpenCloud = onOpenCloud,
         onOpenWorkshop = onOpenWorkshop,
+        onOpenAchievements = onOpenAchievements,
         onRequestFreeLicense = viewModel::requestFreeLicense,
     )
 }
@@ -94,6 +97,7 @@ private fun GameDetailContent(
     onBack: () -> Unit,
     onOpenCloud: (Int) -> Unit,
     onOpenWorkshop: (Int) -> Unit,
+    onOpenAchievements: (Int) -> Unit,
     onRequestFreeLicense: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -140,7 +144,11 @@ private fun GameDetailContent(
                 )
             }
 
-            item { Section(title = "Details") { DetailRows(app, uiState) } }
+            item {
+                Section(title = "Details") {
+                    DetailRows(app, uiState, onAchievements = { onOpenAchievements(app.id) })
+                }
+            }
 
             if (app.branches.isNotEmpty()) {
                 item { Section(title = "Branches") { BranchRows(app) } }
@@ -308,9 +316,11 @@ private fun DetailList(rows: List<Pair<String, String>>) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun DetailRows(app: SteamApp, uiState: GameDetailUiState) {
+private fun DetailRows(app: SteamApp, uiState: GameDetailUiState, onAchievements: () -> Unit) {
     uiState.achievements?.takeIf { it.total > 0 }?.let { progress ->
+        // Opens the full list: every achievement with its unlock date and rarity, plus stats.
         Surface(
+            onClick = onAchievements,
             shape = MaterialTheme.shapes.large,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier.fillMaxWidth(),
@@ -321,14 +331,22 @@ private fun DetailRows(app: SteamApp, uiState: GameDetailUiState) {
             ) {
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(text = "Achievements", style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        text = "${progress.unlocked} / ${progress.total}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${progress.unlocked} / ${progress.total}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Show achievements",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 LinearWavyProgressIndicator(
                     progress = { progress.percentage / 100f },

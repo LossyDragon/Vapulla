@@ -18,27 +18,42 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
 fun FriendName(friend: SteamFriend) {
     val variantColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    val annotatedText = remember(friend.name, friend.nickname, friend.statusIcon, variantColor) {
+    val appendNickname = LocalAppSettings.current.appendNicknames
+
+    val annotatedText = remember(
+        friend.name,
+        friend.nickname,
+        friend.statusIcon,
+        variantColor,
+        appendNickname,
+    ) {
         buildAnnotatedString {
-            append(friend.name)
-            if (friend.nickname.isNotEmpty()) {
-                withStyle(
-                    style = SpanStyle(
-                        color = variantColor,
-                        fontSize = 12.sp,
-                    ),
-                ) {
-                    append(" (${friend.nickname}) ")
+            when {
+                friend.nickname.isEmpty() -> append(friend.name)
+
+                // "Name (Nickname)", the nickname smaller and grey
+                appendNickname -> {
+                    append(friend.name)
+                    withStyle(SpanStyle(color = variantColor, fontSize = 12.sp)) {
+                        append(" (${friend.nickname})")
+                    }
                 }
-            } else {
-                append(" ")
+
+                // "Nickname*": the grey asterisk marks it as a name you gave them
+                else -> {
+                    append(friend.nickname)
+                    withStyle(SpanStyle(color = variantColor)) { append("*") }
+                }
             }
+
+            append(" ")
 
             if (friend.statusIcon != null) {
                 appendInlineContent("icon", "[icon]")

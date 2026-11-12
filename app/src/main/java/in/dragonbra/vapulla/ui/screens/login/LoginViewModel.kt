@@ -119,8 +119,8 @@ class LoginViewModel(
                             loginStep = LoginStep.CREDENTIALS,
                             isLoading = false,
                             qrCode = "",
+                            error = result.error,
                         )
-                        _snackbarMessage.emit(result.error)
                     }
 
                     is LoginResult.QRCode -> {
@@ -151,7 +151,7 @@ class LoginViewModel(
     }
 
     fun onQrCodeCancel() {
-        connection.steamService!!.handleQrCodeCancel()
+        connection.steamService!!.auth.handleQrCodeCancel()
     }
 
     fun onTwoFactorChange(code: String) {
@@ -200,9 +200,11 @@ class LoginViewModel(
     }
 
     fun onSignInViaQR() {
-        _uiState.value = _uiState.value.copy(loginStep = LoginStep.QRCODE)
+        _uiState.value = _uiState.value.copy(loginStep = LoginStep.QRCODE, error = null)
 
-        connection.steamService!!.handleQRLogin()
+        // The service stops itself when a session ends, so make sure it is started again.
+        connection.startForegroundService()
+        connection.steamService!!.auth.handleQRLogin()
     }
 
     fun onSignInViaCredentials() {
@@ -223,7 +225,11 @@ class LoginViewModel(
             return
         }
 
-        connection.steamService!!.handleCredentialLogin(
+        _uiState.update { it.copy(error = null) }
+
+        // The service stops itself when a session ends, so make sure it is started again.
+        connection.startForegroundService()
+        connection.steamService!!.auth.handleCredentialLogin(
             username = state.username,
             password = state.password,
             authenticator = authenticator,

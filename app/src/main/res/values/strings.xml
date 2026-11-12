@@ -41,6 +41,7 @@
 
     <!--region Headers-->
 
+    <string name="headerFriendRequests">Friend Requests</string>
     <string name="headerFriendRecent">Recent Chats</string>
     <string name="headerFriendInGame">In Game</string>
     <string name="headerFriendOnline">Online</string>

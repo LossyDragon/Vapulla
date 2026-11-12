@@ -14,4 +14,7 @@ data class LoginUiState(
     val refreshToken: String = "",
     val loginStep: LoginStep = LoginStep.CREDENTIALS,
     val isLoading: Boolean = false,
+
+    /** Why the last sign-in attempt failed; shown until the next attempt starts. */
+    val error: String? = null,
 )

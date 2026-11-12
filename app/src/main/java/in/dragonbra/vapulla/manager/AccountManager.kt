@@ -10,11 +10,17 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
+import `in`.dragonbra.vapulla.util.TokenCipher
 import `in`.dragonbra.vapulla.util.helpers.toLong
 import java.io.IOException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Persists the signed-in account: the login name and refresh token used to sign in again,
@@ -39,7 +45,17 @@ class AccountManager(private val context: Context) {
     }
 
     val username: Flow<String?> = preference(LOGIN_USERNAME)
+
+    /**
+     * The refresh token Steam issued at sign-in, which is all that is needed to sign in again;
+     * the password is never stored. It is kept encrypted, see [TokenCipher], and decrypted
+     * here. Null when there is none or it can no longer be decrypted.
+     */
     val refreshToken: Flow<String?> = preference(LOGIN_REFRESH_TOKEN)
+        // Decrypting goes through the Keystore; skip it when another preference changed.
+        .distinctUntilChanged()
+        .map { stored -> stored?.let(TokenCipher::decrypt) }
+        .flowOn(Dispatchers.IO)
     val uuid: Flow<Int?> = preference(LOGIN_UUID)
     val steamid: Flow<Long?> = preference(ACCOUNT_STEAMID)
     val lastChangeNumber: Flow<Int?> = preference(LAST_CHANGE_NUMBER)
@@ -57,15 +73,27 @@ class AccountManager(private val context: Context) {
         context.dataStore.edit { it[LOGIN_USERNAME] = name }
     }
 
+    /** Saves the refresh token, encrypted; null forgets it. */
     suspend fun setRefreshToken(token: String?) {
+        val sealed = token?.let { withContext(Dispatchers.IO) { TokenCipher.encrypt(it) } }
+
         context.dataStore.edit { prefs ->
-            if (token !=
-                null
-            ) {
-                prefs[LOGIN_REFRESH_TOKEN] = token
+            if (sealed != null) {
+                prefs[LOGIN_REFRESH_TOKEN] = sealed
             } else {
                 prefs.remove(LOGIN_REFRESH_TOKEN)
             }
+        }
+    }
+
+    /**
+     * Encrypts a refresh token that an older build saved as plain text. Called after each
+     * successful sign-in; does nothing once the stored token is in the encrypted form.
+     */
+    suspend fun encryptStoredRefreshToken() {
+        val stored = preference(LOGIN_REFRESH_TOKEN).first() ?: return
+        if (!TokenCipher.isEncrypted(stored)) {
+            setRefreshToken(stored)
         }
     }
 
@@ -84,6 +112,14 @@ class AccountManager(private val context: Context) {
             prefs[ACCOUNT_AVATAR_HASH] = localUser.avatarHash.toHexString()
             prefs[ACCOUNT_PERSONA_STATE] = localUser.personaState.code()
             prefs[ACCOUNT_STEAMID] = localUser.friendId.toLong()
+        }
+    }
+
+    /** Forgets the saved sign-in so the next launch asks for credentials again. */
+    suspend fun clearLogin() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(LOGIN_USERNAME)
+            prefs.remove(LOGIN_REFRESH_TOKEN)
         }
     }
 

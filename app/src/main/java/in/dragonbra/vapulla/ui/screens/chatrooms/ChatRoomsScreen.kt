@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.service.api.ChatGroup
+import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
@@ -44,7 +45,11 @@ import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
 
 @Composable
-fun ChatRoomsScreen(viewModel: ChatRoomsViewModel, onNavDrawerAction: () -> Unit) {
+fun ChatRoomsScreen(
+    viewModel: ChatRoomsViewModel,
+    onNavDrawerAction: () -> Unit,
+    onRoomClick: (ChatGroup, ChatRoomInfo) -> Unit,
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ChatRoomsContent(
@@ -52,6 +57,7 @@ fun ChatRoomsScreen(viewModel: ChatRoomsViewModel, onNavDrawerAction: () -> Unit
         onNavDrawerAction = onNavDrawerAction,
         onRefresh = viewModel::refresh,
         onToggle = viewModel::toggleExpanded,
+        onRoomClick = onRoomClick,
     )
 }
 
@@ -62,6 +68,7 @@ private fun ChatRoomsContent(
     onNavDrawerAction: () -> Unit,
     onRefresh: () -> Unit,
     onToggle: (Long) -> Unit,
+    onRoomClick: (ChatGroup, ChatRoomInfo) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -105,6 +112,7 @@ private fun ChatRoomsContent(
                             expanded = group.groupId in uiState.expanded,
                             shape = groupedListShape(index, uiState.groups.size),
                             onClick = { onToggle(group.groupId) },
+                            onRoomClick = { room -> onRoomClick(group, room) },
                         )
                     }
                 }
@@ -119,6 +127,7 @@ private fun GroupRow(
     expanded: Boolean,
     shape: androidx.compose.ui.graphics.Shape,
     onClick: () -> Unit,
+    onRoomClick: (ChatRoomInfo) -> Unit,
 ) {
     Surface(
         shape = shape,
@@ -159,14 +168,18 @@ private fun GroupRow(
                         )
                     }
                 }
-                InfoPill(text = "${group.activeMembers} active", icon = Icons.Outlined.Groups)
+                InfoPill(text = "${group.activeMembers} Members", icon = Icons.Outlined.Groups)
             }
 
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
                     group.rooms.forEach { room ->
                         Row(
-                            modifier = Modifier.padding(vertical = 6.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.small)
+                                .clickable { onRoomClick(room) }
+                                .padding(vertical = 6.dp, horizontal = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -177,7 +190,11 @@ private fun GroupRow(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(text = room.name, style = MaterialTheme.typography.bodyMedium)
+                                // A group's first channel has no name of its own; Steam calls it Home.
+                                Text(
+                                    text = room.name.ifEmpty { "Home" },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
                                 if (room.lastMessage.isNotBlank()) {
                                     Text(
                                         text = room.lastMessage,
