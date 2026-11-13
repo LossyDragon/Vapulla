@@ -12,7 +12,6 @@ To Verify
 
 Issues or Bugs
 -------------------
-- Block / unblock logic in FriendsApi.ignoreFriend looks wrong (see the TODO there)
 - PICS app access tokens are always requested as 0
 - TryAnotherCM returns to sign-in instead of trying another CM
 - Database is not cleared on log out

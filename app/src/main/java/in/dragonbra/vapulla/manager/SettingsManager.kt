@@ -35,6 +35,8 @@ data class AppSettings(
      * nickname alone, marked with an asterisk.
      */
     val appendNicknames: Boolean = true,
+    /** Whether friends you have blocked get a section of their own in the friends list. */
+    val showBlockedFriends: Boolean = false,
 ) {
     companion object {
         val RECENT_CHATS_DAYS = listOf(1, 5, 7, 30)
@@ -67,6 +69,7 @@ class SettingsManager(private val context: Context) {
         val NETWORK_LOG_SIZE = intPreferencesKey("network_log_size")
         val RECENT_CHATS_DAYS = intPreferencesKey("recent_chats_days")
         val APPEND_NICKNAMES = booleanPreferencesKey("append_nicknames")
+        val SHOW_BLOCKED_FRIENDS = booleanPreferencesKey("show_blocked_friends")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -84,6 +87,7 @@ class SettingsManager(private val context: Context) {
                 networkLogSize = prefs[NETWORK_LOG_SIZE] ?: defaults.networkLogSize,
                 recentChatsDays = prefs[RECENT_CHATS_DAYS] ?: defaults.recentChatsDays,
                 appendNicknames = prefs[APPEND_NICKNAMES] ?: defaults.appendNicknames,
+                showBlockedFriends = prefs[SHOW_BLOCKED_FRIENDS] ?: defaults.showBlockedFriends,
             )
         }
 
@@ -95,6 +99,7 @@ class SettingsManager(private val context: Context) {
     suspend fun setNetworkLogSize(size: Int) = set(NETWORK_LOG_SIZE, size)
     suspend fun setRecentChatsDays(days: Int) = set(RECENT_CHATS_DAYS, days)
     suspend fun setAppendNicknames(enabled: Boolean) = set(APPEND_NICKNAMES, enabled)
+    suspend fun setShowBlockedFriends(enabled: Boolean) = set(SHOW_BLOCKED_FRIENDS, enabled)
 
     /** Clears every stored value so [settings] falls back to [AppSettings] defaults. */
     suspend fun resetToDefaults() {

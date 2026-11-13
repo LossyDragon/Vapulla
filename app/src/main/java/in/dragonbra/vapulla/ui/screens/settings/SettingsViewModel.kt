@@ -28,6 +28,7 @@ class SettingsViewModel(private val manager: SettingsManager) : ViewModel() {
     fun setNetworkLogSize(size: Int) = save { manager.setNetworkLogSize(size) }
     fun setRecentChatsDays(days: Int) = save { manager.setRecentChatsDays(days) }
     fun setAppendNicknames(enabled: Boolean) = save { manager.setAppendNicknames(enabled) }
+    fun setShowBlockedFriends(enabled: Boolean) = save { manager.setShowBlockedFriends(enabled) }
 
     fun resetToDefaults() = save { manager.resetToDefaults() }
 

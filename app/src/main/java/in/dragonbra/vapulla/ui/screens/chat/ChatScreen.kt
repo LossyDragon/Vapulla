@@ -19,8 +19,10 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
@@ -77,7 +79,7 @@ private const val FOLLOW_THRESHOLD = 5
 private val SENT_SCROLL_TIMEOUT_MS = 3.seconds
 
 @Composable
-fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
+fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit, onProfile: () -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val messages = viewModel.messages.collectAsLazyPagingItems()
     val emoticons by viewModel.emoticons.collectAsStateWithLifecycle()
@@ -123,6 +125,7 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
         textFieldState = textFieldState,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
+        onProfile = onProfile,
         onSendClick = {
             viewModel.sendMessage(textFieldState.text.toString())
             textFieldState.clearText()
@@ -142,6 +145,7 @@ private fun ChatScreenContent(
     messages: LazyPagingItems<ChatMessage>,
     textFieldState: TextFieldState,
     onBack: () -> Unit,
+    onProfile: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onSendClick: () -> Unit = { },
     emoticons: ImmutableList<Emoticon> = persistentListOf(),
@@ -227,6 +231,11 @@ private fun ChatScreenContent(
                     }
                 },
                 navigationIcon = { BackButton(onClick = onBack) },
+                actions = {
+                    IconButton(onClick = onProfile) {
+                        Icon(Icons.Outlined.Person, contentDescription = "View profile")
+                    }
+                },
             )
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -380,6 +389,7 @@ private fun Preview() {
     VapullaTheme {
         ChatScreenContent(
             onBack = { },
+            onProfile = { },
             messages = messages,
             textFieldState = TextFieldState("Hello World!"),
             uiState = ChatUiState(

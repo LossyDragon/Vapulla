@@ -225,12 +225,25 @@ class FriendsSync(
                         return@forEach
                     }
 
+                    // The full list at sign-in is long; only the changes are worth a line each.
+                    if (inc) {
+                        Timber.d(
+                            "onFriendsList: id=%d relationship=%s",
+                            friendItem.steamID.toLong(),
+                            friendItem.relationship,
+                        )
+                    }
+
                     var friend = dao.find(friendItem.steamID.toLong())
 
+                    // Friends, requests to answer, and friends we blocked (they stay listed so
+                    // they can be unblocked). Every other relationship is not kept.
+                    val keep = friendItem.relationship == EFriendRelationship.Friend ||
+                        friendItem.relationship == EFriendRelationship.RequestRecipient ||
+                        friendItem.relationship == EFriendRelationship.IgnoredFriend
+
                     if (friend == null) {
-                        if (friendItem.relationship == EFriendRelationship.Friend ||
-                            friendItem.relationship == EFriendRelationship.RequestRecipient
-                        ) {
+                        if (keep) {
                             val newFriend = SteamFriend(
                                 id = friendItem.steamID.toLong(),
                                 relation = friendItem.relationship,
@@ -238,9 +251,7 @@ class FriendsSync(
                             friendsToAdd.add(newFriend)
                         }
                     } else {
-                        if (friendItem.relationship == EFriendRelationship.Friend ||
-                            friendItem.relationship == EFriendRelationship.RequestRecipient
-                        ) {
+                        if (keep) {
                             val updatedFriend = friend.copy(relation = friendItem.relationship)
                             friendsToUpdate.add(updatedFriend)
                         } else {

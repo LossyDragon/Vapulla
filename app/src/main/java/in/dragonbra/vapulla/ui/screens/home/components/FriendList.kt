@@ -103,7 +103,13 @@ fun FriendList(
                             FriendListItem(
                                 friend = friend,
                                 shape = shape,
-                                onClick = { onFriendClick(friend.id) },
+                                onClick = {
+                                    if (friend.isBlocked) {
+                                        onFriendLongClick(friend.id)
+                                    } else {
+                                        onFriendClick(friend.id)
+                                    }
+                                },
                                 onLongClick = { onFriendLongClick(friend.id) },
                             )
                         },

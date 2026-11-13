@@ -57,6 +57,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, onNavDrawerAction: () -> Unit) 
         onNetworkLogSize = viewModel::setNetworkLogSize,
         onRecentChatsDays = viewModel::setRecentChatsDays,
         onAppendNicknames = viewModel::setAppendNicknames,
+        onShowBlockedFriends = viewModel::setShowBlockedFriends,
         onReset = viewModel::resetToDefaults,
     )
 }
@@ -73,6 +74,7 @@ private fun SettingsContent(
     onNetworkLogSize: (Int) -> Unit,
     onRecentChatsDays: (Int) -> Unit,
     onAppendNicknames: (Boolean) -> Unit,
+    onShowBlockedFriends: (Boolean) -> Unit,
     onReset: () -> Unit,
 ) {
     Scaffold(
@@ -153,15 +155,26 @@ private fun SettingsContent(
                             "Shown as Nickname*"
                         },
                         checked = settings.appendNicknames,
-                        shape = groupedListShape(0, 2),
+                        shape = groupedListShape(0, 3),
                         onCheckedChange = onAppendNicknames,
                     )
                     ChoiceRow(
                         title = "Recent chats: days to look back",
                         options = AppSettings.RECENT_CHATS_DAYS,
                         selected = settings.recentChatsDays,
-                        shape = groupedListShape(1, 2),
+                        shape = groupedListShape(1, 3),
                         onSelect = onRecentChatsDays,
+                    )
+                    SwitchRow(
+                        title = "Show blocked friends",
+                        subtitle = if (settings.showBlockedFriends) {
+                            "Listed in a Blocked section at the bottom"
+                        } else {
+                            "Hidden from the friends list"
+                        },
+                        checked = settings.showBlockedFriends,
+                        shape = groupedListShape(2, 3),
+                        onCheckedChange = onShowBlockedFriends,
                     )
                 }
             }
@@ -371,6 +384,7 @@ private fun Preview() {
             onNetworkLogSize = {},
             onRecentChatsDays = {},
             onAppendNicknames = {},
+            onShowBlockedFriends = {},
             onReset = {},
         )
     }

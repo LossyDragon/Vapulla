@@ -110,7 +110,11 @@ fun HomeScreenContent(
                                     friend = friend,
                                     shape = groupedListShape(index, filteredFriends.size),
                                     onClick = {
-                                        onFriendClick(friend.id)
+                                        if (friend.isBlocked) {
+                                            onFriendLongClick(friend.id)
+                                        } else {
+                                            onFriendClick(friend.id)
+                                        }
                                         textFieldState.clearText()
                                         scope.launch { searchBarState.animateToCollapsed() }
                                     },

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.PersonRemove
 import androidx.compose.material3.AlertDialog
@@ -186,14 +187,26 @@ private fun ProfileScreenContent(
         ProfileAction(Icons.Outlined.Notifications, "Set alerts") {
             Toast.makeText(context, "Notifications TODO", Toast.LENGTH_SHORT).show()
         },
-        ProfileAction(Icons.Outlined.PersonOff, "Block", destructive = true) {
-            msgDialogState = MessageDialogState(
-                visible = true,
-                type = DialogType.FRIEND_BLOCK,
-                confirmBtnText = "Block",
-                title = "Block Friend",
-                message = "Are you sure you want to block ${friend.nameOrNickname}?",
-            )
+        if (friend.isBlocked) {
+            ProfileAction(Icons.Outlined.Person, "Unblock") {
+                msgDialogState = MessageDialogState(
+                    visible = true,
+                    type = DialogType.FRIEND_BLOCK,
+                    confirmBtnText = "Unblock",
+                    title = "Unblock Friend",
+                    message = "Unblock ${friend.nameOrNickname}?",
+                )
+            }
+        } else {
+            ProfileAction(Icons.Outlined.PersonOff, "Block", destructive = true) {
+                msgDialogState = MessageDialogState(
+                    visible = true,
+                    type = DialogType.FRIEND_BLOCK,
+                    confirmBtnText = "Block",
+                    title = "Block Friend",
+                    message = "Are you sure you want to block ${friend.nameOrNickname}?",
+                )
+            }
         },
         ProfileAction(Icons.Outlined.PersonRemove, "Remove friend", destructive = true) {
             msgDialogState = MessageDialogState(
@@ -231,6 +244,7 @@ private fun ProfileScreenContent(
 
             item {
                 PrimaryActions(
+                    canChat = !friend.isBlocked,
                     onChat = { onChat(friend.id) },
                     onSteamProfile = { uriHandler.openUri(Utils.getProfileUrl(friend.id)) },
                 )
@@ -310,10 +324,11 @@ private fun ProfileHeader(
 }
 
 @Composable
-private fun PrimaryActions(onChat: () -> Unit, onSteamProfile: () -> Unit) {
+private fun PrimaryActions(canChat: Boolean, onChat: () -> Unit, onSteamProfile: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
             onClick = onChat,
+            enabled = canChat,
             modifier = Modifier.weight(1f),
             shapes = ButtonDefaults.shapes(),
         ) {

@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.service.api
 
-import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
@@ -79,24 +78,18 @@ class FriendsApi(
         db.steamFriendDao().update(dbFriend)
     }
 
+    /**
+     * Blocks [friendId], or unblocks them when they already are. Nothing is stored here:
+     * Steam follows its answer with a friends list update carrying the new relationship,
+     * which [in.dragonbra.vapulla.service.sync.FriendsSync] writes to the database.
+     */
     suspend fun ignoreFriend(friendId: Long) = withContext(Dispatchers.IO) {
         val dbFriend = db.steamFriendDao().find(friendId) ?: return@withContext
-        val friend = friendId.toSteamID()
+        val block = !dbFriend.isBlocked
+        Timber.d("ignoreFriend() id=%d relation=%s block=%b", friendId, dbFriend.relation, block)
 
-        val result = if (dbFriend.relation == EFriendRelationship.Blocked) {
-            steamFriends.ignoreFriend(friend, false).await()
-        } else {
-            steamFriends.ignoreFriend(friend, true).await()
-        }
-
-        if (result.result == EResult.OK) {
-            val relation = if (dbFriend.relation == EFriendRelationship.IgnoredFriend) {
-                EFriendRelationship.Blocked
-            } else {
-                EFriendRelationship.None // TODO this should update?
-            }
-            db.steamFriendDao().update(dbFriend.copy(relation = relation))
-        }
+        val result = steamFriends.ignoreFriend(friendId.toSteamID(), setIgnore = block).await()
+        Timber.d("ignoreFriend() id=%d result=%s", friendId, result.result)
     }
 
     suspend fun removeFriend(friendId: Long) = withContext(Dispatchers.IO) {

@@ -24,9 +24,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
@@ -41,7 +41,8 @@ class HomeViewModel(
     settingsManager: SettingsManager,
 ) : ViewModel() {
 
-    private val _stickyHeaders = MutableStateFlow(persistentSetOf<Int>())
+    /** The collapsed sections. Blocked friends start out of the way. */
+    private val _stickyHeaders = MutableStateFlow(persistentSetOf(R.string.headerFriendBlocked))
     val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
 
     /** Emits now and then once a minute, so the Recent Chats cut-off is re-evaluated in time. */
@@ -55,14 +56,16 @@ class HomeViewModel(
     val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = combine(
         db.getFriendsFlow(),
         chatDao.chatSummaries(),
-        settingsManager.settings.map { it.recentChatsDays }.distinctUntilChanged(),
+        settingsManager.settings.distinctUntilChangedBy {
+            it.recentChatsDays to it.showBlockedFriends
+        },
         minuteTicker,
-    ) { friends, chats, recentDays, _ ->
+    ) { friends, chats, settings, _ ->
         // Friends with a stored message newer than the cut-off, mapped to that message's
         // time. The cut-off is taken each time the list is rebuilt: on any presence change
         // or new message, and at least once a minute. An unread message keeps a chat
         // listed whatever its age, so it cannot go unnoticed.
-        val cutOff = System.currentTimeMillis() - recentDays.days.inWholeMilliseconds
+        val cutOff = System.currentTimeMillis() - settings.recentChatsDays.days.inWholeMilliseconds
         val recentChats = chats
             .filter { it.timestamp >= cutOff || it.unread > 0 }
             .associate { it.friendId to it.timestamp }
@@ -71,7 +74,7 @@ class HomeViewModel(
             .filter { it.unread > 0 }
             .associate { it.friendId to it.unread }
 
-        friends.filter { it.isFriend && !it.isBlocked }
+        friends.filter { it.isFriend || (settings.showBlockedFriends && it.isBlockedFriend) }
             // The row's counter; it clears when the chat is opened and its messages are read.
             .map { friend ->
                 val unread = unreadCounts[friend.id] ?: 0
@@ -86,6 +89,8 @@ class HomeViewModel(
             .sortedWith(
                 compareBy(
                     { it.isRequestRecipient.not() },
+                    // Blocked friends go last, whatever else is true of them.
+                    { it.isBlockedFriend },
                     { it.id !in recentChats },
                     // Newest conversation first; 0 for everyone outside Recent Chats.
                     { -(recentChats[it.id] ?: 0L) },
@@ -102,6 +107,8 @@ class HomeViewModel(
                 // recent chat is listed there instead of under its presence.
                 when {
                     friend.isRequestRecipient -> R.string.headerFriendRequests
+
+                    friend.isBlockedFriend -> R.string.headerFriendBlocked
 
                     friend.id in recentChats -> R.string.headerFriendRecent
 

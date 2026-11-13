@@ -6,5 +6,6 @@
     <string name="headerFriendInGame">In Game</string>
     <string name="headerFriendOnline">Online</string>
     <string name="headerFriendOffline">Offline</string>
+    <string name="headerFriendBlocked">Blocked</string>
 
 </resources>

@@ -100,6 +100,16 @@ fun NavigationRoot(
         mutableStateListOf(route)
     }
 
+    // A chat links to the profile and the profile back to the chat. Going to the screen we
+    // just came from pops back to it, so the two do not pile up on the back stack.
+    fun openOrReturnTo(route: Routes) {
+        if (backStack.getOrNull(backStack.lastIndex - 1) == route) {
+            backStack.removeLastOrNull()
+        } else {
+            backStack.add(route)
+        }
+    }
+
     val onNavDrawerAction: () -> Unit = {
         scope.launch {
             drawerState.apply {
@@ -206,6 +216,7 @@ fun NavigationRoot(
                         ChatScreen(
                             viewModel = viewModel,
                             onBack = { backStack.removeLastOrNull() },
+                            onProfile = { openOrReturnTo(Routes.FriendProfile(it.id)) },
                         )
                     }
                     /* Profile */
@@ -216,7 +227,7 @@ fun NavigationRoot(
                         ProfileScreen(
                             viewModel = viewModel,
                             onBack = { backStack.removeLastOrNull() },
-                            onChat = { friendId -> backStack.add(Routes.FriendChat(friendId)) },
+                            onChat = { friendId -> openOrReturnTo(Routes.FriendChat(friendId)) },
                         )
                     }
                     /* Games */

@@ -89,7 +89,7 @@ data class SteamFriend(
     /** One line describing what the friend is doing, or when they were last seen. */
     val statusText: String
         get() = when {
-            isBlocked -> relation.name
+            isBlocked -> "Blocked"
 
             isRequestRecipient -> "Wants to be your friend"
 
@@ -124,6 +124,10 @@ data class SteamFriend(
         get() = relation == EFriendRelationship.Blocked ||
             relation == EFriendRelationship.Ignored ||
             relation == EFriendRelationship.IgnoredFriend
+
+    /** Still a friend on Steam, but blocked by us. Listed in its own section. */
+    val isBlockedFriend: Boolean
+        get() = relation == EFriendRelationship.IgnoredFriend
 
     val isFriend: Boolean
         get() = relation == EFriendRelationship.Friend
