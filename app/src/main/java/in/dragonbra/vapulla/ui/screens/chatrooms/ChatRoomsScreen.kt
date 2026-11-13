@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.chatrooms
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.ImageOptions
@@ -42,7 +44,10 @@ import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 
 @Composable
 fun ChatRoomsScreen(
@@ -217,5 +222,50 @@ private fun GroupRow(
                 }
             }
         }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    fun group(id: Long, name: String, tagline: String, members: Int) = ChatGroup(
+        groupId = id,
+        name = name,
+        tagline = tagline,
+        avatarUrl = "",
+        activeMembers = members,
+        clanId = 0,
+        appId = 0,
+        rooms = persistentListOf(
+            ChatRoomInfo(
+                chatId = id * 10,
+                name = "",
+                lastMessage = "Anyone up for a match?",
+                timeLastMessage = 1_760_722_982,
+            ),
+            ChatRoomInfo(
+                chatId = id * 10 + 1,
+                name = "off-topic",
+                lastMessage = "",
+                timeLastMessage = 0,
+            ),
+        ),
+    )
+
+    VapullaTheme {
+        ChatRoomsContent(
+            uiState = ChatRoomsUiState(
+                groups = persistentListOf(
+                    group(1, "JavaSteam", "Steam client library for the JVM", 24),
+                    group(2, "Weekend Gamers", "", 7),
+                ),
+                expanded = persistentSetOf(1L),
+                isLoading = false,
+            ),
+            onNavDrawerAction = {},
+            onRefresh = {},
+            onToggle = {},
+            onRoomClick = { _, _ -> },
+        )
     }
 }

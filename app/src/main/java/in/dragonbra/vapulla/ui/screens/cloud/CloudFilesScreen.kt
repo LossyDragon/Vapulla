@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.cloud
 
+import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,8 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
 import androidx.compose.material.icons.outlined.CloudDownload
-import androidx.compose.material.icons.outlined.InsertDriveFile
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.CloudFile
@@ -42,8 +44,10 @@ import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun CloudFilesScreen(viewModel: CloudFilesViewModel, onBack: () -> Unit) {
@@ -138,7 +142,7 @@ private fun FileRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Outlined.InsertDriveFile,
+                imageVector = Icons.AutoMirrored.Outlined.InsertDriveFile,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -168,5 +172,36 @@ private fun FileRow(
                 )
             }
         }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    fun file(name: String, size: Long, vararg platforms: String) = CloudFile(
+        appId = 440,
+        filename = name,
+        size = size,
+        timestamp = 1_760_722_982,
+        sha = "",
+        platforms = persistentListOf(*platforms),
+    )
+
+    VapullaTheme {
+        CloudFilesContent(
+            uiState = CloudFilesUiState(
+                files = persistentListOf(
+                    file("cfg/config.cfg", 4_096, "Windows", "Linux"),
+                    file("saves/slot1.sav", 2_500_000, "Windows"),
+                    file("screenshots/thumbnail.jpg", 180_000),
+                ),
+                isLoading = false,
+                downloading = "saves/slot1.sav",
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onBack = {},
+            onRefresh = {},
+            onDownload = {},
+        )
     }
 }

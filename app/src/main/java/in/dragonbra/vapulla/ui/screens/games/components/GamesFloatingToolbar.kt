@@ -1,7 +1,9 @@
 package `in`.dragonbra.vapulla.ui.screens.games.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ButtonGroupDefaults
@@ -9,12 +11,17 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.SteamApp.AppType
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
 
 /** The types worth a one-tap toggle. Everything else lives in the filter sheet. */
 private val quickTypes = listOf(
@@ -65,6 +72,21 @@ fun GamesFloatingToolbar(
                     Text(text = label)
                 }
             }
+        }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        Surface {
+            GamesFloatingToolbar(
+                appTypes = persistentSetOf(AppType.game, AppType.demo),
+                onAppTypeClicked = {},
+                onFilterClick = {},
+                modifier = Modifier.padding(8.dp),
+            )
         }
     }
 }

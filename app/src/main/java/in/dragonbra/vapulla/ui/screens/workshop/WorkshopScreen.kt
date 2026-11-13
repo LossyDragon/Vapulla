@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.workshop
 
+import android.content.res.Configuration
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.ImageOptions
@@ -55,7 +57,10 @@ import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 
 @Composable
 fun WorkshopScreen(viewModel: WorkshopViewModel, onBack: () -> Unit) {
@@ -252,5 +257,44 @@ private fun WorkshopRow(
                 }
             }
         }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    fun item(id: Long, title: String, description: String, subscriptions: Int) = WorkshopItem(
+        id = id,
+        title = title,
+        description = description,
+        previewUrl = "",
+        creator = 1,
+        fileSize = 48_000_000,
+        timeUpdated = 1_760_722_982,
+        subscriptions = subscriptions,
+        favorited = subscriptions / 10,
+    )
+
+    VapullaTheme {
+        WorkshopContent(
+            uiState = WorkshopUiState(
+                sort = WorkshopSort.MostSubscribed,
+                items = persistentListOf(
+                    item(1, "Snowy Fortress", "A winter take on a classic map.", 152_340),
+                    item(2, "Rocket Jump Trainer", "", 48_210),
+                ),
+                total = 1_234,
+                nextPage = 2,
+                subscribed = persistentSetOf(1L),
+                isLoading = false,
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onBack = {},
+            onSort = {},
+            onSearchTextChange = {},
+            onSearch = {},
+            onLoadMore = {},
+            onToggleSubscription = {},
+        )
     }
 }

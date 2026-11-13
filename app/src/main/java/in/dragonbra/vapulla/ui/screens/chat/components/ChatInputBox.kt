@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.chat.components
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -43,9 +44,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.Emoticon
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /** Height of the emoticon and sticker panel, about that of a soft keyboard. */
 private val EMOJI_PANEL_HEIGHT = 300.dp
@@ -231,3 +235,37 @@ internal fun ChatInputBox(
  */
 private val CONTROL_SHAPE: Shape
     @Composable get() = MaterialTheme.shapes.medium
+
+private val previewEmoticons = persistentListOf(
+    Emoticon(name = "steamhappy", appID = 0, isSticker = false),
+    Emoticon(name = "steamsad", appID = 0, isSticker = false),
+    Emoticon(name = "Winter2019JingleIntensifies", appID = 0, isSticker = true),
+)
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        ChatInputBox(
+            textFieldState = TextFieldState("Hello World!"),
+            onSendClick = {},
+            emoticons = previewEmoticons,
+            onAttachClick = {},
+            isUploading = true,
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_EmojiPanel() {
+    VapullaTheme {
+        ChatInputBox(
+            textFieldState = TextFieldState(),
+            onSendClick = {},
+            emoticons = previewEmoticons,
+            showEmojiPanel = true,
+            onAttachClick = {},
+        )
+    }
+}

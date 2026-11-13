@@ -1,9 +1,11 @@
 package `in`.dragonbra.vapulla.ui.screens.chat.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
@@ -13,7 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -87,5 +91,18 @@ private fun DayPill(text: String, elevated: Boolean = false) {
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        Surface {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                FloatingDayHeader(timestamp = 1_760_722_982_000, visible = true)
+                DayHeader(timestamp = 1_760_722_982_000)
+            }
+        }
     }
 }

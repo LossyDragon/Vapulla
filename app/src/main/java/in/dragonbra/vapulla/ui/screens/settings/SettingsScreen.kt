@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.settings
 
+import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,12 +34,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.manager.AppSettings
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel, onNavDrawerAction: () -> Unit) {
@@ -349,4 +352,24 @@ private fun ChoiceRow(
             }
         },
     )
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        SettingsContent(
+            settings = AppSettings(),
+            onNavDrawerAction = {},
+            onDarkTheme = {},
+            onDynamicColor = {},
+            onMaxServers = {},
+            onServerTimeout = {},
+            onWorkshopPageSize = {},
+            onNetworkLogSize = {},
+            onRecentChatsDays = {},
+            onAppendNicknames = {},
+            onReset = {},
+        )
+    }
 }

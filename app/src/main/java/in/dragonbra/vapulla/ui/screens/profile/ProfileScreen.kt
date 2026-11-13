@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.profile
 
+import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -61,12 +62,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.materialkolor.ktx.isLight
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
+import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
+import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
@@ -79,6 +83,7 @@ import `in`.dragonbra.vapulla.ui.composables.dialog.DialogType
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialog
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialogState
 import `in`.dragonbra.vapulla.ui.screens.profile.components.ProfileButton
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.toDateString
 import java.util.Date
@@ -496,5 +501,38 @@ private fun ProfileDetails(profile: ProfileInfo) {
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = "Summary:")
         BBCodeText(text = summary)
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        ProfileScreenContent(
+            friend = SteamFriend(
+                id = 1,
+                name = "Gamer",
+                state = EPersonaState.Online,
+                gameAppID = 440,
+                gameName = "Team Fortress 2",
+            ),
+            profile = ProfileInfo(
+                steamID = SteamID(1L),
+                timeCreated = Date(1_191_999_600_000),
+                realName = "A. Gamer",
+                cityName = "Bellevue",
+                stateName = "Washington",
+                countryName = "United States",
+                headline = "",
+                summary = "Plays [b]Team Fortress 2[/b] most evenings.",
+            ),
+            favoriteBadge = FavoriteBadge(badgeId = 1, appId = 440, level = 5),
+            onBack = {},
+            onAlias = {},
+            onBlock = {},
+            onRemove = {},
+            onChat = {},
+            onNickname = {},
+        )
     }
 }

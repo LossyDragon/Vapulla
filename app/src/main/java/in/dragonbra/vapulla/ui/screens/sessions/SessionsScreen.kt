@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.sessions
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.AuthSession
@@ -49,7 +51,9 @@ import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun SessionsScreen(viewModel: SessionsViewModel, onNavDrawerAction: () -> Unit) {
@@ -81,56 +85,13 @@ private fun SessionsContent(
     var pendingRevoke by remember { mutableStateOf<AuthSession?>(null) }
 
     pendingRevoke?.let { session ->
-        // Signing a device out cannot be undone from here, so it takes two deliberate
-        // steps: ticking the box, then the button it enables.
-        var understood by remember(session.tokenId) { mutableStateOf(false) }
-        val name = session.description.ifBlank { session.platform }
-
-        AlertDialog(
-            onDismissRequest = { pendingRevoke = null },
-            icon = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
-            title = { Text("Sign out device?") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("$name will be signed out of your account and has to sign in again.")
-                    Text(
-                        text = "Do not do this to a primary device, such as the phone that " +
-                            "holds your Steam Guard authenticator.",
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(MaterialTheme.shapes.small)
-                            .toggleable(
-                                value = understood,
-                                role = Role.Checkbox,
-                                onValueChange = { understood = it },
-                            )
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // The row is the click target; the box only shows the state.
-                        Checkbox(checked = understood, onCheckedChange = null)
-                        Text("I understand, and this is not one of my primary devices")
-                    }
-                }
+        SignOutDialog(
+            session = session,
+            onConfirm = {
+                onRevoke(session)
+                pendingRevoke = null
             },
-            confirmButton = {
-                TextButton(
-                    enabled = understood,
-                    onClick = {
-                        onRevoke(session)
-                        pendingRevoke = null
-                    },
-                ) {
-                    Text("Sign out")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingRevoke = null }) { Text("Cancel") }
-            },
+            onDismiss = { pendingRevoke = null },
         )
     }
 
@@ -183,6 +144,55 @@ private fun SessionsContent(
             }
         }
     }
+}
+
+/**
+ * Confirms signing [session] out. That cannot be undone from here, so it takes two deliberate
+ * steps: ticking the box, then the button it enables.
+ */
+@Composable
+private fun SignOutDialog(session: AuthSession, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    var understood by remember(session.tokenId) { mutableStateOf(false) }
+    val name = session.description.ifBlank { session.platform }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
+        title = { Text("Sign out device?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("$name will be signed out of your account and has to sign in again.")
+                Text(
+                    text = "Do not do this to a primary device, such as the phone that " +
+                        "holds your Steam Guard authenticator.",
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .toggleable(
+                            value = understood,
+                            role = Role.Checkbox,
+                            onValueChange = { understood = it },
+                        )
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // The row is the click target; the box only shows the state.
+                    Checkbox(checked = understood, onCheckedChange = null)
+                    Text("I understand, and this is not one of my primary devices")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = understood, onClick = onConfirm) { Text("Sign out") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 /**
@@ -284,5 +294,63 @@ private fun SessionRow(
                 }
             }
         }
+    }
+}
+
+private val previewSessions = persistentListOf(
+    AuthSession(
+        tokenId = 1,
+        description = "Pixel 9",
+        platform = "Mobile app",
+        loggedIn = true,
+        isThisDevice = true,
+        firstSeen = 1_760_000_000,
+        lastSeen = 1_760_722_982,
+        lastSeenCity = "Seattle",
+        lastSeenCountry = "United States",
+    ),
+    AuthSession(
+        tokenId = 2,
+        description = "DESKTOP-GAMING",
+        platform = "Steam client",
+        loggedIn = false,
+        isThisDevice = false,
+        firstSeen = 1_750_000_000,
+        lastSeen = 1_760_600_000,
+        lastSeenCity = "",
+        lastSeenCountry = "United States",
+    ),
+    AuthSession(
+        tokenId = 3,
+        description = "",
+        platform = "Web browser",
+        loggedIn = false,
+        isThisDevice = false,
+        firstSeen = 1_740_000_000,
+        lastSeen = 0,
+        lastSeenCity = "",
+        lastSeenCountry = "",
+    ),
+)
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        SessionsContent(
+            uiState = SessionsUiState(sessions = previewSessions, isLoading = false),
+            snackbarHostState = remember { SnackbarHostState() },
+            onNavDrawerAction = {},
+            onRefresh = {},
+            onRevoke = {},
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_SignOutDialog() {
+    VapullaTheme {
+        SignOutDialog(session = previewSessions[1], onConfirm = {}, onDismiss = {})
     }
 }

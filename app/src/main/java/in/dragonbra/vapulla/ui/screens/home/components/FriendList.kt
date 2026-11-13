@@ -1,7 +1,9 @@
 package `in`.dragonbra.vapulla.ui.screens.home.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -9,6 +11,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,9 +22,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
+import `in`.dragonbra.vapulla.ui.mock.mockFriendsList
+import `in`.dragonbra.vapulla.ui.mock.mockStickyHeaders
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlinx.collections.immutable.ImmutableList
@@ -103,6 +110,23 @@ fun FriendList(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    VapullaTheme {
+        Surface {
+            FriendList(
+                modifier = Modifier.fillMaxSize(),
+                friendsList = mockFriendsList,
+                stickyHeaders = mockStickyHeaders,
+                onStickyHeaderAction = {},
+                onFriendClick = {},
+                onFriendLongClick = {},
+            )
         }
     }
 }

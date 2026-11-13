@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.gamedetail
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -43,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.ImageOptions
@@ -50,18 +52,22 @@ import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.steamStoreAssetUrl
+import `in`.dragonbra.vapulla.service.api.AchievementProgress
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.minutesToPlaytime
 import `in`.dragonbra.vapulla.util.Utils.toDateString
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+import java.util.Date
+import java.util.EnumSet
 
 @Composable
 fun GameDetailScreen(
@@ -405,4 +411,82 @@ private fun DepotRows(app: SteamApp) {
                 "Depot ${depot.depotId}" to "$os · $size"
             },
     )
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    val app = SteamApp(
+        id = 440,
+        name = "Team Fortress 2",
+        type = SteamApp.AppType.game,
+        osList = EnumSet.of(SteamApp.OS.windows, SteamApp.OS.linux),
+        releaseState = SteamApp.ReleaseState.released,
+        releaseDate = 1_191_999_600,
+        metacriticScore = 92,
+        reviewPercentage = 93,
+        controllerSupport = SteamApp.ControllerSupport.partial,
+        workshopVisible = true,
+        developer = "Valve",
+        publisher = "Valve",
+        isFreeApp = true,
+        playtimeForever = 4_242,
+        lastPlayed = 1_760_722_982,
+        ufs = SteamApp.UFS(quota = 1),
+        branches = mapOf(
+            "public" to SteamApp.BranchInfo(
+                name = "public",
+                buildId = 19_000_000,
+                pwdRequired = false,
+                timeUpdated = Date(1_760_000_000_000),
+            ),
+            "staging" to SteamApp.BranchInfo(
+                name = "staging",
+                buildId = 19_000_100,
+                pwdRequired = true,
+                timeUpdated = Date(1_760_500_000_000),
+            ),
+        ),
+        depots = mapOf(
+            441 to SteamApp.DepotInfo(
+                depotId = 441,
+                dlcAppId = 0,
+                depotFromApp = 0,
+                sharedInstall = false,
+                osList = EnumSet.of(SteamApp.OS.windows),
+                osArch = SteamApp.OSArch.Unknown,
+                manifests = mapOf(
+                    "public" to SteamApp.ManifestInfo(
+                        name = "public",
+                        gid = 1,
+                        size = 12_345_678_901,
+                        download = 9_000_000_000,
+                    ),
+                ),
+                encryptedManifests = emptyMap(),
+            ),
+        ),
+    )
+
+    VapullaTheme {
+        GameDetailContent(
+            uiState = GameDetailUiState(
+                app = app,
+                playersNow = 61_234,
+                achievements = AchievementProgress(
+                    appId = 440,
+                    unlocked = 312,
+                    total = 520,
+                    percentage = 60f,
+                ),
+                isLoadingExtras = false,
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onBack = {},
+            onOpenCloud = {},
+            onOpenWorkshop = {},
+            onOpenAchievements = {},
+            onRequestFreeLicense = {},
+        )
+    }
 }

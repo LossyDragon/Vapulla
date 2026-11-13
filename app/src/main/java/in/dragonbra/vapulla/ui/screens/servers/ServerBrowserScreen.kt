@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.servers
 
+import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,13 +60,16 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.ERegionCode
 import `in`.dragonbra.vapulla.service.api.GameServer
+import `in`.dragonbra.vapulla.service.api.ServerInfo
 import `in`.dragonbra.vapulla.ui.composables.FabClearance
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 /** Height of the game list inside the picker sheet. */
 private val PICKER_HEIGHT = 480.dp
@@ -400,5 +405,44 @@ private fun ServerRow(server: GameServer, shape: Shape) {
                 }
             }
         }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    fun info(name: String, players: Int, locked: Boolean = false) = ServerInfo(
+        name = name,
+        map = "ctf_2fort",
+        game = "Team Fortress",
+        players = players,
+        maxPlayers = 24,
+        bots = 0,
+        passwordProtected = locked,
+        vacSecured = true,
+    )
+
+    val game = ServerGame(appId = 440, name = "Team Fortress 2", iconUrl = "")
+
+    VapullaTheme {
+        ServerBrowserContent(
+            uiState = ServerBrowserUiState(
+                game = game,
+                region = ERegionCode.Europe,
+                servers = persistentListOf(
+                    GameServer("192.0.2.10", 27015, 18, info("Valve Matchmaking Server", 18)),
+                    GameServer("192.0.2.11", 27015, 6, info("Friends Only", 6, locked = true)),
+                    GameServer("192.0.2.12", 27016, 3),
+                ),
+                isLoading = true,
+            ),
+            games = persistentListOf(game),
+            gameSearch = "",
+            onNavDrawerAction = {},
+            onGameSearch = {},
+            onSelectGame = {},
+            onSelectRegion = {},
+            onQuery = {},
+        )
     }
 }

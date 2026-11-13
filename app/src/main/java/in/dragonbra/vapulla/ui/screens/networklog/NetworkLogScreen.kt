@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.networklog
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -39,8 +40,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.vapulla.service.NetworkLog
 import `in`.dragonbra.vapulla.service.NetworkLogEntry
 import `in`.dragonbra.vapulla.ui.composables.FabClearance
@@ -48,8 +51,11 @@ import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 
 /** Rows from the top within which the list still follows new packets. */
@@ -60,10 +66,24 @@ private const val FOLLOW_THRESHOLD = 3
  * [NetworkLog], which the service feeds through the client's debug network listener. The
  * list follows new packets while it sits near the top and stays put once scrolled away.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NetworkLogScreen(onNavDrawerAction: () -> Unit) {
     val entries by NetworkLog.entries.collectAsStateWithLifecycle()
+
+    NetworkLogContent(
+        entries = entries,
+        onNavDrawerAction = onNavDrawerAction,
+        onClear = NetworkLog::clear,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NetworkLogContent(
+    entries: ImmutableList<NetworkLogEntry>,
+    onNavDrawerAction: () -> Unit,
+    onClear: () -> Unit,
+) {
     val incoming = entries.count { it.incoming }
     val outgoing = entries.size - incoming
     val listState = rememberLazyListState()
@@ -93,7 +113,7 @@ fun NetworkLogScreen(onNavDrawerAction: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = NetworkLog::clear) {
+                    IconButton(onClick = onClear) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = "Clear log")
                     }
                 },
@@ -177,5 +197,32 @@ private fun LogRow(entry: NetworkLogEntry) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview() {
+    fun entry(id: Long, incoming: Boolean, msg: EMsg, size: Int) = NetworkLogEntry(
+        id = id,
+        timestamp = 1_760_722_982_000 + id * 1_000,
+        incoming = incoming,
+        msg = msg,
+        size = size,
+    )
+
+    VapullaTheme {
+        NetworkLogContent(
+            entries = persistentListOf(
+                entry(0, false, EMsg.ClientLogon, 512),
+                entry(1, true, EMsg.ClientLogOnResponse, 148),
+                entry(2, true, EMsg.ClientLicenseList, 20_480),
+                entry(3, true, EMsg.ClientFriendsList, 3_072),
+                entry(4, true, EMsg.ClientPersonaState, 1_536),
+                entry(5, false, EMsg.ClientHeartBeat, 24),
+            ),
+            onNavDrawerAction = {},
+            onClear = {},
+        )
     }
 }
