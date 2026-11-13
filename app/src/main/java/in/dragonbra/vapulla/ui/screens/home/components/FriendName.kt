@@ -9,39 +9,38 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/**
+ * A friend's name as the "Append nicknames" setting wants it: "Name (Nickname)" when it is
+ * on, "Nickname*" when it is off. Used wherever a friend is named, so they all agree.
+ */
 @Composable
-fun FriendName(friend: SteamFriend) {
+fun friendDisplayName(friend: SteamFriend): AnnotatedString {
     val variantColor = MaterialTheme.colorScheme.onSurfaceVariant
-
     val appendNickname = LocalAppSettings.current.appendNicknames
 
-    val annotatedText = remember(
-        friend.name,
-        friend.nickname,
-        friend.statusIcon,
-        variantColor,
-        appendNickname,
-    ) {
+    return remember(friend.name, friend.nickname, variantColor, appendNickname) {
         buildAnnotatedString {
             when {
-                friend.nickname.isEmpty() -> append(friend.name)
+                friend.nickname.isEmpty() -> append(friend.nameOrNickname)
 
                 // "Name (Nickname)", the nickname smaller and grey
                 appendNickname -> {
                     append(friend.name)
-                    withStyle(SpanStyle(color = variantColor, fontSize = 12.sp)) {
+                    withStyle(SpanStyle(color = variantColor, fontSize = 0.75.em)) {
                         append(" (${friend.nickname})")
                     }
                 }
@@ -52,7 +51,17 @@ fun FriendName(friend: SteamFriend) {
                     withStyle(SpanStyle(color = variantColor)) { append("*") }
                 }
             }
+        }
+    }
+}
 
+@Composable
+fun FriendName(friend: SteamFriend) {
+    val displayName = friendDisplayName(friend)
+
+    val annotatedText = remember(displayName, friend.statusIcon) {
+        buildAnnotatedString {
+            append(displayName)
             append(" ")
 
             if (friend.statusIcon != null) {

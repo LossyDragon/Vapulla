@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -60,6 +61,7 @@ import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
+import `in`.dragonbra.vapulla.ui.screens.home.components.friendDisplayName
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
@@ -203,7 +205,8 @@ private fun ChatScreenContent(
                         )
                         Column {
                             Text(
-                                text = uiState.friend?.nameOrNickname.orEmpty(),
+                                text = uiState.friend?.let { friendDisplayName(it) }
+                                    ?: AnnotatedString(""),
                                 style = MaterialTheme.typography.titleLarge,
                             )
                             // Typing replaces the presence line for as long as it lasts.

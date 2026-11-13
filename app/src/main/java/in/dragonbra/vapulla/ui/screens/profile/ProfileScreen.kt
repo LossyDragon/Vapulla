@@ -55,6 +55,7 @@ import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
@@ -70,6 +71,7 @@ import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
+import `in`.dragonbra.vapulla.ui.screens.home.components.friendDisplayName
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.toDateString
@@ -262,14 +264,15 @@ private fun ProfileHeader(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = friend.nameOrNickname,
+            text = friendDisplayName(friend),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.headlineMediumEmphasized,
         )
 
-        // A nickname hides the Steam name, so show that one underneath.
-        if (friend.nickname.isNotEmpty() && friend.name.isNotEmpty()) {
+        // With nicknames shown on their own, the Steam name goes underneath.
+        val appendNicknames = LocalAppSettings.current.appendNicknames
+        if (!appendNicknames && friend.nickname.isNotEmpty() && friend.name.isNotEmpty()) {
             Text(
                 text = friend.name,
                 maxLines = 1,

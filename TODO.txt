@@ -17,7 +17,6 @@ Issues or Bugs
 - TryAnotherCM returns to sign-in instead of trying another CM
 - Database is not cleared on log out
 - Friend request notification only opens the app, not the profile
-- "Append nicknames" setting is not applied in the chat header or profile
 - Recent Chats cut-off is only re-evaluated when the list rebuilds
 - Two identical messages in the same second are stored as one
 - Group chat: nothing is stored, no notifications, collapsed groups do not update live
