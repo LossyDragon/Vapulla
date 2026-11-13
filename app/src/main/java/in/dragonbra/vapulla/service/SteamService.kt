@@ -145,6 +145,10 @@ class SteamService : Service() {
 
         startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
 
+        // The service is wanted again (the app was opened, or a sign-in started), so the
+        // notice left by a lost session is out of date.
+        NotificationHelper.cancelSignedOutNotification(context = this)
+
         intent?.getStringExtra(EXTRA_ACTION)?.let { action -> handleAction(action, intent) }
 
         return START_STICKY
@@ -222,12 +226,19 @@ class SteamService : Service() {
         NotificationHelper.updateServiceNotification(context = this, text = text)
     }
 
-    /** The connection ended for good: stop any sign-in attempt and the service itself. */
-    private fun onConnectionShutDown() {
+    /**
+     * The connection ended for good: stop any sign-in attempt and the service itself. When a
+     * signed-in session was lost ([sessionLost]) a "Signed out" notification is left behind,
+     * so the user is not left guessing why messages stopped arriving.
+     */
+    private fun onConnectionShutDown(sessionLost: Boolean) {
         auth.cancel()
 
         statusText = STATUS_STARTING
         stopForeground(STOP_FOREGROUND_REMOVE)
+        if (sessionLost) {
+            NotificationHelper.showSignedOutNotification(context = this)
+        }
         stopSelf()
     }
 }

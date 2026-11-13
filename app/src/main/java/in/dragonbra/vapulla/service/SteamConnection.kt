@@ -70,7 +70,8 @@ import timber.log.Timber
  *
  * @param scope the service's scope; everything launched here ends with the service.
  * @param onStatus told the connection state as short text for the foreground notification.
- * @param onShutDown told when the connection has ended for good and the service should stop.
+ * @param onShutDown told when the connection has ended for good and the service should stop;
+ *   its argument is true when a signed-in session was lost rather than signed out by the user.
  */
 class SteamConnection(
     private val context: Context,
@@ -78,7 +79,7 @@ class SteamConnection(
     private val db: VapullaDatabase,
     private val account: AccountManager,
     private val onStatus: (String) -> Unit,
-    private val onShutDown: () -> Unit,
+    private val onShutDown: (sessionLost: Boolean) -> Unit,
 ) {
 
     /** The feature APIs; available while a client exists. */
@@ -211,8 +212,14 @@ class SteamConnection(
         SteamState.isLoggedIn.value = false
     }
 
-    /** Ends the connection for good: nothing reconnects and the UI returns to sign-in. */
-    private fun shutDown() {
+    /**
+     * Ends the connection for good: nothing reconnects and the UI returns to sign-in.
+     *
+     * @param sessionLost true when a signed-in session ended without the user asking for it.
+     */
+    private fun shutDown(
+        sessionLost: Boolean = SteamState.isLoggedIn.value && !userSignedOut,
+    ) {
         resumeOnReconnect = false
 
         reconnectJob?.cancel()
@@ -223,7 +230,7 @@ class SteamConnection(
         SteamState.isRunning.value = false
         SteamState.isLoggedIn.value = false
 
-        onShutDown()
+        onShutDown(sessionLost)
     }
 
     /** Starts the jobs that run for as long as this sign-in lasts. */
@@ -424,6 +431,17 @@ class SteamConnection(
             reconnectJob = scope.launch {
                 delay(duration = (retryCount * 2).seconds)
                 steamClient?.connect()
+
+                // Every attempt should end in a callback: signed in again, or disconnected
+                // again. One that stays silent would otherwise leave the session frozen on
+                // "Reconnecting" for good, so it ends here instead. Cancelled by either answer.
+                delay(duration = RECONNECT_TIMEOUT)
+                Timber.w("Reconnect attempt $retryCount got no answer, giving up")
+
+                // close() cancels this job, which is fine: nothing below suspends.
+                val sessionLost = SteamState.isLoggedIn.value && !userSignedOut
+                close()
+                shutDown(sessionLost)
             }
         } else {
             Timber.i("onDisconnected() - Disconnected from steam")
@@ -470,6 +488,10 @@ class SteamConnection(
 
     private val onLoggedOn: Consumer<LoggedOnCallback> = Consumer {
         Timber.d("onLoggedOn() got result ${it.result}")
+
+        // Steam answered, so a reconnect attempt is no longer waiting on it.
+        reconnectJob?.cancel()
+        reconnectJob = null
 
         // Steam disconnects after a refused logon; only an accepted one may be resumed.
         resumeOnReconnect = it.result == EResult.OK
@@ -568,7 +590,10 @@ class SteamConnection(
 
     private companion object {
         /** Reconnect attempts after a dropped connection before giving up. */
-        const val MAX_RETRIES = 5
+        const val MAX_RETRIES = 3
+
+        /** How long one reconnect attempt may take to connect and sign in again. */
+        val RECONNECT_TIMEOUT = 60.seconds
 
         /**
          * Results that mean the saved refresh token will never sign in again, so it is

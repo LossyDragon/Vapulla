@@ -35,6 +35,7 @@ object NotificationHelper {
     const val CHANNEL_FOREGROUND_SERVICE = "foreground_service"
 
     const val NOTIFICATION_ID_SERVICE = 1
+    private const val NOTIFICATION_ID_SIGNED_OUT = 2
 
     /** Keeps chat notifications apart from friend requests, which share the friend's ID. */
     private const val TAG_FRIEND_MESSAGE = "friend_message"
@@ -85,17 +86,7 @@ object NotificationHelper {
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_vapulla)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    context,
-                    0,
-                    // The launcher's own intent, so an app that is already open is brought
-                    // back as it was instead of getting a second activity on top.
-                    context.packageManager.getLaunchIntentForPackage(context.packageName)
-                        ?: Intent(context, MainActivity::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                ),
-            )
+            .setContentIntent(openAppIntent(context))
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -107,6 +98,37 @@ object NotificationHelper {
             createServiceNotification(context, text),
         )
     }
+
+    /**
+     * Left behind when the service stops because the session was lost. Tapping it opens the
+     * app, which is on the login screen by then and signs in again with the saved token.
+     */
+    fun showSignedOutNotification(context: Context) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
+            .setContentTitle(context.getString(R.string.app_name))
+            .setContentText("Signed out")
+            .setSmallIcon(R.drawable.ic_vapulla)
+            .setContentIntent(openAppIntent(context))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        context.notificationManager.notify(NOTIFICATION_ID_SIGNED_OUT, notification)
+    }
+
+    fun cancelSignedOutNotification(context: Context) {
+        context.notificationManager.cancel(NOTIFICATION_ID_SIGNED_OUT)
+    }
+
+    private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
+        context,
+        0,
+        // The launcher's own intent, so an app that is already open is brought back as it
+        // was instead of getting a second activity on top.
+        context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?: Intent(context, MainActivity::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
     /**
      * Posts a chat message from a friend with an inline Reply action. Messages from the same
