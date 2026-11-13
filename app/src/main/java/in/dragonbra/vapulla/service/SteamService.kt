@@ -118,6 +118,9 @@ class SteamService : Service() {
     /** The feature APIs; available while connected. */
     val apis: SteamApis? get() = connection.apis
 
+    /** The CM servers the client knows about. Blocking, see [SteamConnection.cmServers]. */
+    fun cmServers(): List<CmServer> = connection.cmServers()
+
     /** Text of the foreground notification, kept so a new start command does not reset it. */
     private var statusText = STATUS_STARTING
 

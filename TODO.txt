@@ -10,6 +10,20 @@ To Verify
 - Channel last-message previews for tags other than stickers (image, spoiler, flip, ...)
 - Emoticon tab while its images are still loading (sticker tab is confirmed)
 - Downloads: losing the network mid-download, a queue of several games, a multi-GB game
+- Downloads: a second download refused when the first has the space spoken for; switching a
+  downloaded game to another platform (the old files should be deleted)
+- "Signed out" notification after three failed reconnects, and that tapping it signs back in
+- Images after the move from Landscapist to Coil's AsyncImage (RemoteImage): achievements,
+  screenshots, workshop, server browser, group chat, chat rooms, emoji picker; avatars in
+  notifications
+- Friend profile "Under the hood" for a friend who is in a game (rich presence keys)
+- Depots: an app ID typed in for a game you do not own; the "Depots and branches" link on a
+  game page; an app with DLC, language or shared depots
+- PICS change feed: new rows arriving while it is open, app rows with names, and that the poll
+  drops back to once a minute after leaving the screen
+- Under the Hood: Connection and Diagnostics after a reconnect; the screens on a real phone
+- Network log: with "Keep packet contents" on, no message with a token or ticket keeps its body
+  (the rule matches on names such as logon, token, ticket, nonce, Authentication.*)
 
 Issues or Bugs
 -------------------
@@ -18,19 +32,29 @@ Issues or Bugs
 - Database is not cleared on log out
 - Friend request notification only opens the app, not the profile
 - Two identical messages in the same second are stored as one
+- The client connects to a far-away CM server (seen: Buenos Aires from the US); it seems to take
+  the first server in the list rather than a near one
+- Tapping a download notification opens the app, not the Downloads screen
+- Downloads skip depots shared from another app (depotfromapp, mostly redistributables)
+- A chat image smaller than the bubble is stretched to its width and looks blurry (seen: a
+  96 x 96 image); it should not be drawn larger than the size Steam gives for it
 
 - Is "Expired" another EResult that should clear the saved token?
 
 To Tidy Up
 --------
-- No unit tests; ChatPreview and TokenCipher are the obvious first candidates
-- 16 lint errors left, all long lines plus the mockSteamFriendDao.kt file name
+- No unit tests; ChatPreview, TokenCipher, IdDecoder and PacketInspector are the obvious first
+  candidates
+- README says the app needs Android 15 (API 35), but minSdk is 28: one of them is wrong
+- third_party.txt is out of date: it lists Glide, and not Coil, xz or zstd-jni
+- 11 lint errors left, all long lines
 - Rename ui/mock/mockSteamFriendDao.kt (it only holds preview data now)
 - AccountManager.clearPreferences() is unused
 
 Feature Ideas
 ----------------------------------------------------
 - Downloads: branch / language picker, verify files, workshop items
+- Downloads: Wi-Fi only setting, speed limit, choice of install folder
 - Game Coordinator (TF2 / CS2 / Dota 2 / Deadlock modules)
 - Family groups: members, shared library
 - Inventory service: owned items
@@ -41,6 +65,34 @@ Feature Ideas
 - Auth ticket generation
 - Group chat: member list, reactions, mentions
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
+- Downloads: "update available" badge for downloaded games (compare manifest IDs from PICS)
+- Leaderboards on the game detail screen (SteamUserStats find / entries)
+- Friends who own or play a game, on the game detail screen (Player.GetFriendsGameplayInfo)
+- Account screen: wallet balance, email status, country, profile URL (SteamUser callbacks)
+- "Playing elsewhere" notice and kicking the other session (PlayingSessionState)
+- Notification counts: comments, item announcements, offline messages (SteamNotifications)
+- Friend invite links: create, list, revoke (UserAccount friend invite tokens)
+- Mutual friends on incoming friend requests (Player.GetMutualFriendsForIncomingInvites)
+- Per-friend notification preferences (Player.GetPerFriendPreferences)
+- Reactions in friend chat (FriendMessages.UpdateMessageReaction)
+- Open a Steam group's chat from the group (ClanChatRooms.GetClanChatRoomInfo)
+- Change own profile name (SteamFriends.setPersonaName)
+- Badges: per-game badge levels and community badge progress (Player service)
+- Legacy CD keys on the game detail screen (SteamApps.getLegacyGameKey)
+- Signed-in web pages: community / store in a browser tab with the session's web cookies
+
+Under the Hood (debugging / how Steam and JavaSteam work)
+---------------------------------------------------------
+- CM server list: show which servers are marked bad (the library does not expose that yet)
+- Network log: field names in the decoded body (needs the message class for each EMsg / method)
+- Network log: export in NetHook format (NetHookNetworkListener) to read on a PC
+- PICS explorer: raw app or package info as a tree for any ID, with change number and token
+- PICS change feed: tap a change to fetch that app's info; show what changed (needs before / after)
+- Manifest browser: fetch a manifest only and list its files, sizes, flags and chunk counts
+- Download internals: CDN servers in use, chunks per second, retries, compression type and ratio
+- JavaSteam: reuse the Zstd input buffer between chunks (RecyclingBufferPool in VZstdUtil)
+- Web API explorer: list of interfaces and methods (ISteamWebAPIUtil/GetSupportedAPIList)
+- In-app log viewer: recent Timber / JavaSteam lines with a tag filter and share
 
 DECIDED AGAINST
 ---------------

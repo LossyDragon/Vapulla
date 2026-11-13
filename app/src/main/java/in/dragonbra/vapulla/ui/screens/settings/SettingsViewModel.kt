@@ -26,9 +26,11 @@ class SettingsViewModel(private val manager: SettingsManager) : ViewModel() {
     fun setWorkshopPageSize(size: Int) = save { manager.setWorkshopPageSize(size) }
 
     fun setNetworkLogSize(size: Int) = save { manager.setNetworkLogSize(size) }
+    fun setNetworkLogBodies(enabled: Boolean) = save { manager.setNetworkLogBodies(enabled) }
     fun setRecentChatsDays(days: Int) = save { manager.setRecentChatsDays(days) }
     fun setAppendNicknames(enabled: Boolean) = save { manager.setAppendNicknames(enabled) }
     fun setShowBlockedFriends(enabled: Boolean) = save { manager.setShowBlockedFriends(enabled) }
+    fun setRawBBCode(enabled: Boolean) = save { manager.setRawBBCode(enabled) }
 
     fun resetToDefaults() = save { manager.resetToDefaults() }
 

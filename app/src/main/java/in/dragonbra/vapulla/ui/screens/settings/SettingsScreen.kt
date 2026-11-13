@@ -55,9 +55,11 @@ fun SettingsScreen(viewModel: SettingsViewModel, onNavDrawerAction: () -> Unit) 
         onServerTimeout = viewModel::setServerTimeoutMs,
         onWorkshopPageSize = viewModel::setWorkshopPageSize,
         onNetworkLogSize = viewModel::setNetworkLogSize,
+        onNetworkLogBodies = viewModel::setNetworkLogBodies,
         onRecentChatsDays = viewModel::setRecentChatsDays,
         onAppendNicknames = viewModel::setAppendNicknames,
         onShowBlockedFriends = viewModel::setShowBlockedFriends,
+        onRawBBCode = viewModel::setRawBBCode,
         onReset = viewModel::resetToDefaults,
     )
 }
@@ -72,9 +74,11 @@ private fun SettingsContent(
     onServerTimeout: (Int) -> Unit,
     onWorkshopPageSize: (Int) -> Unit,
     onNetworkLogSize: (Int) -> Unit,
+    onNetworkLogBodies: (Boolean) -> Unit,
     onRecentChatsDays: (Int) -> Unit,
     onAppendNicknames: (Boolean) -> Unit,
     onShowBlockedFriends: (Boolean) -> Unit,
+    onRawBBCode: (Boolean) -> Unit,
     onReset: () -> Unit,
 ) {
     Scaffold(
@@ -180,6 +184,22 @@ private fun SettingsContent(
             }
 
             item {
+                Section(title = "Chat") {
+                    SwitchRow(
+                        title = "Show raw BBCode",
+                        subtitle = if (settings.rawBBCode) {
+                            "Messages are shown as Steam sent them, tags and all"
+                        } else {
+                            "Messages are shown formatted"
+                        },
+                        checked = settings.rawBBCode,
+                        shape = groupedListShape(0, 1),
+                        onCheckedChange = onRawBBCode,
+                    )
+                }
+            }
+
+            item {
                 Section(title = "Workshop") {
                     ChoiceRow(
                         title = "Items per page",
@@ -197,8 +217,16 @@ private fun SettingsContent(
                         title = "Packets to keep",
                         options = AppSettings.NETWORK_LOG_SIZES,
                         selected = settings.networkLogSize,
-                        shape = groupedListShape(0, 1),
+                        shape = groupedListShape(0, 2),
                         onSelect = onNetworkLogSize,
+                    )
+                    SwitchRow(
+                        title = "Keep packet contents",
+                        subtitle = "Lets you open a packet to see what was in it. Contents stay " +
+                            "in memory until the log is cleared; sign-in messages are never kept.",
+                        checked = settings.networkLogBodies,
+                        shape = groupedListShape(1, 2),
+                        onCheckedChange = onNetworkLogBodies,
                     )
                 }
             }
@@ -382,9 +410,11 @@ private fun Preview() {
             onServerTimeout = {},
             onWorkshopPageSize = {},
             onNetworkLogSize = {},
+            onNetworkLogBodies = {},
             onRecentChatsDays = {},
             onAppendNicknames = {},
             onShowBlockedFriends = {},
+            onRawBBCode = {},
             onReset = {},
         )
     }

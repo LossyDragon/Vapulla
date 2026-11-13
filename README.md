@@ -2,8 +2,8 @@
 
 Vapulla is an Android sample app for [JavaSteam](https://github.com/Longi94/JavaSteam), a
 Java/Kotlin library for talking to Valve's Steam network. It signs in to a Steam account and
-shows what the library can do: friends and chat, the game library, cloud files, the Workshop,
-and more.
+shows what the library can do: friends and chat, the game library, game downloads, cloud files,
+the Workshop, and more.
 
 It is a showcase and a test bed for JavaSteam, not a replacement for the official Steam app.
 
@@ -14,14 +14,26 @@ Vapulla is not affiliated with or endorsed by Valve. Steam is a trademark of Val
 - Sign in with a QR code or with account name and password, including Steam Guard
 - Friends list with presence, nicknames, recent chats and unread counters
 - Friend chat: history, sending, Steam emoticons and stickers, image upload, typing notices,
-  notifications with inline reply
+  notifications with inline reply, and a setting to show messages as raw BBCode
+- Friend profiles, with the raw persona state and rich presence Steam sent under "Under the hood"
 - Group chats: channels, history, sending, live messages
 - Game library from licenses and PICS, with playtime, achievements and stats
+- Game downloads with JavaSteam's depot downloader: pick a platform, pause and resume, a queue
+  that survives restarts, and a free-space check before a download is accepted
 - Steam Cloud file list and download
 - Workshop browser with subscribe and unsubscribe
 - Game server browser
 - Signed-in devices list
-- Network log of the messages exchanged with Steam
+- Under the Hood, a set of screens that show how Steam and JavaSteam work underneath:
+  - Connection: the server you are on and what Steam answered when it signed you in
+  - CM servers: every connection manager server the client knows about
+  - Network log: the messages exchanged with Steam, service calls by method name, totals per
+    message type, and a packet's header and decoded body on tap
+  - Licenses: the packages on the account, and which one grants a given app
+  - PICS change feed: apps and packages changing across Steam, as they change
+  - Depots: an app's depots, branches, build IDs and manifests, for any app ID
+  - ID decoder: a Steam ID, game ID or global ID broken into its parts
+  - Diagnostics: connection history, and how earlier runs of the app ended
 
 See [TODO.txt](TODO.txt) for what is unverified, known issues and ideas for more.
 
@@ -57,6 +69,7 @@ All code is under `app/src/main/java/in/dragonbra/vapulla`.
 | `service/auth` | Credential and QR sign-in |
 | `service/api` | One small class per JavaSteam surface the screens call (chat, friends, library, cloud, ...) |
 | `service/sync` | Mirrors what Steam pushes (friends, licenses, PICS app info) into the database |
+| `service/download` | The download queue on top of JavaSteam's `DepotDownloader`, and the choice of depots for a platform |
 | `db` | Room database, entities and DAOs |
 | `manager` | Saved account and settings (DataStore) |
 | `ui` | Jetpack Compose screens, one package per screen under `ui/screens` |
@@ -70,6 +83,12 @@ The service package is the place to look for JavaSteam usage examples.
 - What is stored is the refresh token Steam issues, encrypted with a key held in the Android
   Keystore. It is deleted when Steam reports it as revoked or denied.
 - Friends, chat messages and library data are cached in a local database on the device.
+- Downloaded games go to the app's own folder on shared storage
+  (`Android/data/in.dragonbra.vapulla/files/steamapps/common`), which Android removes when the
+  app is uninstalled.
+- The network log keeps message types, sizes and headers in memory only. Message contents are
+  kept only after you turn on "Keep packet contents" in Settings, never for sign-in messages,
+  and are gone when the log is cleared or the app stops.
 - The app talks only to Steam and the CDNs and storage Steam uses. It has no analytics and no
   server of its own.
 

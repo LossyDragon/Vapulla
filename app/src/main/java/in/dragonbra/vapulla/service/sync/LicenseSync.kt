@@ -14,6 +14,7 @@ import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamLicense
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.service.PicsFeed
 import `in`.dragonbra.vapulla.service.SessionComponent
 import `in`.dragonbra.vapulla.service.api.LibraryApi
 import `in`.dragonbra.vapulla.util.generateSteamApp
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 /**
@@ -72,6 +74,9 @@ class LicenseSync(
 
     private val onPicsChanges: Consumer<PICSChangesCallback> = Consumer {
         scope.launch {
+            // Before anything is filtered out: the feed shows all of it.
+            feedChanges(it)
+
             if (account.lastChangeNumber.first() == it.currentChangeNumber) {
                 Timber.w("Change number was the same as last change number, skipping")
                 return@launch
@@ -351,10 +356,65 @@ class LicenseSync(
         }
     }
 
-    /** Polls the PICS change list; [onPicsChanges] handles the answer. */
+    /** Hands everything in a change list to [PicsFeed], with names where they are known. */
+    private suspend fun feedChanges(callback: PICSChangesCallback) {
+        val apps = callback.appChanges.values.chunked(SQL_IN_CHUNK_SIZE).flatMap { chunk ->
+            val ids = chunk.map { change -> change.id }
+            val names = db.steamAppDao().findNames(ids).associate { app -> app.id to app.name }
+            // An app can be in the database without being ours: friends' games are stored too.
+            val owned = db.steamAppDao().findChangeInfo(ids)
+                .filter { info -> info.packageId != INVALID_PKG_ID }
+                .mapTo(HashSet()) { info -> info.id }
+
+            chunk.map { change ->
+                PicsFeed.Change(
+                    isApp = true,
+                    targetId = change.id,
+                    changeNumber = change.changeNumber,
+                    needsToken = change.isNeedsToken,
+                    name = names[change.id].orEmpty(),
+                    inLibrary = change.id in owned,
+                )
+            }
+        }
+
+        val packages = callback.packageChanges.values.chunked(SQL_IN_CHUNK_SIZE).flatMap { chunk ->
+            val owned = db.steamLicenseDao().findLicenseInfo(chunk.map { change -> change.id })
+                .mapTo(HashSet()) { info -> info.packageID }
+
+            chunk.map { change ->
+                PicsFeed.Change(
+                    isApp = false,
+                    targetId = change.id,
+                    changeNumber = change.changeNumber,
+                    needsToken = change.isNeedsToken,
+                    name = "",
+                    inLibrary = change.id in owned,
+                )
+            }
+        }
+
+        PicsFeed.add(apps + packages)
+        PicsFeed.checked(
+            changeNumber = callback.currentChangeNumber,
+            // Steam stops listing changes when the last number it was given is too old.
+            note = "Too far behind for a list of changes; the next check will have one."
+                .takeIf { callback.isRequiresFullUpdate },
+        )
+    }
+
+    /**
+     * Polls the PICS change list; [onPicsChanges] handles the answer. Once a minute is plenty
+     * for the library. While the change feed is on screen it polls every few seconds, and
+     * opening the feed cuts the current wait short.
+     */
     private fun CoroutineScope.continuousPicsChanges() = launch {
         while (isActive) {
-            delay(1.minutes)
+            if (PicsFeed.watching.value) {
+                delay(FEED_POLL_INTERVAL)
+            } else {
+                withTimeoutOrNull(1.minutes) { PicsFeed.watching.first { watching -> watching } }
+            }
 
             val lastChangeNumber = account.lastChangeNumber.first() ?: 0
 
@@ -406,5 +466,11 @@ class LicenseSync(
     private companion object {
         /** Max ids per `WHERE id IN (...)` query, kept well under SQLite's bound-parameter limit. */
         const val SQL_IN_CHUNK_SIZE = 500
+
+        /** The package ID stored for an app that no license of ours grants. */
+        const val INVALID_PKG_ID = Int.MAX_VALUE
+
+        /** How often the change list is polled while the change feed is on screen. */
+        val FEED_POLL_INTERVAL = 5.seconds
     }
 }

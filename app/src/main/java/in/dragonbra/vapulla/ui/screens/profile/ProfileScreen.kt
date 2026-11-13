@@ -231,7 +231,9 @@ private fun ProfileScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding.exceptBottom()),
-            contentPadding = listContentPadding(padding),
+            // Room below the last row, so the folded "Under the hood" header can be scrolled
+            // clear of the bottom edge instead of sitting right on it.
+            contentPadding = listContentPadding(padding, extraBottom = 64.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
@@ -253,6 +255,8 @@ private fun ProfileScreenContent(
             item { Section(title = "About") { About(profile) } }
 
             item { Section(title = "Manage") { ActionList(actions) } }
+
+            item { FriendDebugSection(friend) }
         }
     }
 }

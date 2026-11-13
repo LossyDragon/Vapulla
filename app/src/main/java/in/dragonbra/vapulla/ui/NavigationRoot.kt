@@ -47,6 +47,17 @@ import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsScreen
 import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsViewModel
 import `in`.dragonbra.vapulla.ui.screens.settings.SettingsScreen
 import `in`.dragonbra.vapulla.ui.screens.settings.SettingsViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.CmServersScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.CmServersViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.ConnectionScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.DepotsScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.DepotsViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.DiagnosticsScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.IdDecoderScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.LicensesScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.LicensesViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.PicsFeedScreen
+import `in`.dragonbra.vapulla.ui.screens.underhood.UnderTheHoodScreen
 import `in`.dragonbra.vapulla.ui.screens.workshop.WorkshopScreen
 import `in`.dragonbra.vapulla.ui.screens.workshop.WorkshopViewModel
 import kotlinx.coroutines.launch
@@ -66,12 +77,22 @@ sealed class Routes {
     data object Sessions : Routes()
     data object Screenshots : Routes()
     data object NetworkLog : Routes()
+    data object UnderTheHood : Routes()
+    data object ConnectionInfo : Routes()
+    data object CmServers : Routes()
+    data object Licenses : Routes()
+    data object IdDecoder : Routes()
+    data object Diagnostics : Routes()
+    data object PicsFeed : Routes()
     data class FriendChat(val id: Long) : Routes()
     data class FriendProfile(val id: Long) : Routes()
     data class GameDetail(val appId: Int) : Routes()
     data class CloudFiles(val appId: Int) : Routes()
     data class Workshop(val appId: Int) : Routes()
     data class Achievements(val appId: Int) : Routes()
+
+    /** The depot browser; [appId] 0 opens it on its search box. */
+    data class Depots(val appId: Int = 0) : Routes()
     data class GroupChat(
         val groupId: Long,
         val chatId: Long,
@@ -252,6 +273,7 @@ fun NavigationRoot(
                             // The two link to each other, so going back and forth pops
                             // instead of piling up.
                             onOpenDownloads = { openOrReturnTo(Routes.Downloads) },
+                            onOpenDepots = { appId -> backStack.add(Routes.Depots(appId)) },
                         )
                     }
                     entry<Routes.CloudFiles> {
@@ -330,8 +352,48 @@ fun NavigationRoot(
                             onNavDrawerAction = onNavDrawerAction,
                         )
                     }
+                    /* Under the Hood: how Steam and JavaSteam work underneath */
                     entry<Routes.NetworkLog> {
-                        NetworkLogScreen(onNavDrawerAction = onNavDrawerAction)
+                        NetworkLogScreen(onBack = { backStack.removeLastOrNull() })
+                    }
+                    entry<Routes.UnderTheHood> {
+                        UnderTheHoodScreen(
+                            onNavDrawerAction = onNavDrawerAction,
+                            onOpen = { route -> backStack.add(route) },
+                        )
+                    }
+                    entry<Routes.ConnectionInfo> {
+                        ConnectionScreen(onBack = { backStack.removeLastOrNull() })
+                    }
+                    entry<Routes.CmServers> {
+                        val viewModel = koinViewModel<CmServersViewModel>()
+                        CmServersScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<Routes.Licenses> {
+                        val viewModel = koinViewModel<LicensesViewModel>()
+                        LicensesScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
+                    }
+                    entry<Routes.IdDecoder> {
+                        IdDecoderScreen(onBack = { backStack.removeLastOrNull() })
+                    }
+                    entry<Routes.Diagnostics> {
+                        DiagnosticsScreen(onBack = { backStack.removeLastOrNull() })
+                    }
+                    entry<Routes.PicsFeed> {
+                        PicsFeedScreen(onBack = { backStack.removeLastOrNull() })
+                    }
+                    entry<Routes.Depots> {
+                        val viewModel = koinViewModel<DepotsViewModel> { parametersOf(it.appId) }
+                        DepotsScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
                     }
                     /* Downloads */
                     entry<Routes.Downloads> {

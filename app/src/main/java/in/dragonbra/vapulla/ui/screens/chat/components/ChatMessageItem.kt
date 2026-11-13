@@ -13,10 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
@@ -72,15 +74,27 @@ internal fun MessageBubble(
                 )
             }
 
-            BBCodeText(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (isFromLocal) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-            )
+            val textColor = if (isFromLocal) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+
+            if (LocalAppSettings.current.rawBBCode) {
+                // The message exactly as Steam delivered it; see Settings > Chat.
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = textColor,
+                )
+            } else {
+                BBCodeText(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textColor,
+                )
+            }
 
             Text(
                 text = timestamp.toTimeString(),

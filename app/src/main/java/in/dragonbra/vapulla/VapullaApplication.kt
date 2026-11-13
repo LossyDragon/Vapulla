@@ -1,9 +1,7 @@
 package `in`.dragonbra.vapulla
 
 import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.app.Application
-import android.app.ApplicationExitInfo
 import android.os.Build
 import android.os.StrictMode
 import coil.ImageLoader
@@ -18,6 +16,7 @@ import `in`.dragonbra.vapulla.di.ViewModelModules
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.NetworkLog
 import `in`.dragonbra.vapulla.util.NotificationHelper
+import `in`.dragonbra.vapulla.util.ProcessExits
 import `in`.dragonbra.vapulla.util.ReleaseTree
 import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
 import `in`.dragonbra.vapulla.util.decoders.IconDecoder
@@ -74,9 +73,12 @@ class VapullaApplication :
             modules(AppModules, ViewModelModules, DatabaseModules)
         }
 
-        // The network log is a plain object, so its size is pushed in rather than injected.
+        // The network log is a plain object, so its settings are pushed in rather than injected.
         appScope.launch {
-            get<SettingsManager>().settings.collect { NetworkLog.maxEntries = it.networkLogSize }
+            get<SettingsManager>().settings.collect {
+                NetworkLog.maxEntries = it.networkLogSize
+                NetworkLog.keepBodies = it.networkLogBodies
+            }
         }
     }
 
@@ -131,56 +133,17 @@ class VapullaApplication :
         StrictMode.setVmPolicy(vmPolicy.build())
     }
 
-    /**
-     * Logs how the last few runs of the app ended. A run that the system killed, or that
-     * froze, leaves no trace of its own, so this is the only place it shows up.
-     */
+    /** Logs how the last few runs of the app ended; see [ProcessExits]. */
     private fun logPreviousExits() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        ProcessExits.recent(this, EXITS_TO_LOG).forEach { exit ->
+            val detail = exit.detail.takeIf { it.isNotEmpty() }?.let { " ($it)" }.orEmpty()
+            val line = "Earlier run ended at ${Date(exit.timestamp)}: ${exit.reason}$detail"
 
-        val exits = runCatching {
-            getSystemService(ActivityManager::class.java)
-                .getHistoricalProcessExitReasons(null, 0, EXITS_TO_LOG)
-        }.getOrNull().orEmpty()
-
-        exits.forEach { exit ->
-            val line = "Earlier run ended at ${Date(exit.timestamp)}: ${exitReason(exit.reason)}" +
-                exit.description?.let { " ($it)" }.orEmpty()
-
-            if (exit.reason in ABNORMAL_EXITS) Timber.w(line) else Timber.i(line)
+            if (exit.abnormal) Timber.w(line) else Timber.i(line)
         }
-    }
-
-    private fun exitReason(reason: Int): String = when (reason) {
-        ApplicationExitInfo.REASON_ANR -> "froze (ANR)"
-        ApplicationExitInfo.REASON_CRASH -> "crashed"
-        ApplicationExitInfo.REASON_CRASH_NATIVE -> "crashed in native code"
-        ApplicationExitInfo.REASON_LOW_MEMORY -> "killed for memory"
-        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "killed for using too many resources"
-        ApplicationExitInfo.REASON_INITIALIZATION_FAILURE -> "failed to start"
-        ApplicationExitInfo.REASON_SIGNALED -> "killed by a signal"
-        ApplicationExitInfo.REASON_EXIT_SELF -> "exited by itself"
-        ApplicationExitInfo.REASON_USER_REQUESTED -> "stopped by the user"
-        ApplicationExitInfo.REASON_USER_STOPPED -> "stopped with its user"
-        ApplicationExitInfo.REASON_PERMISSION_CHANGE -> "killed by a permission change"
-        ApplicationExitInfo.REASON_DEPENDENCY_DIED -> "killed with a process it depended on"
-        ApplicationExitInfo.REASON_FREEZER -> "killed while frozen in the background"
-        ApplicationExitInfo.REASON_PACKAGE_STATE_CHANGE -> "stopped by a change to the app's state"
-        ApplicationExitInfo.REASON_PACKAGE_UPDATED -> "stopped to install an update"
-        ApplicationExitInfo.REASON_OTHER -> "killed by the system"
-        else -> "unknown reason $reason"
     }
 
     private companion object {
         const val EXITS_TO_LOG = 3
-
-        val ABNORMAL_EXITS = setOf(
-            ApplicationExitInfo.REASON_ANR,
-            ApplicationExitInfo.REASON_CRASH,
-            ApplicationExitInfo.REASON_CRASH_NATIVE,
-            ApplicationExitInfo.REASON_LOW_MEMORY,
-            ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
-            ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
-        )
     }
 }

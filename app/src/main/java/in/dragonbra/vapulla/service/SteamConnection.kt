@@ -53,6 +53,7 @@ import java.io.Closeable
 import java.io.File
 import java.util.EnumSet
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -158,6 +159,26 @@ class SteamConnection(
     }
 
     /**
+     * Every CM server the client knows about. Blocking: the list is fetched from Steam's
+     * directory when the client has none yet.
+     */
+    fun cmServers(): List<CmServer> {
+        val client = steamClient ?: return emptyList()
+        val current = client.currentEndpoint
+
+        return client.servers.getAllEndPoints().map { server ->
+            CmServer(
+                host = server.host,
+                port = server.port,
+                protocols = server.protocolTypes.joinToString { it.name },
+                current = current != null &&
+                    current.hostString == server.host &&
+                    current.port == server.port,
+            )
+        }
+    }
+
+    /**
      * Signs off and ends the connection. With [clearCredentials] the saved sign-in is forgotten
      * too, so the login screen does not sign straight back in.
      */
@@ -213,6 +234,7 @@ class SteamConnection(
 
         SteamState.isRunning.value = false
         SteamState.isLoggedIn.value = false
+        SteamDiagnostics.signedOut()
     }
 
     /**
@@ -230,6 +252,10 @@ class SteamConnection(
 
         SteamState.isRunning.value = false
         SteamState.isLoggedIn.value = false
+        SteamDiagnostics.signedOut()
+        SteamDiagnostics.record(
+            if (sessionLost) "Session lost, service stopping" else "Connection ended",
+        )
 
         onShutDown(sessionLost)
     }
@@ -398,6 +424,7 @@ class SteamConnection(
             steamClient?.connect()
 
             onStatus("Connecting")
+            SteamDiagnostics.record("Connecting")
 
             steamThreadJob = scope.launch {
                 try {
@@ -416,6 +443,10 @@ class SteamConnection(
     private val onDisconnected: Consumer<DisconnectedCallback> = Consumer {
         // Whatever happens next, the signed-in jobs have nothing to talk to.
         stopSession()
+        SteamDiagnostics.signedOut()
+        SteamDiagnostics.record(
+            if (it.isUserInitiated) "Disconnected (by the app)" else "Disconnected",
+        )
 
         // Worth retrying when a signed-in session dropped, or when the very first connection
         // of a sign-in attempt has not come up yet. A drop in the middle of signing in is
@@ -430,6 +461,7 @@ class SteamConnection(
             Timber.i("onDisconnected() - Lost connection, retry $retryCount of $MAX_RETRIES")
 
             onStatus("Reconnecting")
+            SteamDiagnostics.record("Reconnecting, attempt $retryCount of $MAX_RETRIES")
 
             // The callback loop is still running, so only the socket has to come back.
             reconnectJob?.cancel()
@@ -442,6 +474,7 @@ class SteamConnection(
                 // "Reconnecting" for good, so it ends here instead. Cancelled by either answer.
                 delay(duration = RECONNECT_TIMEOUT)
                 Timber.w("Reconnect attempt $retryCount got no answer, giving up")
+                SteamDiagnostics.record("Reconnect attempt $retryCount got no answer, giving up")
 
                 // close() cancels this job, which is fine: nothing below suspends.
                 val sessionLost = SteamState.isLoggedIn.value && !userSignedOut
@@ -467,6 +500,8 @@ class SteamConnection(
         retryCount = 0
 
         onStatus("Connected")
+        val endpoint = steamClient?.currentEndpoint
+        SteamDiagnostics.record("Connected to ${endpoint?.hostString}:${endpoint?.port}")
 
         // First connection of a sign-in attempt: the waiting auth flow takes over from here.
         if (connectedSignal?.complete(Unit) == true) {
@@ -505,6 +540,7 @@ class SteamConnection(
             EResult.OK -> {
                 SteamState.isLoggedIn.value = true
                 SteamState.signOutReason.value = null
+                recordSignIn(it)
 
                 // NOTE: the legacy offline-message path used to start here and is no longer
                 // exercised anywhere in the app:
@@ -537,6 +573,7 @@ class SteamConnection(
 
             else -> {
                 Timber.w("onLoggedOn() refused with ${it.result}")
+                SteamDiagnostics.record("Sign-in refused: ${it.result}")
 
                 // Tell the login screen which EResult Steam answered with. The saved token is
                 // only forgotten when Steam says it is no good any more; the other refusals
@@ -559,6 +596,7 @@ class SteamConnection(
 
     private val onLoggedOff: Consumer<LoggedOffCallback> = Consumer {
         Timber.d("onLoggedOff() result ${it.result}")
+        SteamDiagnostics.record("Signed off: ${it.result}")
         resumeOnReconnect = false
 
         // Steam ended the session rather than the user signing out. Leave the
@@ -594,6 +632,33 @@ class SteamConnection(
         scope.launch {
             db.emoticonDao().replaceAll(it.emoteList)
         }
+    }
+
+    /** Keeps what the logon answer says about the session, for the Under the Hood screens. */
+    private fun recordSignIn(callback: LoggedOnCallback) {
+        val client = steamClient
+        val now = System.currentTimeMillis()
+
+        SteamDiagnostics.signedIn(
+            ConnectionInfo(
+                server = client?.currentEndpoint?.let { "${it.hostString}:${it.port}" }.orEmpty(),
+                allowedProtocols = client?.configuration?.protocolTypes
+                    ?.joinToString { it.name }.orEmpty(),
+                steamId = callback.clientSteamID?.convertToUInt64() ?: 0L,
+                sessionId = client?.sessionID,
+                cellId = callback.cellID,
+                publicIp = callback.publicIP?.hostAddress.orEmpty(),
+                ipCountry = callback.ipCountryCode.orEmpty(),
+                heartbeatSeconds = callback.outOfGameSecsPerHeartbeat,
+                serverTimeOffsetMs = callback.serverTime?.let { it.time - now },
+                accountFlags = callback.accountFlags.orEmpty().map { it.name }.toImmutableList(),
+                emailDomain = callback.emailDomain.orEmpty(),
+                vanityUrl = callback.vanityURL.orEmpty(),
+                familyGroupId = callback.familyGroupId,
+                signedInAt = now,
+            ),
+        )
+        SteamDiagnostics.record("Signed in")
     }
 
     /** Stores the account's Steam level for the drawer header. */

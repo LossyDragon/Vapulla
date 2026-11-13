@@ -28,6 +28,11 @@ data class AppSettings(
     val workshopPageSize: Int = 20,
     /** Packets kept in the in-app network log. */
     val networkLogSize: Int = 500,
+    /**
+     * Whether the network log keeps packet bodies, to look at one in detail. Off by default:
+     * bodies hold chat messages and the like, and stay in memory until the log is cleared.
+     */
+    val networkLogBodies: Boolean = false,
     /** How many days back a chat counts as recent in the friends list. */
     val recentChatsDays: Int = 7,
     /**
@@ -37,6 +42,8 @@ data class AppSettings(
     val appendNicknames: Boolean = true,
     /** Whether friends you have blocked get a section of their own in the friends list. */
     val showBlockedFriends: Boolean = false,
+    /** Shows chat messages as the BBCode Steam sent instead of rendering it. */
+    val rawBBCode: Boolean = false,
 ) {
     companion object {
         val RECENT_CHATS_DAYS = listOf(1, 5, 7, 30)
@@ -67,9 +74,11 @@ class SettingsManager(private val context: Context) {
         val SERVER_TIMEOUT_MS = intPreferencesKey("server_timeout_ms")
         val WORKSHOP_PAGE_SIZE = intPreferencesKey("workshop_page_size")
         val NETWORK_LOG_SIZE = intPreferencesKey("network_log_size")
+        val NETWORK_LOG_BODIES = booleanPreferencesKey("network_log_bodies")
         val RECENT_CHATS_DAYS = intPreferencesKey("recent_chats_days")
         val APPEND_NICKNAMES = booleanPreferencesKey("append_nicknames")
         val SHOW_BLOCKED_FRIENDS = booleanPreferencesKey("show_blocked_friends")
+        val RAW_BBCODE = booleanPreferencesKey("raw_bbcode")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -85,9 +94,11 @@ class SettingsManager(private val context: Context) {
                 serverTimeoutMs = prefs[SERVER_TIMEOUT_MS] ?: defaults.serverTimeoutMs,
                 workshopPageSize = prefs[WORKSHOP_PAGE_SIZE] ?: defaults.workshopPageSize,
                 networkLogSize = prefs[NETWORK_LOG_SIZE] ?: defaults.networkLogSize,
+                networkLogBodies = prefs[NETWORK_LOG_BODIES] ?: defaults.networkLogBodies,
                 recentChatsDays = prefs[RECENT_CHATS_DAYS] ?: defaults.recentChatsDays,
                 appendNicknames = prefs[APPEND_NICKNAMES] ?: defaults.appendNicknames,
                 showBlockedFriends = prefs[SHOW_BLOCKED_FRIENDS] ?: defaults.showBlockedFriends,
+                rawBBCode = prefs[RAW_BBCODE] ?: defaults.rawBBCode,
             )
         }
 
@@ -97,9 +108,11 @@ class SettingsManager(private val context: Context) {
     suspend fun setServerTimeoutMs(timeout: Int) = set(SERVER_TIMEOUT_MS, timeout)
     suspend fun setWorkshopPageSize(size: Int) = set(WORKSHOP_PAGE_SIZE, size)
     suspend fun setNetworkLogSize(size: Int) = set(NETWORK_LOG_SIZE, size)
+    suspend fun setNetworkLogBodies(enabled: Boolean) = set(NETWORK_LOG_BODIES, enabled)
     suspend fun setRecentChatsDays(days: Int) = set(RECENT_CHATS_DAYS, days)
     suspend fun setAppendNicknames(enabled: Boolean) = set(APPEND_NICKNAMES, enabled)
     suspend fun setShowBlockedFriends(enabled: Boolean) = set(SHOW_BLOCKED_FRIENDS, enabled)
+    suspend fun setRawBBCode(enabled: Boolean) = set(RAW_BBCODE, enabled)
 
     /** Clears every stored value so [settings] falls back to [AppSettings] defaults. */
     suspend fun resetToDefaults() {

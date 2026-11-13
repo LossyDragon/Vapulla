@@ -14,9 +14,9 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Games
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalDrawerSheet
@@ -142,10 +142,10 @@ private fun NavigationDrawerContent(
                 onClick = { onNavigationClick(Routes.Sessions) },
             )
             DrawerItem(
-                text = "Network Log",
-                imageVector = Icons.Outlined.Terminal,
-                selected = currentSelection == Routes.NetworkLog,
-                onClick = { onNavigationClick(Routes.NetworkLog) },
+                text = "Under the Hood",
+                imageVector = Icons.Outlined.Memory,
+                selected = currentSelection == Routes.UnderTheHood,
+                onClick = { onNavigationClick(Routes.UnderTheHood) },
             )
             DrawerItem(
                 text = "Settings",

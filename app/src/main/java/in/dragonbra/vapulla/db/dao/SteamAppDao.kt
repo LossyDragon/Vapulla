@@ -9,6 +9,7 @@ import androidx.room.Update
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppChangeInfo
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
+import `in`.dragonbra.vapulla.db.entity.SteamAppName
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -91,6 +92,14 @@ interface SteamAppDao {
 
     @Query("SELECT name FROM steam_app WHERE id = :appId")
     suspend fun findAppName(appId: Int): String?
+
+    /** Names of the given apps that have one. Callers should chunk [appIds] like below. */
+    @Query("SELECT id, name FROM steam_app WHERE id IN (:appIds) AND name != ''")
+    suspend fun findNames(appIds: List<Int>): List<SteamAppName>
+
+    /** The name of every app that has one, for labelling lists of app IDs. */
+    @Query("SELECT id, name FROM steam_app WHERE name != ''")
+    suspend fun getAllNames(): List<SteamAppName>
 
     /**
      * Batched lookup of the few columns needed to detect PICS changes. Callers should chunk

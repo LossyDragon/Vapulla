@@ -15,6 +15,9 @@ import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsViewModel
 import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserViewModel
 import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsViewModel
 import `in`.dragonbra.vapulla.ui.screens.settings.SettingsViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.CmServersViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.DepotsViewModel
+import `in`.dragonbra.vapulla.ui.screens.underhood.LicensesViewModel
 import `in`.dragonbra.vapulla.ui.screens.workshop.WorkshopViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
@@ -31,6 +34,16 @@ val ViewModelModules = module {
     viewModel { ScreenshotsViewModel(get()) }
     viewModel { SessionsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
+    viewModel { CmServersViewModel(get()) }
+    viewModel { LicensesViewModel(get(), get()) }
+    viewModel { (appId: Int) ->
+        DepotsViewModel(
+            initialAppId = appId,
+            appDao = get(),
+            licenseDao = get(),
+            connection = get(),
+        )
+    }
     viewModel { (friendId: Long) ->
         ChatViewModel(
             friendId = friendId,

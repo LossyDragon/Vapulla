@@ -66,6 +66,7 @@ fun DownloadSection(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onOpenDownloads: () -> Unit,
+    onOpenDepots: () -> Unit = {},
 ) {
     if (download == null && plans.isEmpty()) return
 
@@ -99,6 +100,13 @@ fun DownloadSection(
                 onResume = onResume,
                 onOpenDownloads = onOpenDownloads,
             )
+        }
+
+        // For the curious: what the download is made of.
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onOpenDepots) {
+                Text(text = "Depots and branches")
+            }
         }
     }
 }

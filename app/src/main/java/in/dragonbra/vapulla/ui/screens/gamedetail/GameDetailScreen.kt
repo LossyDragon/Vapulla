@@ -80,6 +80,7 @@ fun GameDetailScreen(
     onOpenWorkshop: (Int) -> Unit,
     onOpenAchievements: (Int) -> Unit,
     onOpenDownloads: () -> Unit,
+    onOpenDepots: (Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -97,6 +98,7 @@ fun GameDetailScreen(
         onOpenAchievements = onOpenAchievements,
         onRequestFreeLicense = viewModel::requestFreeLicense,
         onOpenDownloads = onOpenDownloads,
+        onOpenDepots = onOpenDepots,
         onDownload = viewModel::startDownload,
         onPauseDownload = viewModel::pauseDownload,
         onResumeDownload = viewModel::resumeDownload,
@@ -113,6 +115,7 @@ private fun GameDetailContent(
     onOpenAchievements: (Int) -> Unit,
     onRequestFreeLicense: () -> Unit,
     onOpenDownloads: () -> Unit = {},
+    onOpenDepots: (Int) -> Unit = {},
     onDownload: (SteamApp.OS) -> Unit = {},
     onPauseDownload: () -> Unit = {},
     onResumeDownload: () -> Unit = {},
@@ -171,6 +174,7 @@ private fun GameDetailContent(
                     onPause = onPauseDownload,
                     onResume = onResumeDownload,
                     onOpenDownloads = onOpenDownloads,
+                    onOpenDepots = { onOpenDepots(app.id) },
                 )
             }
 
