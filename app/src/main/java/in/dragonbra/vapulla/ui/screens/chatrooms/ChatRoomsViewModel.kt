@@ -54,12 +54,19 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
         _uiState.value.expanded.forEach { chatRooms?.releaseGroup(it) }
     }
 
-    fun refresh() {
+    fun refresh() = load(quiet = false)
+
+    /**
+     * Fetches the groups. A [quiet] load is the one made when a group is expanded: it shows
+     * no loading state and leaves the list as it is if it fails.
+     */
+    private fun load(quiet: Boolean) {
         viewModelScope.launch {
-            Timber.d("Refreshing group chats")
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            Timber.d("Refreshing group chats (quiet=$quiet)")
+            if (!quiet) _uiState.update { it.copy(isLoading = true, error = null) }
             val api = chatRooms
             if (api == null) {
+                if (quiet) return@launch
                 _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
                 return@launch
             }
@@ -75,6 +82,7 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
                 }
                 .onFailure { error ->
                     Timber.w(error, "GetMyChatRoomGroups failed")
+                    if (quiet) return@onFailure
                     _uiState.update {
                         it.copy(isLoading = false, error = error.message ?: "Request failed")
                     }
@@ -85,8 +93,14 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
     fun toggleExpanded(groupId: Long) {
         val expand = groupId !in _uiState.value.expanded
 
-        // Live previews only make sense for channels that are on screen.
-        if (expand) chatRooms?.holdGroup(groupId) else chatRooms?.releaseGroup(groupId)
+        // Live previews only make sense for channels that are on screen. Messages sent
+        // while the group was collapsed were never pushed, so its previews are fetched again.
+        if (expand) {
+            chatRooms?.holdGroup(groupId)
+            load(quiet = true)
+        } else {
+            chatRooms?.releaseGroup(groupId)
+        }
 
         _uiState.update {
             it.copy(

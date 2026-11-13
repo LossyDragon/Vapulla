@@ -18,8 +18,6 @@ Issues or Bugs
 - Database is not cleared on log out
 - Friend request notification only opens the app, not the profile
 - Two identical messages in the same second are stored as one
-- Group chat: nothing is stored, no notifications, collapsed groups do not update live
-- Group "Members" is Steam's active member count; no total is available
 - Downloads screen is a placeholder
 - Is "Expired" another EResult that should clear the saved token?
 
