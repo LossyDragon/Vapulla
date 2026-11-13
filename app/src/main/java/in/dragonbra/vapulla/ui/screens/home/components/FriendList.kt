@@ -34,6 +34,7 @@ import kotlin.collections.component2
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
 import me.saket.swipe.SwipeAction
 import me.saket.swipe.SwipeableActionsBox
 import timber.log.Timber
@@ -43,6 +44,7 @@ fun FriendList(
     modifier: Modifier,
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
     stickyHeaders: ImmutableSet<Int>,
+    typing: ImmutableSet<Long>,
     onStickyHeaderAction: (Int) -> Unit,
     onFriendClick: (Long) -> Unit,
     onFriendLongClick: (Long) -> Unit,
@@ -103,6 +105,7 @@ fun FriendList(
                             FriendListItem(
                                 friend = friend,
                                 shape = shape,
+                                isTyping = friend.id in typing,
                                 onClick = {
                                     if (friend.isBlocked) {
                                         onFriendLongClick(friend.id)
@@ -129,6 +132,7 @@ private fun Preview() {
                 modifier = Modifier.fillMaxSize(),
                 friendsList = mockFriendsList,
                 stickyHeaders = mockStickyHeaders,
+                typing = persistentSetOf(),
                 onStickyHeaderAction = {},
                 onFriendClick = {},
                 onFriendLongClick = {},

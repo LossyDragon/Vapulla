@@ -35,6 +35,7 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.launch
 
 // TODO: Check out
@@ -52,10 +53,12 @@ fun HomeScreen(
 ) {
     val friendsList by viewModel.friends.collectAsState()
     val stickyHeaders by viewModel.stickyHeaders.collectAsState()
+    val typing by viewModel.typing.collectAsState()
 
     HomeScreenContent(
         friendsList,
         stickyHeaders,
+        typing = typing,
         onNavDrawerAction = onNavDrawerAction,
         onFriendClick = onFriendClick,
         onFriendLongClick = onFriendLongClick,
@@ -67,6 +70,7 @@ fun HomeScreen(
 fun HomeScreenContent(
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
     stickyHeaders: ImmutableSet<Int>,
+    typing: ImmutableSet<Long>,
     onNavDrawerAction: () -> Unit,
     onFriendClick: (Long) -> Unit,
     onFriendLongClick: (Long) -> Unit,
@@ -109,6 +113,7 @@ fun HomeScreenContent(
                                 FriendListItem(
                                     friend = friend,
                                     shape = groupedListShape(index, filteredFriends.size),
+                                    isTyping = friend.id in typing,
                                     onClick = {
                                         if (friend.isBlocked) {
                                             onFriendLongClick(friend.id)
@@ -148,6 +153,7 @@ fun HomeScreenContent(
                 contentPadding = listContentPadding(padding, vertical = 4.dp),
                 friendsList = friendsList,
                 stickyHeaders = stickyHeaders,
+                typing = typing,
                 onStickyHeaderAction = onStickyHeaderAction,
                 onFriendClick = onFriendClick,
                 onFriendLongClick = onFriendLongClick,
@@ -163,6 +169,7 @@ private fun Preview() {
         HomeScreenContent(
             friendsList = mockFriendsList,
             stickyHeaders = mockStickyHeaders,
+            typing = persistentSetOf(),
             onNavDrawerAction = {},
             onFriendClick = {},
             onFriendLongClick = {},

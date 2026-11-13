@@ -22,7 +22,7 @@ import org.koin.dsl.module
 /** One view model per screen. Parameters are the friend's Steam ID or the app ID. */
 val ViewModelModules = module {
     viewModel { LoginViewModel(get(), get()) }
-    viewModel { HomeViewModel(get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get()) }
     viewModel { GamesViewModel(get(), get()) }
     viewModel { ChatRoomsViewModel(get()) }
     viewModel { ServerBrowserViewModel(get(), get(), get()) }

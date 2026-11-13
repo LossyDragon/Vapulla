@@ -38,6 +38,7 @@ fun FriendListItem(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.large,
+    isTyping: Boolean = false,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -65,13 +66,17 @@ fun FriendListItem(
                     FriendName(friend = friend)
                 }
 
+                // Typing replaces the presence line for as long as it lasts, as in the chat.
                 Text(
-                    text = friend.statusText,
+                    text = if (isTyping) "typing…" else friend.statusText,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (friend.isOffline && !friend.isBlocked) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        friend.statusColor.copy(alpha = 1f)
+                    color = when {
+                        isTyping -> MaterialTheme.colorScheme.primary
+
+                        friend.isOffline && !friend.isBlocked ->
+                            MaterialTheme.colorScheme.onSurfaceVariant
+
+                        else -> friend.statusColor.copy(alpha = 1f)
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

@@ -39,7 +39,6 @@ Feature Ideas
 - Web API: game news on the game detail screen
 - Auth ticket generation
 - Group chat: member list, reactions, mentions
-- Typing indicator in the friends list
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
 
 DECIDED AGAINST

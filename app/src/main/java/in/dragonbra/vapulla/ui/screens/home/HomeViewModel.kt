@@ -7,6 +7,8 @@ import `in`.dragonbra.vapulla.db.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.SettingsManager
+import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamService
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.ImmutableList
@@ -16,7 +18,9 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,8 +29,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
@@ -39,6 +46,7 @@ class HomeViewModel(
     db: SteamFriendDao,
     chatDao: ChatMessageDao,
     settingsManager: SettingsManager,
+    connection: ServiceConnection,
 ) : ViewModel() {
 
     /** The collapsed sections. Blocked friends start out of the way. */
@@ -129,6 +137,23 @@ class HomeViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = persistentMapOf(),
+        )
+
+    /**
+     * The friends typing to us right now. The chat API is replaced on every sign-in, so it
+     * is looked up again whenever the session comes back.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val typing: StateFlow<ImmutableSet<Long>> = SteamService.isLoggedIn
+        .flatMapLatest { loggedIn ->
+            val chat = connection.steamService?.apis?.chat
+            if (loggedIn && chat != null) chat.typing else flowOf(emptySet())
+        }
+        .map { it.toImmutableSet() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = persistentSetOf(),
         )
 
     override fun onCleared() {
