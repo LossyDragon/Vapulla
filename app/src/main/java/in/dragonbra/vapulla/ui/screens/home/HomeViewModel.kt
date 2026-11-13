@@ -8,6 +8,7 @@ import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -16,12 +17,14 @@ import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -41,14 +44,23 @@ class HomeViewModel(
     private val _stickyHeaders = MutableStateFlow(persistentSetOf<Int>())
     val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
 
+    /** Emits now and then once a minute, so the Recent Chats cut-off is re-evaluated in time. */
+    private val minuteTicker = flow {
+        while (true) {
+            emit(Unit)
+            delay(1.minutes)
+        }
+    }
+
     val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = combine(
         db.getFriendsFlow(),
         chatDao.chatSummaries(),
         settingsManager.settings.map { it.recentChatsDays }.distinctUntilChanged(),
-    ) { friends, chats, recentDays ->
+        minuteTicker,
+    ) { friends, chats, recentDays, _ ->
         // Friends with a stored message newer than the cut-off, mapped to that message's
-        // time. The cut-off is taken when the list is rebuilt, which any presence change or
-        // new message triggers, so it never lags by much. An unread message keeps a chat
+        // time. The cut-off is taken each time the list is rebuilt: on any presence change
+        // or new message, and at least once a minute. An unread message keeps a chat
         // listed whatever its age, so it cannot go unnoticed.
         val cutOff = System.currentTimeMillis() - recentDays.days.inWholeMilliseconds
         val recentChats = chats

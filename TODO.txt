@@ -17,7 +17,6 @@ Issues or Bugs
 - TryAnotherCM returns to sign-in instead of trying another CM
 - Database is not cleared on log out
 - Friend request notification only opens the app, not the profile
-- Recent Chats cut-off is only re-evaluated when the list rebuilds
 - Two identical messages in the same second are stored as one
 - Group chat: nothing is stored, no notifications, collapsed groups do not update live
 - Group "Members" is Steam's active member count; no total is available
@@ -38,7 +37,6 @@ Feature Ideas
 - Family groups: members, shared library
 - Inventory service: owned items
 - Store browsing: store page for any app, including unowned games
-- Cloud: upload and delete (currently read-only)
 - Lobbies (SteamMatchmaking) next to the server browser
 - Game notifications and parental settings (read-only)
 - Web API: game news on the game detail screen
