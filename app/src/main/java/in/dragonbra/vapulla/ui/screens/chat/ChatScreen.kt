@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla.ui.screens.chat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
@@ -21,8 +19,6 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.QuestionMark
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,10 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -55,22 +47,20 @@ import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatInputBox
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatMessageItem
 import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
+import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.util.Utils.toAvatarURL
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -206,21 +196,10 @@ private fun ChatScreenContent(
                 title = {
                     Row {
                         // TODO add Profile Equiped items around PFP.
-                        CoilImage(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                // The same rounded square as in the friends list.
-                                .clip(MaterialTheme.shapes.large)
-                                .background(Color.DarkGray)
-                                .size(48.dp),
-                            imageModel = { uiState.friend?.avatar?.toAvatarURL() },
-                            imageOptions = ImageOptions(
-                                contentScale = ContentScale.Crop,
-                                contentDescription = null,
-                            ),
-                            loading = { CircularProgressIndicator() },
-                            failure = { Icon(Icons.Filled.QuestionMark, null) },
-                            previewPlaceholder = painterResource(R.drawable.vapulla_background),
+                        FriendAvatar(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            size = 48.dp,
+                            friend = uiState.friend ?: SteamFriend(id = 0),
                         )
                         Column {
                             Text(
@@ -340,28 +319,11 @@ private fun ChatScreenContent(
                         }
                     }
 
-                    when {
-                        messages.loadState.refresh is LoadState.Loading -> {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            }
-                        }
-
-                        messages.loadState.append is LoadState.Loading -> {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            }
-                        }
+                    // Shown at the top (the list is reversed) while history is being fetched.
+                    if (messages.loadState.refresh is LoadState.Loading ||
+                        messages.loadState.append is LoadState.Loading
+                    ) {
+                        item { LoadingBox(modifier = Modifier.fillMaxWidth()) }
                     }
                 }
 

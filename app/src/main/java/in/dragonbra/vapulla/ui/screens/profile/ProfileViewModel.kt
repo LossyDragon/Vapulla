@@ -39,6 +39,10 @@ class ProfileViewModel(
     private val _favoriteBadge = MutableStateFlow<FavoriteBadge?>(null)
     val favoriteBadge: StateFlow<FavoriteBadge?> = _favoriteBadge.asStateFlow()
 
+    /** True until Steam has answered for the badge; a friend may have none to show. */
+    private val _badgeLoading = MutableStateFlow(true)
+    val badgeLoading: StateFlow<Boolean> = _badgeLoading.asStateFlow()
+
     private val service: SteamService
         get() = checkNotNull(serviceConnection.steamService) { "SteamService is not bound" }
 
@@ -57,6 +61,7 @@ class ProfileViewModel(
                 runCatching { service.apis?.profile?.favoriteBadge(friendId.toSteamID()) }
                     .onFailure { Timber.w(it, "GetFavoriteBadge failed") }
                     .getOrNull()
+            _badgeLoading.value = false
         }
     }
 

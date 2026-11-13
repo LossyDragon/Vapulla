@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.InfoPillSkeleton
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
@@ -60,13 +61,16 @@ internal fun DrawerHeader(
                 style = MaterialTheme.typography.titleLargeEmphasized,
             )
 
+            // The level is stored after the first sign-in; until then a placeholder holds its spot.
+            Spacer(Modifier.height(6.dp))
             if (level != null) {
-                Spacer(Modifier.height(6.dp))
                 InfoPill(
                     text = "Level $level",
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
+            } else {
+                InfoPillSkeleton()
             }
 
             Spacer(Modifier.height(12.dp))

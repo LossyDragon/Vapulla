@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,7 +34,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -61,13 +59,14 @@ import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
-import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatInputBox
 import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
+import `in`.dragonbra.vapulla.ui.screens.chat.components.MessageBubble
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
@@ -362,52 +361,17 @@ private fun GroupMessageRow(message: GroupChatMessage) {
                     .size(36.dp)
                     .clip(MaterialTheme.shapes.medium),
                 imageOptions = ImageOptions(contentScale = ContentScale.Crop),
+                loading = { ShimmerBox(modifier = Modifier.fillMaxSize()) },
                 failure = { Icon(Icons.Default.Person, contentDescription = null) },
             )
         }
 
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = if (message.fromLocal) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest
-            },
-            modifier = Modifier.widthIn(max = 280.dp),
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                if (!message.fromLocal) {
-                    Text(
-                        text = message.senderName,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                BBCodeText(
-                    text = message.message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (message.fromLocal) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
-
-                Text(
-                    text = message.timestamp.toTimeString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (message.fromLocal) {
-                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.align(Alignment.End),
-                )
-            }
-        }
+        MessageBubble(
+            text = message.message,
+            timestamp = message.timestamp,
+            isFromLocal = message.fromLocal,
+            senderName = message.senderName.takeUnless { message.fromLocal },
+        )
     }
 }
 

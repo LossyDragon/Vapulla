@@ -54,10 +54,12 @@ import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.steamStoreAssetUrl
 import `in`.dragonbra.vapulla.service.api.AchievementProgress
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.Section
+import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
@@ -178,7 +180,7 @@ private fun HeaderArt(app: SteamApp) {
             .clip(MaterialTheme.shapes.extraLarge),
         imageOptions = ImageOptions(contentScale = ContentScale.Crop),
         previewPlaceholder = painterResource(R.drawable.vapulla_background),
-        loading = { LoadingBox(modifier = Modifier.fillMaxSize()) },
+        loading = { ShimmerBox(modifier = Modifier.fillMaxSize()) },
     )
 }
 
@@ -265,53 +267,6 @@ private fun ActionRow(
                 ) {
                     Icon(Icons.Outlined.CardGiftcard, contentDescription = null)
                     Text(text = "  Free license")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
-        )
-        content()
-    }
-}
-
-/** Key/value rows in one grouped container. Values that are empty are skipped. */
-@Composable
-private fun DetailList(rows: List<Pair<String, String>>) {
-    val visible = rows.filter { it.second.isNotBlank() }
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        visible.forEachIndexed { index, (label, value) ->
-            Surface(
-                shape = groupedListShape(index, visible.size),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 16.dp),
-                    )
                 }
             }
         }

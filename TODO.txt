@@ -22,7 +22,6 @@ Issues or Bugs
 - Two identical messages in the same second are stored as one
 - Group chat: nothing is stored, no notifications, collapsed groups do not update live
 - Group "Members" is Steam's active member count; no total is available
-- Group avatars from chat_group_avatar_sha do not load (see ChatRoomsApi)
 - Downloads screen is a placeholder
 - Is "Expired" another EResult that should clear the saved token?
 

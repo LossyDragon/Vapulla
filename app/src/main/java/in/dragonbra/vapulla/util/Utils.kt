@@ -18,6 +18,8 @@ object Utils {
         const val AVATAR_BASE_URL =
             "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/"
 
+        const val GROUP_AVATAR_BASE_URL = "https://avatars.steamstatic.com/"
+
         /** Avatar hash Steam reports for accounts without a custom avatar. */
         const val ALL_ZEROS = "0000000000000000000000000000000000000000"
 
@@ -50,6 +52,14 @@ object Utils {
         ?.takeIf { it.isNotEmpty() && !it.all { c -> c == '0' } }
         ?.let { "${Constants.AVATAR_BASE_URL}${it.substring(0, 2)}/${it}_full.jpg" }
         ?: Constants.MISSING_AVATAR_URL
+
+    /**
+     * Avatar URL for a group chat's `chat_group_avatar_sha`, or null when the group has none.
+     * Group avatars live on their own host and only come in the 256px size.
+     */
+    fun getGroupAvatarURL(hash: String): String? = hash
+        .takeIf { it.isNotEmpty() && !it.all { c -> c == '0' } }
+        ?.let { "${Constants.GROUP_AVATAR_BASE_URL}${it}_256.jpg" }
 
     /** Epoch seconds to "Jan 5, 2024". */
     fun Long.toDateString(): String =

@@ -4,8 +4,6 @@ import android.content.res.Configuration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -21,6 +19,7 @@ import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 
@@ -28,7 +27,6 @@ import `in`.dragonbra.vapulla.util.Utils
  * Avatar with Material 3 Expressive rounding. Presence is conveyed by the row's name colour
  * and status line, so the avatar itself stays clean.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 52.dp, friend: SteamFriend) {
     CoilImage(
@@ -41,7 +39,7 @@ fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 52.dp, friend: SteamF
             contentDescription = "Avatar for ${friend.name}",
         ),
         previewPlaceholder = painterResource(R.drawable.vapulla_background),
-        loading = { LoadingIndicator() },
+        loading = { ShimmerBox(modifier = Modifier.fillMaxSize()) },
         failure = {
             Image(
                 painter = painterResource(R.drawable.vapulla),

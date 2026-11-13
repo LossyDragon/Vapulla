@@ -20,6 +20,7 @@ paging = "3.5.3" # https://mvnrepository.com/artifact/androidx.paging/paging-com
 protobuf = "4.36.2" # https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
 qrose = "1.3.1" # https://mvnrepository.com/artifact/io.github.alexzhirkevich/qrose
 room = "2.8.5" # https://mvnrepository.com/artifact/androidx.room/room-compiler
+shimmer = "1.5.0" # https://mvnrepository.com/artifact/com.valentinilk.shimmer/compose-shimmer
 stability-analyzer = "0.15.0" # https://mvnrepository.com/artifact/com.github.skydoves.compose.stability.analyzer/com.github.skydoves.compose.stability.analyzer.gradle.plugin
 swipe = "1.3.0" # https://mvnrepository.com/artifact/me.saket.swipe/swipe
 timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
@@ -63,6 +64,7 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "p
 apng = { module = "com.github.penfeizhou.android.animation:apng", version.ref = "apng" }
 swipe = { module = "me.saket.swipe:swipe", version.ref = "swipe" }
 landscapist-coil = { module = "com.github.skydoves:landscapist-coil", version.ref = "landscapist" }
+compose-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version.ref = "shimmer" }
 qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
 
 # Database & Storage
@@ -104,6 +106,7 @@ javasteam = [
 
 images = [
     "apng",
+    "compose-shimmer",
     "landscapist-coil",
     "qrose",
 ]

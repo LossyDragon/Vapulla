@@ -41,6 +41,7 @@ import `in`.dragonbra.vapulla.service.api.GameStats
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
+import `in`.dragonbra.vapulla.ui.composables.SkeletonList
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
@@ -92,8 +93,8 @@ private fun AchievementsContent(
             val stats = uiState.stats
 
             when {
-                // The pull-to-refresh indicator is the loading state.
-                uiState.isLoading && stats == null -> Unit
+                uiState.isLoading && stats == null ->
+                    SkeletonList(contentPadding = listContentPadding(padding))
 
                 uiState.error != null -> RefreshableMessage(message = uiState.error)
 

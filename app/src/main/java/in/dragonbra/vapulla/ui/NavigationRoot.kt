@@ -212,8 +212,8 @@ fun NavigationRoot(
                         }
                         ProfileScreen(
                             viewModel = viewModel,
-                            onNavDrawerAction = onNavDrawerAction,
                             onBack = { backStack.removeLastOrNull() },
+                            onChat = { friendId -> backStack.add(Routes.FriendChat(friendId)) },
                         )
                     }
                     /* Games */

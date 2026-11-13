@@ -7,17 +7,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,6 +36,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.minutesToPlaytime
@@ -151,7 +150,6 @@ fun GameListItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun HeaderArt(app: SteamAppListItem) {
     CoilImage(
@@ -162,13 +160,7 @@ private fun HeaderArt(app: SteamAppListItem) {
             .clip(MaterialTheme.shapes.medium),
         imageOptions = ImageOptions(contentScale = ContentScale.Crop),
         previewPlaceholder = painterResource(R.drawable.vapulla_background),
-        loading = {
-            Box(
-                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center,
-                content = { LoadingIndicator(modifier = Modifier.size(28.dp)) },
-            )
-        },
+        loading = { ShimmerBox(modifier = Modifier.fillMaxSize()) },
         failure = {
             Box(
                 modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),

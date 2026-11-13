@@ -48,6 +48,7 @@ import `in`.dragonbra.vapulla.service.api.AuthSession
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
+import `in`.dragonbra.vapulla.ui.composables.SkeletonList
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
@@ -115,9 +116,9 @@ private fun SessionsContent(
                 .padding(padding.exceptBottom()),
         ) {
             when {
-                uiState.isLoading && uiState.sessions.isEmpty() -> Unit
+                uiState.isLoading && uiState.sessions.isEmpty() ->
+                    SkeletonList(contentPadding = listContentPadding(padding))
 
-                // the indicator is the loading state
                 uiState.error != null -> RefreshableMessage(message = uiState.error)
 
                 uiState.sessions.isEmpty() -> RefreshableMessage(message = "No sessions reported")

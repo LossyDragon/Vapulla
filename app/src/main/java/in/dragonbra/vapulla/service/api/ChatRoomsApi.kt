@@ -97,13 +97,11 @@ class ChatRoomsApi(
                 groupId = summary.chatGroupId,
                 name = summary.chatGroupName,
                 tagline = summary.chatGroupTagline,
-                // TODO: chat_group_avatar_sha is not served from the user avatar CDN (404 on every
-                //  known host and suffix). Find the URL the Steam web chat uses for group avatars.
+                // A group's own avatar first, then the avatar of the Steam group it belongs to.
                 avatarUrl = summary.avatarUgcUrl
                     .ifEmpty {
-                        summary.chatGroupAvatarSha.toByteArray().takeIf {
-                            it.isNotEmpty()
-                        }?.toHexString()?.let(Utils::getAvatarURL).orEmpty()
+                        val sha = summary.chatGroupAvatarSha.toByteArray().toHexString()
+                        Utils.getGroupAvatarURL(sha).orEmpty()
                     }
                     .ifEmpty { clanAvatars[summary.clanid].orEmpty() },
                 activeMembers = summary.activeMemberCount,

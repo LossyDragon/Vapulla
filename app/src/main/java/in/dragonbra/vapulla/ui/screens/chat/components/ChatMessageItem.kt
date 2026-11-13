@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
@@ -31,39 +32,68 @@ internal fun ChatMessageItem(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isFromLocal) Arrangement.End else Arrangement.Start,
     ) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = if (isFromLocal) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest
-            },
-            modifier = Modifier.widthIn(max = 280.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-            ) {
-                BBCodeText(
-                    text = message.message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (isFromLocal) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
+        MessageBubble(
+            text = message.message,
+            timestamp = message.timestamp,
+            isFromLocal = isFromLocal,
+        )
+    }
+}
 
+/**
+ * The bubble itself, shared by friend and group chats: the message with its time underneath,
+ * and [senderName] on top where a chat has more than one other person in it.
+ */
+@Composable
+internal fun MessageBubble(
+    text: String,
+    timestamp: Long,
+    isFromLocal: Boolean,
+    modifier: Modifier = Modifier,
+    senderName: String? = null,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = if (isFromLocal) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        },
+        modifier = modifier.widthIn(max = 280.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            if (senderName != null) {
                 Text(
-                    text = message.timestamp.toTimeString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isFromLocal) {
-                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.align(Alignment.End),
+                    text = senderName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
+
+            BBCodeText(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (isFromLocal) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+
+            Text(
+                text = timestamp.toTimeString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isFromLocal) {
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 4.dp),
+            )
         }
     }
 }

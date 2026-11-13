@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,6 +48,7 @@ import `in`.dragonbra.vapulla.service.NetworkLogEntry
 import `in`.dragonbra.vapulla.ui.composables.FabClearance
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
+import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
@@ -149,8 +151,9 @@ private fun NetworkLogContent(
                     contentPadding = listContentPadding(padding, extraBottom = FabClearance),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    items(entries.asReversed(), key = { it.id }) { entry ->
-                        LogRow(entry)
+                    val newestFirst = entries.asReversed()
+                    itemsIndexed(newestFirst, key = { _, entry -> entry.id }) { index, entry ->
+                        LogRow(entry = entry, shape = groupedListShape(index, newestFirst.size))
                     }
                 }
             }
@@ -159,9 +162,9 @@ private fun NetworkLogContent(
 }
 
 @Composable
-private fun LogRow(entry: NetworkLogEntry) {
+private fun LogRow(entry: NetworkLogEntry, shape: Shape) {
     Surface(
-        shape = MaterialTheme.shapes.small,
+        shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -171,10 +174,18 @@ private fun LogRow(entry: NetworkLogEntry) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (entry.incoming) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                imageVector = if (entry.incoming) {
+                    Icons.Default.ArrowDownward
+                } else {
+                    Icons.Default.ArrowUpward
+                },
                 contentDescription = if (entry.incoming) "Incoming" else "Outgoing",
                 modifier = Modifier.size(16.dp),
-                tint = if (entry.incoming) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                tint = if (entry.incoming) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.tertiary
+                },
             )
             Text(
                 text = entry.msg.name,

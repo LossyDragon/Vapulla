@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla.ui.screens.profile
 import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,96 +11,90 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Games
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.PersonRemove
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.materialkolor.ktx.isLight
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.DetailListSkeleton
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
-import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.InfoPillSkeleton
+import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.dialog.DialogType
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialog
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialogState
-import `in`.dragonbra.vapulla.ui.screens.profile.components.ProfileButton
+import `in`.dragonbra.vapulla.ui.composables.exceptBottom
+import `in`.dragonbra.vapulla.ui.composables.groupedListShape
+import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.toDateString
 import java.util.Date
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel, onNavDrawerAction: () -> Unit, onBack: () -> Unit) {
+fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long) -> Unit) {
     val friend by viewModel.friend.collectAsStateWithLifecycle()
     val profile by viewModel.friendProfile.collectAsStateWithLifecycle()
     val favoriteBadge by viewModel.favoriteBadge.collectAsStateWithLifecycle()
+    val badgeLoading by viewModel.badgeLoading.collectAsStateWithLifecycle()
 
     ProfileScreenContent(
         friend = friend ?: SteamFriend(id = 0),
         profile = profile,
         favoriteBadge = favoriteBadge,
+        badgeLoading = badgeLoading,
         onBack = onBack,
         onAlias = viewModel::onAlias,
         onBlock = viewModel::onBlock,
         onRemove = viewModel::onRemove,
         onNickname = viewModel::onNickname,
-        onChat = { },
+        onChat = onChat,
     )
 }
 
@@ -110,6 +103,7 @@ private fun ProfileScreenContent(
     friend: SteamFriend,
     profile: ProfileInfo?,
     favoriteBadge: FavoriteBadge?,
+    badgeLoading: Boolean,
     onBack: () -> Unit,
     onAlias: () -> Unit,
     onBlock: () -> Unit,
@@ -117,15 +111,15 @@ private fun ProfileScreenContent(
     onChat: (Long) -> Unit,
     onNickname: (String) -> Unit,
 ) {
-    val scrollState = rememberScrollState()
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     var msgDialogState by rememberSaveable(stateSaver = MessageDialogState.Saver) {
         mutableStateOf(MessageDialogState(false))
     }
     val dismissDialog = { msgDialogState = MessageDialogState(visible = false) }
 
-    // One confirmation dialog serves every destructive action; the type says which one.
+    // One confirmation dialog serves every action that needs one; the type says which.
     val confirmDialog = {
         when (msgDialogState.type) {
             DialogType.FRIEND_BLOCK -> onBlock()
@@ -155,326 +149,181 @@ private fun ProfileScreenContent(
         message = msgDialogState.message,
     )
 
-    var setNickNameDialog by rememberSaveable { mutableStateOf(false) }
-    var newNickName by rememberSaveable(friend.nickname) {
-        mutableStateOf(friend.nickname)
-    }
-    if (setNickNameDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                setNickNameDialog = false
-            },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = null,
-                )
-            },
-            title = { Text(text = "Set Nickname") },
-            text = {
-                Column {
-                    Text(
-                        text = "Set a new nickname for " + friend.name + "?",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = newNickName,
-                        onValueChange = { newNickName = it },
-                        label = { Text(text = "Nickname") },
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        setNickNameDialog = false
-                        onNickname(newNickName)
-                    },
-                    content = { Text(text = "OK") },
-                )
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { setNickNameDialog = false },
-                    content = { Text(text = "Cancel") },
-                )
+    var showNicknameDialog by rememberSaveable { mutableStateOf(false) }
+    if (showNicknameDialog) {
+        NicknameDialog(
+            friend = friend,
+            onDismiss = { showNicknameDialog = false },
+            onConfirm = { nickname ->
+                showNicknameDialog = false
+                onNickname(nickname)
             },
         )
     }
 
-    var showPreviousAliasDialog by rememberSaveable { mutableStateOf(false) }
-    if (showPreviousAliasDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showPreviousAliasDialog = false
-            },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                )
-            },
-            title = { Text(text = "Past Aliases") },
-            text = {
-                LazyColumn {
-                    items(friend.aliases) { alias ->
-                        Text(text = alias)
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-
-                    if (friend.aliases.isEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "No past aliases found")
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { showPreviousAliasDialog = false },
-                    content = { Text(text = "Close") },
-                )
-            },
-        )
+    var showAliasesDialog by rememberSaveable { mutableStateOf(false) }
+    if (showAliasesDialog) {
+        AliasesDialog(aliases = friend.aliases, onDismiss = { showAliasesDialog = false })
     }
+
+    val actions = listOf(
+        ProfileAction(Icons.Outlined.History, "View aliases") {
+            onAlias()
+            showAliasesDialog = true
+        },
+        ProfileAction(Icons.Outlined.Edit, "Set nickname") { showNicknameDialog = true },
+        ProfileAction(Icons.Outlined.FavoriteBorder, "Add to favorites") {
+            msgDialogState = MessageDialogState(
+                visible = true,
+                type = DialogType.FRIEND_FAVORITE,
+                confirmBtnText = "Favorite",
+                title = "Favorite Friend",
+                message = "Add ${friend.nameOrNickname} to favorites?",
+            )
+        },
+        ProfileAction(Icons.Outlined.Notifications, "Set alerts") {
+            Toast.makeText(context, "Notifications TODO", Toast.LENGTH_SHORT).show()
+        },
+        ProfileAction(Icons.Outlined.PersonOff, "Block", destructive = true) {
+            msgDialogState = MessageDialogState(
+                visible = true,
+                type = DialogType.FRIEND_BLOCK,
+                confirmBtnText = "Block",
+                title = "Block Friend",
+                message = "Are you sure you want to block ${friend.nameOrNickname}?",
+            )
+        },
+        ProfileAction(Icons.Outlined.PersonRemove, "Remove friend", destructive = true) {
+            msgDialogState = MessageDialogState(
+                visible = true,
+                type = DialogType.FRIEND_REMOVE,
+                confirmBtnText = "Remove",
+                title = "Remove Friend",
+                message = "Are you sure you want to remove ${friend.nameOrNickname}?",
+            )
+        },
+    )
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Profile",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                navigationIcon = {
-                    BackButton(onClick = onBack)
-                },
+                title = { Text(text = "Profile") },
+                navigationIcon = { BackButton(onClick = onBack) },
             )
         },
-    ) { paddingValues ->
-        val uriHandler = LocalUriHandler.current
-        val isLight = MaterialTheme.colorScheme.background.isLight()
-        var moreExpanded by rememberSaveable { mutableStateOf(false) }
-
-        Column(
+    ) { padding ->
+        LazyColumn(
             modifier = Modifier
-                .verticalScroll(scrollState)
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxSize()
+                .padding(padding.exceptBottom()),
+            contentPadding = listContentPadding(padding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            item {
+                ProfileHeader(
+                    friend = friend,
+                    favoriteBadge = favoriteBadge,
+                    badgeLoading = badgeLoading,
+                )
+            }
 
-            CoilImage(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .clip(CircleShape)
-                    .background(Color.DarkGray)
-                    .size(92.dp),
-                imageModel = { Utils.getAvatarURL(friend.avatar) },
-                imageOptions = ImageOptions(
-                    contentScale = ContentScale.Crop,
-                    contentDescription = null,
-                ),
-                loading = { CircularProgressIndicator() },
-                failure = { Icon(Icons.Filled.QuestionMark, null) },
-                previewPlaceholder = painterResource(R.drawable.vapulla_background),
-            )
+            item {
+                PrimaryActions(
+                    onChat = { onChat(friend.id) },
+                    onSteamProfile = { uriHandler.openUri(Utils.getProfileUrl(friend.id)) },
+                )
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            item { Section(title = "About") { About(profile) } }
 
+            item { Section(title = "Manage") { ActionList(actions) } }
+        }
+    }
+}
+
+/** Avatar, name and presence, centred at the top of the profile. */
+@Composable
+private fun ProfileHeader(
+    friend: SteamFriend,
+    favoriteBadge: FavoriteBadge?,
+    badgeLoading: Boolean,
+) {
+    val isLight = MaterialTheme.colorScheme.background.isLight()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        FriendAvatar(size = 128.dp, friend = friend)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = friend.nameOrNickname,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.headlineMediumEmphasized,
+        )
+
+        // A nickname hides the Steam name, so show that one underneath.
+        if (friend.nickname.isNotEmpty() && friend.name.isNotEmpty()) {
             Text(
-                text = friend.nameOrNickname,
+                text = friend.name,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
 
-            Text(
-                text = friend.statusText,
-                color = if (isLight) Color.Unspecified else friend.statusColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleLarge,
-            )
+        Text(
+            text = friend.statusText,
+            color = if (isLight) Color.Unspecified else friend.statusColor,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium,
+        )
 
+        // A placeholder holds the pill's spot while the badge loads, and the row folds away
+        // if the friend turns out to have none.
+        AnimatedVisibility(visible = badgeLoading || favoriteBadge != null) {
             if (favoriteBadge != null) {
-                Spacer(modifier = Modifier.height(8.dp))
                 InfoPill(
+                    modifier = Modifier.padding(top = 4.dp),
                     text = "Favorite badge · level ${favoriteBadge.level}" +
                         if (favoriteBadge.appId > 0) " · app ${favoriteBadge.appId}" else "",
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
+            } else {
+                InfoPillSkeleton(modifier = Modifier.padding(top = 4.dp), width = 160.dp)
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ProfileButton(
-                    icon = Icons.AutoMirrored.Outlined.Chat,
-                    text = "Chat",
-                    onClick = { onChat(friend.id) },
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                ProfileButton(
-                    icon = Icons.Outlined.Person,
-                    text = "Profile",
-                    onClick = { uriHandler.openUri(Utils.getProfileUrl(friend.id)) },
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                ProfileButton(
-                    icon = Icons.Outlined.Games,
-                    text = "Games",
-                    onClick = { /* TODO */ },
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                ProfileButton(
-                    icon = Icons.Outlined.MoreVert,
-                    text = if (!moreExpanded) "More" else "Less",
-                    onClick = { moreExpanded = !moreExpanded },
-                )
-            }
-
-            AnimatedVisibility(visible = moreExpanded) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProfileButton(
-                            icon = Icons.Outlined.History,
-                            text = "View Aliases",
-                            onClick = {
-                                onAlias()
-                                showPreviousAliasDialog = true
-                            },
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        ProfileButton(
-                            icon = Icons.Outlined.Edit,
-                            text = "Set Nickname",
-                            onClick = {
-                                setNickNameDialog = true
-                            },
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        ProfileButton(
-                            icon = Icons.Outlined.PersonOff,
-                            text = "Block Friend",
-                            onClick = {
-                                msgDialogState = MessageDialogState(
-                                    visible = true,
-                                    type = DialogType.FRIEND_BLOCK,
-                                    confirmBtnText = "Block",
-                                    dismissBtnText = "Cancel",
-                                    title = "Block Friend",
-                                    message =
-                                        "Are you sure you want to block " + friend.nameOrNickname +
-                                            "?",
-                                )
-                            },
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        ProfileButton(
-                            icon = Icons.Outlined.PersonRemove,
-                            text = "Remove Friend",
-                            onClick = {
-                                msgDialogState = MessageDialogState(
-                                    visible = true,
-                                    type = DialogType.FRIEND_REMOVE,
-                                    confirmBtnText = "Remove",
-                                    dismissBtnText = "Cancel",
-                                    title = "Remove Friend",
-                                    message =
-                                        "Are you sure you want to remove " + friend.nameOrNickname +
-                                            "?",
-                                )
-                            },
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProfileButton(
-                            icon = Icons.Outlined.Favorite,
-                            text = "Add to Favorites",
-                            onClick = {
-                                msgDialogState = MessageDialogState(
-                                    visible = true,
-                                    type = DialogType.FRIEND_FAVORITE,
-                                    confirmBtnText = "Favorite",
-                                    dismissBtnText = "Cancel",
-                                    title = "Favorite Friend",
-                                    message = "Add ${friend.nameOrNickname} to favorites?",
-                                )
-                            },
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        ProfileButton(
-                            icon = Icons.Outlined.Notifications,
-                            text = "Set Alerts",
-                            onClick = {
-                                Toast.makeText(context, "Notifications TODO", Toast.LENGTH_SHORT)
-                                    .show()
-                            },
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.Start,
-                ) {
-                    if (profile == null) {
-                        LoadingBox()
-                    } else {
-                        // Steam ignores the 'headline' field nowadays, so it is not shown.
-                        CompositionLocalProvider(
-                            LocalTextStyle provides MaterialTheme.typography.bodyMedium,
-                        ) {
-                            ProfileDetails(profile)
-                        }
-                    }
-                }
-            }
-
-            // Bottom scroll padding
-            Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun PrimaryActions(onChat: () -> Unit, onSteamProfile: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(
+            onClick = onChat,
+            modifier = Modifier.weight(1f),
+            shapes = ButtonDefaults.shapes(),
+        ) {
+            Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null)
+            Text(text = "  Chat")
+        }
+        FilledTonalButton(
+            onClick = onSteamProfile,
+            modifier = Modifier.weight(1f),
+            shapes = ButtonDefaults.shapes(),
+        ) {
+            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null)
+            Text(text = "  Steam profile")
         }
     }
 }
@@ -482,23 +331,147 @@ private fun ProfileScreenContent(
 /** Steam's launch date. A profile "created" before it means Steam returned no real data. */
 private val STEAM_LAUNCH = Date(1063267200000L)
 
+/** The public profile details and summary, once Steam has answered. */
 @Composable
-private fun ProfileDetails(profile: ProfileInfo) {
-    if (!profile.timeCreated.after(STEAM_LAUNCH)) {
-        Text(text = "Profile most likely private.\nUnable to retrieve info")
-        return
-    }
+private fun About(profile: ProfileInfo?) {
+    when {
+        profile == null -> DetailListSkeleton()
 
-    with(profile) {
-        if (realName.isNotEmpty()) Text(text = "Name: $realName")
-        if (cityName.isNotEmpty()) Text(text = "City: $cityName")
-        if (stateName.isNotEmpty()) Text(text = "State: $stateName")
-        if (countryName.isNotEmpty()) Text(text = "Country: $countryName")
-        Text(text = "Created: ${(timeCreated.time / 1000).toDateString()}")
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Summary:")
-        BBCodeText(text = summary)
+        !profile.timeCreated.after(STEAM_LAUNCH) -> AboutCard {
+            Text(
+                text = "This profile is private",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        else -> {
+            val location = listOf(profile.cityName, profile.stateName, profile.countryName)
+                .filter { it.isNotEmpty() }
+                .joinToString()
+
+            // Steam ignores the 'headline' field nowadays, so it is not shown.
+            DetailList(
+                listOf(
+                    "Real name" to profile.realName,
+                    "Location" to location,
+                    "Member since" to (profile.timeCreated.time / 1000).toDateString(),
+                ),
+            )
+
+            if (profile.summary.isNotBlank()) {
+                AboutCard {
+                    BBCodeText(
+                        text = profile.summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
     }
+}
+
+@Composable
+private fun AboutCard(content: @Composable () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) { content() }
+    }
+}
+
+/** One row of the "Manage" list. [destructive] actions are drawn in the error colour. */
+private class ProfileAction(
+    val icon: ImageVector,
+    val label: String,
+    val destructive: Boolean = false,
+    val onClick: () -> Unit,
+)
+
+@Composable
+private fun ActionList(actions: List<ProfileAction>) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        actions.forEachIndexed { index, action ->
+            Surface(
+                onClick = action.onClick,
+                shape = groupedListShape(index, actions.size),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                contentColor = if (action.destructive) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(imageVector = action.icon, contentDescription = null)
+                    Text(text = action.label, style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NicknameDialog(
+    friend: SteamFriend,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var nickname by rememberSaveable { mutableStateOf(friend.nickname) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(imageVector = Icons.Outlined.Edit, contentDescription = null) },
+        title = { Text(text = "Set Nickname") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "Set a new nickname for ${friend.name}?",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = nickname,
+                    onValueChange = { nickname = it },
+                    label = { Text(text = "Nickname") },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(nickname) }) { Text(text = "OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(text = "Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun AliasesDialog(aliases: ImmutableList<String>, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = null) },
+        title = { Text(text = "Past Aliases") },
+        text = {
+            if (aliases.isEmpty()) {
+                Text(text = "No past aliases found")
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(aliases) { alias -> Text(text = alias) }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(text = "Close") }
+        },
+    )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
@@ -509,9 +482,11 @@ private fun Preview() {
             friend = SteamFriend(
                 id = 1,
                 name = "Gamer",
+                nickname = "Player One",
                 state = EPersonaState.Online,
                 gameAppID = 440,
                 gameName = "Team Fortress 2",
+                aliases = persistentListOf("Gamer", "OldGamer"),
             ),
             profile = ProfileInfo(
                 steamID = SteamID(1L),
@@ -524,6 +499,35 @@ private fun Preview() {
                 summary = "Plays [b]Team Fortress 2[/b] most evenings.",
             ),
             favoriteBadge = FavoriteBadge(badgeId = 1, appId = 440, level = 5),
+            badgeLoading = false,
+            onBack = {},
+            onAlias = {},
+            onBlock = {},
+            onRemove = {},
+            onChat = {},
+            onNickname = {},
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun Preview_Private() {
+    VapullaTheme {
+        ProfileScreenContent(
+            friend = SteamFriend(id = 1, name = "Gamer"),
+            profile = ProfileInfo(
+                steamID = SteamID(1L),
+                timeCreated = Date(0),
+                realName = "",
+                cityName = "",
+                stateName = "",
+                countryName = "",
+                headline = "",
+                summary = "",
+            ),
+            favoriteBadge = null,
+            badgeLoading = true,
             onBack = {},
             onAlias = {},
             onBlock = {},

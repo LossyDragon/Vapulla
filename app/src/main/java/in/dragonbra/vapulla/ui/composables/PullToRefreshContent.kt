@@ -21,8 +21,8 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 /**
  * Pull-down refresh around a screen's content, with the Material 3 Expressive loading
- * indicator. [isRefreshing] also covers the first load, so the content can simply be empty
- * until data arrives.
+ * indicator. [isRefreshing] also covers the first load; screens show a [SkeletonList] as the
+ * content until data arrives.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
