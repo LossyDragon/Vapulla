@@ -14,11 +14,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
@@ -29,7 +29,7 @@ import `in`.dragonbra.vapulla.util.Utils
  */
 @Composable
 fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 52.dp, friend: SteamFriend) {
-    CoilImage(
+    RemoteImage(
         modifier = modifier
             .size(size)
             .clip(MaterialTheme.shapes.large),

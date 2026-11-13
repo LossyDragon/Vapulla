@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
@@ -30,13 +31,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
+import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
+import `in`.dragonbra.vapulla.ui.screens.games.DownloadBadge
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.minutesToPlaytime
@@ -55,6 +58,7 @@ fun GameListItem(
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.large,
     localAccountId: Long? = null,
+    download: DownloadBadge? = null,
 ) {
     val isShared = !app.ownerAccountId.contains(localAccountId?.toInt())
     val byline = listOf(app.developer, app.publisher)
@@ -102,6 +106,30 @@ fun GameListItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    if (download != null) {
+                        val failed = download.state == DownloadState.FAILED
+                        InfoPill(
+                            text = when (download.state) {
+                                DownloadState.DOWNLOADING -> "Downloading ${download.percent}%"
+                                DownloadState.QUEUED -> "Queued"
+                                DownloadState.PAUSED -> "Paused ${download.percent}%"
+                                DownloadState.COMPLETED -> "Downloaded"
+                                DownloadState.FAILED -> "Download failed"
+                            },
+                            icon = Icons.Outlined.Download,
+                            containerColor = if (failed) {
+                                MaterialTheme.colorScheme.errorContainer
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer
+                            },
+                            contentColor = if (failed) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            },
+                        )
+                    }
+
                     if (app.type != SteamApp.AppType.game) {
                         InfoPill(
                             text = app.type.name.uppercase(),
@@ -152,7 +180,7 @@ fun GameListItem(
 
 @Composable
 private fun HeaderArt(app: SteamAppListItem) {
-    CoilImage(
+    RemoteImage(
         imageModel = { app.headerImageUrl },
         modifier = Modifier
             .width(116.dp)
@@ -208,6 +236,7 @@ private fun Preview() {
                     publisher = "Valve",
                 ),
                 onGameClicked = {},
+                download = DownloadBadge("Team Fortress 2", DownloadState.DOWNLOADING, 42),
             )
             GameListItem(
                 app = SteamAppListItem(

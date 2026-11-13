@@ -54,13 +54,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatInputBox
@@ -355,7 +355,7 @@ private fun GroupMessageRow(message: GroupChatMessage) {
         verticalAlignment = Alignment.Bottom,
     ) {
         if (!message.fromLocal) {
-            CoilImage(
+            RemoteImage(
                 imageModel = { message.senderAvatarUrl },
                 modifier = Modifier
                     .size(36.dp)

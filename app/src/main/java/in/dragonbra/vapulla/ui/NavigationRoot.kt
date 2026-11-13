@@ -1,17 +1,13 @@
 package `in`.dragonbra.vapulla.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
@@ -28,6 +24,8 @@ import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsScreen
 import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsViewModel
 import `in`.dragonbra.vapulla.ui.screens.cloud.CloudFilesScreen
 import `in`.dragonbra.vapulla.ui.screens.cloud.CloudFilesViewModel
+import `in`.dragonbra.vapulla.ui.screens.downloads.DownloadsScreen
+import `in`.dragonbra.vapulla.ui.screens.downloads.DownloadsViewModel
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailScreen
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailViewModel
 import `in`.dragonbra.vapulla.ui.screens.games.GamesScreen
@@ -237,6 +235,7 @@ fun NavigationRoot(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
                             onGameClick = { appId -> backStack.add(Routes.GameDetail(appId)) },
+                            onOpenDownloads = { backStack.add(Routes.Downloads) },
                         )
                     }
                     entry<Routes.GameDetail> {
@@ -250,6 +249,9 @@ fun NavigationRoot(
                             onOpenAchievements = { appId ->
                                 backStack.add(Routes.Achievements(appId))
                             },
+                            // The two link to each other, so going back and forth pops
+                            // instead of piling up.
+                            onOpenDownloads = { openOrReturnTo(Routes.Downloads) },
                         )
                     }
                     entry<Routes.CloudFiles> {
@@ -333,9 +335,16 @@ fun NavigationRoot(
                     }
                     /* Downloads */
                     entry<Routes.Downloads> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Downloads")
-                        }
+                        val viewModel = koinViewModel<DownloadsViewModel>()
+                        DownloadsScreen(
+                            viewModel = viewModel,
+                            onNavDrawerAction = onNavDrawerAction,
+                            onOpenGame = { appId -> openOrReturnTo(Routes.GameDetail(appId)) },
+                            onOpenLibrary = {
+                                backStack.removeAll { it != Routes.Home }
+                                backStack.add(Routes.Games)
+                            },
+                        )
                     }
                     entry<Routes.Settings> {
                         val viewModel = koinViewModel<SettingsViewModel>()

@@ -13,7 +13,7 @@ val DatabaseModules = module {
             androidApplication(),
             VapullaDatabase::class.java,
             VapullaDatabase.DATABASE_NAME,
-        ).apply {
+        ).addMigrations(VapullaDatabase.MIGRATION_10_11).apply {
             // Debug builds recreate the database on a schema bump instead of migrating.
             if (BuildConfig.DEBUG) {
                 fallbackToDestructiveMigration(true)
@@ -26,4 +26,5 @@ val DatabaseModules = module {
     single { get<VapullaDatabase>().emoticonDao() }
     single { get<VapullaDatabase>().steamAppDao() }
     single { get<VapullaDatabase>().steamLicenseDao() }
+    single { get<VapullaDatabase>().downloadDao() }
 }

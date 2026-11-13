@@ -9,6 +9,7 @@ import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.api.SteamApis
 import `in`.dragonbra.vapulla.service.auth.SteamAuthenticator
+import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -96,6 +97,7 @@ class SteamService : Service() {
     // Koin DI Injection
     private val db: VapullaDatabase by inject()
     private val account: AccountManager by inject()
+    private val downloads: DownloadManager by inject()
 
     // Lazy because the application context is not available before onCreate.
     private val connection: SteamConnection by lazy {
@@ -106,6 +108,7 @@ class SteamService : Service() {
             account = account,
             onStatus = ::updateStatus,
             onShutDown = ::onConnectionShutDown,
+            downloads = downloads,
         )
     }
 

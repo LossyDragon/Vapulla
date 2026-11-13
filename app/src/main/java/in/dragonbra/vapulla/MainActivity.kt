@@ -26,27 +26,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
-import coil.request.CachePolicy
-import com.skydoves.landscapist.coil.LocalCoilImageLoader
 import `in`.dragonbra.vapulla.manager.AppSettings
 import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.ui.NavigationRoot
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
-import `in`.dragonbra.vapulla.util.decoders.IconDecoder
 import kotlinx.coroutines.flow.MutableStateFlow
-import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.android.inject
 import timber.log.Timber
 
 /**
  * Single activity. Binds and starts [in.dragonbra.vapulla.service.SteamService], asks for the
- * notification permission, and hosts the Compose navigation root with a shared image loader.
+ * notification permission, and hosts the Compose navigation root.
  */
 class MainActivity : ComponentActivity() {
 
@@ -100,12 +92,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             RequestNotificationPermission()
 
-            val imageLoader = rememberVapullaImageLoader(LocalContext.current)
-
             val settings by settingsManager.settings.collectAsStateWithLifecycle(AppSettings())
 
             CompositionLocalProvider(
-                LocalCoilImageLoader provides imageLoader,
                 LocalAppSettings provides settings,
             ) {
                 VapullaTheme(
@@ -178,32 +167,4 @@ private fun RequestNotificationPermission() {
     LaunchedEffect(granted) {
         if (!granted) launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
-}
-
-/**
- * Coil loader shared by every image in the app: a small memory and disk cache plus decoders
- * for Steam's `.ico` client icons and animated PNG avatars.
- */
-@Composable
-private fun rememberVapullaImageLoader(context: Context): ImageLoader = remember(context) {
-    ImageLoader.Builder(context)
-        .memoryCachePolicy(CachePolicy.ENABLED)
-        .memoryCache {
-            MemoryCache.Builder(context)
-                .maxSizePercent(0.1)
-                .strongReferencesEnabled(true)
-                .build()
-        }
-        .diskCachePolicy(CachePolicy.ENABLED)
-        .diskCache {
-            DiskCache.Builder()
-                .maxSizePercent(0.03)
-                .directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                .build()
-        }
-        .components {
-            add(IconDecoder.Factory())
-            add(AnimatedPngDecoder.Factory())
-        }
-        .build()
 }

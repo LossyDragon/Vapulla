@@ -3,6 +3,7 @@ activityCompose = "1.13.0" # https://mvnrepository.com/artifact/androidx.activit
 agp = "9.5.1" # https://mvnrepository.com/artifact/com.android.application/com.android.application.gradle.plugin
 apng = "3.0.5" # https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
 bouncycastle = "1.87" # https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+coil = "2.7.0" # https://mvnrepository.com/artifact/io.coil-kt/coil-compose
 composeBom = "2026.09.00" # https://mvnrepository.com/artifact/androidx.compose/compose-bom
 datastore = "1.3.0" # https://mvnrepository.com/artifact/androidx.datastore/datastore-preferences
 javasteam = "1.9.0-SNAPSHOT" # https://mvnrepository.com/artifact/in.dragonbra/javasteam
@@ -12,7 +13,6 @@ kotlinter = "5.7.0" # https://plugins.gradle.org/plugin/org.jmailen.kotlinter
 kotlinxCollectionsImmutable = "0.5.2" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-collections-immutable
 kotlinxSerializationCore = "1.13.0" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm
 ksp = "2.3.13" # https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing-api?repo=central
-landscapist = "2.13.2" # https://mvnrepository.com/artifact/com.github.skydoves/landscapist-coil
 materialKolor = "5.0.1" # https://mvnrepository.com/artifact/com.materialkolor/material-kolor
 nav3Core = "1.2.1" # https://mvnrepository.com/artifact/androidx.navigation3/navigation3-runtime
 nav3Lifecycle = "2.11.0" # https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-viewmodel-navigation3
@@ -24,6 +24,8 @@ shimmer = "1.5.0" # https://mvnrepository.com/artifact/com.valentinilk.shimmer/c
 stability-analyzer = "0.15.0" # https://mvnrepository.com/artifact/com.github.skydoves.compose.stability.analyzer/com.github.skydoves.compose.stability.analyzer.gradle.plugin
 swipe = "1.3.0" # https://mvnrepository.com/artifact/me.saket.swipe/swipe
 timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
+xz = "1.12" # https://mvnrepository.com/artifact/org.tukaani/xz
+zstd = "1.5.7-26" # https://mvnrepository.com/artifact/com.github.luben/zstd-jni
 
 [libraries]
 # Compose UI
@@ -58,12 +60,16 @@ android-timber = { module = "com.jakewharton.timber:timber", version.ref = "timb
 # JavaSteam & Crypto
 bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 javasteam = { module = "in.dragonbra:javasteam", version.ref = "javasteam" }
+depotdownloader = { module = "in.dragonbra:javasteam-depotdownloader", version.ref = "javasteam" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+# Depot chunks are compressed with LZMA or Zstandard. JavaSteam leaves both libraries to the app.
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
+zstd = { module = "com.github.luben:zstd-jni", version.ref = "zstd" }
 
 # Images & Media
 apng = { module = "com.github.penfeizhou.android.animation:apng", version.ref = "apng" }
 swipe = { module = "me.saket.swipe:swipe", version.ref = "swipe" }
-landscapist-coil = { module = "com.github.skydoves:landscapist-coil", version.ref = "landscapist" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 compose-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version.ref = "shimmer" }
 qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
 
@@ -100,14 +106,16 @@ koin = [
 
 javasteam = [
     "bouncycastle",
+    "depotdownloader",
     "javasteam",
     "protobuf-java",
+    "xz",
 ]
 
 images = [
     "apng",
+    "coil-compose",
     "compose-shimmer",
-    "landscapist-coil",
     "qrose",
 ]
 

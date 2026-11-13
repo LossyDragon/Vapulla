@@ -218,6 +218,10 @@ data class SteamApp(
         val osArch: OSArch,
         val manifests: Map<String, ManifestInfo>,
         val encryptedManifests: Map<String, ManifestInfo>,
+        // Added later, so rows stored before then decode with the defaults.
+        /** `config/language`; empty for a depot that every language installs. */
+        val language: String = "",
+        val lowViolence: Boolean = false,
     )
 
     @Serializable

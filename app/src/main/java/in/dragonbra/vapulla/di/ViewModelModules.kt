@@ -4,6 +4,7 @@ import `in`.dragonbra.vapulla.ui.screens.achievements.AchievementsViewModel
 import `in`.dragonbra.vapulla.ui.screens.chat.ChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.chatrooms.ChatRoomsViewModel
 import `in`.dragonbra.vapulla.ui.screens.cloud.CloudFilesViewModel
+import `in`.dragonbra.vapulla.ui.screens.downloads.DownloadsViewModel
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.GameDetailViewModel
 import `in`.dragonbra.vapulla.ui.screens.games.GamesViewModel
 import `in`.dragonbra.vapulla.ui.screens.groupchat.GroupChatViewModel
@@ -23,7 +24,8 @@ import org.koin.dsl.module
 val ViewModelModules = module {
     viewModel { LoginViewModel(get(), get()) }
     viewModel { HomeViewModel(get(), get(), get(), get()) }
-    viewModel { GamesViewModel(get(), get()) }
+    viewModel { GamesViewModel(get(), get(), get(), get()) }
+    viewModel { DownloadsViewModel(get(), get()) }
     viewModel { ChatRoomsViewModel(get()) }
     viewModel { ServerBrowserViewModel(get(), get(), get()) }
     viewModel { ScreenshotsViewModel(get()) }
@@ -61,7 +63,10 @@ val ViewModelModules = module {
         GameDetailViewModel(
             appId = appId,
             appDao = get(),
+            downloadDao = get(),
+            licenseDao = get(),
             connection = get(),
+            downloads = get(),
         )
     }
     viewModel { (appId: Int) ->

@@ -44,13 +44,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.service.api.Screenshot
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
@@ -160,7 +160,7 @@ private fun ScreenshotsContent(
 @Composable
 private fun ScreenshotTile(screenshot: Screenshot, onClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        CoilImage(
+        RemoteImage(
             imageModel = { screenshot.thumbnailUrl },
             modifier = Modifier
                 .fillMaxWidth()
@@ -208,7 +208,7 @@ private fun ScreenshotViewer(screenshot: Screenshot, onDismiss: () -> Unit) {
             .pointerInput(Unit) {}
             .systemBarsPadding(),
     ) {
-        CoilImage(
+        RemoteImage(
             imageModel = { screenshot.imageUrl },
             modifier = Modifier.fillMaxSize(),
             imageOptions = ImageOptions(

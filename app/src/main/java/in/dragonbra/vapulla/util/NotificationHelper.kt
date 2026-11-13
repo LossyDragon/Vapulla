@@ -36,6 +36,10 @@ object NotificationHelper {
 
     const val NOTIFICATION_ID_SERVICE = 1
     private const val NOTIFICATION_ID_SIGNED_OUT = 2
+    private const val NOTIFICATION_ID_DOWNLOAD = 3
+
+    /** Keeps finished-download notifications apart from the others keyed by an ID. */
+    private const val TAG_DOWNLOAD = "download"
 
     /** Keeps chat notifications apart from friend requests, which share the friend's ID. */
     private const val TAG_FRIEND_MESSAGE = "friend_message"
@@ -118,6 +122,45 @@ object NotificationHelper {
 
     fun cancelSignedOutNotification(context: Context) {
         context.notificationManager.cancel(NOTIFICATION_ID_SIGNED_OUT)
+    }
+
+    /** The ongoing notification of the download that is running; [fraction] is 0 to 1. */
+    fun showDownloadProgress(context: Context, title: String, fraction: Float, text: String) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setContentIntent(openAppIntent(context))
+            .setProgress(100, (fraction * 100).toInt(), false)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        context.notificationManager.notify(NOTIFICATION_ID_DOWNLOAD, notification)
+    }
+
+    fun cancelDownloadProgress(context: Context) {
+        context.notificationManager.cancel(NOTIFICATION_ID_DOWNLOAD)
+    }
+
+    /** Says how the download of [appId] ended; one notification per app. */
+    fun showDownloadFinished(context: Context, appId: Int, title: String, text: String) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setContentIntent(openAppIntent(context))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        context.notificationManager.notify(TAG_DOWNLOAD, appId, notification)
+    }
+
+    fun cancelDownloadFinished(context: Context, appId: Int) {
+        context.notificationManager.cancel(TAG_DOWNLOAD, appId)
     }
 
     private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(

@@ -56,13 +56,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.ERegionCode
 import `in`.dragonbra.vapulla.service.api.GameServer
 import `in`.dragonbra.vapulla.service.api.ServerInfo
 import `in`.dragonbra.vapulla.ui.composables.FabClearance
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
@@ -344,7 +344,7 @@ private fun GamePickerRow(game: ServerGame, selected: Boolean, onClick: () -> Un
 
 @Composable
 private fun GameIcon(game: ServerGame?, size: Dp) {
-    CoilImage(
+    RemoteImage(
         imageModel = { game?.iconUrl.orEmpty() },
         modifier = Modifier
             .size(size)

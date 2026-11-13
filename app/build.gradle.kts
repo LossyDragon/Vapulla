@@ -78,6 +78,11 @@ dependencies {
         }
     }
 
+    // On Android the Zstandard bindings come as an aar, which carries the native libraries.
+    implementation(libs.zstd) {
+        artifact { type = "aar" }
+    }
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.compose)

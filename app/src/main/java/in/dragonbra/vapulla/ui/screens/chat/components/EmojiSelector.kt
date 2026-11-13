@@ -38,9 +38,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.db.entity.Emoticon
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.helpers.capitalize
 import kotlinx.collections.immutable.ImmutableList
@@ -205,7 +205,7 @@ fun EmoticonItem(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        CoilImage(
+        RemoteImage(
             imageModel = {
                 if (emoticon.isSticker) {
                     // Some sticker names contain spaces.

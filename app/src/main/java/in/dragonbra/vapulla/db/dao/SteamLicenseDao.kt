@@ -43,6 +43,10 @@ interface SteamLicenseDao {
     )
     suspend fun findLicenseInfo(packageIds: List<Int>): List<SteamLicenseInfo>
 
+    /** The raw comma-separated depot list of every license, for working out what is owned. */
+    @Query("SELECT depotIds FROM steam_license WHERE depotIds != ''")
+    suspend fun getAllDepotIds(): List<String>
+
     @Query("DELETE FROM steam_license WHERE packageId IN (:packageIds)")
     suspend fun deleteStaleLicenses(packageIds: List<Int>)
 }

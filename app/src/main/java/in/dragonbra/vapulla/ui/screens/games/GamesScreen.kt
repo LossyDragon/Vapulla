@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.ui.screens.games
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,9 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +45,7 @@ import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
@@ -50,7 +57,10 @@ import `in`.dragonbra.vapulla.ui.screens.games.components.GameBottomSheet
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
 import `in`.dragonbra.vapulla.ui.screens.games.components.GamesFloatingToolbar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
 
@@ -59,8 +69,10 @@ fun GamesScreen(
     viewModel: GamesViewModel,
     onNavDrawerAction: () -> Unit,
     onGameClick: (Int) -> Unit,
+    onOpenDownloads: () -> Unit,
 ) {
     val steamApps = viewModel.steamApps.collectAsLazyPagingItems()
+    val downloads by viewModel.downloadBadges.collectAsStateWithLifecycle()
     val appTypes by viewModel.appTypes.collectAsStateWithLifecycle()
     val localAccountId by viewModel.localAccountId.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -74,6 +86,8 @@ fun GamesScreen(
         onSearchQuery = viewModel::updateSearchQuery,
         onAppTypeClicked = viewModel::updateAppTypes,
         onGameClick = onGameClick,
+        downloads = downloads,
+        onOpenDownloads = onOpenDownloads,
     )
 }
 
@@ -88,6 +102,8 @@ private fun GamesScreenContent(
     onAppTypeClicked: (SteamApp.AppType) -> Unit,
     onSearchQuery: (String) -> Unit,
     onGameClick: (Int) -> Unit = {},
+    downloads: ImmutableMap<Int, DownloadBadge> = persistentMapOf(),
+    onOpenDownloads: () -> Unit = {},
 ) {
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberBottomSheetState(
@@ -127,6 +143,7 @@ private fun GamesScreenContent(
                                         app = app,
                                         shape = groupedListShape(index, steamApps.itemCount),
                                         localAccountId = localAccountId,
+                                        download = downloads[app.id],
                                         onGameClicked = { onGameClick(app.id) },
                                     )
                                 }
@@ -162,6 +179,12 @@ private fun GamesScreenContent(
                     ),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    if (downloads.isNotEmpty()) {
+                        item(key = "downloads") {
+                            DownloadsSummary(downloads = downloads, onClick = onOpenDownloads)
+                        }
+                    }
+
                     stickyHeader {
                         ListHeader(
                             count = steamApps.itemCount,
@@ -178,6 +201,7 @@ private fun GamesScreenContent(
                                 app = app,
                                 shape = groupedListShape(index, steamApps.itemCount),
                                 localAccountId = localAccountId,
+                                download = downloads[app.id],
                                 onGameClicked = { onGameClick(app.id) },
                             )
                         }
@@ -237,6 +261,61 @@ private fun ListHeader(count: Int, isRefreshing: Boolean) {
     }
 }
 
+/**
+ * What the downloads are up to, in one row above the list; tapping it opens the Downloads
+ * screen. Only shown once something has been downloaded or queued.
+ */
+@Composable
+private fun DownloadsSummary(downloads: ImmutableMap<Int, DownloadBadge>, onClick: () -> Unit) {
+    val running = downloads.values.firstOrNull { it.state == DownloadState.DOWNLOADING }
+    val waiting = downloads.values.count { it.state == DownloadState.QUEUED }
+    val paused = downloads.values.count { it.state == DownloadState.PAUSED }
+    val failed = downloads.values.count { it.state == DownloadState.FAILED }
+    val done = downloads.values.count { it.state == DownloadState.COMPLETED }
+
+    val title = running?.let { "Downloading ${it.name.decodeHtml()} · ${it.percent}%" }
+        ?: "Downloads"
+    val details = listOfNotNull(
+        "$waiting queued".takeIf { waiting > 0 },
+        "$paused paused".takeIf { paused > 0 },
+        "$failed failed".takeIf { failed > 0 },
+        "$done downloaded".takeIf { done > 0 },
+    ).joinToString(" · ")
+
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.Download, contentDescription = null)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (details.isNotEmpty()) {
+                    Text(text = details, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Open downloads",
+            )
+        }
+    }
+}
+
 @Preview
 @Composable
 private fun GamesScreenContentPreview() {
@@ -283,6 +362,10 @@ private fun GamesScreenContentPreview() {
             onNavDrawerAction = {},
             onAppTypeClicked = {},
             onSearchQuery = {},
+            downloads = persistentMapOf(
+                440 to DownloadBadge("Team Fortress 2", DownloadState.DOWNLOADING, 42),
+                730 to DownloadBadge("Counter-Strike 2", DownloadState.PAUSED, 10),
+            ),
         )
     }
 }

@@ -9,6 +9,7 @@ To Verify
 - Sign-in screen says why when Steam ends a session ("Signed out by Steam: Revoked")
 - Channel last-message previews for tags other than stickers (image, spoiler, flip, ...)
 - Emoticon tab while its images are still loading (sticker tab is confirmed)
+- Downloads: losing the network mid-download, a queue of several games, a multi-GB game
 
 Issues or Bugs
 -------------------
@@ -17,7 +18,7 @@ Issues or Bugs
 - Database is not cleared on log out
 - Friend request notification only opens the app, not the profile
 - Two identical messages in the same second are stored as one
-- Downloads screen is a placeholder
+
 - Is "Expired" another EResult that should clear the saved token?
 
 To Tidy Up
@@ -29,7 +30,7 @@ To Tidy Up
 
 Feature Ideas
 ----------------------------------------------------
-- Depot downloader (javasteam-depotdownloader): depots, manifests, download progress
+- Downloads: branch / language picker, verify files, workshop items
 - Game Coordinator (TF2 / CS2 / Dota 2 / Deadlock modules)
 - Family groups: members, shared library
 - Inventory service: owned items

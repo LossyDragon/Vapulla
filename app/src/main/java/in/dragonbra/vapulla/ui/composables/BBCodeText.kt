@@ -26,7 +26,6 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -57,13 +55,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import coil.ImageLoader
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
-import com.skydoves.landscapist.coil.LocalCoilImageLoader
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.decoders.AnimatedPngDecoder
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -127,7 +120,7 @@ private fun BBBlocks(blocks: ImmutableList<BBBlock>) {
 
             is BBBlock.Image -> BBImage(block)
 
-            is BBBlock.Sticker -> CoilImage(
+            is BBBlock.Sticker -> RemoteImage(
                 imageModel = { Utils.Constants.STICKER_URL + Uri.encode(block.type) },
                 imageOptions = ImageOptions(
                     contentDescription = block.type,
@@ -198,7 +191,7 @@ private fun emoticonContent(names: ImmutableList<String>): Map<String, InlineTex
                 placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
             ),
         ) {
-            CoilImage(
+            RemoteImage(
                 imageModel = { Utils.Constants.EMOTICON_URL + name },
                 imageOptions = ImageOptions(
                     contentDescription = name,
@@ -287,7 +280,7 @@ private fun BBImage(image: BBBlock.Image) {
             .height(180.dp)
     }
 
-    CoilImage(
+    RemoteImage(
         imageModel = { image.thumbnailUrl ?: image.url },
         imageOptions = ImageOptions(
             contentDescription = "Image",
@@ -991,52 +984,43 @@ private fun isUrlTerminator(c: Char): Boolean =
 @Preview
 @Composable
 private fun Preview_BBCodeText() {
-    val context = LocalContext.current
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .components { add(AnimatedPngDecoder.Factory()) }
-            .build()
-    }
+    VapullaTheme {
+        Surface {
+            Column {
+                Text("The BB Code Text")
+                BBCodeText(
+                    text = """
+            [h1]Header 1 text[/h1]
+            [h2]Header 2 [i]text[/i][/h2]
+            [h3]Header 3 text[/h3]
+            [b]Bold text [/b]
+            [u]Underlined text [/u]
+            [i]Italic text [/i]
+            [strike]Strikethrough text[/strike]
+            [spoiler]Spoiler text[/spoiler]
+            [noparse]Doesn't parse [b]tags[/b][/noparse]
+            [hr][/hr]
+            [url=store.steampowered.com] Website link [/url]
+            https://www.youtube.com/watch?v=tax4e4hBBZc
+            [list][*]First [b]item[/b][*]Second item[/list]
+            [quote=author]Quoted [b]text[/b][quote]and a nested one[/quote][/quote]
+            [code]Fixed-width font, preserves spaces[/code]
+            Some ːsteamhappyː for ːsteamsadː testing.
+            Hello World! [emoticon]steamhappy[/emoticon]
+            [random min="1" max="100" result="42"][/random]
+                    """.trimIndent(),
+                )
 
-    CompositionLocalProvider(LocalCoilImageLoader provides imageLoader) {
-        VapullaTheme {
-            Surface {
-                Column {
-                    Text("The BB Code Text")
-                    BBCodeText(
-                        text = """
-                [h1]Header 1 text[/h1]
-                [h2]Header 2 [i]text[/i][/h2]
-                [h3]Header 3 text[/h3]
-                [b]Bold text [/b]
-                [u]Underlined text [/u]
-                [i]Italic text [/i]
-                [strike]Strikethrough text[/strike]
-                [spoiler]Spoiler text[/spoiler]
-                [noparse]Doesn't parse [b]tags[/b][/noparse]
-                [hr][/hr]
-                [url=store.steampowered.com] Website link [/url]
-                https://www.youtube.com/watch?v=tax4e4hBBZc
-                [list][*]First [b]item[/b][*]Second item[/list]
-                [quote=author]Quoted [b]text[/b][quote]and a nested one[/quote][/quote]
-                [code]Fixed-width font, preserves spaces[/code]
-                Some ːsteamhappyː for ːsteamsadː testing.
-                Hello World! [emoticon]steamhappy[/emoticon]
-                [random min="1" max="100" result="42"][/random]
-                        """.trimIndent(),
-                    )
+                Spacer(Modifier.height(14.dp))
 
-                    Spacer(Modifier.height(14.dp))
+                BBCodeText(
+                    text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]",
+                )
 
-                    BBCodeText(
-                        text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]",
-                    )
-
-                    BBCodeText(
-                        text = "[img src=https://example.com/a.png thumbnail_src=" +
-                            "https://example.com/t.png width=735 height=561][/img]",
-                    )
-                }
+                BBCodeText(
+                    text = "[img src=https://example.com/a.png thumbnail_src=" +
+                        "https://example.com/t.png width=735 height=561][/img]",
+                )
             }
         }
     }

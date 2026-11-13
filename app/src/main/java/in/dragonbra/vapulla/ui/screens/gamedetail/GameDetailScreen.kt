@@ -47,20 +47,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.steamStoreAssetUrl
 import `in`.dragonbra.vapulla.service.api.AchievementProgress
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.screens.gamedetail.components.DownloadSection
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
@@ -78,6 +79,7 @@ fun GameDetailScreen(
     onOpenCloud: (Int) -> Unit,
     onOpenWorkshop: (Int) -> Unit,
     onOpenAchievements: (Int) -> Unit,
+    onOpenDownloads: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -94,6 +96,10 @@ fun GameDetailScreen(
         onOpenWorkshop = onOpenWorkshop,
         onOpenAchievements = onOpenAchievements,
         onRequestFreeLicense = viewModel::requestFreeLicense,
+        onOpenDownloads = onOpenDownloads,
+        onDownload = viewModel::startDownload,
+        onPauseDownload = viewModel::pauseDownload,
+        onResumeDownload = viewModel::resumeDownload,
     )
 }
 
@@ -106,6 +112,10 @@ private fun GameDetailContent(
     onOpenWorkshop: (Int) -> Unit,
     onOpenAchievements: (Int) -> Unit,
     onRequestFreeLicense: () -> Unit,
+    onOpenDownloads: () -> Unit = {},
+    onDownload: (SteamApp.OS) -> Unit = {},
+    onPauseDownload: () -> Unit = {},
+    onResumeDownload: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val app = uiState.app
@@ -152,6 +162,19 @@ private fun GameDetailContent(
             }
 
             item {
+                DownloadSection(
+                    download = uiState.download,
+                    progress = uiState.downloadProgress,
+                    plans = uiState.downloadPlans,
+                    freeBytes = uiState.freeBytes,
+                    onDownload = onDownload,
+                    onPause = onPauseDownload,
+                    onResume = onResumeDownload,
+                    onOpenDownloads = onOpenDownloads,
+                )
+            }
+
+            item {
                 Section(title = "Details") {
                     DetailRows(app, uiState, onAchievements = { onOpenAchievements(app.id) })
                 }
@@ -172,7 +195,7 @@ private fun GameDetailContent(
 private fun HeaderArt(app: SteamApp) {
     val url = app.getHeaderImageUrl()
         ?: steamStoreAssetUrl(app.id, "header.jpg")
-    CoilImage(
+    RemoteImage(
         imageModel = { url },
         modifier = Modifier
             .fillMaxWidth()
@@ -347,7 +370,7 @@ private fun BranchRows(app: SteamApp) {
     )
 }
 
-/** One row per depot with its OS and the public manifest size, the hook for a downloader. */
+/** One row per depot with its OS and the public manifest size. */
 @Composable
 private fun DepotRows(app: SteamApp) {
     DetailList(

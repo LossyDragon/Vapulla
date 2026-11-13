@@ -7,6 +7,7 @@ import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.steam.discovery.FileServerListProvider
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
+import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamgamecoordinator.SteamGameCoordinator
@@ -43,6 +44,7 @@ import `in`.dragonbra.vapulla.service.api.SessionsApi
 import `in`.dragonbra.vapulla.service.api.SteamApis
 import `in`.dragonbra.vapulla.service.api.WorkshopApi
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
+import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.service.handler.VapullaHandler
 import `in`.dragonbra.vapulla.service.sync.FriendsSync
 import `in`.dragonbra.vapulla.service.sync.LicenseSync
@@ -80,6 +82,7 @@ class SteamConnection(
     private val account: AccountManager,
     private val onStatus: (String) -> Unit,
     private val onShutDown: (sessionLost: Boolean) -> Unit,
+    private val downloads: DownloadManager,
 ) {
 
     /** The feature APIs; available while a client exists. */
@@ -217,9 +220,7 @@ class SteamConnection(
      *
      * @param sessionLost true when a signed-in session ended without the user asking for it.
      */
-    private fun shutDown(
-        sessionLost: Boolean = SteamState.isLoggedIn.value && !userSignedOut,
-    ) {
+    private fun shutDown(sessionLost: Boolean = SteamState.isLoggedIn.value && !userSignedOut) {
         resumeOnReconnect = false
 
         reconnectJob?.cancel()
@@ -246,6 +247,9 @@ class SteamConnection(
     }
 
     private fun stopSession() {
+        // Downloads need a signed-in client; the queue waits for the next license list.
+        downloads.detach()
+
         sessionJob?.cancel(CancellationException("Session ended"))
         sessionJob = null
     }
@@ -364,6 +368,7 @@ class SteamConnection(
                     callbacks.subscribe(onLoggedOn),
                     callbacks.subscribe(onLoggedOff),
                     callbacks.subscribe(onEmoticonList),
+                    callbacks.subscribe(onLicenseList),
                 ),
             )
             components.forEach { subscriptions.addAll(it.subscribe(callbacks)) }
@@ -570,6 +575,17 @@ class SteamConnection(
         }
 
         steamClient?.disconnect()
+    }
+
+    /**
+     * Steam sends the license list after every sign-in. The depot downloader needs it to tell
+     * what the account may download, so this is the moment downloads can start or carry on.
+     */
+    private val onLicenseList: Consumer<LicenseListCallback> = Consumer {
+        val client = steamClient
+        if (it.result == EResult.OK && client != null) {
+            downloads.attach(client, it.licenseList)
+        }
     }
 
     private val onEmoticonList: Consumer<EmoticonListCallback> = Consumer {

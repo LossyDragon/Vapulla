@@ -54,6 +54,8 @@ fun KeyValue.generateSteamApp(): SteamApp {
                     osArch = OSArch.from(currentDepot["config"]["osarch"].value),
                     manifests = manifests,
                     encryptedManifests = encryptedManifests,
+                    language = currentDepot["config"]["language"].value.orEmpty(),
+                    lowViolence = currentDepot["config"]["lowviolence"].asBoolean(),
                 )
             },
         branches = depotsNode["branches"].children.associate {

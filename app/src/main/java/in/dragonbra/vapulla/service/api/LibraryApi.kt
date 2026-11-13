@@ -5,11 +5,14 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamcl
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetGameAchievements_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetOwnedGames_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
+import `in`.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.SteamUserStats
 import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.callback.UserStatsCallback
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.util.generateSteamApp
 import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
 
@@ -83,6 +86,20 @@ class LibraryApi(
                 percentage = progress.percentage,
             )
         }
+    }
+
+    /**
+     * The app's current PICS info straight from Steam, or null if Steam does not know the app.
+     * Used where the stored row may be out of date, such as picking depots to download.
+     */
+    suspend fun appInfo(appId: Int): SteamApp? {
+        val token = steamApps.picsGetAccessTokens(appId).await().appTokens[appId] ?: 0L
+        val callback = steamApps.picsGetProductInfo(PICSRequest(appId, token)).await()
+
+        return callback.results
+            .firstNotNullOfOrNull { it.apps[appId] }
+            ?.keyValues
+            ?.generateSteamApp()
     }
 
     /** Adds a free-to-play or free-on-demand app to the account. */
