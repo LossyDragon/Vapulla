@@ -39,7 +39,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -69,7 +68,6 @@ import com.materialkolor.ktx.isLight
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.data.ProfileInfo
@@ -107,7 +105,6 @@ fun ProfileScreen(viewModel: ProfileViewModel, onNavDrawerAction: () -> Unit, on
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileScreenContent(
     friend: SteamFriend,

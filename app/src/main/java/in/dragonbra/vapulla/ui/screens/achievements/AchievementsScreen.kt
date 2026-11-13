@@ -55,7 +55,6 @@ fun AchievementsScreen(viewModel: AchievementsViewModel, onBack: () -> Unit) {
     AchievementsContent(uiState = uiState, onBack = onBack, onRefresh = viewModel::refresh)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AchievementsContent(
     uiState: AchievementsUiState,
@@ -136,7 +135,6 @@ private fun AchievementsContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun Summary(stats: GameStats) {
     val unlocked = stats.achievements.count { it.unlocked }
@@ -165,6 +163,7 @@ private fun Summary(stats: GameStats) {
     }
 }
 
+@Suppress("SameParameterValue")
 @Composable
 private fun SectionTitle(title: String) {
     Text(

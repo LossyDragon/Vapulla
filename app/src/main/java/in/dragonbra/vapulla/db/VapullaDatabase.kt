@@ -24,7 +24,13 @@ import `in`.dragonbra.vapulla.db.entity.SteamLicense
  * writes into it as Steam sends updates.
  */
 @Database(
-    entities = [SteamFriend::class, ChatMessage::class, Emoticon::class, SteamApp::class, SteamLicense::class],
+    entities = [
+        SteamFriend::class,
+        ChatMessage::class,
+        Emoticon::class,
+        SteamApp::class,
+        SteamLicense::class,
+    ],
     version = 10,
     exportSchema = true,
 )

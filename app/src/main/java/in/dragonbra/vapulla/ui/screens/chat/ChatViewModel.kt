@@ -124,7 +124,6 @@ class ChatViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         Timber.d("onCleared()")
     }
 

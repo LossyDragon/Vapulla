@@ -77,7 +77,7 @@ data class SteamFriend(
         get() = nickname.ifEmpty { name.ifEmpty { "<unknown>" } }
 
     val isPlayingGame: Boolean
-        get() = if (isOnline) gameName.isNotEmpty() || gameAppID != 0 else false
+        get() = isOnline && (gameName.isNotEmpty() || gameAppID != 0)
 
     /**
      * The game's own presence line (`status`), when it publishes a readable one. Some games
@@ -195,7 +195,7 @@ data class SteamFriend(
         result = 31 * result + lastMessageTime.hashCode()
         result = 31 * result + newMessageCount
         result = 31 * result + name.hashCode()
-        result = 31 * result + (avatar?.hashCode() ?: 0)
+        result = 31 * result + avatar.hashCode()
         result = 31 * result + relation.hashCode()
         result = 31 * result + state.hashCode()
         result = 31 * result + gameID.hashCode()

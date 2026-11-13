@@ -132,11 +132,9 @@ class WorkshopViewModel(
             if (result == EResult.OK) {
                 _uiState.update {
                     val set = if (subscribed) {
-                        it.subscribed.remove(
-                            item.id,
-                        )
+                        it.subscribed.removing(item.id)
                     } else {
-                        it.subscribed.add(item.id)
+                        it.subscribed.adding(item.id)
                     }
                     it.copy(subscribed = set)
                 }

@@ -77,7 +77,7 @@ fun GamesScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GamesScreenContent(
     steamApps: LazyPagingItems<SteamAppListItem>,

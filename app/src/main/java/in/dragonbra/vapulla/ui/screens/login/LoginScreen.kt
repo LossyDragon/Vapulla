@@ -78,7 +78,6 @@ fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LoginScreenContent(
     snackbarHostState: SnackbarHostState,

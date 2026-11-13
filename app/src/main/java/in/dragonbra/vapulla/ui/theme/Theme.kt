@@ -21,7 +21,6 @@ import androidx.core.view.WindowCompat
  * Material 3 Expressive theme. The app is dark-first and uses [VapullaDarkColors] by default;
  * pass [useDynamicColor] to follow the wallpaper palette on Android 12+ instead.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VapullaTheme(
     isDarkTheme: Boolean = true,

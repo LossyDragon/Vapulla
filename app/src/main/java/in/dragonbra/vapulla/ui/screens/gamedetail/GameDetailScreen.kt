@@ -95,7 +95,6 @@ fun GameDetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun GameDetailContent(
     uiState: GameDetailUiState,
@@ -217,7 +216,6 @@ private fun Pills(app: SteamApp, uiState: GameDetailUiState) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ActionRow(
     app: SteamApp,
@@ -320,7 +318,6 @@ private fun DetailList(rows: List<Pair<String, String>>) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DetailRows(app: SteamApp, uiState: GameDetailUiState, onAchievements: () -> Unit) {
     uiState.achievements?.takeIf { it.total > 0 }?.let { progress ->

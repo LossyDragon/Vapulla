@@ -7,7 +7,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclie
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclient.EAuthTokenRevokeAction
 import `in`.dragonbra.javasteam.rpc.service.Authentication
 import `in`.dragonbra.javasteam.types.SteamID
-import kotlinx.coroutines.future.await
 import timber.log.Timber
 
 /** Signed-in devices via the `Authentication` unified service. */

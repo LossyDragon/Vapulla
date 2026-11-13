@@ -370,7 +370,7 @@ class SteamConnection(
             }
 
             // Feed the in-app packet log; see NetworkLog.
-            client.setDebugNetworkListener(NetworkLog)
+            client.debugNetworkListener = NetworkLog
         }
     }
 

@@ -73,7 +73,6 @@ fun SessionsScreen(viewModel: SessionsViewModel, onNavDrawerAction: () -> Unit) 
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SessionsContent(
     uiState: SessionsUiState,

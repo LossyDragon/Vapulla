@@ -5,7 +5,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamcl
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetGameBadgeLevels_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.types.SteamID
-import kotlinx.coroutines.future.await
 import timber.log.Timber
 
 /** Profile extras from the `Player` unified service: Steam level and badges. */
@@ -17,7 +16,7 @@ class ProfileApi(private val player: Player) {
      */
     suspend fun badgeLevels(appId: Int = 0): BadgeLevels? {
         val request = CPlayer_GetGameBadgeLevels_Request.newBuilder()
-            .apply { if (appId > 0) setAppid(appId) }
+            .apply { if (appId > 0) appid = appId }
             .build()
 
         val response = player.getGameBadgeLevels(request).await()

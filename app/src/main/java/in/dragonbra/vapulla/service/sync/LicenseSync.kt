@@ -27,7 +27,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -186,10 +185,12 @@ class LicenseSync(
                     .associateBy { info -> info.id }
 
                 val licenseByPackageId = changeInfoById.values
+                    .asSequence()
                     .map { info -> info.packageId }
                     .filter { packageId -> packageId != Int.MAX_VALUE }
                     .distinct()
                     .chunked(SQL_IN_CHUNK_SIZE)
+                    .toList() // Sequence lambdas can't suspend, so query from a list.
                     .flatMap { ids -> licenseDao.findLicenseInfo(ids) }
                     .associateBy { license -> license.packageID }
 
@@ -325,7 +326,7 @@ class LicenseSync(
                     }
                 }
 
-                val packageIds = licensesToRemove.map { it.packageID }
+                val packageIds = licensesToRemove.map { toRemove -> toRemove.packageID }
                 db.steamLicenseDao().deleteStaleLicenses(packageIds)
             }
 
@@ -345,7 +346,7 @@ class LicenseSync(
             val awaitingPics = db.steamAppDao().findAppsAwaitingPics()
             if (awaitingPics.isNotEmpty()) {
                 Timber.i("Resuming PICS for ${awaitingPics.size} apps still without app info")
-                awaitingPics.forEach { requestAppInfo(it) }
+                awaitingPics.forEach(::requestAppInfo)
             }
         }
     }

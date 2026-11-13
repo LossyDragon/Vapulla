@@ -23,6 +23,7 @@ import `in`.dragonbra.vapulla.broadcastreceiver.BlockRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.FriendRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.IgnoreRequestReceiver
 import `in`.dragonbra.vapulla.broadcastreceiver.ReplyReceiver
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
@@ -38,7 +39,7 @@ object NotificationHelper {
     /** Keeps chat notifications apart from friend requests, which share the friend's ID. */
     private const val TAG_FRIEND_MESSAGE = "friend_message"
 
-    private const val AVATAR_TIMEOUT_MS = 5_000L
+    private val AVATAR_TIMEOUT_MS = 5.seconds
     private const val AVATAR_SIZE_PX = 200
 
     fun createNotificationChannels(context: Context) {

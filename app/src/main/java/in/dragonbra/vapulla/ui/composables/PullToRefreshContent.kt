@@ -24,7 +24,7 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
  * indicator. [isRefreshing] also covers the first load, so the content can simply be empty
  * until data arrives.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PullToRefreshContent(
     isRefreshing: Boolean,

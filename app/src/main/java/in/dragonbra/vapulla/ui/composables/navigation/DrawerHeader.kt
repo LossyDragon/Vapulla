@@ -25,7 +25,6 @@ import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun DrawerHeader(
     avatar: String,

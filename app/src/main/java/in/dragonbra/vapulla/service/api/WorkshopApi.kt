@@ -7,7 +7,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPublishedfile
 import `in`.dragonbra.javasteam.rpc.service.PublishedFile
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.future.await
 import timber.log.Timber
 
 /** Workshop browsing and subscriptions via the `PublishedFile` unified service. */
@@ -31,7 +30,7 @@ class WorkshopApi(private val publishedFile: PublishedFile) {
             .setReturnMetadata(true)
             .setReturnDetails(true)
             .apply {
-                if (sort == WorkshopSort.Trending) setDays(TREND_DAYS)
+                if (sort == WorkshopSort.Trending) days = TREND_DAYS
                 if (!searchText.isNullOrBlank()) setSearchText(searchText)
             }
             .build()

@@ -11,7 +11,6 @@ import java.util.zip.InflaterInputStream
 import java.util.zip.ZipInputStream
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -36,7 +35,7 @@ class CloudApi(private val cloud: Cloud) {
                 appId = file.appid,
                 filename = file.filename,
                 size = file.fileSize.toLong(),
-                timestamp = file.timestamp.toLong(),
+                timestamp = file.timestamp,
                 sha = file.fileSha,
                 platforms = file.platformsToSyncList.toImmutableList(),
             )

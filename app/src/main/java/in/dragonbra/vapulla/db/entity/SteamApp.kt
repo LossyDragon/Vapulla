@@ -247,6 +247,7 @@ data class SteamApp(
         }
     }
 
+    @Suppress("EnumEntryName")
     enum class OS(val code: Int) {
         none(0),
         windows(1),
@@ -324,6 +325,7 @@ data class SteamApp(
         }
     }
 
+    @Suppress("EnumEntryName")
     enum class Language {
         english,
         german,
@@ -378,6 +380,7 @@ data class SteamApp(
         }
     }
 
+    @Suppress("EnumEntryName")
     enum class AppType(val code: Int) {
         invalid(0),
         game(0x01),

@@ -37,7 +37,6 @@ private val quickTypes = listOf(
  * selected segment morphs into the full pill, the same convention as the chat screen's emoji
  * selector. An empty [appTypes] means the default "Games" filter.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun GamesFloatingToolbar(
     appTypes: ImmutableSet<AppType>,

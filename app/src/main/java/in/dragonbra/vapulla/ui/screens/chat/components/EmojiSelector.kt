@@ -65,7 +65,6 @@ private val IMAGE_INSET = 6.dp
  * The account's Steam emoticons and stickers, as delivered by `EmoticonListCallback`, on two
  * tabs. Shown in place of the keyboard by [ChatInputBox].
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EmojiStickerSelectorComponent(
     emoticons: ImmutableList<Emoticon>,

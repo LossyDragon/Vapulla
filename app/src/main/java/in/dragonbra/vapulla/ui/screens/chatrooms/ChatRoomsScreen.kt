@@ -66,7 +66,6 @@ fun ChatRoomsScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatRoomsContent(
     uiState: ChatRoomsUiState,

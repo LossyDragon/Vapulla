@@ -152,7 +152,6 @@ class LoginViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         Timber.d("ViewModel Cleared")
     }
 

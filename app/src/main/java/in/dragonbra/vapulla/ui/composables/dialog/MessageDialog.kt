@@ -1,7 +1,9 @@
 package `in`.dragonbra.vapulla.ui.composables.dialog
 
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -22,7 +23,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
-import `in`.dragonbra.vapulla.R
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 @Composable
@@ -85,18 +87,22 @@ fun MessageDialog(
     }
 }
 
+private class ShortLorem : LoremIpsum(40)
+
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
-private fun Preview_MessageDialog() {
+private fun Preview_MessageDialog(@PreviewParameter(ShortLorem::class) text: String) {
     VapullaTheme {
-        MessageDialog(
-            visible = true,
-            icon = Icons.Default.Gamepad,
-            title = "Message Title",
-            message = stringResource(R.string.lorem),
-            onDismissRequest = {},
-            onDismissClick = {},
-            onConfirmClick = {},
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            MessageDialog(
+                visible = true,
+                icon = Icons.Default.Gamepad,
+                title = "Message Title",
+                message = text,
+                onDismissRequest = {},
+                onDismissClick = {},
+                onConfirmClick = {},
+            )
+        }
     }
 }

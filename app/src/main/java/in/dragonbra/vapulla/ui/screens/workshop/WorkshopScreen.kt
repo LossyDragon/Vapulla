@@ -83,7 +83,6 @@ fun WorkshopScreen(viewModel: WorkshopViewModel, onBack: () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun WorkshopContent(
     uiState: WorkshopUiState,
@@ -181,7 +180,6 @@ private fun WorkshopContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun WorkshopRow(
     item: WorkshopItem,

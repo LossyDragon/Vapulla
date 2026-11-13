@@ -31,7 +31,6 @@ import `in`.dragonbra.vapulla.util.Utils.toTimeString
  * One friend row, styled as a Material 3 Expressive grouped list item: a tonal container whose
  * [shape] the caller picks by position, presence shown by the avatar dot and the status line.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FriendListItem(
     friend: SteamFriend,

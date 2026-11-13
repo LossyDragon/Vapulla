@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
@@ -154,7 +153,7 @@ fun NavigationRoot(
                     // Home is the root of the stack, so going there only pops back to it.
                     backStack.removeAll { it != Routes.Home }
                     if (route != Routes.Home || backStack.isEmpty()) {
-                        backStack.addLast(route)
+                        backStack.add(route)
                     }
                     scope.launch {
                         drawerState.close()
@@ -203,7 +202,7 @@ fun NavigationRoot(
                         }
                         ChatScreen(
                             viewModel = viewModel,
-                            onBack = { backStack.removeLast() },
+                            onBack = { backStack.removeLastOrNull() },
                         )
                     }
                     /* Profile */
@@ -214,7 +213,7 @@ fun NavigationRoot(
                         ProfileScreen(
                             viewModel = viewModel,
                             onNavDrawerAction = onNavDrawerAction,
-                            onBack = { backStack.removeLast() },
+                            onBack = { backStack.removeLastOrNull() },
                         )
                     }
                     /* Games */
@@ -231,7 +230,7 @@ fun NavigationRoot(
                             koinViewModel<GameDetailViewModel> { parametersOf(it.appId) }
                         GameDetailScreen(
                             viewModel = viewModel,
-                            onBack = { backStack.removeLast() },
+                            onBack = { backStack.removeLastOrNull() },
                             onOpenCloud = { appId -> backStack.add(Routes.CloudFiles(appId)) },
                             onOpenWorkshop = { appId -> backStack.add(Routes.Workshop(appId)) },
                             onOpenAchievements = { appId ->
@@ -242,18 +241,24 @@ fun NavigationRoot(
                     entry<Routes.CloudFiles> {
                         val viewModel =
                             koinViewModel<CloudFilesViewModel> { parametersOf(it.appId) }
-                        CloudFilesScreen(viewModel = viewModel, onBack = { backStack.removeLast() })
+                        CloudFilesScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
                     }
                     entry<Routes.Workshop> {
                         val viewModel = koinViewModel<WorkshopViewModel> { parametersOf(it.appId) }
-                        WorkshopScreen(viewModel = viewModel, onBack = { backStack.removeLast() })
+                        WorkshopScreen(
+                            viewModel = viewModel,
+                            onBack = { backStack.removeLastOrNull() },
+                        )
                     }
                     entry<Routes.Achievements> {
                         val viewModel =
                             koinViewModel<AchievementsViewModel> { parametersOf(it.appId) }
                         AchievementsScreen(
                             viewModel = viewModel,
-                            onBack = { backStack.removeLast() },
+                            onBack = { backStack.removeLastOrNull() },
                         )
                     }
                     /* Showcase screens reachable from the drawer */
@@ -280,7 +285,7 @@ fun NavigationRoot(
                         }
                         GroupChatScreen(
                             viewModel = viewModel,
-                            onBack = { backStack.removeLast() },
+                            onBack = { backStack.removeLastOrNull() },
                             // Replaces this entry rather than adding one, so Back always
                             // returns to Group Chats however many channels were visited.
                             onSwitchChannel = { room ->

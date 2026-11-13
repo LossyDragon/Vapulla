@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -29,9 +30,7 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,7 +61,6 @@ fun SettingsScreen(viewModel: SettingsViewModel, onNavDrawerAction: () -> Unit) 
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SettingsContent(
     settings: AppSettings,
@@ -286,8 +284,15 @@ private fun SliderRow(
     shape: androidx.compose.ui.graphics.Shape,
     onValueChange: (Int) -> Unit,
 ) {
-    var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
-    val snapped = (dragValue / step).toInt() * step
+    // Keyed on value so the thumb follows changes made outside the drag.
+    val sliderState = remember(value) {
+        SliderState(
+            value = value.toFloat(),
+            steps = (range.last - range.first) / step - 1,
+            trackRange = range.first.toFloat()..range.last.toFloat(),
+        )
+    }
+    val snapped = (sliderState.value / step).toInt() * step
 
     SettingRow(
         title = title,
@@ -302,18 +307,15 @@ private fun SliderRow(
         },
         below = {
             Slider(
-                value = dragValue,
-                onValueChange = { dragValue = it },
+                state = sliderState,
+                onValueChange = { sliderState.value = it },
                 onValueChangeFinished = { onValueChange(snapped) },
-                valueRange = range.first.toFloat()..range.last.toFloat(),
-                steps = (range.last - range.first) / step - 1,
             )
         },
     )
 }
 
 /** A connected button group for a short list of fixed choices. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ChoiceRow(
     title: String,

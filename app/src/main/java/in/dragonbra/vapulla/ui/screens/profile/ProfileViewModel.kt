@@ -61,7 +61,6 @@ class ProfileViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         Timber.d("onCleared")
     }
 

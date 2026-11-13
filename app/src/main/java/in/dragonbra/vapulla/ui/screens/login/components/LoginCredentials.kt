@@ -46,7 +46,6 @@ import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialog
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun LoginCredentials(
     isLoading: Boolean,

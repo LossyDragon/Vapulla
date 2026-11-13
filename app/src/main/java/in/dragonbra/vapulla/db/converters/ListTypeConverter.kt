@@ -26,7 +26,7 @@ class ListTypeConverter {
 
     @TypeConverter
     fun toStringList(list: ImmutableList<String>?): String =
-        Json.encodeToString(list?.toList() ?: emptyList<String>())
+        Json.encodeToString(list?.toList() ?: emptyList())
 
     @TypeConverter
     fun fromStringMap(value: String?): Map<String, String> =

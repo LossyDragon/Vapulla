@@ -9,46 +9,28 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,7 +59,6 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.coil.CoilImage
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.steam.handlers.steamfriends.FriendMessage
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
 import `in`.dragonbra.vapulla.db.entity.Emoticon
@@ -89,9 +70,8 @@ import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.Utils.getAvatarURL
 import `in`.dragonbra.vapulla.util.Utils.toAvatarURL
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.delay
@@ -102,7 +82,7 @@ import kotlinx.coroutines.launch
 private const val FOLLOW_THRESHOLD = 5
 
 /** How long to wait for a sent message to appear before giving up on scrolling to it. */
-private const val SENT_SCROLL_TIMEOUT_MS = 3_000L
+private val SENT_SCROLL_TIMEOUT_MS = 3.seconds
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
@@ -164,7 +144,6 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatScreenContent(
     uiState: ChatUiState,

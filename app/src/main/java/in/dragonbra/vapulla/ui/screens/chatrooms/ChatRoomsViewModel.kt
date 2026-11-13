@@ -50,7 +50,6 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         // Stop the pushes this screen asked for; an open channel keeps its own hold.
         _uiState.value.expanded.forEach { chatRooms?.releaseGroup(it) }
     }
@@ -91,7 +90,11 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
 
         _uiState.update {
             it.copy(
-                expanded = if (expand) it.expanded.add(groupId) else it.expanded.remove(groupId),
+                expanded = if (expand) {
+                    it.expanded.adding(groupId)
+                } else {
+                    it.expanded.removing(groupId)
+                },
             )
         }
     }

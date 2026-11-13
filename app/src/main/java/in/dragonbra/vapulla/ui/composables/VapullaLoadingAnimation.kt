@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 /**
@@ -76,7 +77,7 @@ fun VapullaLoadingAnimation(
     LaunchedEffect(isAnimating) {
         if (isAnimating) {
             middleAnimationStarted = true
-            delay(300)
+            delay(300.milliseconds)
             bottomAnimationStarted = true
         } else {
             // Reset to initial state when stopped

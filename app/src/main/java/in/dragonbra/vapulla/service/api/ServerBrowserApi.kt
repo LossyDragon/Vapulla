@@ -7,7 +7,6 @@ import `in`.dragonbra.vapulla.util.SourceQuery
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.future.await
 
 /**
  * Game server browser: the `SteamMasterServer` handler lists servers for an app, then each

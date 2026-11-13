@@ -63,7 +63,6 @@ fun HomeScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenContent(
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,

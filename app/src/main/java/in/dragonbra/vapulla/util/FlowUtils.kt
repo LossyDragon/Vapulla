@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
+@Suppress("SameParameterValue")
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.timeChunked(maxBatchSize: Int, duration: Duration = 1.seconds): Flow<List<T>> =
     flow {

@@ -23,6 +23,7 @@ import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.toChatPreview
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -192,8 +192,8 @@ class ChatRoomsApi(
             .setMaxCount(HISTORY_PAGE_SIZE)
             .apply {
                 if (before != null) {
-                    setLastTime((before.timestamp / 1000).toInt())
-                    setLastOrdinal(before.ordinal)
+                    lastTime = (before.timestamp / 1000).toInt()
+                    lastOrdinal = before.ordinal
                 }
             }
             .build()
@@ -267,7 +267,7 @@ class ChatRoomsApi(
     }
 
     /** Marks a channel as read up to now, which clears its unread state on other devices. */
-    suspend fun ack(groupId: Long, chatId: Long) {
+    fun ack(groupId: Long, chatId: Long) {
         val request = CChatRoom_AckChatMessage_Notification.newBuilder()
             .setChatGroupId(groupId)
             .setChatId(chatId)
@@ -418,7 +418,7 @@ class ChatRoomsApi(
     }
 
     private companion object {
-        const val PERSONA_TIMEOUT_MS = 3_000L
+        val PERSONA_TIMEOUT_MS = 3.seconds
 
         /** Messages per page of channel history. */
         const val HISTORY_PAGE_SIZE = 50

@@ -191,7 +191,7 @@ internal fun ChatInputBox(
                 }
             }
 
-            if (panelOpen && emoticons != null) {
+            if (panelOpen) {
                 EmojiStickerSelectorComponent(
                     emoticons = emoticons,
                     selectedTab = selectedTab,

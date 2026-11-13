@@ -13,7 +13,6 @@ import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 

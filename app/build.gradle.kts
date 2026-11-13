@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         applicationId = "in.dragonbra.vapulla"
-        minSdk = 35
+        minSdk = 28
         targetSdk = 37
 
         versionCode = 5

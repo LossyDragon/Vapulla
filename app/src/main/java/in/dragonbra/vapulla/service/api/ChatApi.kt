@@ -26,6 +26,7 @@ import `in`.dragonbra.vapulla.util.Utils
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,7 +35,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -419,6 +419,6 @@ class ChatApi(
         const val TYPING_SEND_INTERVAL_MS = 8_000L
 
         /** How long a friend counts as typing after their last notice. */
-        const val TYPING_SHOWN_MS = 15_000L
+        val TYPING_SHOWN_MS = 15.seconds
     }
 }

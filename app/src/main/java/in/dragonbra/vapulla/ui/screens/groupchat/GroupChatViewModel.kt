@@ -135,7 +135,6 @@ class GroupChatViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
         chatRooms?.releaseGroup(groupId)
     }
 

@@ -19,9 +19,11 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
  * the scaffold padding to centre it on a whole screen; by default it sits at the top.
  */
 @Composable
-fun SearchResultMessage(message: String, modifier: Modifier = Modifier.fillMaxWidth()) {
+fun SearchResultMessage(message: String, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(32.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

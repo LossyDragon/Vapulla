@@ -11,7 +11,6 @@ import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.callback.UserStats
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.javasteam.types.SteamID
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.future.await
 import timber.log.Timber
 
 /**
