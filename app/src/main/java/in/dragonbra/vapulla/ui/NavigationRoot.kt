@@ -41,6 +41,8 @@ import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import `in`.dragonbra.vapulla.ui.screens.networklog.NetworkLogScreen
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileScreen
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
+import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsScreen
+import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsViewModel
 import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserScreen
 import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserViewModel
 import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsScreen
@@ -64,6 +66,7 @@ sealed class Routes {
     data object ChatRooms : Routes()
     data object ServerBrowser : Routes()
     data object Sessions : Routes()
+    data object Screenshots : Routes()
     data object NetworkLog : Routes()
     data class FriendChat(val id: Long) : Routes()
     data class FriendProfile(val id: Long) : Routes()
@@ -306,6 +309,13 @@ fun NavigationRoot(
                     entry<Routes.Sessions> {
                         val viewModel = koinViewModel<SessionsViewModel>()
                         SessionsScreen(viewModel = viewModel, onNavDrawerAction = onNavDrawerAction)
+                    }
+                    entry<Routes.Screenshots> {
+                        val viewModel = koinViewModel<ScreenshotsViewModel>()
+                        ScreenshotsScreen(
+                            viewModel = viewModel,
+                            onNavDrawerAction = onNavDrawerAction,
+                        )
                     }
                     entry<Routes.NetworkLog> {
                         NetworkLogScreen(onNavDrawerAction = onNavDrawerAction)

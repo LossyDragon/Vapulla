@@ -10,6 +10,7 @@ import `in`.dragonbra.vapulla.ui.screens.groupchat.GroupChatViewModel
 import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
+import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsViewModel
 import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserViewModel
 import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsViewModel
 import `in`.dragonbra.vapulla.ui.screens.settings.SettingsViewModel
@@ -25,6 +26,7 @@ val ViewModelModules = module {
     viewModel { GamesViewModel(get(), get()) }
     viewModel { ChatRoomsViewModel(get()) }
     viewModel { ServerBrowserViewModel(get(), get(), get()) }
+    viewModel { ScreenshotsViewModel(get()) }
     viewModel { SessionsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { (friendId: Long) ->

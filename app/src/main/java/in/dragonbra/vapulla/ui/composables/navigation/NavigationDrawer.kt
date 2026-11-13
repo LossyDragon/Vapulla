@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Games
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.DrawerValue
@@ -118,6 +119,12 @@ private fun NavigationDrawerContent(
                 imageVector = Icons.Outlined.Dns,
                 selected = currentSelection == Routes.ServerBrowser,
                 onClick = { onNavigationClick(Routes.ServerBrowser) },
+            )
+            DrawerItem(
+                text = "Screenshots",
+                imageVector = Icons.Outlined.PhotoLibrary,
+                selected = currentSelection == Routes.Screenshots,
+                onClick = { onNavigationClick(Routes.Screenshots) },
             )
             DrawerItem(
                 text = "Downloads",

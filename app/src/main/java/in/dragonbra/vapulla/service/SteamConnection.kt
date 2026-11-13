@@ -37,6 +37,7 @@ import `in`.dragonbra.vapulla.service.api.CloudApi
 import `in`.dragonbra.vapulla.service.api.FriendsApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
 import `in`.dragonbra.vapulla.service.api.ProfileApi
+import `in`.dragonbra.vapulla.service.api.ScreenshotsApi
 import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
 import `in`.dragonbra.vapulla.service.api.SessionsApi
 import `in`.dragonbra.vapulla.service.api.SteamApis
@@ -322,6 +323,7 @@ class SteamConnection(
                 cloud = CloudApi(unified.createService()),
                 workshop = WorkshopApi(unified.createService()),
                 sessions = SessionsApi(unified.createService(), localSteamId),
+                screenshots = ScreenshotsApi(unified.createService(), localSteamId),
             )
             apis = steamApis
 

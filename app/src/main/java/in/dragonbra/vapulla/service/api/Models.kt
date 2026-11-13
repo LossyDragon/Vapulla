@@ -199,3 +199,23 @@ data class GameStats(
     val achievements: ImmutableList<Achievement>,
     val stats: ImmutableList<GameStat>,
 )
+
+/** A screenshot the account uploaded to Steam, from `PublishedFile.GetUserFiles`. */
+@Immutable
+data class Screenshot(
+    val id: Long,
+    val appId: Int,
+    /** The game it was taken in; empty when Steam did not name the app. */
+    val appName: String,
+    val caption: String,
+    val imageUrl: String,
+    val thumbnailUrl: String,
+    val width: Int,
+    val height: Int,
+    /** Epoch seconds. */
+    val timeCreated: Long,
+)
+
+/** One page of screenshots. [nextPage] is null on the last page. */
+@Immutable
+data class ScreenshotPage(val items: ImmutableList<Screenshot>, val total: Int, val nextPage: Int?)

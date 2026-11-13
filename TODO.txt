@@ -39,7 +39,6 @@ Feature Ideas
 - Family groups: members, shared library
 - Inventory service: owned items
 - Store browsing: store page for any app, including unowned games
-- Screenshots: list and upload
 - Cloud: upload and delete (currently read-only)
 - Lobbies (SteamMatchmaking) next to the server browser
 - Game notifications and parental settings (read-only)

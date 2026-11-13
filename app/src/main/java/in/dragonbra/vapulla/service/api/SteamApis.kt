@@ -16,4 +16,5 @@ class SteamApis(
     val cloud: CloudApi,
     val workshop: WorkshopApi,
     val sessions: SessionsApi,
+    val screenshots: ScreenshotsApi,
 )
