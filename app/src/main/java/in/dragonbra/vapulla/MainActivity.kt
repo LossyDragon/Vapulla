@@ -13,6 +13,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -112,11 +114,16 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val openChat by chatToOpen.collectAsStateWithLifecycle()
 
-                    NavigationRoot(
+                    Surface(
                         modifier = Modifier.fillMaxSize(),
-                        openChat = openChat,
-                        onChatOpened = { chatToOpen.value = null },
-                    )
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        NavigationRoot(
+                            modifier = Modifier.fillMaxSize(),
+                            openChat = openChat,
+                            onChatOpened = { chatToOpen.value = null },
+                        )
+                    }
                 }
             }
         }

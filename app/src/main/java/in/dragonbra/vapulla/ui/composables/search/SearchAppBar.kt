@@ -19,10 +19,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarScrollBehavior
 import androidx.compose.material3.SearchBarState
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -42,6 +44,12 @@ fun SearchAppBar(
     expandedSearchBar: @Composable () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(searchBarState.currentValue) {
+        if (searchBarState.currentValue == SearchBarValue.Collapsed) {
+            textFieldState.clearText()
+        }
+    }
 
     val collapsedInputField = @Composable {
         SearchBarDefaults.InputField(
