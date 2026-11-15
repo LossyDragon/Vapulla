@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.service
 
 import androidx.compose.runtime.Immutable
+import `in`.dragonbra.javasteam.steam.CMClient
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -78,4 +79,54 @@ object SteamDiagnostics {
         val event = ConnectionEvent(nextId.getAndIncrement(), System.currentTimeMillis(), text)
         _events.update { current -> (current + event).takeLast(MAX_EVENTS).toImmutableList() }
     }
+
+    /** Something seen on the connection, and when. */
+    private class Seen(val text: String, val at: Long = System.currentTimeMillis()) {
+        fun ago(): String = "$text ${(System.currentTimeMillis() - at) / 1000}s ago"
+    }
+
+    @Volatile
+    private var lastIn: Seen? = null
+
+    @Volatile
+    private var lastOut: Seen? = null
+
+    @Volatile
+    private var lastLog: Seen? = null
+
+    /** Notes the latest packet in each direction; called by [NetworkLog] for every packet. */
+    internal fun packet(incoming: Boolean, label: String) {
+        if (incoming) lastIn = Seen(label) else lastOut = Seen(label)
+    }
+
+    /**
+     * Notes the latest thing JavaSteam's connection classes logged. A disconnect callback
+     * carries no reason, but the library logs one just before it drops the connection.
+     */
+    internal fun libraryLog(clazz: Class<*>, message: String?, throwable: Throwable?) {
+        val aboutConnection = clazz == CMClient::class.java ||
+            clazz.name.startsWith("in.dragonbra.javasteam.networking.")
+
+        // CMClient logs this while handling every disconnect, which would hide the reason.
+        if (!aboutConnection || message == null || message.startsWith("EventHandler")) return
+
+        lastLog = Seen(
+            clazz.simpleName + ": " + message + throwable?.let { " ($it)" }.orEmpty(),
+        )
+    }
+
+    /**
+     * What is known about why the connection just dropped, as extra lines for the
+     * "Disconnected" event: JavaSteam's last word, and the last packet each way.
+     */
+    internal fun disconnectDetail(): String = buildString {
+        // Anything older was not logged about this disconnect.
+        lastLog?.takeIf { System.currentTimeMillis() - it.at < LOG_IS_REASON_MS }?.let {
+            append("\n${it.text}")
+        }
+        lastIn?.let { append("\nLast in: ${it.ago()}") }
+        lastOut?.let { append("\nLast out: ${it.ago()}") }
+    }
+
+    private const val LOG_IS_REASON_MS = 5_000
 }

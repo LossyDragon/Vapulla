@@ -15,6 +15,7 @@ import `in`.dragonbra.vapulla.di.DatabaseModules
 import `in`.dragonbra.vapulla.di.ViewModelModules
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.NetworkLog
+import `in`.dragonbra.vapulla.service.SteamDiagnostics
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.ProcessExits
 import `in`.dragonbra.vapulla.util.ReleaseTree
@@ -58,10 +59,12 @@ class VapullaApplication :
             object : LogListener {
                 override fun onLog(clazz: Class<*>, message: String?, throwable: Throwable?) {
                     Timber.tag(clazz.simpleName).i(throwable, message)
+                    SteamDiagnostics.libraryLog(clazz, message, throwable)
                 }
 
                 override fun onError(clazz: Class<*>, message: String?, throwable: Throwable?) {
                     Timber.tag(clazz.simpleName).e(throwable, message)
+                    SteamDiagnostics.libraryLog(clazz, message, throwable)
                 }
             },
         )

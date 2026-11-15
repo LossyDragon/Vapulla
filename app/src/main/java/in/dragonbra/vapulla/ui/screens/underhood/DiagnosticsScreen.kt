@@ -177,7 +177,13 @@ private fun Preview() {
                 ConnectionEvent(0, now - 7_190_000, "Connecting"),
                 ConnectionEvent(1, now - 7_189_000, "Connected to cmp1-ord1.steamserver.net:443"),
                 ConnectionEvent(2, now - 7_188_000, "Signed in"),
-                ConnectionEvent(3, now - 600_000, "Disconnected"),
+                ConnectionEvent(
+                    3,
+                    now - 600_000,
+                    "Disconnected\nCMClient: Watchdog: Nothing received for 31204 ms, " +
+                        "disconnecting\nLast in: ClientHeartBeat 31s ago\n" +
+                        "Last out: ClientHeartBeat 4s ago",
+                ),
                 ConnectionEvent(4, now - 600_000, "Reconnecting, attempt 1 of 3"),
                 ConnectionEvent(5, now - 597_000, "Signed in"),
             ),

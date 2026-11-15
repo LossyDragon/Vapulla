@@ -541,9 +541,13 @@ class SteamConnection(
         stopSession()
         SteamDiagnostics.signedOut()
         SteamAccount.signedOut()
-        SteamDiagnostics.record(
-            if (it.isUserInitiated) "Disconnected (by the app)" else "Disconnected",
-        )
+        if (it.isUserInitiated) {
+            SteamDiagnostics.record("Disconnected (by the app)")
+        } else {
+            val detail = SteamDiagnostics.disconnectDetail()
+            Timber.w("Disconnected%s", detail)
+            SteamDiagnostics.record("Disconnected$detail")
+        }
 
         // Worth retrying when a signed-in session dropped, or when the very first connection
         // of a sign-in attempt has not come up yet. A drop in the middle of signing in is

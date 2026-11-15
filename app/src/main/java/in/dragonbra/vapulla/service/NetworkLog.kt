@@ -93,6 +93,7 @@ object NetworkLog : IDebugNetworkListener {
                 PacketInspector.inspect(msg, data, keepBodies),
             )
         _entries.update { current -> (current + entry).takeLast(maxEntries).toImmutableList() }
+        SteamDiagnostics.packet(incoming, entry.label)
 
         _totals.update { current ->
             val total = current[msg] ?: NetworkLogTotal(msg)
