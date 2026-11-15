@@ -50,11 +50,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamApp
-import `in`.dragonbra.vapulla.db.entity.steamStoreAssetUrl
 import `in`.dragonbra.vapulla.service.api.AchievementProgress
 import `in`.dragonbra.vapulla.service.api.NewsItem
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
+import `in`.dragonbra.vapulla.ui.composables.IconLabel
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
@@ -62,9 +63,9 @@ import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.components.DownloadSection
+import `in`.dragonbra.vapulla.ui.screens.games.components.HEADER_ASPECT
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
@@ -140,13 +141,14 @@ private fun GameDetailContent(
 ) {
     val uriHandler = LocalUriHandler.current
     val app = uiState.app
+    val title = remember(app?.name) { app?.name?.decodeHtml().orEmpty() }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = app?.name?.decodeHtml().orEmpty(),
+                        text = title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -242,13 +244,12 @@ private fun GameDetailContent(
 
 @Composable
 private fun HeaderArt(app: SteamApp) {
-    val url = app.getHeaderImageUrl()
-        ?: steamStoreAssetUrl(app.id, "header.jpg")
+    val url = app.headerImageUrl
     RemoteImage(
         imageModel = { url },
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(460f / 215f)
+            .aspectRatio(HEADER_ASPECT)
             .clip(MaterialTheme.shapes.extraLarge),
         imageOptions = ImageOptions(contentScale = ContentScale.Crop),
         previewPlaceholder = painterResource(R.drawable.vapulla_background),
@@ -307,8 +308,7 @@ private fun ActionRow(
                     modifier = Modifier.weight(1f),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Icon(Icons.Outlined.Cloud, contentDescription = null)
-                    Text(text = "  Cloud saves")
+                    IconLabel(Icons.Outlined.Cloud, "Cloud saves")
                 }
             }
             if (app.workshopVisible) {
@@ -317,8 +317,7 @@ private fun ActionRow(
                     modifier = Modifier.weight(1f),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Icon(Icons.Outlined.Construction, contentDescription = null)
-                    Text(text = "  Workshop")
+                    IconLabel(Icons.Outlined.Construction, "Workshop")
                 }
             }
         }
@@ -328,8 +327,7 @@ private fun ActionRow(
                 modifier = Modifier.weight(1f),
                 shapes = ButtonDefaults.shapes(),
             ) {
-                Icon(Icons.Outlined.Storefront, contentDescription = null)
-                Text(text = "  Store page")
+                IconLabel(Icons.Outlined.Storefront, "Store page")
             }
             if (app.isFreeApp) {
                 Button(
@@ -337,8 +335,7 @@ private fun ActionRow(
                     modifier = Modifier.weight(1f),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Icon(Icons.Outlined.CardGiftcard, contentDescription = null)
-                    Text(text = "  Free license")
+                    IconLabel(Icons.Outlined.CardGiftcard, "Free license")
                 }
             }
         }
@@ -381,12 +378,7 @@ private fun LeaderboardsRow(count: Int, onClick: () -> Unit) {
 private fun NewsRows(news: List<NewsItem>, onOpen: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         news.forEachIndexed { index, post ->
-            Surface(
-                onClick = { onOpen(post.url) },
-                shape = groupedListShape(index, news.size),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            GroupedListItem(index = index, count = news.size, onClick = { onOpen(post.url) }) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -461,13 +453,17 @@ private fun DetailRows(app: SteamApp, uiState: GameDetailUiState, onAchievements
         }
     }
 
+    // The screen is redrawn with every download progress update; decode the names once.
+    val developer = remember(app.developer) { app.developer.decodeHtml() }
+    val publisher = remember(app.publisher) { app.publisher.decodeHtml() }
+
     DetailList(
         listOf(
             "Playtime" to
                 if (app.playtimeForever > 0) app.playtimeForever.minutesToPlaytime() else "",
             "Last played" to if (app.lastPlayed > 0) (app.lastPlayed * 1000).toTimeAgo() else "",
-            "Developer" to app.developer.decodeHtml(),
-            "Publisher" to app.publisher.decodeHtml(),
+            "Developer" to developer,
+            "Publisher" to publisher,
             "Platforms" to app.osList.filter { it != SteamApp.OS.none }.joinToString { it.name },
             "Controller" to
                 app.controllerSupport.name.takeIf {

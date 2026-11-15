@@ -30,7 +30,6 @@ object Utils {
 
         const val PROFILE_URL = "https://steamcommunity.com/profiles/"
         const val CUSTOM_URL = "https://steamcommunity.com/id/"
-        const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/app/"
 
         /** Where an app's logo and icons are; the app ID and the image's file name follow. */
         const val APP_IMAGES_URL =
@@ -47,7 +46,15 @@ object Utils {
 
     private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
     private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
-    private val systemZone = ZoneId.systemDefault()
+
+    private const val SECONDS_PER_MINUTE = 60L
+    private const val SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
+    private const val SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
+    private const val SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY
+
+    /** Months and years are rounded to 30 and 365 days, which is close enough for "ago". */
+    private const val SECONDS_PER_MONTH = 30 * SECONDS_PER_DAY
+    private const val SECONDS_PER_YEAR = 365 * SECONDS_PER_DAY
 
     /** Steam names and summaries may contain HTML entities. */
     fun String.decodeHtml(): String =
@@ -71,8 +78,6 @@ object Utils {
         }.getOrElse { "%.2f %s".format(amount, currencyCode).trim() }
     }
 
-    fun String.toAvatarURL(): String = getAvatarURL(this)
-
     /** Full-size avatar URL for an avatar hash, or the default avatar when there is none. */
     fun getAvatarURL(hash: String?): String = hash
         ?.takeIf { it.isNotEmpty() && !it.all { c -> c == '0' } }
@@ -87,18 +92,20 @@ object Utils {
         .takeIf { it.isNotEmpty() && !it.all { c -> c == '0' } }
         ?.let { "${Constants.GROUP_AVATAR_BASE_URL}${it}_256.jpg" }
 
+    // The time zone is asked for each time, so a change of it while the app runs is followed.
+
     /** Epoch seconds to "Jan 5, 2024". */
     fun Long.toDateString(): String =
-        Instant.ofEpochSecond(this).atZone(systemZone).format(dateFormatter)
+        Instant.ofEpochSecond(this).atZone(ZoneId.systemDefault()).format(dateFormatter)
 
     /** Epoch milliseconds to "3:07 PM". */
     fun Long.toTimeString(): String =
-        Instant.ofEpochMilli(this).atZone(systemZone).format(timeFormatter)
+        Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).format(timeFormatter)
 
-    /** Minutes of playtime to "45 min", "12.5 h" or "1,204 h". */
+    /** Minutes of playtime to "45 min", "12.5 h" or "1,204 h"; tenths are shown below 100 h. */
     fun Int.minutesToPlaytime(): String = when {
         this < 60 -> "$this min"
-        this < 6_000 -> String.format(Locale.getDefault(), "%.1f h", this / 60f)
+        this < 100 * 60 -> String.format(Locale.getDefault(), "%.1f h", this / 60f)
         else -> String.format(Locale.getDefault(), "%,d h", this / 60)
     }
 
@@ -115,16 +122,16 @@ object Utils {
         return String.format(Locale.getDefault(), "%.1f %s", value, units[unit])
     }
 
-    /** Epoch milliseconds to "3 hours ago". */
-    fun Long.toTimeAgo(): String {
-        val diffSeconds = (System.currentTimeMillis() - this) / 1000
+    /** Epoch milliseconds to "3 hours ago", counted back from [now]. */
+    fun Long.toTimeAgo(now: Long = System.currentTimeMillis()): String {
+        val seconds = (now - this) / 1000
         return when {
-            diffSeconds >= 31_536_000 -> (diffSeconds / 31_536_000).ago("year")
-            diffSeconds >= 2_592_000 -> (diffSeconds / 2_592_000).ago("month")
-            diffSeconds >= 604_800 -> (diffSeconds / 604_800).ago("week")
-            diffSeconds >= 86_400 -> (diffSeconds / 86_400).ago("day")
-            diffSeconds >= 3_600 -> (diffSeconds / 3_600).ago("hour")
-            diffSeconds >= 60 -> (diffSeconds / 60).ago("minute")
+            seconds >= SECONDS_PER_YEAR -> (seconds / SECONDS_PER_YEAR).ago("year")
+            seconds >= SECONDS_PER_MONTH -> (seconds / SECONDS_PER_MONTH).ago("month")
+            seconds >= SECONDS_PER_WEEK -> (seconds / SECONDS_PER_WEEK).ago("week")
+            seconds >= SECONDS_PER_DAY -> (seconds / SECONDS_PER_DAY).ago("day")
+            seconds >= SECONDS_PER_HOUR -> (seconds / SECONDS_PER_HOUR).ago("hour")
+            seconds >= SECONDS_PER_MINUTE -> (seconds / SECONDS_PER_MINUTE).ago("minute")
             else -> "Just now"
         }
     }

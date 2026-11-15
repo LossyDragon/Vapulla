@@ -14,13 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.UnfoldLess
 import androidx.compose.material.icons.outlined.UnfoldMore
@@ -28,8 +23,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -39,14 +32,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -55,16 +45,18 @@ import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.dao.SteamLicenseDao
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.NotConnectedException
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.composables.search.SearchField
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.copyToClipboard
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -74,7 +66,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 /**
  * One key of the info, as a row of the tree.
@@ -93,14 +84,6 @@ data class PicsNode(
     val children: Int,
     val expanded: Boolean = false,
 )
-
-/**
- * An app or a package found by name, to pick from.
- *
- * @property detail what makes it the match: an app's ID, or the games in a package.
- */
-@Immutable
-data class PicsNameMatch(val id: Int, val title: String, val detail: String)
 
 /**
  * @property facts what Steam says about the info as a whole: change number, token.
@@ -135,7 +118,7 @@ data class PicsExplorerUiState(
 class PicsExplorerViewModel(
     initialId: Int,
     initialIsApp: Boolean,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val appDao: SteamAppDao,
     private val licenseDao: SteamLicenseDao,
 ) : ViewModel() {
@@ -147,7 +130,6 @@ class PicsExplorerViewModel(
     private var all: List<PicsNode> = emptyList()
     private var open: Set<String> = emptySet()
     private var filter: String = ""
-    private var matchCount: Int = 0
     private var loadJob: Job? = null
 
     init {
@@ -164,14 +146,17 @@ class PicsExplorerViewModel(
         loadJob = viewModelScope.launch {
             _uiState.value = PicsExplorerUiState(isApp = isApp, isLoading = true)
 
-            val library = connection.steamService?.apis?.library
-            val product = runCatching { library?.productInfo(id, isApp) }
-                .onFailure { Timber.w(it, "PICS info for $kind $id failed") }
-                .getOrNull()
+            val result = connection.request("PICS info for $kind $id") {
+                it.library.productInfo(id, isApp)
+            }
+            val product = result.getOrNull()
 
             if (product == null) {
-                val reason =
-                    if (library == null) "Not connected to Steam" else "Steam has no $kind $id"
+                val reason = if (result.exceptionOrNull() is NotConnectedException) {
+                    "Not connected to Steam"
+                } else {
+                    "Steam has no $kind $id"
+                }
                 _uiState.value = PicsExplorerUiState(isApp = isApp, message = reason)
                 return@launch
             }
@@ -188,11 +173,11 @@ class PicsExplorerViewModel(
                 facts = persistentListOf(
                     "Change number" to product.changeNumber.toString(),
                     "Access token" to
-                        if (product.token == 0L) "None" else product.token.toULong().toString(),
+                        if (product.token == 0L) "None" else product.token.toSteamIdString(),
                     "Held back" to if (product.missingToken) "Yes, a token is needed" else "",
                     "Keys" to all.size.toString(),
                 ),
-                nodes = visible(),
+                nodes = visible().nodes,
             )
         }
     }
@@ -209,11 +194,11 @@ class PicsExplorerViewModel(
         loadJob = viewModelScope.launch {
             _uiState.value = PicsExplorerUiState(isApp = isApp, isLoading = true)
 
-            val apps = appDao.searchNames(query, NAME_MATCHES)
+            val apps = appDao.findAppsByName(query)
             val matches = if (isApp) {
-                apps.map { PicsNameMatch(it.id, it.name, "App ${it.id}") }
+                apps
             } else {
-                val names = apps.associate { it.id to it.name }
+                val names = apps.associate { it.id to it.title }
                 licenseDao.getAllLicenses()
                     .mapNotNull { license ->
                         val games = license.appIds.mapNotNull(names::get)
@@ -243,23 +228,41 @@ class PicsExplorerViewModel(
     /** Searches the tree for [text]; an empty one shows the whole tree again. */
     fun setFilter(text: String) {
         filter = text
-        _uiState.update { it.copy(filter = text, nodes = visible(), filterMatches = matchCount) }
+        show()
     }
 
-    /** Opens or closes the key at [path]. */
+    /**
+     * Opens or closes the key at [path]. Not while the tree is searched: every match is
+     * opened up then, so there is nothing to open or close.
+     */
     fun toggle(path: String) {
+        if (filter.isNotBlank()) return
+
         open = if (path in open) open - path else open + path
-        _uiState.update { it.copy(nodes = visible()) }
+        show()
     }
 
-    /** Opens every key, or closes them all if any is open. */
+    /**
+     * Opens every key, or closes them all if any on show is open, which is what the button
+     * for it goes by. Not while the tree is searched, as for [toggle].
+     */
     fun toggleAll() {
-        open = if (open.isEmpty()) {
-            all.filter { it.children > 0 }.mapTo(HashSet()) { it.path }
-        } else {
+        if (filter.isNotBlank()) return
+
+        open = if (_uiState.value.nodes.any { it.expanded }) {
             emptySet()
+        } else {
+            all.filter { it.children > 0 }.mapTo(HashSet()) { it.path }
         }
-        _uiState.update { it.copy(nodes = visible()) }
+        show()
+    }
+
+    /** Puts the rows that [open] and [filter] now call for on show. */
+    private fun show() {
+        val visible = visible()
+        _uiState.update {
+            it.copy(filter = filter, nodes = visible.nodes, filterMatches = visible.matches)
+        }
     }
 
     /** Adds the keys under [keyValue] as rows, each followed by its own keys. */
@@ -285,14 +288,13 @@ class PicsExplorerViewModel(
      * is the keys whose name or value contains it, each with the keys it sits under, all
      * opened up so that every match is on show.
      */
-    private fun visible(): ImmutableList<PicsNode> {
+    private fun visible(): Visible {
         val query = filter.trim()
         if (query.isNotEmpty()) {
             val matches = all.filter { node ->
                 node.key.contains(query, ignoreCase = true) ||
                     node.value?.contains(query, ignoreCase = true) == true
             }
-            matchCount = matches.size
 
             // A path is its parent's path plus one more step, so the parents are its prefixes.
             val keep = HashSet<String>()
@@ -303,12 +305,11 @@ class PicsExplorerViewModel(
                 }
             }
 
-            return all
+            val rows = all
                 .filter { it.path in keep }
                 .map { if (it.children > 0) it.copy(expanded = true) else it }
-                .toImmutableList()
+            return Visible(rows.toImmutableList(), matches.size)
         }
-        matchCount = 0
 
         val rows = ArrayList<PicsNode>()
         var hideDeeperThan = Int.MAX_VALUE
@@ -321,8 +322,11 @@ class PicsExplorerViewModel(
             rows += if (expanded) node.copy(expanded = true) else node
             if (node.children > 0 && !expanded) hideDeeperThan = node.depth
         }
-        return rows.toImmutableList()
+        return Visible(rows.toImmutableList(), matches = 0)
     }
+
+    /** The rows on show, and how many of them match the filter. */
+    private class Visible(val nodes: ImmutableList<PicsNode>, val matches: Int)
 }
 
 @Composable
@@ -355,22 +359,19 @@ private fun PicsExplorerContent(
     val keyboard = LocalSoftwareKeyboardController.current
     var text by rememberSaveable { mutableStateOf("") }
 
-    // A number is an ID and goes to Steam; anything else is a name, looked up in the app.
-    val search: () -> Unit = {
-        val entered = text.trim()
-        val id = entered.toIntOrNull()
-
-        if (entered.isNotEmpty()) {
-            keyboard?.hide()
-            if (id != null) onLoad(id) else onFindByName(entered)
-        }
+    // What the tree is searched for. A newly loaded tree starts out unsearched.
+    var filter by rememberSaveable { mutableStateOf("") }
+    val load: (Int) -> Unit = { id ->
+        filter = ""
+        onLoad(id)
     }
 
     UnderHoodScaffold(
         title = "PICS explorer",
         onBack = onBack,
         actions = {
-            if (state.nodes.isNotEmpty()) {
+            // A searched tree has every match opened up, so there is nothing to open or close.
+            if (state.nodes.isNotEmpty() && filter.isBlank()) {
                 val anyOpen = state.nodes.any { it.expanded }
                 IconButton(onClick = onToggleAll) {
                     Icon(
@@ -391,23 +392,17 @@ private fun PicsExplorerContent(
                 .imePadding()
                 .padding(padding.exceptBottom()),
         ) {
-            OutlinedTextField(
+            SearchField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = {
-                    Text(if (state.isApp) "App ID or name" else "Package ID, or a game in it")
+                placeholder = if (state.isApp) "App ID or name" else "Package ID, or a game in it",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                // A number is an ID and goes to Steam; anything else is a name, looked up in
+                // the app.
+                onSearch = {
+                    keyboard?.hide()
+                    searchByIdOrName(text, onId = load, onName = onFindByName)
                 },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.None,
-                    autoCorrectEnabled = false,
-                    imeAction = ImeAction.Search,
-                ),
-                keyboardActions = KeyboardActions(onSearch = { search() }),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             )
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -428,27 +423,16 @@ private fun PicsExplorerContent(
             when {
                 state.isLoading -> LoadingBox(modifier = Modifier.fillMaxSize())
 
-                state.nameMatches.isNotEmpty() -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = listContentPadding(padding),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    itemsIndexed(
-                        items = state.nameMatches,
-                        key = { _, match -> match.id },
-                    ) { index, match ->
-                        NameMatchRow(
-                            match = match,
-                            shape = groupedListShape(index, state.nameMatches.size),
-                            onClick = {
-                                text = match.id.toString()
-                                onLoad(match.id)
-                            },
-                        )
-                    }
-                }
+                state.nameMatches.isNotEmpty() -> NameMatchList(
+                    matches = state.nameMatches,
+                    scaffoldPadding = padding,
+                    onPick = { match ->
+                        text = match.id.toString()
+                        load(match.id)
+                    },
+                )
 
-                state.title == null -> SearchResultMessage(
+                state.title == null -> EmptyMessage(
                     message = state.message
                         ?: "Enter the ID of any app or package to see what Steam's catalogue " +
                         "holds on it, or a game's name to find its ID",
@@ -470,9 +454,12 @@ private fun PicsExplorerContent(
                             )
                             DetailList(state.facts)
                             TreeFilter(
-                                filter = state.filter,
+                                filter = filter,
                                 matches = state.filterMatches,
-                                onFilter = onFilter,
+                                onFilter = {
+                                    filter = it
+                                    onFilter(it)
+                                },
                             )
                         }
                     }
@@ -485,61 +472,21 @@ private fun PicsExplorerContent(
     }
 }
 
-/** One app or package found by name; tapping it loads its info. */
-@Composable
-internal fun NameMatchRow(match: PicsNameMatch, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(text = match.title.decodeHtml(), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = match.detail.decodeHtml(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-            )
-        }
-    }
-}
-
 /** Searches the keys and values of the tree as it is typed; the tree is on the phone already. */
 @Composable
 private fun TreeFilter(filter: String, matches: Int, onFilter: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedTextField(
+        SearchField(
             value = filter,
             onValueChange = onFilter,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Find a key or value in the tree") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.None,
-                autoCorrectEnabled = false,
-            ),
-            trailingIcon = {
-                if (filter.isNotEmpty()) {
-                    IconButton(onClick = { onFilter("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Show the whole tree")
-                    }
-                }
-            },
+            placeholder = "Find a key or value in the tree",
         )
-        Text(
-            text = if (filter.isBlank()) {
+        Hint(
+            if (filter.isBlank()) {
                 "Tap a value to copy it."
             } else {
                 "$matches matching key(s). Tap a value to copy it."
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp),
         )
     }
 }
@@ -607,9 +554,6 @@ private fun NodeRow(node: PicsNode, onToggle: () -> Unit) {
 
 /** Width of one level of the tree, in dp. */
 private const val INDENT = 14
-
-/** How many apps a search by name looks at. */
-private const val NAME_MATCHES = 100
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable

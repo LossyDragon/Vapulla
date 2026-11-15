@@ -1,11 +1,9 @@
 package `in`.dragonbra.vapulla.ui.composables
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -13,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +31,17 @@ fun Section(title: String, content: @Composable () -> Unit) {
     }
 }
 
+/** A line of small grey text that explains what is shown above or below it. */
+@Composable
+fun Hint(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.padding(horizontal = 4.dp),
+    )
+}
+
 /**
  * Key/value rows in one grouped container. Values that are empty are skipped. A value that
  * is a web address is shown as a link on a line of its own, under its label, and tapping
@@ -46,17 +54,10 @@ fun DetailList(rows: List<Pair<String, String>>) {
 
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         visible.forEachIndexed { index, (label, value) ->
-            val shape = groupedListShape(index, visible.size)
             val isLink = value.startsWith("https://") || value.startsWith("http://")
+            val open: (() -> Unit)? = if (isLink) ({ uriHandler.openUri(value) }) else null
 
-            Surface(
-                shape = shape,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(shape)
-                    .clickable(enabled = isLink) { uriHandler.openUri(value) },
-            ) {
+            GroupedListItem(index = index, count = visible.size, onClick = open) {
                 if (isLink) {
                     // An address is too long to share a line with its label.
                     Column(

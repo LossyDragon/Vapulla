@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 import kotlinx.coroutines.flow.Flow
 
+/** The emoticons and stickers the account owns, for the chat's picker. */
 @Dao
 interface EmoticonDao {
     /** Everything the account owns: emoticons first, then stickers, each by name. */

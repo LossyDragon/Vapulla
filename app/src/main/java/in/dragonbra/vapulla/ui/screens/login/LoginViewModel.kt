@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.LoginResult
-import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,26 +22,34 @@ import timber.log.Timber
 /**
  * Drives the login screen. Signs in automatically when a saved refresh token exists, and
  * otherwise relays credential or QR sign-in to [SteamService] and reflects its progress.
+ *
+ * JavaSteam calls the [IAuthenticator] on its own threads, so the state is only ever changed
+ * with `update`, which does not lose a change made elsewhere at the same moment.
  */
 class LoginViewModel(
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val accountManager: AccountManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val _snackbarMessage = MutableSharedFlow<String>()
-    val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
+    /** One-off messages for the screen to show. */
+    private val _messages = MutableSharedFlow<String>()
+    val messages: SharedFlow<String> = _messages.asSharedFlow()
 
-    private val _navigateToHome = MutableSharedFlow<Boolean>()
-    val navigateToHome: SharedFlow<Boolean> = _navigateToHome.asSharedFlow()
+    /** Emits when the sign-in succeeded and the screen should be left. */
+    private val _navigateToHome = MutableSharedFlow<Unit>()
+    val navigateToHome: SharedFlow<Unit> = _navigateToHome.asSharedFlow()
 
     /** Completed by [onTwoFactorSubmit] while JavaSteam waits for a Steam Guard code. */
     private var pendingGuardCode: CompletableFuture<String>? = null
 
     /** A saved sign-in is waiting for the screen to be in front of the user. */
     private var signInWhenVisible = false
+
+    /** A sign-in is saved, so signing in needs no password. */
+    private var hasSavedSignIn = false
 
     /**
      * Answers JavaSteam's Steam Guard prompts. Codes are asked for on the two-factor step and
@@ -65,11 +73,13 @@ class LoginViewModel(
         override fun acceptDeviceConfirmation(): CompletableFuture<Boolean> {
             Timber.i("Two-Factor, device confirmation")
 
-            _uiState.value = _uiState.value.copy(
-                loginStep = LoginStep.QRCODE,
-                isWaitingForConfirmation = true,
-                twoFactorCode = "",
-            )
+            _uiState.update {
+                it.copy(
+                    loginStep = LoginStep.QRCODE,
+                    isWaitingForConfirmation = true,
+                    twoFactorCode = "",
+                )
+            }
 
             return CompletableFuture.completedFuture(true)
         }
@@ -80,12 +90,6 @@ class LoginViewModel(
         // since otherwise the user lands here with no explanation.
         SteamService.takeSignOutReason()?.let { reason ->
             _uiState.update { it.copy(error = reason) }
-        }
-
-        viewModelScope.launch {
-            SteamService.isLoading.collect { loading ->
-                _uiState.value = _uiState.value.copy(isLoading = loading)
-            }
         }
 
         viewModelScope.launch {
@@ -105,50 +109,51 @@ class LoginViewModel(
         viewModelScope.launch {
             SteamService.loginResult.collect { result ->
                 when (result) {
-                    LoginResult.Loading -> {
-                        _uiState.value = _uiState.value.copy(isLoading = true)
-                    }
+                    LoginResult.Loading -> _uiState.update { it.copy(isLoading = true) }
 
                     LoginResult.Success -> {
                         Timber.d("Logged in, navigating to home screen")
-                        _uiState.value = LoginUiState() // Reset
-                        _navigateToHome.emit(true)
+                        _uiState.value = LoginUiState()
+                        hasSavedSignIn = false
+                        _navigateToHome.emit(Unit)
                     }
 
                     is LoginResult.Error -> {
                         Timber.e(result.error)
-                        _uiState.value = _uiState.value.copy(
-                            loginStep = LoginStep.CREDENTIALS,
-                            isLoading = false,
-                            qrCode = "",
-                            error = result.error,
-                        )
+                        _uiState.update {
+                            it.copy(
+                                loginStep = LoginStep.CREDENTIALS,
+                                isLoading = false,
+                                qrCode = "",
+                                error = result.error,
+                            )
+                        }
                     }
 
                     is LoginResult.QRCode -> {
                         Timber.d("QR CODE: ${result.qrCode}")
-                        _uiState.value = _uiState.value.copy(
-                            loginStep = LoginStep.QRCODE,
-                            isLoading = true,
-                            qrCode = result.qrCode,
-                        )
+                        _uiState.update {
+                            it.copy(
+                                loginStep = LoginStep.QRCODE,
+                                isLoading = true,
+                                qrCode = result.qrCode,
+                            )
+                        }
                     }
 
                     is LoginResult.QRCodeEnded -> {
                         Timber.d("QR Code Ended")
-                        _uiState.value = _uiState.value.copy(
-                            loginStep = LoginStep.CREDENTIALS,
-                            isLoading = false,
-                            qrCode = "",
-                        )
+                        _uiState.update {
+                            it.copy(
+                                loginStep = LoginStep.CREDENTIALS,
+                                isLoading = false,
+                                qrCode = "",
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-
-    override fun onCleared() {
-        Timber.d("ViewModel Cleared")
     }
 
     /**
@@ -161,9 +166,8 @@ class LoginViewModel(
         val refreshToken = accountManager.refreshToken.first()
         if (username.isNullOrBlank() || refreshToken.isNullOrBlank()) return
 
-        _uiState.update {
-            it.copy(username = username, refreshToken = refreshToken, isLoading = true)
-        }
+        hasSavedSignIn = true
+        _uiState.update { it.copy(username = username, isLoading = true) }
         Timber.d("Auto Logging in ")
         signInWhenVisible = !signIn()
     }
@@ -177,19 +181,19 @@ class LoginViewModel(
     }
 
     fun onQrCodeCancel() {
-        connection.steamService!!.auth.handleQrCodeCancel()
+        connection.steamService?.auth?.handleQrCodeCancel()
     }
 
     fun onTwoFactorChange(code: String) {
-        _uiState.value = _uiState.value.copy(twoFactorCode = code)
+        _uiState.update { it.copy(twoFactorCode = code) }
     }
 
     fun onUsernameChange(newUsername: String) {
-        _uiState.value = _uiState.value.copy(username = newUsername)
+        _uiState.update { it.copy(username = newUsername) }
     }
 
     fun onPasswordChange(newPassword: String) {
-        _uiState.value = _uiState.value.copy(password = newPassword)
+        _uiState.update { it.copy(password = newPassword) }
     }
 
     fun onTwoFactorSubmit() {
@@ -216,29 +220,30 @@ class LoginViewModel(
                 isLoading = false,
                 twoFactorCode = "",
                 twoFactorMessage = message,
-                previousCodeWasIncorrect = previousCodeWasIncorrect,
             )
         }
         if (previousCodeWasIncorrect) {
-            viewModelScope.launch { _snackbarMessage.emit("That code was incorrect, try again") }
+            viewModelScope.launch { _messages.emit("That code was incorrect, try again") }
         }
         return future
     }
 
     fun onSignInViaQR() {
-        _uiState.value = _uiState.value.copy(loginStep = LoginStep.QRCODE, error = null)
-
         // The service stops itself when a session ends, so make sure it is started again.
         connection.startForegroundService()
-        connection.steamService!!.auth.handleQRLogin()
+        val service = boundService() ?: return
+
+        _uiState.update { it.copy(loginStep = LoginStep.QRCODE, error = null) }
+        service.auth.handleQRLogin()
     }
 
     /** Signs in without an account, to look at what Steam shows anyone. */
     fun onExplore() {
         if (!connection.startForegroundService()) return
+        val service = boundService() ?: return
 
         _uiState.update { it.copy(error = null, isLoading = true) }
-        connection.steamService!!.auth.handleAnonymousLogin()
+        service.auth.handleAnonymousLogin()
     }
 
     fun onSignInViaCredentials() {
@@ -251,16 +256,12 @@ class LoginViewModel(
 
         if (state.username.isBlank()) {
             Timber.w("username is blank!")
-            viewModelScope.launch {
-                _snackbarMessage.emit("Username is empty")
-            }
+            viewModelScope.launch { _messages.emit("Username is empty") }
             return true
         }
-        if (state.password.isBlank() && state.refreshToken.isBlank()) {
+        if (state.password.isBlank() && !hasSavedSignIn) {
             Timber.w("password is blank!")
-            viewModelScope.launch {
-                _snackbarMessage.emit("Password is empty")
-            }
+            viewModelScope.launch { _messages.emit("Password is empty") }
             return true
         }
 
@@ -271,11 +272,24 @@ class LoginViewModel(
             _uiState.update { it.copy(isLoading = false) }
             return false
         }
-        connection.steamService!!.auth.handleCredentialLogin(
+        val service = boundService() ?: return false
+
+        service.auth.handleCredentialLogin(
             username = state.username,
             password = state.password,
             authenticator = authenticator,
         )
         return true
+    }
+
+    /** The bound service. While there is none, the screen says so and null is returned. */
+    private fun boundService(): SteamService? {
+        val service = connection.steamService
+        if (service == null) {
+            _uiState.update {
+                it.copy(isLoading = false, error = "The Steam service is not ready, try again")
+            }
+        }
+        return service
     }
 }

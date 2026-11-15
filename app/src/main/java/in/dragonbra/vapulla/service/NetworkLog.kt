@@ -3,14 +3,15 @@ package `in`.dragonbra.vapulla.service
 import androidx.compose.runtime.Immutable
 import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.javasteam.util.IDebugNetworkListener
+import `in`.dragonbra.vapulla.util.appendCapped
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
@@ -63,12 +64,14 @@ object NetworkLog : IDebugNetworkListener {
     private val nextId = AtomicLong()
 
     private val _entries = MutableStateFlow<ImmutableList<NetworkLogEntry>>(persistentListOf())
-    val entries: StateFlow<ImmutableList<NetworkLogEntry>> = _entries
+
+    /** The packets kept, oldest first. */
+    val entries: StateFlow<ImmutableList<NetworkLogEntry>> = _entries.asStateFlow()
 
     private val _totals = MutableStateFlow<PersistentMap<EMsg, NetworkLogTotal>>(persistentMapOf())
 
     /** Packets and bytes per message type since the last [clear]. */
-    val totals: StateFlow<PersistentMap<EMsg, NetworkLogTotal>> = _totals
+    val totals: StateFlow<PersistentMap<EMsg, NetworkLogTotal>> = _totals.asStateFlow()
 
     override fun onIncomingNetworkMessage(msgType: EMsg, data: ByteArray) =
         record(true, msgType, data)
@@ -83,16 +86,15 @@ object NetworkLog : IDebugNetworkListener {
 
     private fun record(incoming: Boolean, msg: EMsg, data: ByteArray) {
         val size = data.size
-        val entry =
-            NetworkLogEntry(
-                nextId.getAndIncrement(),
-                System.currentTimeMillis(),
-                incoming,
-                msg,
-                size,
-                PacketInspector.inspect(msg, data, keepBodies),
-            )
-        _entries.update { current -> (current + entry).takeLast(maxEntries).toImmutableList() }
+        val entry = NetworkLogEntry(
+            id = nextId.getAndIncrement(),
+            timestamp = System.currentTimeMillis(),
+            incoming = incoming,
+            msg = msg,
+            size = size,
+            detail = PacketInspector.inspect(msg, data, keepBodies),
+        )
+        _entries.appendCapped(entry, maxEntries)
         SteamDiagnostics.packet(incoming, entry.label)
 
         _totals.update { current ->

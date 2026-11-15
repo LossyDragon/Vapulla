@@ -5,21 +5,19 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPublishedfile
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPublishedfileSteamclient.CPublishedFile_Subscribe_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPublishedfileSteamclient.CPublishedFile_Unsubscribe_Request
 import `in`.dragonbra.javasteam.rpc.service.PublishedFile
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
 
 /** Workshop browsing and subscriptions via the `PublishedFile` unified service. */
 class WorkshopApi(private val publishedFile: PublishedFile) {
 
-    /** One page of items for [appId]; pages start at 1. */
+    /** One page of items for [appId]; pages start at 1. Empty when Steam does not answer. */
     suspend fun query(
         appId: Int,
         sort: WorkshopSort,
         page: Int = 1,
         searchText: String? = null,
         perPage: Int = PAGE_SIZE,
-    ): WorkshopPage {
+    ): Page<WorkshopItem> {
         val request = CPublishedFile_QueryFiles_Request.newBuilder()
             .setQueryType(sort.queryType)
             .setAppid(appId)
@@ -35,16 +33,12 @@ class WorkshopApi(private val publishedFile: PublishedFile) {
             }
             .build()
 
-        val response = publishedFile.queryFiles(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("QueryFiles failed: ${response.result}")
-            return WorkshopPage(persistentListOf(), 0, null)
-        }
+        val body = publishedFile.queryFiles(request).bodyOrNull("QueryFiles") ?: return Page.empty()
         Timber.d(
-            "QueryFiles page=$page total=${response.body.total} items=${response.body.publishedfiledetailsCount}",
+            "QueryFiles page=$page total=${body.total} items=${body.publishedfiledetailsCount}",
         )
 
-        val items = response.body.publishedfiledetailsList.map { details ->
+        val items = body.publishedfiledetailsList.map { details ->
             WorkshopItem(
                 id = details.publishedfileid,
                 title = details.title,
@@ -52,20 +46,16 @@ class WorkshopApi(private val publishedFile: PublishedFile) {
                 previewUrl = details.previewUrl,
                 creator = details.creator,
                 fileSize = details.fileSize,
-                timeUpdated = details.timeUpdated.toLong(),
+                timeUpdated = details.timeUpdated.toUInt().toLong(),
                 subscriptions = details.subscriptions,
                 favorited = details.favorited,
             )
         }
 
-        val seenSoFar = page * perPage
-        return WorkshopPage(
-            items = items.toImmutableList(),
-            total = response.body.total,
-            nextPage = (page + 1).takeIf { items.isNotEmpty() && seenSoFar < response.body.total },
-        )
+        return Page.of(items, page, perPage, body.total)
     }
 
+    /** Subscribes the account to the item [fileId] of [appId]. */
     suspend fun subscribe(appId: Int, fileId: Long): EResult {
         val request = CPublishedFile_Subscribe_Request.newBuilder()
             .setPublishedfileid(fileId)
@@ -73,9 +63,10 @@ class WorkshopApi(private val publishedFile: PublishedFile) {
             .setAppid(appId)
             .setNotifyClient(true)
             .build()
-        return publishedFile.subscribe(request).await().result
+        return publishedFile.subscribe(request).resultOf("Subscribe")
     }
 
+    /** Ends the account's subscription to the item [fileId] of [appId]. */
     suspend fun unsubscribe(appId: Int, fileId: Long): EResult {
         val request = CPublishedFile_Unsubscribe_Request.newBuilder()
             .setPublishedfileid(fileId)
@@ -83,12 +74,14 @@ class WorkshopApi(private val publishedFile: PublishedFile) {
             .setAppid(appId)
             .setNotifyClient(true)
             .build()
-        return publishedFile.unsubscribe(request).await().result
+        return publishedFile.unsubscribe(request).resultOf("Unsubscribe")
     }
 
     private companion object {
         const val PAGE_SIZE = 20
         const val TREND_DAYS = 7
+
+        /** Steam's list type for the items an account is subscribed to. */
         const val LIST_TYPE_SUBSCRIPTIONS = 1
     }
 }

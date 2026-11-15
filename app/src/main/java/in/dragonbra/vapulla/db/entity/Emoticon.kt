@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+/** An emoticon or sticker the account owns; [appID] is the game it comes from. */
 @Immutable
 @Entity(tableName = "emoticon")
 data class Emoticon(@PrimaryKey val name: String, val appID: Int, val isSticker: Boolean)

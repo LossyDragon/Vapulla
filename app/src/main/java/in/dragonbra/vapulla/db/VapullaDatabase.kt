@@ -6,10 +6,10 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import `in`.dragonbra.vapulla.db.converters.AppTypeConverters
+import `in`.dragonbra.vapulla.db.converters.DateTypeConverter
 import `in`.dragonbra.vapulla.db.converters.FriendTypeConverters
 import `in`.dragonbra.vapulla.db.converters.LicenseTypeConverters
 import `in`.dragonbra.vapulla.db.converters.ListTypeConverter
-import `in`.dragonbra.vapulla.db.converters.ProfileTypeConverter
 import `in`.dragonbra.vapulla.db.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.db.dao.DownloadDao
 import `in`.dragonbra.vapulla.db.dao.EmoticonDao
@@ -36,7 +36,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamLicense
         SteamLicense::class,
         Download::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 @TypeConverters(
@@ -44,32 +44,14 @@ import `in`.dragonbra.vapulla.db.entity.SteamLicense
     LicenseTypeConverters::class,
     AppTypeConverters::class,
     ListTypeConverter::class,
-    ProfileTypeConverter::class,
+    DateTypeConverter::class,
 )
 abstract class VapullaDatabase : RoomDatabase() {
     companion object {
         const val DATABASE_NAME = "vapulla.db"
 
-        /** Downloads remember the manifests they completed with, to tell when one is outdated. */
-        val MIGRATION_13_14 = object : Migration(13, 14) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    "ALTER TABLE `download` ADD COLUMN `manifestIds` TEXT NOT NULL DEFAULT ''",
-                )
-            }
-        }
-
-        /** Downloads remember the password of a branch that is behind one. */
-        val MIGRATION_14_15 = object : Migration(14, 15) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    "ALTER TABLE `download` ADD COLUMN `branchPassword` TEXT NOT NULL DEFAULT ''",
-                )
-            }
-        }
-
         /** Adds the `download` table; nothing existing changes. */
-        val MIGRATION_10_11 = object : Migration(10, 11) {
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS `download` (" +
@@ -89,7 +71,7 @@ abstract class VapullaDatabase : RoomDatabase() {
          *
          * It also adds a `workshopManifest` column, which [MIGRATION_12_13] takes out again.
          */
-        val MIGRATION_11_12 = object : Migration(11, 12) {
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "CREATE TABLE `download_new` (" +
@@ -119,7 +101,7 @@ abstract class VapullaDatabase : RoomDatabase() {
          * JavaSteam turned them away by ID; with that fixed nothing reads it. SQLite on older
          * Android cannot drop a column, so the table is built anew.
          */
-        val MIGRATION_12_13 = object : Migration(12, 13) {
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
                     "CREATE TABLE `download_new` (" +
@@ -141,6 +123,116 @@ abstract class VapullaDatabase : RoomDatabase() {
                 db.execSQL("DROP TABLE `download`")
                 db.execSQL("ALTER TABLE `download_new` RENAME TO `download`")
             }
+        }
+
+        /** Downloads remember the manifests they completed with, to tell when one is outdated. */
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `download` ADD COLUMN `manifestIds` TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+
+        /** Downloads remember the password of a branch that is behind one. */
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `download` ADD COLUMN `branchPassword` TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+
+        /**
+         * Drops the columns nothing read: most of the PICS app info on `steam_app`, and the
+         * game data blob, typing time and last message on `steam_friend`.
+         */
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.rebuildTable(
+                    table = "steam_app",
+                    columns = listOf(
+                        "`id` INTEGER NOT NULL",
+                        "`packageId` INTEGER NOT NULL",
+                        "`ownerAccountId` TEXT NOT NULL",
+                        "`licenseFlags` INTEGER NOT NULL",
+                        "`receivedPICS` INTEGER NOT NULL",
+                        "`lastChangeNumber` INTEGER NOT NULL",
+                        "`playtimeForever` INTEGER NOT NULL",
+                        "`playtimeTwoWeeks` INTEGER NOT NULL",
+                        "`lastPlayed` INTEGER NOT NULL",
+                        "`depots` TEXT NOT NULL",
+                        "`branches` TEXT NOT NULL",
+                        "`name` TEXT NOT NULL",
+                        "`type` INTEGER NOT NULL",
+                        "`osList` INTEGER NOT NULL",
+                        "`releaseState` INTEGER NOT NULL",
+                        "`releaseDate` INTEGER NOT NULL",
+                        "`metacriticScore` INTEGER NOT NULL",
+                        "`clientIconHash` TEXT NOT NULL",
+                        "`headerImage` TEXT NOT NULL",
+                        "`reviewPercentage` INTEGER NOT NULL",
+                        "`controllerSupport` INTEGER NOT NULL",
+                        "`workshopVisible` INTEGER NOT NULL",
+                        "`developer` TEXT NOT NULL",
+                        "`publisher` TEXT NOT NULL",
+                        "`isFreeApp` INTEGER NOT NULL",
+                        "`gameDir` TEXT NOT NULL",
+                        "`noServers` INTEGER NOT NULL",
+                        "`installDir` TEXT NOT NULL",
+                        "`ufs` TEXT NOT NULL",
+                    ),
+                )
+                db.rebuildTable(
+                    table = "steam_friend",
+                    columns = listOf(
+                        "`id` INTEGER NOT NULL",
+                        "`name` TEXT NOT NULL",
+                        "`avatar` TEXT",
+                        "`relation` INTEGER NOT NULL",
+                        "`state` INTEGER NOT NULL",
+                        "`gameAppID` INTEGER NOT NULL",
+                        "`gameID` INTEGER NOT NULL",
+                        "`gameName` TEXT NOT NULL",
+                        "`richPresence` TEXT NOT NULL",
+                        "`lastLogOn` INTEGER NOT NULL",
+                        "`lastLogOff` INTEGER NOT NULL",
+                        "`stateFlags` INTEGER NOT NULL",
+                        "`statusFlags` INTEGER NOT NULL",
+                        "`nickname` TEXT NOT NULL",
+                        "`lastMessageTime` INTEGER NOT NULL",
+                        "`newMessageCount` INTEGER NOT NULL",
+                        "`aliases` TEXT NOT NULL",
+                    ),
+                )
+            }
+        }
+
+        /** Every migration there is, oldest first, for the database builder. */
+        val ALL_MIGRATIONS: Array<Migration> = arrayOf(
+            MIGRATION_10_11,
+            MIGRATION_11_12,
+            MIGRATION_12_13,
+            MIGRATION_13_14,
+            MIGRATION_14_15,
+            MIGRATION_15_16,
+        )
+
+        /**
+         * Rebuilds [table] with only [columns], each given as its definition (the name in
+         * backticks, then its type), and `id` as the primary key. The values of the columns
+         * that stay are copied across. SQLite on older Android cannot drop a column, so this
+         * is how one goes.
+         */
+        private fun SupportSQLiteDatabase.rebuildTable(table: String, columns: List<String>) {
+            val names = columns.joinToString { it.substringBefore(' ') }
+
+            execSQL(
+                "CREATE TABLE `${table}_new` (${columns.joinToString()}, PRIMARY KEY(`id`))",
+            )
+            execSQL("INSERT INTO `${table}_new` ($names) SELECT $names FROM `$table`")
+            execSQL("DROP TABLE `$table`")
+            execSQL("ALTER TABLE `${table}_new` RENAME TO `$table`")
         }
     }
 

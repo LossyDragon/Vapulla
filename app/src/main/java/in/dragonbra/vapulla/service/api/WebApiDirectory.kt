@@ -1,12 +1,9 @@
 package `in`.dragonbra.vapulla.service.api
 
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import `in`.dragonbra.vapulla.util.LenientJson
+import `in`.dragonbra.vapulla.util.httpGetText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /** One parameter of a Web API method. */
 @Serializable
@@ -40,8 +37,6 @@ object WebApiDirectory {
     private const val LIST_URL =
         "https://api.steampowered.com/ISteamWebAPIUtil/GetSupportedAPIList/v1/"
 
-    private val json = Json { ignoreUnknownKeys = true }
-
     @Serializable
     private class ApiList(val interfaces: List<WebApiInterface> = emptyList())
 
@@ -53,14 +48,7 @@ object WebApiDirectory {
      *
      * @throws java.io.IOException if the Web API cannot be reached.
      */
-    suspend fun load(): List<WebApiInterface> = withContext(Dispatchers.IO) {
-        val connection = URL(LIST_URL).openConnection() as HttpURLConnection
-        val text = try {
-            connection.inputStream.use { it.readBytes().decodeToString() }
-        } finally {
-            connection.disconnect()
-        }
-
-        json.decodeFromString<Answer>(text).apiList.interfaces.sortedBy { it.name }
-    }
+    suspend fun load(): List<WebApiInterface> =
+        LenientJson.decodeFromString<Answer>(httpGetText(LIST_URL))
+            .apiList.interfaces.sortedBy { it.name }
 }

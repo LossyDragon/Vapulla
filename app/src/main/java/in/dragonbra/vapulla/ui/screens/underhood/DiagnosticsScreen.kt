@@ -6,12 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,9 +24,10 @@ import `in`.dragonbra.vapulla.service.ConnectionEvent
 import `in`.dragonbra.vapulla.service.SteamDiagnostics
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.ProcessExit
@@ -96,7 +95,7 @@ private fun DiagnosticsContent(
 
             Section(title = "Connection history") {
                 if (events.isEmpty()) {
-                    Note("Nothing has happened on the connection in this run yet.")
+                    Hint("Nothing has happened on the connection in this run yet.")
                 } else {
                     // Newest first, like the network log.
                     val newestFirst = events.asReversed()
@@ -108,7 +107,7 @@ private fun DiagnosticsContent(
 
             Section(title = "Earlier runs") {
                 if (exits.isEmpty()) {
-                    Note("The system has no record of earlier runs (it keeps one from Android 11).")
+                    Hint("The system has no record of earlier runs (it keeps one from Android 11).")
                 } else {
                     val format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                     TimelineList(
@@ -129,11 +128,7 @@ private fun DiagnosticsContent(
 private fun TimelineList(rows: List<Pair<String, String>>) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         rows.forEachIndexed { index, (time, text) ->
-            Surface(
-                shape = groupedListShape(index, rows.size),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            GroupedListItem(index = index, count = rows.size) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -152,16 +147,6 @@ private fun TimelineList(rows: List<Pair<String, String>>) {
             }
         }
     }
-}
-
-@Composable
-private fun Note(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 4.dp),
-    )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)

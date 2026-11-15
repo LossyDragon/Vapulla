@@ -3,10 +3,11 @@ package `in`.dragonbra.vapulla.ui.screens.chatrooms
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.ChatGroup
 import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
+import `in`.dragonbra.vapulla.service.requestMessage
 import `in`.dragonbra.vapulla.util.toChatPreview
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentSet
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Immutable
 data class ChatRoomsUiState(
@@ -33,7 +33,7 @@ data class ChatRoomsUiState(
  * expanded shows its channels with their last message, which is kept live: while expanded,
  * Steam is asked to push the group's messages, and each one replaces its channel's preview.
  */
-class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel() {
+class ChatRoomsViewModel(private val connection: SteamServiceConnection) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatRoomsUiState())
     val uiState: StateFlow<ChatRoomsUiState> = _uiState.asStateFlow()
@@ -62,16 +62,9 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
      */
     private fun load(quiet: Boolean) {
         viewModelScope.launch {
-            Timber.d("Refreshing group chats (quiet=$quiet)")
             if (!quiet) _uiState.update { it.copy(isLoading = true, error = null) }
-            val api = chatRooms
-            if (api == null) {
-                if (quiet) return@launch
-                _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
-                return@launch
-            }
 
-            runCatching { api.myGroups() }
+            connection.request("GetMyChatRoomGroups") { it.chatRooms.myGroups() }
                 .onSuccess { groups ->
                     _uiState.update {
                         it.copy(
@@ -81,11 +74,8 @@ class ChatRoomsViewModel(private val connection: ServiceConnection) : ViewModel(
                     }
                 }
                 .onFailure { error ->
-                    Timber.w(error, "GetMyChatRoomGroups failed")
                     if (quiet) return@onFailure
-                    _uiState.update {
-                        it.copy(isLoading = false, error = error.message ?: "Request failed")
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = error.requestMessage) }
                 }
         }
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -90,73 +91,93 @@ class SettingsManager(private val context: Context) {
     private companion object {
         val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-        val DARK_THEME = booleanPreferencesKey("dark_theme")
-        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
-        val MAX_SERVERS = intPreferencesKey("max_servers")
-        val SERVER_TIMEOUT_MS = intPreferencesKey("server_timeout_ms")
-        val WORKSHOP_PAGE_SIZE = intPreferencesKey("workshop_page_size")
-        val NETWORK_LOG_SIZE = intPreferencesKey("network_log_size")
-        val NETWORK_LOG_BODIES = booleanPreferencesKey("network_log_bodies")
-        val RECENT_CHATS_DAYS = intPreferencesKey("recent_chats_days")
-        val APPEND_NICKNAMES = booleanPreferencesKey("append_nicknames")
-        val SHOW_BLOCKED_FRIENDS = booleanPreferencesKey("show_blocked_friends")
-        val RAW_BBCODE = booleanPreferencesKey("raw_bbcode")
-        val SIGNED_IN_WEB_PAGES = booleanPreferencesKey("signed_in_web_pages")
-        val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
-        val DOWNLOAD_SPEED_LIMIT = intPreferencesKey("download_speed_limit")
-        val DOWNLOAD_CONNECTIONS = intPreferencesKey("download_connections")
-        val DOWNLOAD_FILE_WRITES = intPreferencesKey("download_file_writes")
-        val DOWNLOAD_DECOMPRESS_THREADS = intPreferencesKey("download_decompress_threads")
-        val DOWNLOAD_LOCATION = stringPreferencesKey("download_location")
+        val DARK_THEME = Stored(booleanPreferencesKey("dark_theme")) { it.darkTheme }
+        val DYNAMIC_COLOR = Stored(booleanPreferencesKey("dynamic_color")) { it.dynamicColor }
+        val MAX_SERVERS = Stored(intPreferencesKey("max_servers")) { it.maxServers }
+        val SERVER_TIMEOUT_MS =
+            Stored(intPreferencesKey("server_timeout_ms")) { it.serverTimeoutMs }
+        val WORKSHOP_PAGE_SIZE =
+            Stored(intPreferencesKey("workshop_page_size")) { it.workshopPageSize }
+        val NETWORK_LOG_SIZE = Stored(intPreferencesKey("network_log_size")) { it.networkLogSize }
+        val NETWORK_LOG_BODIES =
+            Stored(booleanPreferencesKey("network_log_bodies")) { it.networkLogBodies }
+        val RECENT_CHATS_DAYS =
+            Stored(intPreferencesKey("recent_chats_days")) { it.recentChatsDays }
+        val APPEND_NICKNAMES =
+            Stored(booleanPreferencesKey("append_nicknames")) { it.appendNicknames }
+        val SHOW_BLOCKED_FRIENDS =
+            Stored(booleanPreferencesKey("show_blocked_friends")) { it.showBlockedFriends }
+        val RAW_BBCODE = Stored(booleanPreferencesKey("raw_bbcode")) { it.rawBBCode }
+        val SIGNED_IN_WEB_PAGES =
+            Stored(booleanPreferencesKey("signed_in_web_pages")) { it.signedInWebPages }
+        val DOWNLOAD_WIFI_ONLY =
+            Stored(booleanPreferencesKey("download_wifi_only")) { it.downloadWifiOnly }
+        val DOWNLOAD_SPEED_LIMIT =
+            Stored(intPreferencesKey("download_speed_limit")) { it.downloadSpeedLimit }
+        val DOWNLOAD_CONNECTIONS =
+            Stored(intPreferencesKey("download_connections")) { it.downloadConnections }
+        val DOWNLOAD_FILE_WRITES =
+            Stored(intPreferencesKey("download_file_writes")) { it.downloadFileWrites }
+        val DOWNLOAD_DECOMPRESS_THREADS =
+            Stored(intPreferencesKey("download_decompress_threads")) {
+                it.downloadDecompressThreads
+            }
+        val DOWNLOAD_LOCATION =
+            Stored(stringPreferencesKey("download_location")) { it.downloadLocation }
+
+        /** Every setting, for [update] to go through. */
+        val ALL = listOf(
+            DARK_THEME, DYNAMIC_COLOR, MAX_SERVERS, SERVER_TIMEOUT_MS, WORKSHOP_PAGE_SIZE,
+            NETWORK_LOG_SIZE, NETWORK_LOG_BODIES, RECENT_CHATS_DAYS, APPEND_NICKNAMES,
+            SHOW_BLOCKED_FRIENDS, RAW_BBCODE, SIGNED_IN_WEB_PAGES, DOWNLOAD_WIFI_ONLY,
+            DOWNLOAD_SPEED_LIMIT, DOWNLOAD_CONNECTIONS, DOWNLOAD_FILE_WRITES,
+            DOWNLOAD_DECOMPRESS_THREADS, DOWNLOAD_LOCATION,
+        )
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
         .catch { error ->
             if (error is IOException) emit(emptyPreferences()) else throw error
         }
-        .map { prefs ->
-            val defaults = AppSettings()
-            AppSettings(
-                darkTheme = prefs[DARK_THEME] ?: defaults.darkTheme,
-                dynamicColor = prefs[DYNAMIC_COLOR] ?: defaults.dynamicColor,
-                maxServers = prefs[MAX_SERVERS] ?: defaults.maxServers,
-                serverTimeoutMs = prefs[SERVER_TIMEOUT_MS] ?: defaults.serverTimeoutMs,
-                workshopPageSize = prefs[WORKSHOP_PAGE_SIZE] ?: defaults.workshopPageSize,
-                networkLogSize = prefs[NETWORK_LOG_SIZE] ?: defaults.networkLogSize,
-                networkLogBodies = prefs[NETWORK_LOG_BODIES] ?: defaults.networkLogBodies,
-                recentChatsDays = prefs[RECENT_CHATS_DAYS] ?: defaults.recentChatsDays,
-                appendNicknames = prefs[APPEND_NICKNAMES] ?: defaults.appendNicknames,
-                showBlockedFriends = prefs[SHOW_BLOCKED_FRIENDS] ?: defaults.showBlockedFriends,
-                rawBBCode = prefs[RAW_BBCODE] ?: defaults.rawBBCode,
-                signedInWebPages = prefs[SIGNED_IN_WEB_PAGES] ?: defaults.signedInWebPages,
-                downloadWifiOnly = prefs[DOWNLOAD_WIFI_ONLY] ?: defaults.downloadWifiOnly,
-                downloadSpeedLimit = prefs[DOWNLOAD_SPEED_LIMIT] ?: defaults.downloadSpeedLimit,
-                downloadConnections = prefs[DOWNLOAD_CONNECTIONS] ?: defaults.downloadConnections,
-                downloadFileWrites = prefs[DOWNLOAD_FILE_WRITES] ?: defaults.downloadFileWrites,
-                downloadDecompressThreads = prefs[DOWNLOAD_DECOMPRESS_THREADS]
-                    ?: defaults.downloadDecompressThreads,
-                downloadLocation = prefs[DOWNLOAD_LOCATION] ?: defaults.downloadLocation,
-            )
-        }
+        .map { it.toSettings() }
 
-    suspend fun setDarkTheme(enabled: Boolean) = set(DARK_THEME, enabled)
-    suspend fun setDynamicColor(enabled: Boolean) = set(DYNAMIC_COLOR, enabled)
-    suspend fun setMaxServers(count: Int) = set(MAX_SERVERS, count)
-    suspend fun setServerTimeoutMs(timeout: Int) = set(SERVER_TIMEOUT_MS, timeout)
-    suspend fun setWorkshopPageSize(size: Int) = set(WORKSHOP_PAGE_SIZE, size)
-    suspend fun setNetworkLogSize(size: Int) = set(NETWORK_LOG_SIZE, size)
-    suspend fun setNetworkLogBodies(enabled: Boolean) = set(NETWORK_LOG_BODIES, enabled)
-    suspend fun setRecentChatsDays(days: Int) = set(RECENT_CHATS_DAYS, days)
-    suspend fun setAppendNicknames(enabled: Boolean) = set(APPEND_NICKNAMES, enabled)
-    suspend fun setShowBlockedFriends(enabled: Boolean) = set(SHOW_BLOCKED_FRIENDS, enabled)
-    suspend fun setRawBBCode(enabled: Boolean) = set(RAW_BBCODE, enabled)
-    suspend fun setSignedInWebPages(enabled: Boolean) = set(SIGNED_IN_WEB_PAGES, enabled)
-    suspend fun setDownloadWifiOnly(enabled: Boolean) = set(DOWNLOAD_WIFI_ONLY, enabled)
-    suspend fun setDownloadSpeedLimit(limit: Int) = set(DOWNLOAD_SPEED_LIMIT, limit)
-    suspend fun setDownloadConnections(count: Int) = set(DOWNLOAD_CONNECTIONS, count)
-    suspend fun setDownloadFileWrites(count: Int) = set(DOWNLOAD_FILE_WRITES, count)
-    suspend fun setDownloadDecompressThreads(count: Int) = set(DOWNLOAD_DECOMPRESS_THREADS, count)
-    suspend fun setDownloadLocation(path: String) = set(DOWNLOAD_LOCATION, path)
+    private fun Preferences.toSettings(): AppSettings {
+        val prefs = this
+        val defaults = AppSettings()
+        return AppSettings(
+            darkTheme = DARK_THEME.read(prefs, defaults),
+            dynamicColor = DYNAMIC_COLOR.read(prefs, defaults),
+            maxServers = MAX_SERVERS.read(prefs, defaults),
+            serverTimeoutMs = SERVER_TIMEOUT_MS.read(prefs, defaults),
+            workshopPageSize = WORKSHOP_PAGE_SIZE.read(prefs, defaults),
+            networkLogSize = NETWORK_LOG_SIZE.read(prefs, defaults),
+            networkLogBodies = NETWORK_LOG_BODIES.read(prefs, defaults),
+            recentChatsDays = RECENT_CHATS_DAYS.read(prefs, defaults),
+            appendNicknames = APPEND_NICKNAMES.read(prefs, defaults),
+            showBlockedFriends = SHOW_BLOCKED_FRIENDS.read(prefs, defaults),
+            rawBBCode = RAW_BBCODE.read(prefs, defaults),
+            signedInWebPages = SIGNED_IN_WEB_PAGES.read(prefs, defaults),
+            downloadWifiOnly = DOWNLOAD_WIFI_ONLY.read(prefs, defaults),
+            downloadSpeedLimit = DOWNLOAD_SPEED_LIMIT.read(prefs, defaults),
+            downloadConnections = DOWNLOAD_CONNECTIONS.read(prefs, defaults),
+            downloadFileWrites = DOWNLOAD_FILE_WRITES.read(prefs, defaults),
+            downloadDecompressThreads = DOWNLOAD_DECOMPRESS_THREADS.read(prefs, defaults),
+            downloadLocation = DOWNLOAD_LOCATION.read(prefs, defaults),
+        )
+    }
+
+    /**
+     * Changes settings: [change] is given the stored settings and returns them as they should
+     * be, usually a `copy` with one value replaced. Only the values it changed are written, so
+     * the rest keep following the defaults.
+     */
+    suspend fun update(change: (AppSettings) -> AppSettings) {
+        context.dataStore.edit { prefs ->
+            val old = prefs.toSettings()
+            val new = change(old)
+            ALL.forEach { it.write(prefs, old, new) }
+        }
+    }
 
     /** Clears every stored value so [settings] falls back to [AppSettings] defaults. */
     suspend fun resetToDefaults() {
@@ -164,8 +185,16 @@ class SettingsManager(private val context: Context) {
         context.dataStore.edit { it.clear() }
     }
 
-    private suspend fun <T> set(key: Preferences.Key<T>, value: T) {
-        Timber.d("Setting ${key.name} = $value")
-        context.dataStore.edit { it[key] = value }
+    /** One setting: the key it is stored under and where it sits in [AppSettings]. */
+    private class Stored<T>(val key: Preferences.Key<T>, val value: (AppSettings) -> T) {
+        fun read(prefs: Preferences, defaults: AppSettings): T = prefs[key] ?: value(defaults)
+
+        /** Stores the value in [new] if it is not the one in [old]. */
+        fun write(prefs: MutablePreferences, old: AppSettings, new: AppSettings) {
+            if (value(old) != value(new)) {
+                Timber.d("Setting ${key.name} = ${value(new)}")
+                prefs[key] = value(new)
+            }
+        }
     }
 }

@@ -5,7 +5,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
 import kotlinx.coroutines.flow.Flow
 
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
  */
 data class ChatSummary(val friendId: Long, val timestamp: Long, val unread: Int)
 
+/** The stored chat messages of every friend. */
 @Dao
 interface ChatMessageDao {
 
@@ -67,9 +67,6 @@ interface ChatMessageDao {
             "timestampConfirmed = 1 WHERE id = :id",
     )
     suspend fun confirm(id: Long, message: String, timestamp: Long)
-
-    @Update
-    suspend fun update(message: ChatMessage)
 
     @Query("DELETE FROM chat_message WHERE id = :id")
     suspend fun delete(id: Long)

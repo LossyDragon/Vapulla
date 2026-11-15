@@ -29,7 +29,7 @@ import `in`.dragonbra.vapulla.util.Utils.toTimeString
 
 /**
  * One friend row, styled as a Material 3 Expressive grouped list item: a tonal container whose
- * [shape] the caller picks by position, presence shown by the avatar dot and the status line.
+ * [shape] the caller picks by position. Presence is shown by the status line alone.
  */
 @Composable
 fun FriendListItem(
@@ -139,7 +139,6 @@ private fun Preview() {
                         nickname = "Nick Name",
                         state = EPersonaState.Away,
                         newMessageCount = 100,
-                        lastMessage = "A Message",
                         lastMessageTime = 1760722982L,
                     ),
                     onClick = {},

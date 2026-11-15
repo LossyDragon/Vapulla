@@ -4,15 +4,15 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.GameStats
+import `in`.dragonbra.vapulla.service.requestMessage
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Immutable
 data class AchievementsUiState(
@@ -29,7 +29,7 @@ data class AchievementsUiState(
 class AchievementsViewModel(
     private val appId: Int,
     private val appDao: SteamAppDao,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AchievementsUiState())
@@ -47,13 +47,7 @@ class AchievementsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val apis = connection.steamService?.apis
-            if (apis == null) {
-                _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
-                return@launch
-            }
-
-            runCatching { apis.library.gameStats(appId) }
+            connection.request("GetUserStats") { it.library.gameStats(appId) }
                 .onSuccess { stats ->
                     _uiState.update {
                         it.copy(
@@ -64,10 +58,7 @@ class AchievementsViewModel(
                     }
                 }
                 .onFailure { error ->
-                    Timber.w(error, "GetUserStats failed")
-                    _uiState.update {
-                        it.copy(isLoading = false, error = error.message ?: "Request failed")
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = error.requestMessage) }
                 }
         }
     }

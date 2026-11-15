@@ -22,7 +22,6 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -42,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.StorePage
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.IconLabel
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
@@ -50,13 +51,12 @@ import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.screens.games.components.HEADER_ASPECT
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toDateString
 import kotlinx.collections.immutable.persistentListOf
 
-/** The store's header picture is 460 by 215 pixels, its screenshots 16 by 9. */
-private const val HEADER_RATIO = 460f / 215f
+/** The store's screenshots are 16 by 9. */
 private const val SCREENSHOT_RATIO = 16f / 9f
 private val SCREENSHOT_HEIGHT = 150.dp
 
@@ -103,7 +103,7 @@ private fun StorePageContent(
             if (uiState.isLoading) {
                 LoadingBox(modifier = Modifier.fillMaxSize().padding(padding))
             } else {
-                SearchResultMessage(
+                EmptyMessage(
                     message = uiState.message.orEmpty(),
                     modifier = Modifier.padding(padding),
                 )
@@ -125,7 +125,7 @@ private fun StorePageContent(
                         imageOptions = ImageOptions(contentScale = ContentScale.Crop),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(HEADER_RATIO)
+                            .aspectRatio(HEADER_ASPECT)
                             .clip(MaterialTheme.shapes.extraLarge),
                         loading = { ShimmerBox(modifier = Modifier.fillMaxSize()) },
                     )
@@ -209,8 +209,7 @@ private fun Actions(inLibrary: Boolean, onStore: () -> Unit, onLibrary: () -> Un
             modifier = Modifier.weight(1f),
             shapes = ButtonDefaults.shapes(),
         ) {
-            Icon(Icons.Outlined.Storefront, contentDescription = null)
-            Text(text = "  Store website")
+            IconLabel(Icons.Outlined.Storefront, "Store website")
         }
         if (inLibrary) {
             FilledTonalButton(
@@ -218,8 +217,7 @@ private fun Actions(inLibrary: Boolean, onStore: () -> Unit, onLibrary: () -> Un
                 modifier = Modifier.weight(1f),
                 shapes = ButtonDefaults.shapes(),
             ) {
-                Icon(Icons.Outlined.Games, contentDescription = null)
-                Text(text = "  In your library")
+                IconLabel(Icons.Outlined.Games, "In your library")
             }
         }
     }

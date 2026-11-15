@@ -7,9 +7,11 @@ import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.AccountDetails
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.NotConnectedException
 import `in`.dragonbra.vapulla.service.SteamAccount
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.FriendInvite
+import `in`.dragonbra.vapulla.service.requestMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -25,7 +27,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 /**
  * @property name the profile name, as last confirmed by Steam.
@@ -49,7 +50,7 @@ data class AccountUiState(
  * name through `SteamFriends`, and friend invite links from the `UserAccount` service.
  */
 class AccountViewModel(
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     account: AccountManager,
     appDao: SteamAppDao,
 ) : ViewModel() {
@@ -133,8 +134,8 @@ class AccountViewModel(
         viewModelScope.launch {
             invites.update { it.copy(loading = true) }
 
-            val list = runCatching { connection.steamService?.apis?.invites?.invites() }
-                .onFailure { Timber.w(it, "GetFriendInviteTokens failed") }
+            // A failed request leaves the list as it was.
+            val list = connection.request("GetFriendInviteTokens") { it.invites.invites() }
                 .getOrNull()
 
             invites.update {
@@ -146,48 +147,44 @@ class AccountViewModel(
     /** Asks Steam for a new profile name; the outcome is reported through [messages]. */
     fun changeName(name: String) {
         viewModelScope.launch {
-            val friends = connection.steamService?.apis?.friends
             val wanted = name.trim()
-
-            when {
-                wanted.length !in NAME_LENGTH ->
-                    _messages.emit("A profile name has 2 to 32 characters")
-
-                friends == null -> _messages.emit("Not connected to Steam")
-
-                else -> friends.setPersonaName(wanted)
-            }
-        }
-    }
-
-    fun createInvite() {
-        viewModelScope.launch {
-            val api = connection.steamService?.apis?.invites
-            if (api == null) {
-                _messages.emit("Not connected to Steam")
+            if (wanted.length !in NAME_LENGTH) {
+                _messages.emit("A profile name has 2 to 32 characters")
                 return@launch
             }
 
-            invites.update { it.copy(loading = true) }
-            val created = runCatching { api.create() }
-                .onFailure { Timber.w(it, "CreateFriendInviteToken failed") }
-                .getOrNull()
+            connection.request("SetPersonaName") { it.friends.setPersonaName(wanted) }
+                .onFailure { _messages.emit(it.requestMessage) }
+        }
+    }
 
-            if (created == null) {
+    /** Makes a new invite link and shows it in the list. */
+    fun createInvite() {
+        viewModelScope.launch {
+            invites.update { it.copy(loading = true) }
+            val result = connection.request("CreateFriendInviteToken") { it.invites.create() }
+
+            if (result.getOrNull() == null) {
                 invites.update { it.copy(loading = false) }
-                _messages.emit("Steam did not make an invite link")
+                _messages.emit(
+                    if (result.exceptionOrNull() is NotConnectedException) {
+                        "Not connected to Steam"
+                    } else {
+                        "Steam did not make an invite link"
+                    },
+                )
             } else {
                 refresh()
             }
         }
     }
 
+    /** Makes [invite] stop working; the outcome is reported through [messages]. */
     fun revokeInvite(invite: FriendInvite) {
         viewModelScope.launch {
-            val api = connection.steamService?.apis?.invites ?: return@launch
-            val result = runCatching { api.revoke(invite.token) }
-                .onFailure { Timber.w(it, "RevokeFriendInviteToken failed") }
-                .getOrElse { EResult.Fail }
+            val result = connection.request("RevokeFriendInviteToken") {
+                it.invites.revoke(invite.token)
+            }.getOrElse { EResult.Fail }
 
             if (result == EResult.OK) {
                 _messages.emit("Invite link revoked")

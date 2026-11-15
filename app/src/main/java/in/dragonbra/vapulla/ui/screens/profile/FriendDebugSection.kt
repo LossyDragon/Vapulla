@@ -32,6 +32,7 @@ import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import java.util.Date
 import java.util.EnumSet
 
@@ -83,18 +84,17 @@ internal fun FriendDebugSection(friend: SteamFriend) {
 }
 
 private fun personaRows(friend: SteamFriend): List<Pair<String, String>> = listOf(
-    "Steam ID" to friend.id.toULong().toString(),
+    "Steam ID" to friend.id.toSteamIdString(),
     "Relationship" to friend.relation.name,
     "State" to "${friend.state.name} (${friend.state.code()})",
     // What the friend's client is: mobile, VR, Big Picture, and so on.
     "State flags" to friend.stateFlags.joinToString { it.name }.ifEmpty { "None" },
     // Which groups of fields Steam included in its last update about this friend.
     "Fields in last update" to friend.statusFlags.joinToString { it.name }.ifEmpty { "None" },
-    "Game ID" to friend.gameID.toUInt64().toULong().toString(),
+    "Game ID" to friend.gameID.toUInt64().toSteamIdString(),
     "Game ID type" to (friend.gameID.appType?.name ?: "Unknown"),
     "App ID" to friend.gameAppID.toString(),
     "Game name" to friend.gameName.ifEmpty { "None" },
-    "Game data blob" to "${friend.gameDataBlob.size} bytes",
     "Last log on" to friend.lastLogOn.orNever(),
     "Last log off" to friend.lastLogOff.orNever(),
 )

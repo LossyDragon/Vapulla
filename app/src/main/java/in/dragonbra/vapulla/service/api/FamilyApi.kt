@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.service.api
 
-import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFamilygroupsSteamclient.CFamilyGroups_GetFamilyGroupForUser_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFamilygroupsSteamclient.CFamilyGroups_GetSharedLibraryApps_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFamilygroupsSteamclient.EFamilyGroupRole
@@ -8,7 +7,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFamilygroupsS
 import `in`.dragonbra.javasteam.rpc.service.FamilyGroups
 import `in`.dragonbra.javasteam.types.SteamID
 import kotlinx.collections.immutable.toImmutableList
-import timber.log.Timber
 
 /**
  * The account's Steam Family, via the `FamilyGroups` unified service: who is in it and which
@@ -24,19 +22,14 @@ class FamilyApi(
 
     /** The family the account is in, or null when it is in none or Steam does not answer. */
     suspend fun family(): Family? {
-        val steamId = localSteamId() ?: return null
+        val steamId = localSteamId()?.convertToUInt64() ?: return null
         val request = CFamilyGroups_GetFamilyGroupForUser_Request.newBuilder()
-            .setSteamid(steamId.convertToUInt64())
+            .setSteamid(steamId)
             .setIncludeFamilyGroupResponse(true)
             .build()
 
-        val response = familyGroups.getFamilyGroupForUser(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetFamilyGroupForUser failed: ${response.result}")
-            return null
-        }
-
-        val body = response.body
+        val body = familyGroups.getFamilyGroupForUser(request).bodyOrNull("GetFamilyGroupForUser")
+            ?: return null
         if (body.isNotMemberOfAnyGroup || body.familyGroupid == 0L) return null
 
         val group = body.familyGroup
@@ -57,7 +50,7 @@ class FamilyApi(
                             else -> "Member"
                         },
                         joinedAt = member.timeJoined.toUInt().toLong(),
-                        isSelf = member.steamid == steamId.convertToUInt64(),
+                        isSelf = member.steamid == steamId,
                     )
                 }
                 // The account itself first, then by how long they have been in the family.
@@ -79,16 +72,13 @@ class FamilyApi(
             .setIncludeOwn(false)
             .setIncludeExcluded(false)
             .setIncludeNonGames(true)
-            .setLanguage(LANGUAGE)
+            .setLanguage(STEAM_LANGUAGE)
             .build()
 
-        val response = familyGroups.getSharedLibraryApps(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetSharedLibraryApps failed: ${response.result}")
-            return emptyList()
-        }
+        val body = familyGroups.getSharedLibraryApps(request).bodyOrNull("GetSharedLibraryApps")
+            ?: return emptyList()
 
-        return response.body.appsList
+        return body.appsList
             .filter { it.excludeReason == ESharedLibraryExcludeReason.k_ESharedLibrary_Included }
             .map { app ->
                 SharedGame(
@@ -98,9 +88,5 @@ class FamilyApi(
                 )
             }
             .sortedBy { it.name.lowercase() }
-    }
-
-    private companion object {
-        const val LANGUAGE = "english"
     }
 }

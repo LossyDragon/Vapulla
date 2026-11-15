@@ -45,6 +45,7 @@ class AccountManager(private val context: Context) {
         val DATA_OWNER = longPreferencesKey("data_owner_steamid")
     }
 
+    /** The account name used to sign in, which is not the profile name in [accountName]. */
     val username: Flow<String?> = preference(LOGIN_USERNAME)
 
     /**
@@ -57,9 +58,17 @@ class AccountManager(private val context: Context) {
         .distinctUntilChanged()
         .map { stored -> stored?.let(TokenCipher::decrypt) }
         .flowOn(Dispatchers.IO)
+
+    /** The number that tells this install's sessions from the account's others, see [setUuid]. */
     val uuid: Flow<Int?> = preference(LOGIN_UUID)
+
+    /** The signed-in account's 64-bit Steam ID, from the persona Steam last sent about it. */
     val steamid: Flow<Long?> = preference(ACCOUNT_STEAMID)
+
+    /** How far Steam's PICS change list has been followed, see [setLastChangeNumber]. */
     val lastChangeNumber: Flow<Int?> = preference(LAST_CHANGE_NUMBER)
+
+    // The account's persona as Steam last reported it, for the drawer header.
     val accountName: Flow<String?> = preference(ACCOUNT_NAME)
     val accountAvatar: Flow<String?> = preference(ACCOUNT_AVATAR_HASH)
     val accountPersonaState: Flow<Int?> = preference(ACCOUNT_PERSONA_STATE)
@@ -70,6 +79,7 @@ class AccountManager(private val context: Context) {
         context.dataStore.edit { it[ACCOUNT_LEVEL] = level }
     }
 
+    /** Saves the account name to sign in with next time, together with [setRefreshToken]. */
     suspend fun setUsername(name: String) {
         context.dataStore.edit { it[LOGIN_USERNAME] = name }
     }
@@ -98,10 +108,15 @@ class AccountManager(private val context: Context) {
         }
     }
 
+    /**
+     * Saves the login ID sent with every logon. Steam ends an account's other session from
+     * the same network when both use the same ID, so each install makes up its own once.
+     */
     suspend fun setUuid(uuid: Int) {
         context.dataStore.edit { it[LOGIN_UUID] = uuid }
     }
 
+    /** Saves the PICS change number the library is up to date with; the next poll asks from it. */
     suspend fun setLastChangeNumber(value: Int) {
         context.dataStore.edit { it[LAST_CHANGE_NUMBER] = value }
     }
@@ -127,6 +142,7 @@ class AccountManager(private val context: Context) {
      */
     suspend fun dataOwner(): Long? = preference(DATA_OWNER).first()
 
+    /** Notes whose data the database is about to hold, see [dataOwner]. */
     suspend fun setDataOwner(steamId: Long) {
         context.dataStore.edit { it[DATA_OWNER] = steamId }
     }

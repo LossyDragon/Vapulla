@@ -34,7 +34,11 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 /**
- * [VapullaLoadingAnimation] was AI assisted to port animation from xml -> compose.
+ * The app's logo, three stacked sheets, with the lower two dropping into place and bouncing
+ * while [isAnimating]. Shown on the sign-in screen while it waits for Steam. The colours are
+ * the logo's own, not the theme's.
+ *
+ * Ported from the XML animation of the old app with the help of AI.
  */
 @Composable
 fun VapullaLoadingAnimation(

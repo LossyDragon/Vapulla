@@ -1,4 +1,4 @@
-package `in`.dragonbra.vapulla.ui.composables.search
+package `in`.dragonbra.vapulla.ui.composables
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
@@ -19,7 +19,7 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
  * the scaffold padding to centre it on a whole screen; by default it sits at the top.
  */
 @Composable
-fun SearchResultMessage(message: String, modifier: Modifier = Modifier) {
+fun EmptyMessage(message: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -39,7 +39,7 @@ fun SearchResultMessage(message: String, modifier: Modifier = Modifier) {
 private fun Preview() {
     VapullaTheme {
         Surface {
-            SearchResultMessage(message = "No packets yet")
+            EmptyMessage(message = "No packets yet")
         }
     }
 }

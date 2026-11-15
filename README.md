@@ -9,6 +9,22 @@ It is a showcase and a test bed for JavaSteam, not a replacement for the officia
 
 Vapulla is not affiliated with or endorsed by Valve. Steam is a trademark of Valve Corporation.
 
+## Download
+
+The latest build is on the
+[prerelease](https://github.com/LossyDragon/Vapulla/releases/tag/prerelease) release, as
+`vapulla.apk`. It needs Android 9 or newer.
+
+- There is one release, and each new build replaces the APK on it. Its title and notes say
+  which version it is, the commit it was built from, and what changed since the build before.
+- It is a pre-release: development software, built from the `Compose2` branch as work goes
+  on, and not tested beyond what [TODO.txt](TODO.txt) lists.
+- Every build is signed with the same key, so a newer one installs over an older one and
+  keeps its data. A build you made yourself is signed with another key; uninstall it first.
+- Android asks you to allow installing from the browser or file manager you open the APK
+  with.
+- There is no update check in the app. Look at the release for a newer build.
+
 ## Features
 
 - Sign in with a QR code or with account name and password, including Steam Guard
@@ -85,10 +101,16 @@ runs noticeably slower.
 ./gradlew :app:installBenchmark
 ```
 
-A signed release build is made by GitHub Actions (`.github/workflows/pre-release.yml`) whenever
-a push raises `versionCode` in `app/build.gradle.kts`. It replaces the APK on the
-[prerelease](https://github.com/LossyDragon/Vapulla/releases/tag/prerelease) release. The
-signing key is kept in the repository's secrets, which the top of that file lists.
+The build under [Download](#download) is made by GitHub Actions
+(`.github/workflows/pre-release.yml`). It runs when a push to `Compose2` raises `versionCode`
+in `app/build.gradle.kts`: lint, the unit tests, then the release build, signed with a key
+kept in the repository's secrets. The `prerelease` tag is moved to the commit it built. A
+fork needs a key of its own; the top of the workflow file lists the secrets to set. Pull
+requests get the lint and the unit tests from `.github/workflows/check.yml`.
+
+The release build is not shrunk or obfuscated (`isMinifyEnabled = false`), so it is the same
+code as a debug build. Without the key in the environment, `./gradlew :app:assembleRelease`
+makes an unsigned APK.
 
 The plain Kotlin parts have unit tests:
 
@@ -118,7 +140,35 @@ All code is under `app/src/main/java/in/dragonbra/vapulla`.
 | `manager` | Saved account and settings (DataStore) |
 | `ui` | Jetpack Compose screens, one package per screen under `ui/screens` |
 
-The service package is the place to look for JavaSteam usage examples.
+The service package is the place to look for JavaSteam usage examples:
+
+| To see how to | Look at |
+|---|---|
+| Set up the client, run its callbacks, reconnect | `service/SteamConnection.kt` |
+| Sign in with a password or a QR code, and with a saved token | `service/auth/SteamAuthenticator.kt` |
+| Follow friends, persona states and nicknames | `service/sync/FriendsSync.kt`, `service/api/FriendsApi.kt` |
+| Send and receive friend messages, history, typing | `service/api/ChatApi.kt` |
+| Use group chats | `service/api/ChatRoomsApi.kt` |
+| Upload an image to a chat | `service/api/ChatMediaApi.kt` |
+| Read licenses and PICS app info, and follow PICS changes | `service/sync/LicenseSync.kt`, `service/api/LibraryApi.kt` |
+| Use Steam without an account | `service/sync/AnonymousPicsFeed.kt` |
+| Pick depots and download a game | `service/download/DownloadPlan.kt`, `service/download/DownloadManager.kt` |
+| Fetch a depot manifest | `service/api/ManifestApi.kt` |
+| Call a unified service (most of the rest) | `service/api/SessionsApi.kt` is the shortest; Cloud, Workshop, Family, Store and Invites work the same way |
+| Read leaderboards and achievements | `service/api/LeaderboardsApi.kt`, `service/api/LibraryApi.kt` |
+| Query game servers | `service/api/ServerBrowserApi.kt`, `util/SourceQuery.kt` |
+| Make and read an auth ticket | `service/api/AuthTicketApi.kt`, `util/AuthTicketReader.kt` |
+| Get web cookies for Steam's sites | `service/api/WebSessionApi.kt` |
+| Add a message handler and callback of your own | `service/handler/VapullaHandler.kt`, `service/callback/` |
+| Watch every packet | `service/NetworkLog.kt`, `service/PacketInspector.kt` |
+
+View models reach these through `SteamServiceConnection.request`, which also covers the case
+of no session and logs a failure.
+
+Nearly all text on screen is written in the code, in English, and not kept in string
+resources.
+That is on purpose: a sample is easier to read with the words next to the code that shows
+them.
 
 ## Your account and your data
 

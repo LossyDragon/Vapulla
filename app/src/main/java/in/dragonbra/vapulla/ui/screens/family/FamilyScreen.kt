@@ -9,21 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,17 +27,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.Family
 import `in`.dragonbra.vapulla.service.api.FamilyMember
 import `in`.dragonbra.vapulla.service.api.SharedGame
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.SkeletonList
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.toDateString
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlinx.collections.immutable.persistentListOf
 
 /**
@@ -80,11 +77,7 @@ private fun FamilyContent(
         topBar = {
             TopAppBar(
                 title = { Text(family?.name?.ifEmpty { null } ?: "Family") },
-                navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                    }
-                },
+                navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
             )
         },
     ) { padding ->
@@ -119,7 +112,8 @@ private fun FamilyContent(
                     ) { index, member ->
                         MemberRow(
                             member = member,
-                            shape = groupedListShape(index, family.members.size),
+                            index = index,
+                            count = family.members.size,
                             onClick = { uriHandler.openUri(Utils.getProfileUrl(member.steamId)) },
                         )
                     }
@@ -134,7 +128,8 @@ private fun FamilyContent(
                         GameRow(
                             game = game,
                             owners = ownerNames(game, family),
-                            shape = groupedListShape(index, uiState.games.size),
+                            index = index,
+                            count = uiState.games.size,
                             onClick = { onOpenGame(game.appId) },
                         )
                     }
@@ -174,13 +169,8 @@ private fun Header(title: String, detail: String) {
 
 /** One member; tapping opens their Steam profile. */
 @Composable
-private fun MemberRow(member: FamilyMember, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun MemberRow(member: FamilyMember, index: Int, count: Int, onClick: () -> Unit) {
+    GroupedListItem(index = index, count = count, onClick = onClick) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -192,7 +182,7 @@ private fun MemberRow(member: FamilyMember, shape: Shape, onClick: () -> Unit) {
             ) {
                 Text(
                     // A member Steam would not name is shown by Steam ID.
-                    text = member.name.ifEmpty { member.steamId.toULong().toString() },
+                    text = member.name.ifEmpty { member.steamId.toSteamIdString() },
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -219,19 +209,22 @@ private fun MemberRow(member: FamilyMember, shape: Shape, onClick: () -> Unit) {
 
 /** One shared game and who owns it; tapping opens its store page. */
 @Composable
-private fun GameRow(game: SharedGame, owners: String, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun GameRow(
+    game: SharedGame,
+    owners: String,
+    index: Int,
+    count: Int,
+    onClick: () -> Unit,
+) {
+    val name = remember(game.name) { game.name.decodeHtml() }
+
+    GroupedListItem(index = index, count = count, onClick = onClick) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = game.name.decodeHtml().ifEmpty { "App ${game.appId}" },
+                text = name.ifEmpty { "App ${game.appId}" },
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

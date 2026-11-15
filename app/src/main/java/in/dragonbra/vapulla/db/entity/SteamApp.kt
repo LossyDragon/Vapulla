@@ -6,7 +6,6 @@ import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.vapulla.db.serializers.DateSerializer
 import `in`.dragonbra.vapulla.db.serializers.OsEnumSetSerializer
-import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
@@ -14,14 +13,16 @@ import kotlinx.serialization.Serializable
 
 /**
  * A Steam app from PICS, keyed by app ID. Rows start as stubs created from a license's app
- * list and are filled in once the app's PICS info arrives ([receivedPICS]). The structured
- * fields (depots, branches, assets, config, ufs) are stored as JSON columns.
+ * list and are filled in once the app's PICS info arrives ([receivedPICS]). Only the parts of
+ * the app info that the app shows or downloads with are kept; the PICS explorer shows the
+ * rest. The structured fields (depots, branches, ufs) are stored as JSON columns.
  */
 @Immutable
 @Entity(tableName = "steam_app")
 data class SteamApp(
     @PrimaryKey val id: Int,
-    val packageId: Int = Int.MAX_VALUE,
+    /** The license that grants the app, or [NO_PACKAGE] for an app that is not owned. */
+    val packageId: Int = NO_PACKAGE,
     val ownerAccountId: List<Int> = emptyList(),
     val licenseFlags: EnumSet<ELicenseFlags> = emptyEnumSet(),
     val receivedPICS: Boolean = false,
@@ -34,63 +35,34 @@ data class SteamApp(
     val lastPlayed: Long = 0L,
     val depots: Map<Int, DepotInfo> = emptyMap(),
     val branches: Map<String, BranchInfo> = emptyMap(),
-    // Common
+
+    // From the `common` section
     val name: String = "",
     val type: AppType = AppType.invalid,
     val osList: EnumSet<OS> = EnumSet.of(OS.none),
     val releaseState: ReleaseState = ReleaseState.disabled,
+    /** Epoch seconds, 0 when unknown. */
     val releaseDate: Long = 0L,
     val metacriticScore: Byte = 0,
-    val metacriticFullUrl: String = "",
-    val logoHash: String = "",
-    val logoSmallHash: String = "",
-    val iconHash: String = "",
     val clientIconHash: String = "",
-    val clientTgaHash: String = "",
-    val smallCapsule: Map<Language, String> = emptyMap(),
+    /** File name of the store header image, by language. */
     val headerImage: Map<Language, String> = emptyMap(),
-    val libraryAssets: LibraryAssetsInfo = LibraryAssetsInfo(),
-    val primaryGenre: Boolean = false,
-    val reviewScore: Byte = 0,
     val reviewPercentage: Byte = 0,
     val controllerSupport: ControllerSupport = ControllerSupport.none,
     /** True when the app has a public Steam Workshop (`common/workshop_visible`). */
     val workshopVisible: Boolean = false,
 
-    // Extended
-    val demoOfAppId: Int = Int.MAX_VALUE,
+    // From the `extended` section
     val developer: String = "",
     val publisher: String = "",
-    val homepageUrl: String = "",
-    val gameManualUrl: String = "",
-    val loadAllBeforeLaunch: Boolean = false,
-    val dlcAppIds: List<Int> = emptyList(),
     val isFreeApp: Boolean = false,
-    val dlcForAppId: Int = Int.MAX_VALUE,
-    val mustOwnAppToPurchase: Int = Int.MAX_VALUE,
-    val dlcAvailableOnStore: Boolean = false,
-    val optionalDlc: Boolean = false,
+    /** Set for a game that registers servers with Steam; see `SteamAppDao.findServerGames`. */
     val gameDir: String = "",
-    val installScript: String = "",
     val noServers: Boolean = false,
-    val order: Boolean = false,
-    val primaryCache: Int = 0,
-    val validOSList: EnumSet<OS> = EnumSet.of(OS.none),
-    val thirdPartyCdKey: Boolean = false,
-    val visibleOnlyWhenInstalled: Boolean = false,
-    val visibleOnlyWhenSubscribed: Boolean = false,
-    val launchEulaUrl: String = "",
 
-    // Config
-    val requireDefaultInstallFolder: Boolean = false,
-    val contentType: Int = 0,
+    // From the `config` and `ufs` sections
+    /** Name of the folder the Steam client installs the app to. */
     val installDir: String = "",
-    val useLaunchCmdLine: Boolean = false,
-    val launchWithoutWorkshopUpdates: Boolean = false,
-    val useMms: Boolean = false,
-    val installScriptSignature: String = "",
-    val installScriptOverride: Boolean = false,
-    val config: ConfigInfo = ConfigInfo(),
     val ufs: UFS = UFS(),
 ) {
 
@@ -98,120 +70,20 @@ data class SteamApp(
     val hasCloudSaves: Boolean
         get() = ufs.quota > 0 || ufs.maxNumFiles > 0
 
-    val logoUrl: String
-        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$logoHash.jpg"
-    val logoSmallUrl: String
-        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$logoSmallHash.jpg"
-    val iconUrl: String
-        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$iconHash.jpg"
-    val clientIconUrl: String
-        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$clientIconHash.ico"
-    val clientTgaUrl: String
-        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$clientTgaHash.tga"
+    /** 460x215 store header; see [steamHeaderImageUrl]. */
+    val headerImageUrl: String
+        get() = steamHeaderImageUrl(id, headerImage)
 
-    // source: https://github.com/Nemirtingas/games-infos/blob/3915100198bac34553b3c862f9e295d277f5520a/steam_retriever/Program.cs#L589C43-L589C89
-    fun getSmallCapsuleUrl(language: Language = Language.english): String? =
-        smallCapsule[language]?.let {
-            steamStoreAssetUrl(id, it)
-        }
-
-    fun getHeaderImageUrl(language: Language = Language.english): String? =
-        headerImage[language]?.let {
-            steamStoreAssetUrl(id, it)
-        }
-
-    fun getCapsuleUrl(language: Language = Language.english, large: Boolean = false): String? =
-        if (large) {
-            libraryAssets.libraryCapsule.image2x[language]?.let {
-                steamStoreAssetUrl(id, it)
-            }
-        } else {
-            libraryAssets.libraryCapsule.image[language]?.let {
-                steamStoreAssetUrl(id, it)
-            }
-        }
-
-    fun getHeroUrl(language: Language = Language.english, large: Boolean = false): String? =
-        if (large) {
-            libraryAssets.libraryHero.image2x[language]?.let {
-                "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
-            }
-        } else {
-            libraryAssets.libraryHero.image[language]?.let {
-                "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
-            }
-        }
-
-    fun getLogoUrl(language: Language = Language.english, large: Boolean = false): String? =
-        if (large) {
-            libraryAssets.libraryLogo.image2x[language]?.let {
-                "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
-            }
-        } else {
-            libraryAssets.libraryLogo.image[language]?.let {
-                "https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/$id/$it"
-            }
-        }
-
+    /** Steam Cloud limits (`ufs`, the "user file system"). */
     @Serializable
-    data class UFS(
-        val quota: Int = 0,
-        val maxNumFiles: Int = 0,
-        val saveFilePatterns: List<SaveFilePattern> = emptyList(),
-    )
-
-    @Serializable
-    data class SaveFilePattern(val root: PathType, val path: String, val pattern: String)
-
-    @Serializable
-    data class ConfigInfo(
-        val installDir: String = "",
-        val launch: List<LaunchInfo> = emptyList(),
-        val steamControllerTemplateIndex: Int = 0,
-        val steamControllerTouchTemplateIndex: Int = 0,
-        // val steamControllerTouchConfigDetails: TouchConfigDetails,
-    )
-
-    @Serializable
-    data class LaunchInfo(
-        val executable: String,
-        val workingDir: String,
-        val description: String,
-        val type: String,
-        @Serializable(with = OsEnumSetSerializer::class)
-        val configOS: EnumSet<OS>,
-        val configArch: OSArch,
-    )
-
-    @Serializable
-    data class LibraryAssetsInfo(
-        val libraryCapsule: LibraryCapsuleInfo = LibraryCapsuleInfo(),
-        val libraryHero: LibraryHeroInfo = LibraryHeroInfo(),
-        val libraryLogo: LibraryLogoInfo = LibraryLogoInfo(),
-    )
-
-    @Serializable
-    data class LibraryCapsuleInfo(
-        val image: Map<Language, String> = emptyMap(),
-        val image2x: Map<Language, String> = emptyMap(),
-    )
-
-    @Serializable
-    data class LibraryHeroInfo(
-        val image: Map<Language, String> = emptyMap(),
-        val image2x: Map<Language, String> = emptyMap(),
-    )
-
-    @Serializable
-    data class LibraryLogoInfo(
-        val image: Map<Language, String> = emptyMap(),
-        val image2x: Map<Language, String> = emptyMap(),
-    )
+    data class UFS(val quota: Int = 0, val maxNumFiles: Int = 0)
 
     @Serializable
     data class DepotInfo(
         val depotId: Int,
+        /** The DLC the depot belongs to, or [Int.MAX_VALUE] for the app itself. */
         val dlcAppId: Int,
+        /** The app the depot is shared from, or [Int.MAX_VALUE] when it is the app's own. */
         val depotFromApp: Int,
         val sharedInstall: Boolean,
         @Serializable(with = OsEnumSetSerializer::class)
@@ -244,14 +116,12 @@ data class SteamApp(
         ;
 
         companion object {
-            fun from(keyValue: String?): OSArch {
-                if (keyValue == null) return Unknown
-
-                return entries.find { it.keyValName == keyValue } ?: Unknown
-            }
+            fun from(keyValue: String?): OSArch =
+                entries.find { it.keyValName == keyValue } ?: Unknown
         }
     }
 
+    /** A platform as a bit, so that a set of them fits one number. Named as PICS names them. */
     @Suppress("EnumEntryName")
     enum class OS(val code: Int) {
         none(0),
@@ -263,6 +133,7 @@ data class SteamApp(
         companion object {
             fun code(value: EnumSet<OS>): Int = value.fold(none.code) { acc, os -> acc or os.code }
 
+            /** Reads a PICS list such as `windows,linux`; an empty one is [none]. */
             fun from(keyValue: String?): EnumSet<OS> {
                 if (keyValue.isNullOrEmpty()) return EnumSet.of(none)
 
@@ -286,6 +157,7 @@ data class SteamApp(
         }
     }
 
+    @Suppress("EnumEntryName")
     enum class ControllerSupport(val code: Int) {
         none(0),
         partial(1),
@@ -293,43 +165,14 @@ data class SteamApp(
         ;
 
         companion object {
-            fun from(keyValue: String?): ControllerSupport {
-                if (keyValue == null) return none
-
-                return entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: none
-            }
+            fun from(keyValue: String?): ControllerSupport =
+                entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: none
 
             fun from(code: Int): ControllerSupport = entries.find { it.code == code } ?: none
         }
     }
 
-    enum class PathType {
-        GameInstall,
-        SteamUserData,
-        WinMyDocuments,
-        WinAppDataLocal,
-        WinAppDataLocalLow,
-        WinAppDataRoaming,
-        WinSavedGames,
-        LinuxHome,
-        LinuxXdgDataHome,
-        LinuxXdgConfigHome,
-        MacHome,
-        MacAppSupport,
-        None,
-        ;
-
-        companion object {
-            val DEFAULT = SteamUserData
-
-            /** Accepts the bare name or Steam's `%Name%` placeholder form, case-insensitively. */
-            fun from(keyValue: String?): PathType {
-                val name = keyValue?.trim('%') ?: return None
-                return entries.find { it.name.equals(name, ignoreCase = true) } ?: None
-            }
-        }
-    }
-
+    /** The languages Steam has store images in, named as PICS names them. */
     @Suppress("EnumEntryName")
     enum class Language {
         english,
@@ -360,14 +203,12 @@ data class SteamApp(
         ;
 
         companion object {
-            fun from(keyValue: String?): Language {
-                if (keyValue == null) return unknown
-
-                return entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: unknown
-            }
+            fun from(keyValue: String?): Language =
+                entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: unknown
         }
     }
 
+    @Suppress("EnumEntryName")
     enum class ReleaseState(val code: Int) {
         disabled(0),
         released(1),
@@ -375,16 +216,17 @@ data class SteamApp(
         ;
 
         companion object {
-            fun from(keyValue: String?): ReleaseState {
-                if (keyValue == null) return disabled
-
-                return entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: disabled
-            }
+            fun from(keyValue: String?): ReleaseState =
+                entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: disabled
 
             fun from(code: Int): ReleaseState = entries.find { it.code == code } ?: disabled
         }
     }
 
+    /**
+     * What kind of thing an app is. Each kind is a bit, so that the library can ask for
+     * several at once ([toFlags]). The names are Steam's, its spelling of `deprected` included.
+     */
     @Suppress("EnumEntryName")
     enum class AppType(val code: Int) {
         invalid(0),
@@ -409,25 +251,19 @@ data class SteamApp(
         ;
 
         companion object {
-            fun from(keyValue: String?): AppType {
-                if (keyValue == null) return invalid
-
-                return entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: invalid
-            }
-
-            fun fromFlags(flags: Int): EnumSet<AppType> {
-                if (flags == 0) return EnumSet.of(invalid)
-
-                return entries.filterTo(emptyEnumSet()) { appType ->
-                    appType.code != 0 && (flags and appType.code) == appType.code
-                }
-            }
+            fun from(keyValue: String?): AppType =
+                entries.find { it.name.equals(keyValue, ignoreCase = true) } ?: invalid
 
             fun toFlags(value: EnumSet<AppType>): Int =
                 value.fold(0) { acc, appType -> acc or appType.code }
 
             fun fromCode(code: Int): AppType = entries.find { it.code == code } ?: invalid
         }
+    }
+
+    companion object {
+        /** The [packageId] of an app no license grants: known to the app, but not owned. */
+        const val NO_PACKAGE = Int.MAX_VALUE
     }
 }
 
@@ -441,3 +277,10 @@ fun steamStoreAssetUrl(appId: Int, asset: String): String = if (asset.contains('
 } else {
     "https://cdn.akamai.steamstatic.com/steam/apps/$appId/$asset"
 }
+
+/**
+ * The 460x215 store header of an app. Uses the English asset from PICS when there is one and
+ * falls back to the unversioned path, which exists for almost every store app.
+ */
+fun steamHeaderImageUrl(appId: Int, headerImage: Map<SteamApp.Language, String>): String =
+    steamStoreAssetUrl(appId, headerImage[SteamApp.Language.english] ?: "header.jpg")

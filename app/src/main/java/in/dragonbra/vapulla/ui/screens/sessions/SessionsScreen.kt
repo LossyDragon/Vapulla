@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.PhoneAndroid
@@ -45,12 +44,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.AuthSession
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.SkeletonList
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
@@ -99,11 +99,7 @@ private fun SessionsContent(
         topBar = {
             TopAppBar(
                 title = { Text("Sessions") },
-                navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                    }
-                },
+                navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -136,7 +132,8 @@ private fun SessionsContent(
                     }) { index, session ->
                         SessionRow(
                             session = session,
-                            shape = groupedListShape(index, uiState.sessions.size),
+                            index = index,
+                            count = uiState.sessions.size,
                             onRevoke = { pendingRevoke = session },
                         )
                     }
@@ -228,11 +225,7 @@ private fun SignOutNote() {
 }
 
 @Composable
-private fun SessionRow(
-    session: AuthSession,
-    shape: androidx.compose.ui.graphics.Shape,
-    onRevoke: () -> Unit,
-) {
+private fun SessionRow(session: AuthSession, index: Int, count: Int, onRevoke: () -> Unit) {
     val icon = when (session.platform) {
         "Mobile app" -> Icons.Outlined.PhoneAndroid
         "Web browser" -> Icons.Outlined.Language
@@ -243,11 +236,7 @@ private fun SessionRow(
     }.joinToString(", ")
     val seen = if (session.lastSeen > 0) (session.lastSeen * 1000).toTimeAgo() else "never"
 
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    GroupedListItem(index = index, count = count) {
         Row(
             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

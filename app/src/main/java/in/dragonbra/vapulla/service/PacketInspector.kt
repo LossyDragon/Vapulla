@@ -48,8 +48,24 @@ object PacketInspector {
 
     private const val PROTO_MASK = 0x80000000.toInt()
     private const val PROTO_PREFIX = 8
+
+    // Sizes of the two fixed headers, and where the fields read here start in them.
     private const val EXTENDED_HEADER = 36
+    private const val EXTENDED_TARGET_JOB = 7
+    private const val EXTENDED_SOURCE_JOB = 15
+    private const val EXTENDED_STEAM_ID = 24
+    private const val EXTENDED_SESSION_ID = 32
+
     private const val BARE_HEADER = 20
+    private const val BARE_TARGET_JOB = 4
+    private const val BARE_SOURCE_JOB = 12
+
+    /**
+     * Words in a message or method name that mark its body as secret. "authlist" is
+     * ClientAuthList, which carries the auth tickets in use.
+     */
+    private val SECRET_WORDS =
+        listOf("logon", "channelencrypt", "nonce", "ticket", "token", "password", "authlist")
 
     /** No job: both headers use all bits set for "none". */
     private const val NO_JOB = -1L
@@ -94,8 +110,8 @@ object PacketInspector {
             msg.name.startsWith("ChannelEncrypt") -> detail(
                 format = "Bare header",
                 msg = msg,
-                sourceJob = buffer.getLong(12),
-                targetJob = buffer.getLong(4),
+                sourceJob = buffer.getLong(BARE_SOURCE_JOB),
+                targetJob = buffer.getLong(BARE_TARGET_JOB),
                 headerSize = BARE_HEADER,
                 data = data,
                 keepBody = keepBody,
@@ -104,10 +120,10 @@ object PacketInspector {
             else -> detail(
                 format = "Struct header",
                 msg = msg,
-                targetJob = buffer.getLong(7),
-                sourceJob = buffer.getLong(15),
-                steamId = buffer.getLong(24),
-                sessionId = buffer.getInt(32),
+                targetJob = buffer.getLong(EXTENDED_TARGET_JOB),
+                sourceJob = buffer.getLong(EXTENDED_SOURCE_JOB),
+                steamId = buffer.getLong(EXTENDED_STEAM_ID),
+                sessionId = buffer.getInt(EXTENDED_SESSION_ID),
                 headerSize = EXTENDED_HEADER,
                 data = data,
                 keepBody = keepBody,
@@ -130,15 +146,16 @@ object PacketInspector {
     ): PacketDetail {
         val bodySize = (data.size - headerSize).coerceAtLeast(0)
         val kept = minOf(bodySize, MAX_BODY)
+        val secret = isSecret(msg, method)
 
         val note = when {
             bodySize == 0 -> "This message has no body."
             !keepBody -> "Bodies are not kept. Turn on \"Keep packet contents\" in Settings."
-            isSecret(msg, method) -> "Not kept: this message carries sign-in secrets."
+            secret -> "Not kept: this message carries sign-in secrets."
             kept < bodySize -> "Only the first $kept of $bodySize bytes were kept."
             else -> null
         }
-        val body = if (bodySize > 0 && keepBody && !isSecret(msg, method)) {
+        val body = if (bodySize > 0 && keepBody && !secret) {
             data.copyOfRange(headerSize, headerSize + kept)
         } else {
             null
@@ -164,13 +181,10 @@ object PacketInspector {
      * by name rather than a list of every such message, so it errs towards withholding.
      */
     private fun isSecret(msg: EMsg, method: String?): Boolean {
-        // "authlist" is ClientAuthList, which carries the auth tickets in use.
-        val words =
-            listOf("logon", "channelencrypt", "nonce", "ticket", "token", "password", "authlist")
         val name = msg.name.lowercase()
         val call = method.orEmpty().lowercase()
 
-        return words.any { it in name || it in call } || call.startsWith("authentication.")
+        return SECRET_WORDS.any { it in name || it in call } || call.startsWith("authentication.")
     }
 
     /**

@@ -1,27 +1,23 @@
 package `in`.dragonbra.vapulla.service.api
 
-import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EPersonaState
-import `in`.dragonbra.javasteam.enums.EResult
-import `in`.dragonbra.javasteam.enums.EUniverse
-import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetMutualFriendsForIncomingInvites_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.data.ProfileItems
 import `in`.dragonbra.vapulla.db.VapullaDatabase
+import `in`.dragonbra.vapulla.util.SteamTimeoutException
+import `in`.dragonbra.vapulla.util.helpers.accountIdToSteamID
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
-import kotlinx.collections.immutable.toPersistentList
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
 
 /**
  * The things the user does to a friend or to their own presence, via the [SteamFriends]
  * handler. Keeping the friends table in step with what Steam pushes is
- * [in.dragonbra.vapulla.service.sync.FriendsSync]'s job.
+ * [in.dragonbra.vapulla.service.sync.FriendsSync]'s job, so what is stored here is written
+ * one column at a time and cannot undo one of its updates.
  */
 class FriendsApi(
     private val db: VapullaDatabase,
@@ -29,6 +25,7 @@ class FriendsApi(
     private val player: Player,
 ) {
 
+    /** Shows the account to its friends as [state]: online, away, invisible and so on. */
     fun setPersonaState(state: EPersonaState) {
         steamFriends.setPersonaState(state = state)
     }
@@ -50,17 +47,13 @@ class FriendsApi(
     suspend fun mutualFriendsOfRequests(): Map<Long, List<Long>> {
         val request = CPlayer_GetMutualFriendsForIncomingInvites_Request.newBuilder().build()
 
-        val response = player.getMutualFriendsForIncomingInvites(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetMutualFriendsForIncomingInvites failed: ${response.result}")
-            return emptyMap()
-        }
+        val body = player.getMutualFriendsForIncomingInvites(request)
+            .bodyOrNull("GetMutualFriendsForIncomingInvites")
+            ?: return emptyMap()
 
-        return response.body.incomingInviteMutualFriendsListsList.associate { invite ->
-            // The friends come as account IDs, the low half of a Steam ID.
+        return body.incomingInviteMutualFriendsListsList.associate { invite ->
             invite.steamid to invite.mutualFriendAccountIdsList.map { accountId ->
-                SteamID(accountId.toUInt().toLong(), EUniverse.Public, EAccountType.Individual)
-                    .convertToUInt64()
+                accountId.accountIdToSteamID().convertToUInt64()
             }
         }
     }
@@ -80,56 +73,27 @@ class FriendsApi(
         steamFriends.ignoreFriend(friendId.toSteamID(), setIgnore = true)
     }
 
-    suspend fun getProfileItems(friendId: Long) = withContext(Dispatchers.IO) {
-        val request = SteammessagesPlayerSteamclient.CPlayer_GetProfileItemsEquipped_Request
-            .newBuilder().apply {
-                this.steamid = friendId
-            }
-            .build()
-
-        val response = player.getProfileItemsEquipped(request).await()
-
-        if (response.result != EResult.OK) {
-            Timber.e("Failed to get profile items for $friendId, result: ${response.result}")
-            return@withContext
-        }
-
-        val body = response.body
-        var dbFriend = db.steamFriendDao().find(friendId)
-
-        if (dbFriend == null) {
-            Timber.i("No friend found in db to update profile items")
-            return@withContext
-        }
-
-        dbFriend = dbFriend.copy(
-            profileBackground = ProfileItems.from(body.profileBackground),
-            profileMiniBackground = ProfileItems.from(body.miniProfileBackground),
-            profileAvatarFrame = ProfileItems.from(body.avatarFrame),
-            profileAnimatedAvatar = ProfileItems.from(body.animatedAvatar),
-            profileProfileModifier = ProfileItems.from(body.profileModifier),
-        )
-
-        db.steamFriendDao().update(dbFriend)
-    }
-
     /**
      * Blocks [friendId], or unblocks them when they already are. Nothing is stored here:
      * Steam follows its answer with a friends list update carrying the new relationship,
      * which [in.dragonbra.vapulla.service.sync.FriendsSync] writes to the database.
      */
-    suspend fun ignoreFriend(friendId: Long) = withContext(Dispatchers.IO) {
-        val dbFriend = db.steamFriendDao().find(friendId) ?: return@withContext
-        val block = !dbFriend.isBlocked
-        Timber.d("ignoreFriend() id=%d relation=%s block=%b", friendId, dbFriend.relation, block)
+    suspend fun toggleBlocked(friendId: Long) {
+        val friend = db.steamFriendDao().find(friendId) ?: return
+        val block = !friend.isBlocked
+        Timber.d("toggleBlocked() id=%d relation=%s block=%b", friendId, friend.relation, block)
 
-        val result = steamFriends.ignoreFriend(friendId.toSteamID(), setIgnore = block).await()
-        Timber.d("ignoreFriend() id=%d result=%s", friendId, result.result)
+        val callback = steamFriends.ignoreFriend(friendId.toSteamID(), setIgnore = block)
+            .awaitOrNull("IgnoreFriend")
+        Timber.d("toggleBlocked() id=%d result=%s", friendId, callback?.result)
     }
 
-    suspend fun removeFriend(friendId: Long) = withContext(Dispatchers.IO) {
-        val friend = friendId.toSteamID()
-        steamFriends.removeFriend(friend)
+    /**
+     * Ends the friendship with [friendId]. The row is removed at once rather than when Steam
+     * announces the change, so the friend is gone from the list as soon as it is asked for.
+     */
+    suspend fun removeFriend(friendId: Long) {
+        steamFriends.removeFriend(friendId.toSteamID())
         db.steamFriendDao().remove(friendId)
     }
 
@@ -143,32 +107,34 @@ class FriendsApi(
      * call, so should it refuse the change, the list at the next sign-in puts the stored
      * one right again.
      */
-    suspend fun setNickname(friendId: Long, value: String) = withContext(Dispatchers.IO) {
+    suspend fun setNickname(friendId: Long, value: String) {
         val nickname = value.trim()
         steamFriends.setFriendNickname(friendId.toSteamID(), nickname)
-
-        with(db.steamFriendDao()) {
-            find(friendId)?.copy(nickname = nickname)?.also { update(it) }
-        }
+        db.steamFriendDao().setNickname(friendId, nickname)
     }
 
-    suspend fun requestAliasHistory(friendId: Long) = withContext(Dispatchers.IO) {
-        val friend = friendId.toSteamID()
-        val aliasList = steamFriends.requestAliasHistory(friend).await()
-            .responses
+    /**
+     * Asks Steam for the profile names [friendId] went by before and stores them with the
+     * friend. Nothing is stored when Steam does not answer.
+     */
+    suspend fun loadAliases(friendId: Long) {
+        val callback = steamFriends.requestAliasHistory(friendId.toSteamID())
+            .awaitOrNull("AliasHistory")
+            ?: return
+
+        val aliases = callback.responses
             .flatMap { response -> response.names }
             .map { name -> name.name }
-            .toPersistentList()
+            .toImmutableList()
 
-        with(db.steamFriendDao()) {
-            find(friendId)?.copy(aliases = aliasList)?.also {
-                update(it)
-            }
-        }
+        db.steamFriendDao().setAliases(friendId, aliases)
     }
 
-    suspend fun getProfileInfo(friendID: SteamID): ProfileInfoCallback =
-        withContext(Dispatchers.IO) {
-            steamFriends.requestProfileInfo(friendID).await()
-        }
+    /**
+     * The profile page details of anyone, friend or not: real name, country, summary.
+     *
+     * @throws SteamTimeoutException if Steam does not answer.
+     */
+    suspend fun profileInfo(friendId: SteamID): ProfileInfoCallback =
+        steamFriends.requestProfileInfo(friendId).awaitOrThrow()
 }

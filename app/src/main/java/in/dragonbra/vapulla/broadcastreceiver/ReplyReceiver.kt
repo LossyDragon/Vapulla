@@ -28,7 +28,7 @@ class ReplyReceiver : BroadcastReceiver() {
 
     companion object {
         /** Long extra carrying the friend's 64-bit Steam ID. */
-        const val EXTRA_ID = "id"
+        const val EXTRA_ID = SteamService.EXTRA_ID
 
         /** [RemoteInput] result key holding the typed reply. */
         const val KEY_TEXT_REPLY = "key_text_reply"

@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.service.api
 
-import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesStoreSteamclient.CStore_GetLocalizedNameForTags_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesStorebrowseSteamclient.CStoreBrowse_GetItems_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesStorebrowseSteamclient.StoreBrowseContext
@@ -9,18 +8,14 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesStorebrowseSt
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesStorebrowseSteamclient.StoreItemID
 import `in`.dragonbra.javasteam.rpc.service.Store
 import `in`.dragonbra.javasteam.rpc.service.StoreBrowse
+import `in`.dragonbra.vapulla.util.LenientJson
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
-import java.net.HttpURLConnection
-import java.net.URL
+import `in`.dragonbra.vapulla.util.httpGetText
 import java.net.URLEncoder
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import timber.log.Timber
 
 /**
  * The Steam store, for any app whether the account owns it or not. A store page comes from
@@ -62,20 +57,17 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
             .addAllIds(appIds.map { StoreItemID.newBuilder().setAppid(it).build() })
             .setContext(
                 StoreBrowseContext.newBuilder()
-                    .setLanguage(LANGUAGE)
+                    .setLanguage(STEAM_LANGUAGE)
                     .setCountryCode(country),
             )
             .setDataRequest(wanted)
             .build()
 
-        val response = storeBrowse.getItems(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("StoreBrowse.GetItems failed: ${response.result}")
-            return emptyList()
-        }
+        val body = storeBrowse.getItems(request).bodyOrNull("StoreBrowse.GetItems")
+            ?: return emptyList()
 
         // An app the store does not know still comes back, marked as not found.
-        return response.body.storeItemsList.filter { it.success == SUCCESS && it.visible }
+        return body.storeItemsList.filter { it.success == SUCCESS && it.visible }
     }
 
     /** The names of store tags, in the order of [tagIds]. Empty when Steam will not say. */
@@ -83,17 +75,15 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
         if (tagIds.isEmpty()) return emptyList()
 
         val request = CStore_GetLocalizedNameForTags_Request.newBuilder()
-            .setLanguage(LANGUAGE)
+            .setLanguage(STEAM_LANGUAGE)
             .addAllTagids(tagIds)
             .build()
 
-        val response = store.getLocalizedNameForTags(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("Store.GetLocalizedNameForTags failed: ${response.result}")
-            return emptyList()
-        }
+        val body = store.getLocalizedNameForTags(request)
+            .bodyOrNull("Store.GetLocalizedNameForTags")
+            ?: return emptyList()
 
-        val names = response.body.tagsList.associate { it.tagid to it.name }
+        val names = body.tagsList.associate { it.tagid to it.name }
         return tagIds.mapNotNull { names[it]?.takeIf(String::isNotEmpty) }
     }
 
@@ -106,8 +96,8 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
      */
     private fun StoreItem.discount(): Pair<String, Int> {
         val option = bestPurchaseOption
-        val original = option.originalPriceInCents
-        val final = option.finalPriceInCents
+        // Steam may leave the percentage out; the two prices still say it.
+        val fromPrices = discountPercent(option.originalPriceInCents, option.finalPriceInCents)
 
         return when {
             option.discountPct > 0 -> option.formattedOriginalPrice to option.discountPct
@@ -115,13 +105,15 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
             option.bundleDiscountPct > 0 ->
                 option.formattedPriceBeforeBundleDiscount to option.bundleDiscountPct
 
-            // Steam may leave the percentage out; the two prices still say it.
-            original > final && final > 0 ->
-                option.formattedOriginalPrice to ((original - final) * 100 / original).toInt()
+            fromPrices > 0 -> option.formattedOriginalPrice to fromPrices
 
             else -> "" to 0
         }
     }
+
+    /** How much lower [final] is than [original], in percent; 0 when it is not a discount. */
+    private fun discountPercent(original: Long, final: Long): Int =
+        if (original > final && final > 0) ((original - final) * 100 / original).toInt() else 0
 
     private fun StoreItem.toPage(tags: List<String>): StorePage {
         val reviews = this.reviews.summaryFiltered
@@ -182,31 +174,18 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
      * @throws java.io.IOException if the store cannot be reached.
      */
     suspend fun search(term: String, country: String): List<StoreSearchResult> {
-        val found = withContext(Dispatchers.IO) {
-            val address = SEARCH_URL +
-                "?term=${URLEncoder.encode(term, "UTF-8")}" +
-                "&l=$LANGUAGE&cc=${URLEncoder.encode(country, "UTF-8")}"
-            val connection = URL(address).openConnection() as HttpURLConnection
-            connection.connectTimeout = TIMEOUT_MS
-            connection.readTimeout = TIMEOUT_MS
-
-            val text = try {
-                connection.inputStream.use { it.readBytes().decodeToString() }
-            } finally {
-                connection.disconnect()
-            }
-
-            json.decodeFromString<SearchAnswer>(text).items.filter { it.type == "app" }
-        }
+        val address = SEARCH_URL +
+            "?term=${URLEncoder.encode(term, "UTF-8")}" +
+            "&l=$STEAM_LANGUAGE&cc=${URLEncoder.encode(country, "UTF-8")}"
+        val found = LenientJson.decodeFromString<SearchAnswer>(httpGetText(address)).items
+            .filter { it.type == "app" }
         if (found.isEmpty()) return emptyList()
 
         // The website's search tells a free game and one not yet for sale apart badly, so
-        // the prices are asked from the service the store page uses.
+        // the prices are asked from the service the store page uses. Without an answer the
+        // website's own prices are shown.
         val wanted = StoreBrowseItemDataRequest.newBuilder().setIncludeRelease(true)
-        val priced = runCatching { items(found.map { it.id }, country, wanted) }
-            .onFailure { Timber.w(it, "Prices for the store search failed") }
-            .getOrDefault(emptyList())
-            .associateBy { it.appid }
+        val priced = items(found.map { it.id }, country, wanted).associateBy { it.appid }
 
         return found.map { item ->
             val result = StoreSearchResult(
@@ -238,21 +217,17 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
     /** The website's own price, for when the service did not answer; it may have none. */
     private fun StoreSearchResult.pricedByWebsite(price: SearchPrice?): StoreSearchResult {
         if (price == null) return this
-        val onSale = price.initial > price.final && price.final > 0
+        val percent = discountPercent(price.initial, price.final)
+        val original = if (percent > 0) Utils.formatMoney(price.initial, price.currency) else ""
 
         return copy(
             price = Utils.formatMoney(price.final, price.currency),
-            originalPrice = if (onSale) Utils.formatMoney(price.initial, price.currency) else "",
-            discountPercent = if (onSale) {
-                ((price.initial - price.final) * 100 / price.initial).toInt()
-            } else {
-                0
-            },
+            originalPrice = original,
+            discountPercent = percent,
         )
     }
 
     private companion object {
-        const val LANGUAGE = "english"
         const val TAG_COUNT = 8
 
         /** What `success` holds for an item the store found (an `EResult.OK`). */
@@ -262,8 +237,5 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
         const val SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
         const val ASSET_URL = "https://shared.akamai.steamstatic.com/store_item_assets/"
         const val FILE_PLACEHOLDER = "\${FILENAME}"
-        const val TIMEOUT_MS = 10_000
-
-        val json = Json { ignoreUnknownKeys = true }
     }
 }

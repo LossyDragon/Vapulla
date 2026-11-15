@@ -77,10 +77,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
+
+/** What this app calls itself to Steam: the device in the account's list of sign-ins. */
+internal const val DEVICE_NAME = "Vapulla ${BuildConfig.VERSION_NAME}"
 
 /**
  * Owns the JavaSteam client: builds it, connects, logs on, reconnects after a dropped
@@ -104,21 +109,34 @@ class SteamConnection(
     private val downloads: DownloadManager,
 ) {
 
-    /** The feature APIs; available while a client exists. */
+    // The client and what hangs off it are replaced by the thread that opens or closes the
+    // connection and read by the callback loop and by requests on others, hence volatile.
+
+    /** The feature APIs; null from the end of one connection until the next is opened. */
+    @Volatile
     var apis: SteamApis? = null
         private set
 
     /** Steam's authentication service, for obtaining a refresh token before logging on. */
     val authentication get() = steamClient?.authentication
 
+    /** True from [open] until the connection it started has ended. */
+    val isOpen: Boolean get() = steamClient != null
+
+    @Volatile
     private var steamClient: SteamClient? = null
+
+    @Volatile
     private var steamUser: SteamUser? = null
-    private var callbackMgr: CallbackManager? = null
     private val subscriptions: MutableSet<Closeable> = mutableSetOf()
 
     private var components: List<SessionComponent> = emptyList()
+
+    @Volatile
     private var friendsSync: FriendsSync? = null
 
+    /** Reconnect attempts made since the session was last signed in. */
+    @Volatile
     private var retryCount = 0
 
     /** True once signed in: a dropped connection is then re-established and signed in again. */
@@ -140,9 +158,12 @@ class SteamConnection(
     @Volatile
     private var anonymous = false
 
+    /** Completed by the first connection of the client that [open] made. */
+    @Volatile
     private var connectedSignal: CompletableDeferred<Unit>? = null
 
-    private var steamThreadJob: Job? = null
+    /** The loop that hands what Steam sends to the callbacks below. */
+    private var callbackLoopJob: Job? = null
     private var reconnectJob: Job? = null
 
     /** Parent of the background jobs that only make sense while signed in. */
@@ -153,12 +174,13 @@ class SteamConnection(
      *
      * @param anonymous true for a session without an account, see [logOnAnonymous].
      */
+    @Synchronized
     fun open(anonymous: Boolean = false) {
         loginErrorReported = false
         userSignedOut = false
+        retryCount = 0
         this.anonymous = anonymous
-        initializeSteamClient()
-        connectToSteam()
+        connectToSteam(callbacks = initializeSteamClient())
     }
 
     /** Suspends until the client opened by [open] has connected. */
@@ -167,21 +189,17 @@ class SteamConnection(
     }
 
     /** Logs on with a refresh token; the answer arrives in [onLoggedOn]. */
-    fun logOn(accountName: String, refreshToken: String? = null) {
-        scope.launch {
-            val uuid = Utils.getUniqueId(account)
+    suspend fun logOn(accountName: String, refreshToken: String) {
+        val loginDetails = LogOnDetails(
+            username = accountName,
+            shouldRememberPassword = true,
+            accessToken = refreshToken,
+            loginID = Utils.getUniqueId(account),
+            machineName = DEVICE_NAME,
+            chatMode = ChatMode.NEW_STEAM_CHAT,
+        )
 
-            val loginDetails = LogOnDetails(
-                username = accountName,
-                shouldRememberPassword = true,
-                accessToken = refreshToken,
-                loginID = uuid,
-                machineName = "Vapulla ${BuildConfig.VERSION_NAME}",
-                chatMode = ChatMode.NEW_STEAM_CHAT,
-            )
-
-            steamUser?.logOn(loginDetails)
-        }
+        steamUser?.logOn(loginDetails)
     }
 
     /**
@@ -192,6 +210,7 @@ class SteamConnection(
         steamUser?.logOnAnonymous()
     }
 
+    /** Drops the connection. A disconnect asked for is never retried: [onDisconnected] ends it. */
     fun disconnect() {
         steamClient?.disconnect()
     }
@@ -236,10 +255,19 @@ class SteamConnection(
                 // Steam answers with LoggedOffCallback, then the disconnect ends the service.
                 user.logOff()
             } else {
-                close()
                 shutDown()
             }
         }
+    }
+
+    /**
+     * Forgets a refresh token that Steam will not take again, and with it the stored data of
+     * its account. The account name stays saved.
+     */
+    private fun forgetDeadToken(result: EResult) = scope.launch {
+        Timber.i("Forgetting the saved sign-in token after $result")
+        account.setRefreshToken(null)
+        eraseAccountData()
     }
 
     /**
@@ -253,7 +281,7 @@ class SteamConnection(
     private suspend fun eraseAccountData() {
         Timber.i("Erasing the stored account data")
 
-        db.steamFriendDao().delete()
+        db.steamFriendDao().deleteAll()
         db.chatMessageDao().deleteAll()
         db.emoticonDao().deleteAll()
         db.steamAppDao().deleteAll()
@@ -265,7 +293,11 @@ class SteamConnection(
     /**
      * Drops the current client. Its callbacks are unsubscribed first, so no
      * [DisconnectedCallback] follows and the state it would reset is reset here.
+     *
+     * Synchronized, like [open], because it is reached from several threads: a new sign-in,
+     * the service ending, and the callback loop when the connection ends by itself.
      */
+    @Synchronized
     fun close() {
         resumeOnReconnect = false
 
@@ -277,8 +309,8 @@ class SteamConnection(
         subscriptions.forEach { it.close() }
         subscriptions.clear()
 
-        steamThreadJob?.cancel(CancellationException("Service cleanup"))
-        steamThreadJob = null
+        callbackLoopJob?.cancel(CancellationException("Service cleanup"))
+        callbackLoopJob = null
 
         components = emptyList()
         friendsSync = null
@@ -286,12 +318,10 @@ class SteamConnection(
         apis = null
         steamClient?.disconnect()
         steamClient = null
-        callbackMgr = null
 
         connectedSignal?.cancel(CancellationException("Service cleanup"))
         connectedSignal = null
 
-        SteamState.isRunning.value = false
         SteamState.isLoggedIn.value = false
         SteamState.isAnonymous.value = false
         SteamDiagnostics.signedOut()
@@ -299,23 +329,16 @@ class SteamConnection(
     }
 
     /**
-     * Ends the connection for good: nothing reconnects and the UI returns to sign-in.
+     * Ends the connection for good: the client is dropped, nothing reconnects and the UI
+     * returns to sign-in. May be called from one of the client's own callbacks or from the
+     * reconnect job, both of which [close] cancels: nothing here suspends, so it still runs
+     * to its end.
      *
      * @param sessionLost true when a signed-in session ended without the user asking for it.
      */
     private fun shutDown(sessionLost: Boolean = SteamState.isLoggedIn.value && !userSignedOut) {
-        resumeOnReconnect = false
+        close()
 
-        reconnectJob?.cancel()
-        reconnectJob = null
-
-        stopSession()
-
-        SteamState.isRunning.value = false
-        SteamState.isLoggedIn.value = false
-        SteamState.isAnonymous.value = false
-        SteamDiagnostics.signedOut()
-        SteamAccount.signedOut()
         SteamDiagnostics.record(
             if (sessionLost) "Session lost, service stopping" else "Connection ended",
         )
@@ -343,7 +366,13 @@ class SteamConnection(
         sessionJob = null
     }
 
-    private fun initializeSteamClient() {
+    /**
+     * Replaces any current client with a new one, with its APIs, session components and
+     * callback subscriptions.
+     *
+     * @return the new client's callback manager, for [connectToSteam] to run.
+     */
+    private fun initializeSteamClient(): CallbackManager {
         Timber.d("initializeSteamClient()")
 
         if (steamClient != null) {
@@ -352,185 +381,190 @@ class SteamConnection(
 
         connectedSignal = CompletableDeferred()
 
-        val serverFile = File(context.filesDir, "servers.bin")
-        val config = SteamConfiguration.create {
-            it.withServerListProvider(FileServerListProvider(serverFile))
-            it.withDefaultPersonaStateFlags(
-                EnumSet.of(
-                    EClientPersonaStateFlag.Status,
-                    EClientPersonaStateFlag.PlayerName,
-                    EClientPersonaStateFlag.QueryPort,
-                    EClientPersonaStateFlag.SourceID,
-                    EClientPersonaStateFlag.Presence,
-                    EClientPersonaStateFlag.LastSeen,
-                    EClientPersonaStateFlag.UserClanRank,
-                    EClientPersonaStateFlag.GameExtraInfo,
-                    EClientPersonaStateFlag.GameDataBlob,
-                    EClientPersonaStateFlag.ClanData,
-                    EClientPersonaStateFlag.Facebook,
-                    EClientPersonaStateFlag.RichPresence,
-                    EClientPersonaStateFlag.Broadcast,
-                    EClientPersonaStateFlag.Watching,
-                ),
-            )
+        val client = SteamClient(steamConfiguration())
+        val callbacks = CallbackManager(client)
+        val steamApis = buildApis(client, callbacks)
+
+        steamClient = client
+        steamUser = requireNotNull(client.getHandler())
+        apis = steamApis
+        components = buildComponents(client, steamApis)
+
+        subscriptions.addAll(
+            listOf(
+                callbacks.subscribe(onDisconnected),
+                callbacks.subscribe(onConnected),
+                callbacks.subscribe(onLoggedOn),
+                callbacks.subscribe(onLoggedOff),
+                callbacks.subscribe(onEmoticonList),
+                callbacks.subscribe(onLicenseList),
+                callbacks.subscribe(onAccountInfo),
+                callbacks.subscribe(onWalletInfo),
+                callbacks.subscribe(onEmailInfo),
+                callbacks.subscribe(onVanityUrlChanged),
+                callbacks.subscribe(onPersonaChange),
+                callbacks.subscribe(onPlayingSessionState),
+            ),
+        )
+        components.forEach { subscriptions.addAll(it.subscribe(callbacks)) }
+
+        // Configure handlers. Only the ones no screen uses are dropped.
+        with(client) {
+            addHandler<VapullaHandler>()
+
+            removeHandler<SteamGameCoordinator>()
+            removeHandler<SteamGameServer>()
+            removeHandler<SteamScreenshots>()
+            removeHandler<SteamWorkshop>()
         }
 
-        steamClient = SteamClient(config).also { client ->
-            val callbacks = CallbackManager(client).also { callbackMgr = it }
+        // Feed the in-app packet log; see NetworkLog.
+        client.debugNetworkListener = NetworkLog
 
-            val steamApps: SteamApps = requireNotNull(client.getHandler())
-            val steamFriends: SteamFriends = requireNotNull(client.getHandler())
-            val unified: SteamUnifiedMessages = requireNotNull(client.getHandler())
-            val player: Player = unified.createService()
-            val localSteamId = { client.steamID }
+        return callbacks
+    }
 
-            steamUser = requireNotNull(client.getHandler())
+    /** The client settings: where the CM server list is kept, and what to hear about friends. */
+    private fun steamConfiguration(): SteamConfiguration = SteamConfiguration.create {
+        it.withServerListProvider(FileServerListProvider(File(context.filesDir, "servers.bin")))
+        it.withDefaultPersonaStateFlags(
+            EnumSet.of(
+                EClientPersonaStateFlag.Status,
+                EClientPersonaStateFlag.PlayerName,
+                EClientPersonaStateFlag.QueryPort,
+                EClientPersonaStateFlag.SourceID,
+                EClientPersonaStateFlag.Presence,
+                EClientPersonaStateFlag.LastSeen,
+                EClientPersonaStateFlag.UserClanRank,
+                EClientPersonaStateFlag.GameExtraInfo,
+                EClientPersonaStateFlag.GameDataBlob,
+                EClientPersonaStateFlag.ClanData,
+                EClientPersonaStateFlag.Facebook,
+                EClientPersonaStateFlag.RichPresence,
+                EClientPersonaStateFlag.Broadcast,
+                EClientPersonaStateFlag.Watching,
+            ),
+        )
+    }
 
-            val chat = ChatApi(
+    /** Creates the feature APIs on [client]'s handlers and unified services. */
+    private fun buildApis(client: SteamClient, callbacks: CallbackManager): SteamApis {
+        val steamApps: SteamApps = requireNotNull(client.getHandler())
+        val steamFriends: SteamFriends = requireNotNull(client.getHandler())
+        val userStats: SteamUserStats = requireNotNull(client.getHandler())
+        val unified: SteamUnifiedMessages = requireNotNull(client.getHandler())
+        val player: Player = unified.createService()
+        val localSteamId = { client.steamID }
+
+        val webSession = WebSessionApi(client.authentication, account, localSteamId)
+        val profile = ProfileApi(player)
+
+        return SteamApis(
+            library = LibraryApi(
+                steamApps = steamApps,
+                userStats = userStats,
+                player = player,
+                localSteamId = localSteamId,
+            ),
+            profile = profile,
+            chat = ChatApi(
                 context = context,
                 scope = scope,
                 db = db,
                 friendMessages = unified.createService(),
                 localSteamId = localSteamId,
-            )
-
-            val chatRooms = ChatRoomsApi(
+            ),
+            friends = FriendsApi(db = db, steamFriends = steamFriends, player = player),
+            chatRooms = ChatRoomsApi(
                 chatRoom = unified.createService(),
                 friends = steamFriends,
                 callbacks = callbacks,
                 scope = scope,
                 localSteamId = localSteamId,
-            )
-
-            val webSession = WebSessionApi(client.authentication, account, localSteamId)
-            val profile = ProfileApi(player)
-
-            val steamApis = SteamApis(
-                library = LibraryApi(
-                    steamApps = steamApps,
-                    userStats = requireNotNull(client.getHandler<SteamUserStats>()),
-                    player = player,
-                    localSteamId = localSteamId,
-                ),
-                profile = profile,
-                chat = chat,
-                friends = FriendsApi(db = db, steamFriends = steamFriends, player = player),
-                chatRooms = chatRooms,
-                media = ChatMediaApi(
-                    steamCloud = requireNotNull(client.getHandler<SteamCloud>()),
-                    webSession = webSession,
-                ),
-                servers = ServerBrowserApi(requireNotNull(client.getHandler<SteamMasterServer>())),
-                cloud = CloudApi(unified.createService()),
-                workshop = WorkshopApi(unified.createService()),
-                sessions = SessionsApi(unified.createService(), localSteamId),
-                screenshots = ScreenshotsApi(unified.createService(), localSteamId),
-                manifests = ManifestApi(
-                    client = client,
-                    steamApps = steamApps,
-                    content = requireNotNull(client.getHandler<SteamContent>()),
-                    scope = scope,
-                ),
-                invites = InvitesApi(unified.createService(), localSteamId),
-                store = StoreApi(unified.createService(), unified.createService()),
-                web = webSession,
-                leaderboards = LeaderboardsApi(
-                    userStats = requireNotNull(client.getHandler<SteamUserStats>()),
-                    profile = profile,
-                ),
-                family = FamilyApi(unified.createService(), profile, localSteamId),
-                authTickets = AuthTicketApi(
-                    authTicket = requireNotNull(client.getHandler<SteamAuthTicket>()),
-                    scope = scope,
-                ),
-            )
-            apis = steamApis
-
-            // The two sync classes call each other: friends ask for the app info of an
-            // unknown game, and are told its name once that info is stored.
-            lateinit var friends: FriendsSync
-            val licenses = LicenseSync(
-                scope = scope,
-                db = db,
-                account = account,
+            ),
+            media = ChatMediaApi(
+                steamCloud = requireNotNull(client.getHandler<SteamCloud>()),
+                webSession = webSession,
+            ),
+            servers = ServerBrowserApi(requireNotNull(client.getHandler<SteamMasterServer>())),
+            cloud = CloudApi(unified.createService()),
+            workshop = WorkshopApi(unified.createService()),
+            sessions = SessionsApi(unified.createService(), localSteamId),
+            screenshots = ScreenshotsApi(unified.createService(), localSteamId),
+            manifests = ManifestApi(
+                client = client,
                 steamApps = steamApps,
-                library = steamApis.library,
-                family = steamApis.family,
-                localSteamId = localSteamId,
-                onAppsNamed = { names -> friends.nameGames(names) },
-            )
-            friends = FriendsSync(
-                context = context,
+                content = requireNotNull(client.getHandler<SteamContent>()),
                 scope = scope,
-                db = db,
-                account = account,
-                localSteamId = localSteamId,
-                licenses = licenses,
-            )
-            friendsSync = friends
-
-            // Without an account there is nothing to sync, and the sync classes must not
-            // hear what Steam sends: an anonymous license list would replace the stored one.
-            components = if (anonymous) {
-                listOf(AnonymousPicsFeed(steamApps))
-            } else {
-                listOf(friends, chat, chatRooms, licenses)
-            }
-
-            subscriptions.addAll(
-                listOf(
-                    callbacks.subscribe(onDisconnected),
-                    callbacks.subscribe(onConnected),
-                    callbacks.subscribe(onLoggedOn),
-                    callbacks.subscribe(onLoggedOff),
-                    callbacks.subscribe(onEmoticonList),
-                    callbacks.subscribe(onLicenseList),
-                    callbacks.subscribe(onAccountInfo),
-                    callbacks.subscribe(onWalletInfo),
-                    callbacks.subscribe(onEmailInfo),
-                    callbacks.subscribe(onVanityUrlChanged),
-                    callbacks.subscribe(onPersonaChange),
-                    callbacks.subscribe(onPlayingSessionState),
-                ),
-            )
-            components.forEach { subscriptions.addAll(it.subscribe(callbacks)) }
-
-            // Configure handlers. Only the ones no screen uses are dropped.
-            with(client) {
-                addHandler<VapullaHandler>()
-
-                removeHandler<SteamGameCoordinator>()
-                removeHandler<SteamGameServer>()
-                removeHandler<SteamScreenshots>()
-                removeHandler<SteamWorkshop>()
-            }
-
-            // Feed the in-app packet log; see NetworkLog.
-            client.debugNetworkListener = NetworkLog
-        }
+            ),
+            invites = InvitesApi(unified.createService(), localSteamId),
+            store = StoreApi(unified.createService(), unified.createService()),
+            web = webSession,
+            leaderboards = LeaderboardsApi(userStats = userStats, profile = profile),
+            family = FamilyApi(unified.createService(), profile, localSteamId),
+            authTickets = AuthTicketApi(
+                authTicket = requireNotNull(client.getHandler<SteamAuthTicket>()),
+                scope = scope,
+            ),
+        )
     }
 
-    private fun connectToSteam() {
-        if (!SteamState.isRunning.value) {
-            retryCount = 0
+    /** Creates the parts of the session that react to what Steam pushes. */
+    private fun buildComponents(client: SteamClient, steamApis: SteamApis): List<SessionComponent> {
+        val steamApps: SteamApps = requireNotNull(client.getHandler())
 
-            Timber.i("Connecting to steam...")
+        // Without an account there is nothing to sync, and the sync classes must not hear
+        // what Steam sends: an anonymous license list would replace the stored one.
+        if (anonymous) {
+            return listOf(AnonymousPicsFeed(steamApps))
+        }
 
-            SteamState.isRunning.value = true
-            steamClient?.connect()
+        val localSteamId = { client.steamID }
 
-            onStatus("Connecting")
-            SteamDiagnostics.record("Connecting")
+        // The two sync classes call each other: friends ask for the app info of an unknown
+        // game, and are told its name once that info is stored.
+        lateinit var friends: FriendsSync
+        val licenses = LicenseSync(
+            scope = scope,
+            db = db,
+            account = account,
+            steamApps = steamApps,
+            library = steamApis.library,
+            family = steamApis.family,
+            localSteamId = localSteamId,
+            onAppsNamed = { names -> friends.nameGames(names) },
+        )
+        friends = FriendsSync(
+            context = context,
+            scope = scope,
+            db = db,
+            account = account,
+            localSteamId = localSteamId,
+            licenses = licenses,
+        )
+        friendsSync = friends
 
-            steamThreadJob = scope.launch {
+        return listOf(friends, steamApis.chat, steamApis.chatRooms, licenses)
+    }
+
+    /** Starts connecting and runs the loop that hands Steam's messages to the callbacks. */
+    private fun connectToSteam(callbacks: CallbackManager) {
+        Timber.i("Connecting to steam...")
+
+        steamClient?.connect()
+
+        onStatus("Connecting")
+        SteamDiagnostics.record("Connecting")
+
+        callbackLoopJob = scope.launch {
+            while (isActive) {
+                // One callback failing must not end the loop, or nothing Steam sends after
+                // it would be heard and the session would hang without a word.
                 try {
-                    while (SteamState.isRunning.value && callbackMgr != null) {
-                        callbackMgr?.runWaitCallbackAsync()
-                    }
+                    callbacks.runWaitCallbackAsync()
                 } catch (e: Exception) {
-                    Timber.e(e, "Error in callback loop")
-                } finally {
-                    Timber.i("Steam thread stopped")
+                    ensureActive()
+                    Timber.e(e, "Error in a Steam callback")
                 }
             }
         }
@@ -567,7 +601,8 @@ class SteamConnection(
             // The callback loop is still running, so only the socket has to come back.
             reconnectJob?.cancel()
             reconnectJob = scope.launch {
-                delay(duration = (retryCount * 2).seconds)
+                // Each attempt waits a little longer than the one before.
+                delay(duration = RETRY_DELAY_STEP * retryCount)
                 steamClient?.connect()
 
                 // Every attempt should end in a callback: signed in again, or disconnected
@@ -577,10 +612,7 @@ class SteamConnection(
                 Timber.w("Reconnect attempt $retryCount got no answer, giving up")
                 SteamDiagnostics.record("Reconnect attempt $retryCount got no answer, giving up")
 
-                // close() cancels this job, which is fine: nothing below suspends.
-                val sessionLost = SteamState.isLoggedIn.value && !userSignedOut
-                close()
-                shutDown(sessionLost)
+                shutDown()
             }
         } else {
             Timber.i("onDisconnected() - Disconnected from steam")
@@ -597,8 +629,6 @@ class SteamConnection(
 
     private val onConnected: Consumer<ConnectedCallback> = Consumer {
         Timber.i("onConnected() - Connected to Steam!")
-
-        retryCount = 0
 
         onStatus("Connected")
         val endpoint = steamClient?.currentEndpoint
@@ -640,6 +670,12 @@ class SteamConnection(
         // Steam disconnects after a refused logon; only an accepted one may be resumed.
         resumeOnReconnect = it.result == EResult.OK
 
+        // Counted from here and not from the connection coming up: a connection that drops
+        // again before it is signed in must still use up the retries.
+        if (it.result == EResult.OK) {
+            retryCount = 0
+        }
+
         when (it.result) {
             EResult.OK if anonymous -> {
                 // No account: nothing is stored or synced, and the app stays "signed out".
@@ -664,18 +700,10 @@ class SteamConnection(
                 SteamState.signOutReason.value = null
                 recordSignIn(it)
 
-                // NOTE: the legacy offline-message path used to start here and is no longer
-                // exercised anywhere in the app:
-                //   SteamNotifications.requestOfflineMessageCount()
-                //     -> OfflineMessageNotificationCallback
-                //     -> SteamFriends.requestOfflineMessages()
-                //     -> FriendMsgHistoryCallback
-                // It was removed because it returns each message as plain text (emoticons as
-                // ːnameː), which cannot be matched against the BB Code copy the FriendMessages
-                // service delivers, so every message was stored twice. ChatApi.start(), run
-                // by startSession() below, fetches what arrived while signed out.
-                // If this is re-added to showcase those JavaSteam calls, request the count
-                // here again, and log the history rather than storing it.
+                // Messages that arrived while signed out are fetched by ChatApi.start(), run by
+                // startSession() below. The older SteamNotifications / requestOfflineMessages
+                // path is not used: it returns plain text that cannot be matched against the
+                // BB Code copy from the FriendMessages service, so each message was stored twice.
 
                 friendsSync?.resetPresence()
 
@@ -701,17 +729,13 @@ class SteamConnection(
                 // only forgotten when Steam says it is no good any more; the other refusals
                 // (TryAnotherCM, ServiceUnavailable, ...) are Steam-side trouble, and the
                 // token is still good for a later try.
-                val tokenIsDead = !anonymous && it.result in FRESH_SIGN_IN_RESULTS
-
                 loginErrorReported = true
                 scope.launch {
                     val error = LoginResult.Error("Sign-in failed: ${it.result.name}")
                     SteamState.loginResult.emit(error)
-                    if (tokenIsDead) {
-                        Timber.i("Forgetting the saved sign-in token after ${it.result}")
-                        account.setRefreshToken(null)
-                        eraseAccountData()
-                    }
+                }
+                if (!anonymous && it.result in FRESH_SIGN_IN_RESULTS) {
+                    forgetDeadToken(it.result)
                 }
             }
         }
@@ -731,11 +755,7 @@ class SteamConnection(
         // Steam ending the session for one of these reasons (access removed while signed in,
         // say) also ends the token, so do not offer it again at the next sign-in.
         if (!anonymous && it.result in FRESH_SIGN_IN_RESULTS) {
-            Timber.i("Forgetting the saved sign-in token after ${it.result}")
-            scope.launch {
-                account.setRefreshToken(null)
-                eraseAccountData()
-            }
+            forgetDeadToken(it.result)
         }
 
         steamClient?.disconnect()
@@ -845,15 +865,15 @@ class SteamConnection(
 
     /** Stores the account's Steam level for the drawer header. */
     private fun CoroutineScope.syncAccountLevel() = launch {
-        runCatching { requireNotNull(apis).profile.badgeLevels() }
-            .onFailure { Timber.w(it, "Steam level sync failed") }
-            .getOrNull()
-            ?.let { account.setLevel(it.playerLevel) }
+        apis?.profile?.steamLevel()?.let { account.setLevel(it) }
     }
 
     private companion object {
         /** Reconnect attempts after a dropped connection before giving up. */
         const val MAX_RETRIES = 3
+
+        /** The wait before the first reconnect attempt; the second waits twice as long, etc. */
+        val RETRY_DELAY_STEP = 2.seconds
 
         /** How long one reconnect attempt may take to connect and sign in again. */
         val RECONNECT_TIMEOUT = 60.seconds

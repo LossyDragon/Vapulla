@@ -14,30 +14,15 @@ import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamApp.ManifestInfo
+import `in`.dragonbra.vapulla.util.SteamTimeoutException
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
 
 /**
- * Raw PICS info of one app or package.
- *
- * @property changeNumber the change of Steam's catalogue that last touched it.
- * @property token the access token the request was made with; 0 when Steam gave none.
- * @property missingToken Steam held details back because the account has no token for it.
- */
-class PicsProduct(
-    val id: Int,
-    val isApp: Boolean,
-    val changeNumber: Int,
-    val token: Long,
-    val missingToken: Boolean,
-    val keyValues: KeyValue,
-)
-
-/**
  * Library features: player counts, achievements and stats via the `SteamUserStats` handler,
- * ownership and playtime via the `Player` unified service, and free licenses via the
- * `SteamApps` handler.
+ * ownership and playtime via the `Player` unified service, and PICS info and free licenses
+ * via the `SteamApps` handler.
  */
 class LibraryApi(
     private val steamApps: SteamApps,
@@ -47,11 +32,17 @@ class LibraryApi(
 ) {
     /** Players in-game right now, or null if Steam does not report it for this app. */
     suspend fun currentPlayers(appId: Int): Int? {
-        val callback = userStats.getNumberOfCurrentPlayers(appId).await()
+        val callback = userStats.getNumberOfCurrentPlayers(appId)
+            .awaitOrNull("GetNumberOfCurrentPlayers")
+            ?: return null
+
         return callback.numPlayers.takeIf { callback.result == EResult.OK }
     }
 
-    /** Every game the account can play, including family-shared ones, with playtime. */
+    /**
+     * Every game the account can play, including family-shared ones, with playtime. Empty
+     * when Steam does not answer.
+     */
     suspend fun ownedGames(): List<OwnedGame> {
         val steamId = localSteamId() ?: return emptyList()
         val request = CPlayer_GetOwnedGames_Request.newBuilder()
@@ -63,20 +54,15 @@ class LibraryApi(
             .setSkipUnvettedApps(false)
             .build()
 
-        val response = player.getOwnedGames(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetOwnedGames failed: ${response.result}")
-            return emptyList()
-        }
+        val body = player.getOwnedGames(request).bodyOrNull("GetOwnedGames") ?: return emptyList()
 
-        return response.body.gamesList.map { game ->
+        return body.gamesList.map { game ->
             OwnedGame(
                 appId = game.appid,
                 name = game.name,
                 playtimeForever = game.playtimeForever,
                 playtimeTwoWeeks = game.playtime2Weeks,
-                lastPlayed = game.rtimeLastPlayed.toLong(),
-                familyShared = game.familyShared,
+                lastPlayed = game.rtimeLastPlayed.toUInt().toLong(),
             )
         }
     }
@@ -87,23 +73,22 @@ class LibraryApi(
             .setAppid(appId)
             .build()
 
-        val response = player.getFriendsGameplayInfo(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetFriendsGameplayInfo failed: ${response.result}")
-            return null
-        }
+        val body = player.getFriendsGameplayInfo(request).bodyOrNull("GetFriendsGameplayInfo")
+            ?: return null
 
-        val body = response.body
         return FriendsGameplay(
-            playingNow = body.inGameList.map { it.steamid },
-            playedRecently = body.playedRecentlyList.map { it.steamid },
-            playedBefore = body.playedEverList.map { it.steamid },
-            own = body.ownsList.map { it.steamid },
-            wishlisted = body.inWishlistList.map { it.steamid },
+            playingNow = body.inGameList.map { it.steamid }.toImmutableList(),
+            playedRecently = body.playedRecentlyList.map { it.steamid }.toImmutableList(),
+            playedBefore = body.playedEverList.map { it.steamid }.toImmutableList(),
+            own = body.ownsList.map { it.steamid }.toImmutableList(),
+            wishlisted = body.inWishlistList.map { it.steamid }.toImmutableList(),
         )
     }
 
-    /** Achievement completion for the given apps, keyed by app ID. */
+    /**
+     * Achievement completion for the given apps, keyed by app ID. Empty when Steam does not
+     * answer.
+     */
     suspend fun achievementsProgress(appIds: List<Int>): Map<Int, AchievementProgress> {
         val steamId = localSteamId() ?: return emptyMap()
         val request = CPlayer_GetAchievementsProgress_Request.newBuilder()
@@ -112,13 +97,10 @@ class LibraryApi(
             .setIncludeUnvettedApps(true)
             .build()
 
-        val response = player.getAchievementsProgress(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetAchievementsProgress failed: ${response.result}")
-            return emptyMap()
-        }
+        val body = player.getAchievementsProgress(request).bodyOrNull("GetAchievementsProgress")
+            ?: return emptyMap()
 
-        return response.body.achievementProgressList.associate { progress ->
+        return body.achievementProgressList.associate { progress ->
             progress.appid to AchievementProgress(
                 appId = progress.appid,
                 unlocked = progress.unlocked,
@@ -131,16 +113,11 @@ class LibraryApi(
     /**
      * The app's current PICS info straight from Steam, or null if Steam does not know the app.
      * Used where the stored row may be out of date, such as picking depots to download.
+     *
+     * @throws SteamTimeoutException if Steam does not answer.
      */
-    suspend fun appInfo(appId: Int): SteamApp? {
-        val token = steamApps.picsGetAccessTokens(appId).await().appTokens[appId] ?: 0L
-        val callback = steamApps.picsGetProductInfo(PICSRequest(appId, token)).await()
-
-        return callback.results
-            .firstNotNullOfOrNull { it.apps[appId] }
-            ?.keyValues
-            ?.generateSteamApp()
-    }
+    suspend fun appInfo(appId: Int): SteamApp? =
+        productInfo(appId, isApp = true)?.keyValues?.generateSteamApp()
 
     /**
      * Opens a [branch] of [appId] that is behind a password. Steam turns the password into a
@@ -148,16 +125,19 @@ class LibraryApi(
      *
      * @return the manifest each depot has on the branch, by depot ID; null when Steam does
      *   not accept the password for this branch.
+     * @throws SteamTimeoutException if Steam does not answer.
      */
     suspend fun unlockBranch(
         appId: Int,
         branch: String,
         password: String,
     ): Map<Int, ManifestInfo>? {
-        val key = steamApps.checkAppBetaPassword(appId, password).await().betaPasswords[branch]
+        val key = steamApps.checkAppBetaPassword(appId, password).awaitOrThrow()
+            .betaPasswords[branch]
             ?: return null
-        val token = steamApps.picsGetAccessTokens(appId).await().appTokens[appId] ?: 0L
-        val depots = steamApps.picsGetPrivateBeta(appId, token, branch, key).await().depotSection
+        val token = accessToken(appId, isApp = true)
+        val depots = steamApps.picsGetPrivateBeta(appId, token, branch, key).awaitOrThrow()
+            .depotSection
 
         return depots.children.mapNotNull { depot ->
             val depotId = depot.name?.toIntOrNull() ?: return@mapNotNull null
@@ -177,23 +157,20 @@ class LibraryApi(
      * An app's or a package's PICS info exactly as Steam sends it, or null if Steam does not
      * know the ID. The account's access token is asked for first, since without it Steam
      * leaves out everything that is not public.
+     *
+     * @throws SteamTimeoutException if Steam does not answer.
      */
     suspend fun productInfo(id: Int, isApp: Boolean): PicsProduct? {
-        val tokens = if (isApp) {
-            steamApps.picsGetAccessTokens(app = id).await().appTokens
-        } else {
-            steamApps.picsGetAccessTokens(`package` = id).await().packageTokens
-        }
-        val token = tokens[id] ?: 0L
-
+        val token = accessToken(id, isApp)
         val request = PICSRequest(id, token)
-        val callback = if (isApp) {
-            steamApps.picsGetProductInfo(app = request).await()
+
+        val job = if (isApp) {
+            steamApps.picsGetProductInfo(app = request)
         } else {
-            steamApps.picsGetProductInfo(`package` = request).await()
+            steamApps.picsGetProductInfo(`package` = request)
         }
 
-        val info = callback.results
+        val info = job.awaitOrThrow().results
             .firstNotNullOfOrNull { if (isApp) it.apps[id] else it.packages[id] }
             ?: return null
 
@@ -207,9 +184,23 @@ class LibraryApi(
         )
     }
 
-    /** Adds a free-to-play or free-on-demand app to the account. */
+    /** The account's PICS access token for an app or a package; 0 when Steam gives none. */
+    private suspend fun accessToken(id: Int, isApp: Boolean): Long {
+        val tokens = if (isApp) {
+            steamApps.picsGetAccessTokens(app = id).awaitOrThrow().appTokens
+        } else {
+            steamApps.picsGetAccessTokens(`package` = id).awaitOrThrow().packageTokens
+        }
+        return tokens[id] ?: 0L
+    }
+
+    /**
+     * Adds a free-to-play or free-on-demand app to the account.
+     *
+     * @throws SteamTimeoutException if Steam does not answer.
+     */
     suspend fun requestFreeLicense(appId: Int): FreeLicenseResult {
-        val callback = steamApps.requestFreeLicense(appId).await()
+        val callback = steamApps.requestFreeLicense(appId).awaitOrThrow()
         return FreeLicenseResult(
             result = callback.result,
             grantedApps = callback.grantedApps.toImmutableList(),
@@ -222,20 +213,20 @@ class LibraryApi(
      * the values together with the game's stats schema, which names them; how rare each
      * achievement is comes from `Player.GetGameAchievements`.
      *
-     * @return null if Steam refused, for one when the game has no stats at all.
+     * @return null when Steam refuses or does not answer; it refuses, for one, a game that
+     *   has no stats at all.
      */
     suspend fun gameStats(appId: Int): GameStats? {
         val steamId = localSteamId() ?: return null
 
-        val callback = userStats.getUserStats(appId, steamId).await()
+        val callback = userStats.getUserStats(appId, steamId).awaitOrNull("GetUserStats")
+            ?: return null
         if (callback.result != EResult.OK) {
             Timber.w("GetUserStats for $appId answered ${callback.result}")
             return null
         }
 
-        val globalPercent = runCatching { globalAchievementPercentages(appId) }
-            .onFailure { Timber.w(it, "GetGameAchievements failed") }
-            .getOrDefault(emptyMap())
+        val globalPercent = globalAchievementPercentages(appId)
 
         val achievements = callback.getExpandedAchievements()
             // Blocks the schema could not expand carry no name and cannot be shown.
@@ -272,20 +263,20 @@ class LibraryApi(
         )
     }
 
-    /** Achievement API name to the percentage of players who have unlocked it. */
+    /**
+     * Achievement API name to the percentage of players who have unlocked it. Empty when
+     * Steam does not answer.
+     */
     private suspend fun globalAchievementPercentages(appId: Int): Map<String, Float> {
         val request = CPlayer_GetGameAchievements_Request.newBuilder()
             .setAppid(appId)
-            .setLanguage("english")
+            .setLanguage(STEAM_LANGUAGE)
             .build()
 
-        val response = player.getGameAchievements(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetGameAchievements failed: ${response.result}")
-            return emptyMap()
-        }
+        val body = player.getGameAchievements(request).bodyOrNull("GetGameAchievements")
+            ?: return emptyMap()
 
-        return response.body.achievementsList.mapNotNull { achievement ->
+        return body.achievementsList.mapNotNull { achievement ->
             achievement.playerPercentUnlocked.toFloatOrNull()?.let {
                 achievement.internalName to it
             }

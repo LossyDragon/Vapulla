@@ -14,7 +14,14 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
-@Suppress("SameParameterValue")
+/**
+ * Collects the values of this flow into lists, so that many of them arriving close together
+ * can be handled in one go, such as one database transaction for a burst of PICS app info.
+ *
+ * A list is emitted as soon as it holds [maxBatchSize] values, or [duration] after its first
+ * value arrived, whichever comes first. What is left when the flow ends is emitted too, and
+ * nothing is emitted while no values arrive.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.timeChunked(maxBatchSize: Int, duration: Duration = 1.seconds): Flow<List<T>> =
     flow {
@@ -37,6 +44,7 @@ fun <T> Flow<T>.timeChunked(maxBatchSize: Int, duration: Duration = 1.seconds): 
                             ticker = null
                         }
 
+                        // Wait for whichever comes first: the next value, or the ticker.
                         else -> select {
                             upstream.onReceiveCatching { result ->
                                 result.getOrNull()?.let { element ->
@@ -71,6 +79,7 @@ fun <T> Flow<T>.timeChunked(maxBatchSize: Int, duration: Duration = 1.seconds): 
         }
     }
 
+/** Sends a [Unit] every [duration] until it is cancelled; a tick nobody waited for is dropped. */
 @OptIn(ExperimentalCoroutinesApi::class)
 private fun CoroutineScope.customTicker(duration: Duration): ReceiveChannel<Unit> =
     produce(capacity = Channel.CONFLATED) {

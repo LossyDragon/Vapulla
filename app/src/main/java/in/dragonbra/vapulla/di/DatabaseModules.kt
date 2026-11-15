@@ -13,14 +13,10 @@ val DatabaseModules = module {
             androidApplication(),
             VapullaDatabase::class.java,
             VapullaDatabase.DATABASE_NAME,
-        ).addMigrations(
-            VapullaDatabase.MIGRATION_10_11,
-            VapullaDatabase.MIGRATION_11_12,
-            VapullaDatabase.MIGRATION_12_13,
-            VapullaDatabase.MIGRATION_13_14,
-            VapullaDatabase.MIGRATION_14_15,
-        ).apply {
-            // Debug builds recreate the database on a schema bump instead of migrating.
+        ).addMigrations(*VapullaDatabase.ALL_MIGRATIONS).apply {
+            // A migration is used wherever there is one. Where there is none, a debug build
+            // starts over with an empty database, so a schema can be tried out before its
+            // migration is written; a release build fails to open the database instead.
             if (BuildConfig.DEBUG) {
                 fallbackToDestructiveMigration(true)
             }

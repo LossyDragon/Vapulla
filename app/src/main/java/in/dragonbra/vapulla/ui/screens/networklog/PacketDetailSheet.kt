@@ -21,16 +21,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.vapulla.service.NetworkLogEntry
 import `in`.dragonbra.vapulla.service.PacketDetail
 import `in`.dragonbra.vapulla.service.PacketInspector
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 
 /** Bytes of a body shown as hex; the rest is only counted. */
 private const val HEX_SHOWN = 2048
@@ -78,7 +79,7 @@ private fun PacketDetailContent(entry: NetworkLogEntry) {
         }
 
         if (detail == null) {
-            Note("This packet's header could not be read.")
+            Hint("This packet's header could not be read.")
             return@Column
         }
 
@@ -86,10 +87,10 @@ private fun PacketDetailContent(entry: NetworkLogEntry) {
             DetailList(
                 listOf(
                     "Format" to detail.format,
-                    "Source job" to detail.sourceJob?.toULong()?.toString().orEmpty(),
-                    "Target job" to detail.targetJob?.toULong()?.toString().orEmpty(),
+                    "Source job" to detail.sourceJob?.toSteamIdString().orEmpty(),
+                    "Target job" to detail.targetJob?.toSteamIdString().orEmpty(),
                     "Result" to detail.result.orEmpty(),
-                    "Steam ID" to detail.steamId?.toULong()?.toString().orEmpty(),
+                    "Steam ID" to detail.steamId?.toSteamIdString().orEmpty(),
                     "Session ID" to detail.sessionId?.toUInt()?.toString().orEmpty(),
                     "Header size" to "${detail.headerSize} bytes",
                     "Body size" to "${detail.bodySize} bytes",
@@ -97,11 +98,11 @@ private fun PacketDetailContent(entry: NetworkLogEntry) {
             )
         }
 
-        detail.bodyNote?.let { Note(it) }
+        detail.bodyNote?.let { Hint(it) }
 
         if (decoded != null) {
             Section(title = "Body, read as protobuf") {
-                Note("Field numbers and values. The names are not part of the packet.")
+                Hint("Field numbers and values. The names are not part of the packet.")
                 CodeBlock(decoded)
             }
         }
@@ -109,7 +110,7 @@ private fun PacketDetailContent(entry: NetworkLogEntry) {
         if (hex != null && body != null) {
             Section(title = "Body, as bytes") {
                 if (body.size > HEX_SHOWN) {
-                    Note("The first $HEX_SHOWN of ${body.size} bytes.")
+                    Hint("The first $HEX_SHOWN of ${body.size} bytes.")
                 }
                 CodeBlock(hex)
             }
@@ -128,25 +129,14 @@ private fun CodeBlock(text: String) {
         SelectionContainer {
             Text(
                 text = text,
+                style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
                 modifier = Modifier
                     .horizontalScroll(rememberScrollState())
                     .padding(12.dp),
             )
         }
     }
-}
-
-@Composable
-private fun Note(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 4.dp),
-    )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)

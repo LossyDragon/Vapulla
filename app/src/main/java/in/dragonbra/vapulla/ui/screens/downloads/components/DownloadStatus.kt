@@ -39,10 +39,10 @@ fun Download.statusLine(progress: DownloadProgress?): String {
             live == null -> "Starting"
 
             // The bar stays full while files are checked, so a percentage would say nothing.
-            verify && live.status != "Downloading" -> "Verifying · ${live.status}"
+            verify && !live.isDownloading -> "Verifying · ${live.status}"
 
             // Anything but plain downloading (checking files, allocating) is worth saying.
-            live.status != "Downloading" -> "$percent · ${live.status}"
+            !live.isDownloading -> "$percent · ${live.status}"
 
             else ->
                 "$percent · ${live.downloadedBytes.toFileSize()} of $total · " +

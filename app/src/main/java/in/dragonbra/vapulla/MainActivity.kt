@@ -29,7 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.manager.AppSettings
 import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.manager.SettingsManager
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.NavigationRoot
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
                 .putExtra(EXTRA_REQUEST_TIME, System.currentTimeMillis())
     }
 
-    private val serviceConnection: ServiceConnection by inject()
+    private val serviceConnection: SteamServiceConnection by inject()
     private val settingsManager: SettingsManager by inject()
 
     /** The friend whose chat a tapped notification asked for, until navigation has opened it. */
@@ -151,7 +151,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Prompts once for POST_NOTIFICATIONS if it is not already granted. */
+/**
+ * Asks for POST_NOTIFICATIONS when it is not granted: once each time the activity is created,
+ * which Android itself stops showing after the second refusal.
+ */
 @Composable
 private fun RequestNotificationPermission() {
     val context = LocalContext.current

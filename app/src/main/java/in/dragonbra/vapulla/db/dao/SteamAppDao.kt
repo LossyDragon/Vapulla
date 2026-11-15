@@ -12,11 +12,12 @@ import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.db.entity.SteamAppName
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * The apps Steam has told the app about. Not all of them are owned: an app no license grants
+ * has [SteamApp.NO_PACKAGE] as its package, which is what the library queries leave out.
+ */
 @Dao
 interface SteamAppDao {
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(apps: SteamApp)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(apps: List<SteamApp>)
@@ -62,26 +63,24 @@ interface SteamAppDao {
     fun findAppFlow(appId: Int): Flow<SteamApp?>
 
     /**
-     * Paged list projection. Only the columns rendered by the games list are selected so a
-     * page load (which re-runs on every invalidation of `steam_app`) never has to decode the
-     * large JSON columns of [SteamApp].
+     * The library: owned apps of the kinds in [appType] (bits of [SteamApp.AppType]) whose
+     * name contains [query], alphabetical. Spacewar (480), Steamworks' test app that every
+     * account has, is left out.
+     *
+     * Only the columns rendered by the games list are selected so a page load (which re-runs
+     * on every invalidation of `steam_app`) never has to decode the JSON columns of [SteamApp].
      */
     @Query(
         "SELECT id, name, type, developer, publisher, releaseDate, metacriticScore, " +
             "clientIconHash, ownerAccountId, headerImage, playtimeForever, lastPlayed " +
             "FROM steam_app " +
             "WHERE id != 480 " +
-            "AND packageId != :invalidPkgId " +
-            "AND type != 0 " +
+            "AND packageId != ${SteamApp.NO_PACKAGE} " +
             "AND (type & :appType) != 0 " +
-            "AND (:query = '' OR LOWER(name) LIKE '%' || LOWER(:query) || '%') " +
+            "AND (:query = '' OR name LIKE '%' || :query || '%') " +
             "ORDER BY LOWER(name)",
     )
-    fun getAllOwnedAppsPaged(
-        appType: Int,
-        query: String = "",
-        invalidPkgId: Int = Int.MAX_VALUE,
-    ): PagingSource<Int, SteamAppListItem>
+    fun getAllOwnedAppsPaged(appType: Int, query: String = ""): PagingSource<Int, SteamAppListItem>
 
     /**
      * Owned games that register servers with Steam, alphabetical. The Steam client keys
@@ -95,14 +94,13 @@ interface SteamAppDao {
             "FROM steam_app " +
             "WHERE receivedPICS = 1 AND noServers = 0 AND (type & :gameType) != 0 " +
             "AND gameDir != '' AND gameDir NOT LIKE 'ValveTestApp%' " +
-            "AND packageId != :invalidPkgId " +
-            "AND (:query = '' OR LOWER(name) LIKE '%' || LOWER(:query) || '%') " +
+            "AND packageId != ${SteamApp.NO_PACKAGE} " +
+            "AND (:query = '' OR name LIKE '%' || :query || '%') " +
             "ORDER BY LOWER(name)",
     )
     fun findServerGames(
         query: String = "",
         gameType: Int = SteamApp.AppType.game.code,
-        invalidPkgId: Int = Int.MAX_VALUE,
     ): Flow<List<SteamAppListItem>>
 
     @Query("SELECT * FROM steam_app WHERE id = :appId")
@@ -127,9 +125,8 @@ interface SteamAppDao {
     suspend fun findChangeInfo(appIds: List<Int>): List<SteamAppChangeInfo>
 
     /** Licensed apps whose app info never arrived, e.g. because an ingest was interrupted. */
-    @Query("SELECT id FROM steam_app WHERE receivedPICS = 0 AND packageId != :invalidPkgId")
-    suspend fun findAppsAwaitingPics(invalidPkgId: Int = Int.MAX_VALUE): List<Int>
-
-    @Query("SELECT * FROM steam_app WHERE id = :appId")
-    fun findBlocking(appId: Int): SteamApp?
+    @Query(
+        "SELECT id FROM steam_app WHERE receivedPICS = 0 AND packageId != ${SteamApp.NO_PACKAGE}",
+    )
+    suspend fun findAppsAwaitingPics(): List<Int>
 }

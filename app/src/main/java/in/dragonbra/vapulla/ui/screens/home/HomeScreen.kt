@@ -14,19 +14,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.mock.mockFriendsList
 import `in`.dragonbra.vapulla.ui.mock.mockStickyHeaders
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
@@ -38,48 +38,54 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.launch
 
-// TODO: Check out
-// ChatRoom.GetMyChatRoomGroups#1
-// SteamNotification.GetPreferences#1
-// FriendMessages.GetActiveMessageSessions#1
-// FriendsList.GetFavorites#1
-
+/**
+ * The friends list, in sections, with a search over it. Tapping a friend opens the chat; a
+ * long press or a swipe opens the profile.
+ *
+ * @param onOpenChat opens the chat with the friend of that Steam ID.
+ * @param onOpenProfile opens that friend's profile.
+ */
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onNavDrawerAction: () -> Unit,
-    onFriendClick: (Long) -> Unit,
-    onFriendLongClick: (Long) -> Unit,
+    onOpenChat: (Long) -> Unit,
+    onOpenProfile: (Long) -> Unit,
 ) {
-    val friendsList by viewModel.friends.collectAsState()
-    val stickyHeaders by viewModel.stickyHeaders.collectAsState()
-    val typing by viewModel.typing.collectAsState()
+    val friendsList by viewModel.friends.collectAsStateWithLifecycle()
+    val stickyHeaders by viewModel.stickyHeaders.collectAsStateWithLifecycle()
+    val typing by viewModel.typing.collectAsStateWithLifecycle()
 
     HomeScreenContent(
-        friendsList,
-        stickyHeaders,
+        friendsList = friendsList,
+        stickyHeaders = stickyHeaders,
         typing = typing,
         onNavDrawerAction = onNavDrawerAction,
-        onFriendClick = onFriendClick,
-        onFriendLongClick = onFriendLongClick,
+        onOpenChat = onOpenChat,
+        onOpenProfile = onOpenProfile,
         onStickyHeaderAction = viewModel::onStickyHeaderAction,
     )
 }
 
 @Composable
-fun HomeScreenContent(
+private fun HomeScreenContent(
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
     stickyHeaders: ImmutableSet<Int>,
     typing: ImmutableSet<Long>,
     onNavDrawerAction: () -> Unit,
-    onFriendClick: (Long) -> Unit,
-    onFriendLongClick: (Long) -> Unit,
+    onOpenChat: (Long) -> Unit,
+    onOpenProfile: (Long) -> Unit,
     onStickyHeaderAction: (Int) -> Unit,
 ) {
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val scope = rememberCoroutineScope()
+
+    // A blocked friend cannot be chatted with, so a tap goes to the profile instead.
+    val onFriendClick: (SteamFriend) -> Unit = { friend ->
+        if (friend.isBlocked) onOpenProfile(friend.id) else onOpenChat(friend.id)
+    }
 
     val searchQuery = textFieldState.text.toString()
     val filteredFriends = remember(searchQuery, friendsList) {
@@ -115,16 +121,12 @@ fun HomeScreenContent(
                                     shape = groupedListShape(index, filteredFriends.size),
                                     isTyping = friend.id in typing,
                                     onClick = {
-                                        if (friend.isBlocked) {
-                                            onFriendLongClick(friend.id)
-                                        } else {
-                                            onFriendClick(friend.id)
-                                        }
+                                        onFriendClick(friend)
                                         textFieldState.clearText()
                                         scope.launch { searchBarState.animateToCollapsed() }
                                     },
                                     onLongClick = {
-                                        onFriendLongClick(friend.id)
+                                        onOpenProfile(friend.id)
                                         textFieldState.clearText()
                                         scope.launch { searchBarState.animateToCollapsed() }
                                     },
@@ -133,14 +135,14 @@ fun HomeScreenContent(
 
                             if (filteredFriends.isEmpty()) {
                                 item {
-                                    SearchResultMessage(
+                                    EmptyMessage(
                                         message = "No friends found matching \"$searchQuery\"",
                                     )
                                 }
                             }
                         }
                     } else {
-                        SearchResultMessage(message = "Start typing to search friends")
+                        EmptyMessage(message = "Start typing to search friends")
                     }
                 },
             )
@@ -156,7 +158,7 @@ fun HomeScreenContent(
                 typing = typing,
                 onStickyHeaderAction = onStickyHeaderAction,
                 onFriendClick = onFriendClick,
-                onFriendLongClick = onFriendLongClick,
+                onOpenProfile = onOpenProfile,
             )
         },
     )
@@ -171,8 +173,8 @@ private fun Preview() {
             stickyHeaders = mockStickyHeaders,
             typing = persistentSetOf(),
             onNavDrawerAction = {},
-            onFriendClick = {},
-            onFriendLongClick = {},
+            onOpenChat = {},
+            onOpenProfile = {},
             onStickyHeaderAction = {},
         )
     }

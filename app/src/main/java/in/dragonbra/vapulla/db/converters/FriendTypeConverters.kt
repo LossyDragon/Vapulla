@@ -1,6 +1,5 @@
 package `in`.dragonbra.vapulla.db.converters
 
-import android.util.Base64
 import androidx.room.TypeConverter
 import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
@@ -9,6 +8,10 @@ import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.javasteam.types.GameID
 import java.util.EnumSet
 
+/**
+ * JavaSteam's friend enums and [GameID], stored as Steam's own numbers. A number this
+ * version of JavaSteam does not know reads as "none" or offline.
+ */
 class FriendTypeConverters {
 
     @TypeConverter
@@ -45,11 +48,4 @@ class FriendTypeConverters {
 
     @TypeConverter
     fun toGameID(value: Long): GameID = GameID(value)
-
-    @TypeConverter
-    fun fromByteArray(bytes: ByteArray?): String? =
-        bytes?.let { Base64.encodeToString(it, Base64.DEFAULT) }
-
-    @TypeConverter
-    fun toByteArray(value: String?): ByteArray? = value?.let { Base64.decode(it, Base64.DEFAULT) }
 }

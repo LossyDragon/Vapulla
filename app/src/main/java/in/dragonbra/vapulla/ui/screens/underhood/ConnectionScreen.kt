@@ -16,12 +16,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.ConnectionInfo
 import `in`.dragonbra.vapulla.service.SteamDiagnostics
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlin.math.abs
 import kotlinx.collections.immutable.persistentListOf
 
@@ -40,7 +41,7 @@ fun ConnectionScreen(onBack: () -> Unit) {
 private fun ConnectionContent(info: ConnectionInfo?, onBack: () -> Unit) {
     UnderHoodScaffold(title = "Connection", onBack = onBack) { padding ->
         if (info == null) {
-            SearchResultMessage(
+            EmptyMessage(
                 message = "Not signed in to Steam right now",
                 modifier = Modifier.padding(padding),
             )
@@ -69,7 +70,7 @@ private fun ConnectionContent(info: ConnectionInfo?, onBack: () -> Unit) {
             Section(title = "Session") {
                 DetailList(
                     listOf(
-                        "Steam ID" to info.steamId.toULong().toString(),
+                        "Steam ID" to info.steamId.toSteamIdString(),
                         "Session ID" to info.sessionId?.toUInt()?.toString().orEmpty(),
                         "Heartbeat" to "every ${info.heartbeatSeconds} s",
                         "Steam's clock" to info.serverTimeOffsetMs?.let(::clockOffset).orEmpty(),

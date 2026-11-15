@@ -58,7 +58,8 @@ object NotificationHelper {
     private const val GROUP_DOWNLOADS = "downloads"
     private const val GROUP_FRIEND_REQUESTS = "friend_requests"
 
-    private val AVATAR_TIMEOUT_MS = 5.seconds
+    /** How long a notification waits for its avatar before it is posted without one. */
+    private val AVATAR_TIMEOUT = 5.seconds
     private const val AVATAR_SIZE_PX = 200
 
     fun createNotificationChannels(context: Context) {
@@ -218,9 +219,7 @@ object NotificationHelper {
     ) {
         val notificationId = friendId.toInt()
 
-        val avatarBitmap = avatarUrl?.let { url ->
-            withTimeoutOrNull(AVATAR_TIMEOUT_MS) { loadAvatarBitmap(context, url) }
-        }
+        val avatarBitmap = loadAvatarBitmap(context, avatarUrl)
 
         val sender = Person.Builder()
             .setName(friendName)
@@ -317,7 +316,7 @@ object NotificationHelper {
 
     /**
      * Posts a friend request with Accept, Ignore and Block actions. The sender's avatar is
-     * loaded for the large icon when it arrives within [AVATAR_TIMEOUT_MS].
+     * loaded for the large icon when it arrives within [AVATAR_TIMEOUT].
      */
     suspend fun sendFriendRequestNotification(
         context: Context,
@@ -326,17 +325,7 @@ object NotificationHelper {
         avatarUrl: String? = null,
     ) {
         val notificationId = friendId.toInt()
-
-        val avatarBitmap = avatarUrl?.let { url ->
-            withTimeoutOrNull(AVATAR_TIMEOUT_MS) { loadAvatarBitmap(context, url) }
-        }
-
-        val contentIntent = PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val avatarBitmap = loadAvatarBitmap(context, avatarUrl)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_REQUESTS)
             .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
@@ -344,10 +333,10 @@ object NotificationHelper {
             .setGroup(GROUP_FRIEND_REQUESTS)
             .setLargeIcon(avatarBitmap)
             .setContentTitle("New friend request")
-            .setContentText("$friendName has added to their friends list!")
+            .setContentText("$friendName has added you to their friends list!")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(contentIntent)
+            .setContentIntent(openAppIntent(context))
             .addAction(
                 R.drawable.ic_check,
                 "Accept",
@@ -368,6 +357,11 @@ object NotificationHelper {
         context.notificationManager.notify(notificationId, notification)
     }
 
+    /** Removes a friend request's notification, once one of its actions has answered it. */
+    fun cancelFriendRequestNotification(context: Context, friendId: Long) {
+        context.notificationManager.cancel(friendId.toInt())
+    }
+
     /** Broadcast to one of the [FriendRequestReceiver] subclasses carrying the friend's ID. */
     private inline fun <reified R : FriendRequestReceiver> requestActionIntent(
         context: Context,
@@ -380,17 +374,27 @@ object NotificationHelper {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    private suspend fun loadAvatarBitmap(context: Context, avatarUrl: String): Bitmap? = try {
+    /**
+     * The avatar at [avatarUrl], cut round. Null when there is no address, or when the image
+     * fails to load or takes longer than [AVATAR_TIMEOUT].
+     */
+    private suspend fun loadAvatarBitmap(context: Context, avatarUrl: String?): Bitmap? {
+        if (avatarUrl == null) return null
+
         val request = ImageRequest.Builder(context)
             .data(avatarUrl)
             .transformations(CircleCropTransformation())
             .size(AVATAR_SIZE_PX)
             .build()
 
-        (context.imageLoader.execute(request) as? SuccessResult)?.drawable?.toBitmap()
-    } catch (e: Exception) {
-        Timber.e(e, "Failed to load avatar for notification")
-        null
+        return withTimeoutOrNull(AVATAR_TIMEOUT) {
+            try {
+                (context.imageLoader.execute(request) as? SuccessResult)?.drawable?.toBitmap()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to load avatar for notification")
+                null
+            }
+        }
     }
 
     private val Context.notificationManager: NotificationManager

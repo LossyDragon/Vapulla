@@ -2,10 +2,12 @@ package `in`.dragonbra.vapulla.db.converters
 
 import androidx.room.TypeConverter
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.serialization.json.Json
 
+/**
+ * Lists and maps of plain values. IDs are stored comma-separated, which SQL can read; text,
+ * which may itself hold a comma, is stored as JSON.
+ */
 class ListTypeConverter {
     @TypeConverter
     fun fromIntList(value: List<Int>): String = value.joinToString(",")
@@ -18,20 +20,16 @@ class ListTypeConverter {
     }
 
     @TypeConverter
-    fun fromStringList(value: String?): ImmutableList<String> {
-        if (value == null) return persistentListOf()
-        val list: List<String> = Json.decodeFromString(value)
-        return list.toImmutableList()
-    }
+    fun fromStringList(list: ImmutableList<String>): String = DbJson.encodeToString(list.toList())
 
     @TypeConverter
-    fun toStringList(list: ImmutableList<String>?): String =
-        Json.encodeToString(list?.toList() ?: emptyList())
+    fun toStringList(value: String): ImmutableList<String> =
+        DbJson.decodeFromString<List<String>>(value).toImmutableList()
 
     @TypeConverter
-    fun fromStringMap(value: String?): Map<String, String> =
-        if (value.isNullOrEmpty()) emptyMap() else Json.decodeFromString(value)
+    fun fromStringMap(map: Map<String, String>): String = DbJson.encodeToString(map)
 
     @TypeConverter
-    fun toStringMap(map: Map<String, String>): String = Json.encodeToString(map)
+    fun toStringMap(value: String): Map<String, String> =
+        if (value.isEmpty()) emptyMap() else DbJson.decodeFromString(value)
 }

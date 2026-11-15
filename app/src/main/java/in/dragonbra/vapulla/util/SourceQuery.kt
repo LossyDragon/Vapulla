@@ -60,7 +60,8 @@ object SourceQuery {
             }.getOrNull()
         }
 
-    private fun parseInfo(data: ByteBuffer): ServerInfo {
+    /** Reads an A2S_INFO answer; [data] is little-endian and stands just after the header byte. */
+    internal fun parseInfo(data: ByteBuffer): ServerInfo {
         data.get() // protocol version
         val name = data.cString()
         val map = data.cString()

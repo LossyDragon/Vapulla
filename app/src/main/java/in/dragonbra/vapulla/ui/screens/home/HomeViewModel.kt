@@ -7,8 +7,8 @@ import `in`.dragonbra.vapulla.db.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.SettingsManager
-import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.ImmutableList
@@ -36,24 +36,23 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import timber.log.Timber
 
 /**
  * Friends list state: friends grouped into the sticky-header sections (requests, recent chats,
  * in game, online, offline), sorted within each, plus which sections are collapsed.
  */
 class HomeViewModel(
-    db: SteamFriendDao,
+    friendDao: SteamFriendDao,
     chatDao: ChatMessageDao,
     settingsManager: SettingsManager,
-    connection: ServiceConnection,
+    connection: SteamServiceConnection,
 ) : ViewModel() {
 
     /** The collapsed sections. Blocked friends start out of the way. */
     private val _stickyHeaders = MutableStateFlow(persistentSetOf(R.string.headerFriendBlocked))
     val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
 
-    /** Emits now and then once a minute, so the Recent Chats cut-off is re-evaluated in time. */
+    /** Emits at once and then every minute, so the Recent Chats cut-off is re-evaluated in time. */
     private val minuteTicker = flow {
         while (true) {
             emit(Unit)
@@ -62,7 +61,7 @@ class HomeViewModel(
     }
 
     val friends: StateFlow<ImmutableMap<Int, ImmutableList<SteamFriend>>> = combine(
-        db.getFriendsFlow(),
+        friendDao.getFriendsFlow(),
         chatDao.chatSummaries(),
         settingsManager.settings.distinctUntilChangedBy {
             it.recentChatsDays to it.showBlockedFriends
@@ -82,17 +81,16 @@ class HomeViewModel(
             .filter { it.unread > 0 }
             .associate { it.friendId to it.unread }
 
+        val lastMessages = chats.associate { it.friendId to it.timestamp }
+
         friends.filter { it.isFriend || (settings.showBlockedFriends && it.isBlockedFriend) }
-            // The row's counter; it clears when the chat is opened and its messages are read.
+            // The row's counter and the time of its last message. The counter clears when
+            // the chat is opened and its messages are read.
             .map { friend ->
-                val unread = unreadCounts[friend.id] ?: 0
-                if (friend.newMessageCount ==
-                    unread
-                ) {
-                    friend
-                } else {
-                    friend.copy(newMessageCount = unread)
-                }
+                friend.copy(
+                    newMessageCount = unreadCounts[friend.id] ?: 0,
+                    lastMessageTime = lastMessages[friend.id] ?: friend.lastMessageTime,
+                )
             }
             .sortedWith(
                 compareBy(
@@ -156,10 +154,7 @@ class HomeViewModel(
             initialValue = persistentSetOf(),
         )
 
-    override fun onCleared() {
-        Timber.d("onCleared")
-    }
-
+    /** Collapses the section with the header [value], or opens it again. */
     fun onStickyHeaderAction(value: Int) {
         _stickyHeaders.update { current ->
             if (value in current) {

@@ -10,7 +10,7 @@ import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.dao.SteamLicenseDao
 import `in`.dragonbra.vapulla.db.entity.Download
 import `in`.dragonbra.vapulla.db.entity.SteamApp
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.AchievementProgress
 import `in`.dragonbra.vapulla.service.api.FriendsGameplay
 import `in`.dragonbra.vapulla.service.api.NewsItem
@@ -19,6 +19,7 @@ import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.service.download.DownloadPlan
 import `in`.dragonbra.vapulla.service.download.DownloadPlanner
 import `in`.dragonbra.vapulla.service.download.DownloadProgress
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -87,16 +88,17 @@ data class DownloadChoices(
 )
 
 /**
- * One game: the stored PICS row plus three live lookups, the current player count from
- * `SteamUserStats`, achievement progress from the `Player` service and the latest news from
- * the Web API, and its download.
+ * One game: the stored PICS row, its download, and what is looked up live when the screen
+ * opens: the player count from `SteamUserStats`, achievement progress and friends' gameplay
+ * from the `Player` service, the number of leaderboards, the app info as Steam has it now,
+ * and the latest news from the Web API.
  */
 class GameDetailViewModel(
     private val appId: Int,
     appDao: SteamAppDao,
     downloadDao: DownloadDao,
     private val licenseDao: SteamLicenseDao,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val downloads: DownloadManager,
     private val friendDao: SteamFriendDao,
 ) : ViewModel() {
@@ -204,15 +206,14 @@ class GameDetailViewModel(
 
     init {
         viewModelScope.launch {
-            val apis = connection.steamService?.apis
-            if (apis == null) {
-                extras.update { it.copy(loading = false) }
-                return@launch
+            val players = async {
+                connection.request("Player count of $appId") { it.library.currentPlayers(appId) }
+                    .getOrNull()
             }
-
-            val players = async { runCatching { apis.library.currentPlayers(appId) }.getOrNull() }
             val progress = async {
-                runCatching { apis.library.achievementsProgress(listOf(appId))[appId] }.getOrNull()
+                connection.request("Achievement progress of $appId") {
+                    it.library.achievementsProgress(listOf(appId))[appId]
+                }.getOrNull()
             }
 
             extras.update {
@@ -225,9 +226,8 @@ class GameDetailViewModel(
         }
 
         viewModelScope.launch {
-            val library = connection.steamService?.apis?.library ?: return@launch
-            val gameplay = runCatching { library.friendsGameplay(appId) }
-                .onFailure { Timber.w(it, "Friends' gameplay for $appId failed") }
+            val gameplay = connection
+                .request("Friends' gameplay for $appId") { it.library.friendsGameplay(appId) }
                 .getOrNull()
                 ?: return@launch
 
@@ -237,25 +237,24 @@ class GameDetailViewModel(
 
         // Only the number is needed here; the Leaderboards screen fetches the list itself.
         viewModelScope.launch {
-            val count = runCatching { connection.steamService?.apis?.leaderboards?.boards(appId) }
-                .onFailure { Timber.w(it, "Leaderboards of $appId failed") }
+            val boards = connection
+                .request("Leaderboards of $appId") { it.leaderboards.boards(appId) }
                 .getOrNull()
-                ?.size
                 ?: return@launch
 
-            extras.update { it.copy(leaderboards = count) }
+            extras.update { it.copy(leaderboards = boards.size) }
         }
 
         // News comes from the Web API, so it does not need the Steam session.
         viewModelScope.launch {
-            runCatching { SteamNews.load(appId) }
+            runSuspendCatching { SteamNews.load(appId) }
                 .onFailure { Timber.w(it, "News for $appId failed") }
                 .onSuccess { news -> extras.update { it.copy(news = news.toImmutableList()) } }
         }
 
         viewModelScope.launch {
-            freshApp.value = runCatching { connection.steamService?.apis?.library?.appInfo(appId) }
-                .onFailure { Timber.w(it, "Fresh app info for $appId failed") }
+            freshApp.value = connection
+                .request("Fresh app info for $appId") { it.library.appInfo(appId) }
                 .getOrNull()
         }
 
@@ -271,8 +270,7 @@ class GameDetailViewModel(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            ownedDepotIds.value = licenseDao.getAllDepotIds()
-                .flatMapTo(HashSet()) { ids -> ids.split(',').mapNotNull(String::toIntOrNull) }
+            ownedDepotIds.value = licenseDao.ownedDepotIds()
         }
 
         // Recounted whenever a download is added, moves on or goes away, since each of those
@@ -325,9 +323,10 @@ class GameDetailViewModel(
 
     /** Asks Steam for the manifests of a locked [branch]; true when the password was right. */
     private suspend fun openBranch(branch: String, password: String): Boolean {
-        val library = connection.steamService?.apis?.library ?: return false
-        val manifests = runCatching { library.unlockBranch(appId, branch, password) }
-            .onFailure { Timber.w(it, "Unlocking branch $branch of $appId failed") }
+        val manifests = connection
+            .request("Unlocking branch $branch of $appId") {
+                it.library.unlockBranch(appId, branch, password)
+            }
             .getOrNull()
             ?: return false
 
@@ -368,9 +367,8 @@ class GameDetailViewModel(
     /** Showcases `SteamApps.RequestFreeLicense`; the outcome is reported through [messages]. */
     fun requestFreeLicense() {
         viewModelScope.launch {
-            val apis = connection.steamService?.apis ?: return@launch
-            val result = runCatching { apis.library.requestFreeLicense(appId) }
-                .onFailure { Timber.w(it, "RequestFreeLicense failed") }
+            val result = connection
+                .request("RequestFreeLicense") { it.library.requestFreeLicense(appId) }
                 .getOrNull()
 
             _messages.emit(

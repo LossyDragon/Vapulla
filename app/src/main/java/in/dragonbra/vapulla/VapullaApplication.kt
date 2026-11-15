@@ -33,8 +33,8 @@ import org.koin.core.context.startKoin
 import timber.log.Timber
 
 /**
- * Sets up logging, JavaSteam log forwarding, notification channels and Koin, and supplies
- * the image loader.
+ * Sets up logging, JavaSteam log forwarding, notification channels and Koin, keeps the
+ * network log's settings current, and supplies the image loader.
  */
 class VapullaApplication :
     Application(),

@@ -1,16 +1,13 @@
 package `in`.dragonbra.vapulla.util
 
-import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.types.GameID
 import `in`.dragonbra.javasteam.types.GlobalID
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.util.helpers.accountIdToSteamID
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Date
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /** One way of reading an ID: what it would be, and the parts it breaks into. */
 data class DecodedId(val title: String, val note: String, val rows: List<Pair<String, String>>)
@@ -60,7 +57,7 @@ object IdDecoder {
         val number = text.toLongOrNull() ?: text.toULongOrNull()?.toLong() ?: return emptyList()
 
         if (number in 1 until ACCOUNT_ID_LIMIT) {
-            val asAccount = SteamID(number, EUniverse.Public, EAccountType.Individual)
+            val asAccount = number.toInt().accountIdToSteamID()
             return listOf(
                 steamId(asAccount, "If this is an account ID, the low 32 bits of a Steam ID."),
                 gameId(GameID(number), "If this is an app ID."),
@@ -89,14 +86,7 @@ object IdDecoder {
      */
     suspend fun resolveCustomUrl(name: String): DecodedId? {
         val url = "${Utils.Constants.CUSTOM_URL}$name/"
-        val xml = withContext(Dispatchers.IO) {
-            val connection = URL("$url?xml=1").openConnection() as HttpURLConnection
-            try {
-                connection.inputStream.use { it.readBytes().decodeToString() }
-            } finally {
-                connection.disconnect()
-            }
-        }
+        val xml = httpGetText("$url?xml=1")
 
         val id = STEAM_ID_64.find(xml)?.groupValues?.get(1)?.toLongOrNull() ?: return null
         val reading = steamId(SteamID(id), "From the profile's custom URL.")
@@ -105,7 +95,7 @@ object IdDecoder {
 
     private fun steamId(id: SteamID, note: String): DecodedId {
         val rows = mutableListOf(
-            "64-bit" to id.convertToUInt64().toULong().toString(),
+            "64-bit" to id.convertToUInt64().toSteamIdString(),
             "Steam3" to id.render(true),
         )
         if (id.isIndividualAccount) {

@@ -1,8 +1,5 @@
 package `in`.dragonbra.vapulla.ui.screens.groupchat
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +16,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -58,23 +54,23 @@ import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatEvents
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatInputBox
 import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
+import `in`.dragonbra.vapulla.ui.screens.chat.components.FOLLOW_THRESHOLD
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.MessageBubble
+import `in`.dragonbra.vapulla.ui.screens.chat.components.rememberImagePicker
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-
-/** How many messages up from the bottom the list still follows incoming messages down. */
-private const val FOLLOW_THRESHOLD = 5
 
 /** How close to the oldest loaded message the list gets before the next page is fetched. */
 private const val LOAD_OLDER_THRESHOLD = 8
@@ -90,26 +86,9 @@ fun GroupChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val textFieldState = rememberTextFieldState()
 
-    LaunchedEffect(viewModel) {
-        viewModel.sendFailures.collect { text ->
-            // Hand the text back unless something new has been typed in the meantime.
-            if (textFieldState.text.isEmpty()) {
-                textFieldState.setTextAndPlaceCursorAtEnd(text)
-            }
-            snackbarHostState.showSnackbar("Message not sent")
-        }
-    }
+    ChatEvents(viewModel.sendFailures, viewModel.notices, textFieldState, snackbarHostState)
 
-    LaunchedEffect(viewModel) {
-        viewModel.notices.collect { snackbarHostState.showSnackbar(it) }
-    }
-
-    // The system photo picker needs no storage permission; it hands back one image.
-    val imagePicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
-        if (uri != null) {
-            viewModel.sendImage(uri)
-        }
-    }
+    val pickImage = rememberImagePicker(onPicked = viewModel::sendImage)
 
     GroupChatContent(
         uiState = uiState,
@@ -120,9 +99,7 @@ fun GroupChatScreen(
             viewModel.sendMessage(textFieldState.text.toString())
             textFieldState.clearText()
         },
-        onAttachClick = {
-            imagePicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
-        },
+        onAttachClick = pickImage,
         onLoadOlder = viewModel::loadOlder,
         onSwitchChannel = onSwitchChannel,
         emoticons = emoticons,
@@ -198,12 +175,12 @@ private fun GroupChatContent(
         when {
             uiState.isLoading -> LoadingBox(modifier = Modifier.fillMaxSize().padding(padding))
 
-            uiState.error != null -> SearchResultMessage(
+            uiState.error != null -> EmptyMessage(
                 message = uiState.error,
                 modifier = Modifier.fillMaxSize().padding(padding),
             )
 
-            uiState.messages.isEmpty() -> SearchResultMessage(
+            uiState.messages.isEmpty() -> EmptyMessage(
                 message = "No messages in this channel yet",
                 modifier = Modifier.fillMaxSize().padding(padding),
             )
@@ -339,8 +316,8 @@ private fun ChannelTitle(uiState: GroupChatUiState, onSwitchChannel: (ChatRoomIn
     }
 }
 
-/** A group's first channel has no name of its own; Steam calls it Home. */
-private fun String.channelName(): String = ifEmpty { "Home" }
+/** A channel's name for display. A group's first channel has none; Steam calls it Home. */
+internal fun String.channelName(): String = ifEmpty { "Home" }
 
 /** A member's message: avatar and name for others, a plain right-aligned bubble for ours. */
 @Composable

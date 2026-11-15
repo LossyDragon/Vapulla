@@ -2,19 +2,15 @@ package `in`.dragonbra.vapulla.ui.screens.underhood
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Api
 import androidx.compose.material.icons.outlined.ConfirmationNumber
@@ -28,10 +24,8 @@ import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -43,8 +37,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.ui.Routes
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
+import `in`.dragonbra.vapulla.ui.composables.Hint
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
@@ -164,9 +160,7 @@ fun UnderTheHoodScreen(
                     if (anonymous) {
                         BackButton(onClick = onLeave)
                     } else {
-                        IconButton(onClick = onNavDrawerAction) {
-                            Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                        }
+                        MenuButton(onClick = onNavDrawerAction)
                     }
                 },
             )
@@ -181,23 +175,19 @@ fun UnderTheHoodScreen(
         ) {
             if (anonymous) {
                 item(key = "anonymous") {
-                    Text(
+                    Hint(
                         text = "You are signed in anonymously, the way SteamCMD is: no account, " +
                             "and only what Steam shows anyone. The tools that need an " +
                             "account are left out. Go back to sign in.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
+                        modifier = Modifier.padding(bottom = 10.dp),
                     )
                 }
             }
             itemsIndexed(tools, key = { _, tool -> tool.title }) { index, tool ->
-                Surface(
-                    shape = groupedListShape(index, tools.size),
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpen(tool.route) },
+                GroupedListItem(
+                    index = index,
+                    count = tools.size,
+                    onClick = { onOpen(tool.route) },
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -223,31 +213,6 @@ fun UnderTheHoodScreen(
             }
         }
     }
-}
-
-/**
- * Shared frame of the Under the Hood detail screens: a title, a back button, and a body that
- * is handed the scaffold padding. A screen may add a floating button.
- */
-@Composable
-internal fun UnderHoodScaffold(
-    title: String,
-    onBack: () -> Unit,
-    actions: @Composable () -> Unit = {},
-    floatingActionButton: @Composable () -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit,
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = { BackButton(onClick = onBack) },
-                actions = { actions() },
-            )
-        },
-        floatingActionButton = floatingActionButton,
-        content = content,
-    )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)

@@ -9,6 +9,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/** A set of platforms inside a JSON column, as the one number [OS.code] makes of it. */
 object OsEnumSetSerializer : KSerializer<EnumSet<OS>> {
 
     override val descriptor: SerialDescriptor =

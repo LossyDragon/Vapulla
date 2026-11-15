@@ -1,7 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.profile
 
 import android.content.res.Configuration
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,9 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.PersonRemove
@@ -44,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +58,7 @@ import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.DetailListSkeleton
+import `in`.dragonbra.vapulla.ui.composables.IconLabel
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.InfoPillSkeleton
 import `in`.dragonbra.vapulla.ui.composables.Section
@@ -73,6 +70,8 @@ import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.screens.home.components.friendDisplayName
+import `in`.dragonbra.vapulla.ui.screens.home.components.statusColor
+import `in`.dragonbra.vapulla.ui.screens.home.components.statusText
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.toDateString
@@ -95,10 +94,10 @@ fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long
         badgeLoading = badgeLoading,
         mutualFriends = mutualFriends,
         onBack = onBack,
-        onAlias = viewModel::onAlias,
-        onBlock = viewModel::onBlock,
-        onRemove = viewModel::onRemove,
-        onNickname = viewModel::onNickname,
+        onAlias = viewModel::loadAliases,
+        onBlock = viewModel::toggleBlocked,
+        onRemove = viewModel::removeFriend,
+        onNickname = viewModel::setNickname,
         onChat = onChat,
     )
 }
@@ -117,7 +116,6 @@ private fun ProfileScreenContent(
     onChat: (Long) -> Unit,
     onNickname: (String) -> Unit,
 ) {
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
     var msgDialogState by rememberSaveable(stateSaver = MessageDialogState.Saver) {
@@ -129,15 +127,7 @@ private fun ProfileScreenContent(
     val confirmDialog = {
         when (msgDialogState.type) {
             DialogType.FRIEND_BLOCK -> onBlock()
-
             DialogType.FRIEND_REMOVE -> onRemove()
-
-            DialogType.FRIEND_FAVORITE ->
-                Toast.makeText(context, "Favorite TODO", Toast.LENGTH_SHORT).show()
-
-            DialogType.FRIEND_UN_FAVORITE ->
-                Toast.makeText(context, "Un-Favorite TODO", Toast.LENGTH_SHORT).show()
-
             DialogType.NONE -> Unit
         }
         dismissDialog()
@@ -178,18 +168,6 @@ private fun ProfileScreenContent(
             showAliasesDialog = true
         },
         ProfileAction(Icons.Outlined.Edit, "Set nickname") { showNicknameDialog = true },
-        ProfileAction(Icons.Outlined.FavoriteBorder, "Add to favorites") {
-            msgDialogState = MessageDialogState(
-                visible = true,
-                type = DialogType.FRIEND_FAVORITE,
-                confirmBtnText = "Favorite",
-                title = "Favorite Friend",
-                message = "Add ${friend.nameOrNickname} to favorites?",
-            )
-        },
-        ProfileAction(Icons.Outlined.Notifications, "Set alerts") {
-            Toast.makeText(context, "Notifications TODO", Toast.LENGTH_SHORT).show()
-        },
         if (friend.isBlocked) {
             ProfileAction(Icons.Outlined.Person, "Unblock") {
                 msgDialogState = MessageDialogState(
@@ -364,16 +342,14 @@ private fun PrimaryActions(canChat: Boolean, onChat: () -> Unit, onSteamProfile:
             modifier = Modifier.weight(1f),
             shapes = ButtonDefaults.shapes(),
         ) {
-            Icon(Icons.AutoMirrored.Outlined.Chat, contentDescription = null)
-            Text(text = "  Chat")
+            IconLabel(Icons.AutoMirrored.Outlined.Chat, "Chat")
         }
         FilledTonalButton(
             onClick = onSteamProfile,
             modifier = Modifier.weight(1f),
             shapes = ButtonDefaults.shapes(),
         ) {
-            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null)
-            Text(text = "  Steam profile")
+            IconLabel(Icons.AutoMirrored.Outlined.OpenInNew, "Steam profile")
         }
     }
 }

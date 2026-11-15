@@ -13,15 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -36,15 +33,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.ChatGroup
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.SkeletonList
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.screens.groupchat.channelName
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
 import kotlinx.collections.immutable.persistentListOf
@@ -79,11 +78,7 @@ private fun ChatRoomsContent(
         topBar = {
             TopAppBar(
                 title = { Text("Group Chats") },
-                navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                    }
-                },
+                navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
             )
         },
     ) { padding ->
@@ -115,7 +110,8 @@ private fun ChatRoomsContent(
                         GroupRow(
                             group = group,
                             expanded = group.groupId in uiState.expanded,
-                            shape = groupedListShape(index, uiState.groups.size),
+                            index = index,
+                            count = uiState.groups.size,
                             onClick = { onToggle(group.groupId) },
                             onRoomClick = { room -> onRoomClick(group, room) },
                         )
@@ -130,15 +126,12 @@ private fun ChatRoomsContent(
 private fun GroupRow(
     group: ChatGroup,
     expanded: Boolean,
-    shape: androidx.compose.ui.graphics.Shape,
+    index: Int,
+    count: Int,
     onClick: () -> Unit,
     onRoomClick: (ChatRoomInfo) -> Unit,
 ) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    GroupedListItem(index = index, count = count) {
         Column(modifier = Modifier.clickable(onClick = onClick)) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -195,9 +188,8 @@ private fun GroupRow(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                // A group's first channel has no name of its own; Steam calls it Home.
                                 Text(
-                                    text = room.name.ifEmpty { "Home" },
+                                    text = room.name.channelName(),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 if (room.lastMessage.isNotBlank()) {
@@ -234,8 +226,6 @@ private fun Preview() {
         tagline = tagline,
         avatarUrl = "",
         activeMembers = members,
-        clanId = 0,
-        appId = 0,
         rooms = persistentListOf(
             ChatRoomInfo(
                 chatId = id * 10,

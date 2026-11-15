@@ -1,9 +1,7 @@
 package `in`.dragonbra.vapulla.service.sync
 
 import android.content.Context
-import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
-import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_FriendNicknameChanged_Notification
 import `in`.dragonbra.javasteam.rpc.service.PlayerClient
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendsListCallback
@@ -20,6 +18,7 @@ import `in`.dragonbra.vapulla.service.SessionComponent
 import `in`.dragonbra.vapulla.service.SteamAccount
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.helpers.accountIdToSteamID
 import `in`.dragonbra.vapulla.util.helpers.toLong
 import java.io.Closeable
 import kotlin.time.Duration.Companion.seconds
@@ -48,7 +47,10 @@ class FriendsSync(
     private val licenses: LicenseSync,
 ) : SessionComponent {
 
-    /** Serialises every writer of the friends table's presence and membership. */
+    /**
+     * Serialises everything here that reads a friend's row, changes it and writes it back
+     * whole. Nicknames and late game names are written as single columns and need no lock.
+     */
     private val friendsListMutex = Mutex()
 
     /** Incoming friend requests waiting for a name and avatar before they are notified. */
@@ -84,7 +86,6 @@ class FriendsSync(
                         state = offline.state,
                         gameAppID = offline.gameAppID,
                         gameID = offline.gameID,
-                        gameDataBlob = offline.gameDataBlob,
                         gameName = offline.gameName,
                         stateFlags = offline.stateFlags,
                     )
@@ -158,7 +159,7 @@ class FriendsSync(
         }
 
         scope.launch {
-            friendsListMutex.withLock {
+            val notifyRequest = friendsListMutex.withLock {
                 val dao = db.steamFriendDao()
                 val dbFriend = dao.find(it.friendId.toLong())
 
@@ -182,7 +183,6 @@ class FriendsSync(
                         state = it.personaState,
                         gameAppID = it.gamePlayedAppId,
                         gameID = it.gameId,
-                        gameDataBlob = it.gameDataBlob,
                         richPresence = it.richPresence.associate { kv -> kv.key to kv.value },
                         gameName = it.gameName.ifEmpty {
                             if (it.gamePlayedAppId > 0) {
@@ -216,15 +216,18 @@ class FriendsSync(
                     dao.update(updatedFriend)
                 }
 
-                if (requestsToNotify.contains(it.friendId)) {
-                    NotificationHelper.sendFriendRequestNotification(
-                        context = context,
-                        friendId = it.friendId.toLong(),
-                        friendName = it.playerName,
-                        avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString()),
-                    )
-                    requestsToNotify.remove(it.friendId)
-                }
+                requestsToNotify.remove(it.friendId)
+            }
+
+            // Outside the lock: the notification waits for the avatar to download, and no
+            // other friend's update should wait with it.
+            if (notifyRequest) {
+                NotificationHelper.sendFriendRequestNotification(
+                    context = context,
+                    friendId = it.friendId.toLong(),
+                    friendName = it.playerName,
+                    avatarUrl = Utils.getAvatarURL(it.avatarHash.toHexString()),
+                )
             }
         }
     }
@@ -254,13 +257,8 @@ class FriendsSync(
                         )
                     }
 
-                    var friend = dao.find(friendItem.steamID.toLong())
-
-                    // Friends, requests to answer, and friends we blocked (they stay listed so
-                    // they can be unblocked). Every other relationship is not kept.
-                    val keep = friendItem.relationship == EFriendRelationship.Friend ||
-                        friendItem.relationship == EFriendRelationship.RequestRecipient ||
-                        friendItem.relationship == EFriendRelationship.IgnoredFriend
+                    val friend = dao.find(friendItem.steamID.toLong())
+                    val keep = friendItem.relationship in KEPT_RELATIONSHIPS
 
                     if (friend == null) {
                         if (keep) {
@@ -310,13 +308,7 @@ class FriendsSync(
             // Only clear rows losing their nickname; rows keeping one are set below.
             dao.clearNicknamesExcept(nicknames.keys.toList())
 
-            val friendsToUpdate = nicknames.mapNotNull { (id, nickname) ->
-                dao.find(id)
-                    ?.takeIf { friend -> friend.nickname != nickname }
-                    ?.copy(nickname = nickname)
-            }
-
-            dao.update(friendsToUpdate)
+            nicknames.forEach { (id, nickname) -> dao.setNickname(id, nickname) }
         }
     }
 
@@ -330,43 +322,49 @@ class FriendsSync(
         { notification ->
             val body = notification.body
             // The notification names the friend by account ID, the low half of a Steam ID.
-            val friendId = SteamID(
-                body.accountid.toUInt().toLong(),
-                EUniverse.Public,
-                EAccountType.Individual,
-            ).toLong()
+            val friendId = body.accountid.accountIdToSteamID().toLong()
 
             Timber.d("onNicknameChanged() echo=${body.isEchoToSelf}")
 
             scope.launch {
-                with(db.steamFriendDao()) {
-                    find(friendId)
-                        ?.takeIf { it.nickname != body.nickname }
-                        ?.copy(nickname = body.nickname)
-                        ?.also { update(it) }
-                }
+                db.steamFriendDao().setNickname(friendId, body.nickname)
             }
         }
 
-    /** Safety net for game names: re-checks in-game friends against the apps table. */
+    /**
+     * Safety net for game names: re-checks in-game friends against the apps table, and asks
+     * for the app info of a game that is not in it.
+     */
     private fun CoroutineScope.continuousFriendChecker() = launch {
         val appDao = db.steamAppDao()
         val friendDao = db.steamFriendDao()
         while (isActive) {
-            delay(15.seconds)
-            friendDao.findFriendsInGame()
-                .also { friends -> Timber.d("Found ${friends.size} friends in game") }
-                .forEach { friend ->
-                    if (friend.gameAppID <= 0) {
-                        return@forEach
-                    }
+            delay(GAME_NAME_CHECK_INTERVAL)
 
-                    appDao.findAppName(friend.gameAppID)?.let { name ->
-                        if (friend.gameName != name) {
-                            friendDao.update(friend.copy(gameName = name))
-                        }
-                    } ?: licenses.requestAppInfo(friend.gameAppID)
+            val appIds = friendDao.findFriendsInGame().mapTo(HashSet()) { it.gameAppID }
+            appIds.forEach { appId ->
+                val name = appDao.findAppName(appId)
+                when {
+                    name == null -> licenses.requestAppInfo(appId)
+
+                    // A row without a name is still waiting for its app info.
+                    name.isNotEmpty() -> friendDao.setGameName(appId, name)
                 }
+            }
         }
+    }
+
+    private companion object {
+        /**
+         * Who is kept in the friends table: friends, requests to answer, and friends we
+         * blocked (they stay listed so they can be unblocked).
+         */
+        val KEPT_RELATIONSHIPS = setOf(
+            EFriendRelationship.Friend,
+            EFriendRelationship.RequestRecipient,
+            EFriendRelationship.IgnoredFriend,
+        )
+
+        val GAME_NAME_CHECK_INTERVAL = 15.seconds
     }
 }

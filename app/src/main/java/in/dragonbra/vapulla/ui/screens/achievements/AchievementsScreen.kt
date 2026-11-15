@@ -18,7 +18,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -27,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,13 +35,13 @@ import `in`.dragonbra.vapulla.service.api.Achievement
 import `in`.dragonbra.vapulla.service.api.GameStat
 import `in`.dragonbra.vapulla.service.api.GameStats
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.SkeletonList
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toDateString
@@ -113,10 +111,7 @@ private fun AchievementsContent(
                             items = stats.achievements,
                             key = { _, achievement -> "achievement:${achievement.name}" },
                         ) { index, achievement ->
-                            AchievementRow(
-                                achievement = achievement,
-                                shape = groupedListShape(index, stats.achievements.size),
-                            )
+                            AchievementRow(achievement, index, stats.achievements.size)
                         }
                     }
 
@@ -127,7 +122,7 @@ private fun AchievementsContent(
                             items = stats.stats,
                             key = { index, stat -> "stat:$index:${stat.name}" },
                         ) { index, stat ->
-                            StatRow(stat = stat, shape = groupedListShape(index, stats.stats.size))
+                            StatRow(stat, index, stats.stats.size)
                         }
                     }
                 }
@@ -176,15 +171,11 @@ private fun SectionTitle(title: String) {
 }
 
 @Composable
-private fun AchievementRow(achievement: Achievement, shape: Shape) {
+private fun AchievementRow(achievement: Achievement, index: Int, count: Int) {
     // A hidden achievement keeps its secret until it is earned, as on Steam.
     val concealed = achievement.hidden && !achievement.unlocked
 
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    GroupedListItem(index = index, count = count) {
         Row(
             modifier = Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -271,12 +262,8 @@ private fun AchievementRow(achievement: Achievement, shape: Shape) {
 }
 
 @Composable
-private fun StatRow(stat: GameStat, shape: Shape) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun StatRow(stat: GameStat, index: Int, count: Int) {
+    GroupedListItem(index = index, count = count) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

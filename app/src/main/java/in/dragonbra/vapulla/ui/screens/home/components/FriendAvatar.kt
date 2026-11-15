@@ -24,8 +24,8 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 
 /**
- * Avatar with Material 3 Expressive rounding. Presence is conveyed by the row's name colour
- * and status line, so the avatar itself stays clean.
+ * Avatar with Material 3 Expressive rounding. Presence is conveyed by the row's status line,
+ * so the avatar itself stays clean.
  */
 @Composable
 fun FriendAvatar(modifier: Modifier = Modifier, size: Dp = 52.dp, friend: SteamFriend) {

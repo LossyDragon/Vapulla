@@ -49,6 +49,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.service.download.DownloadPlan
 import `in`.dragonbra.vapulla.service.download.DownloadPlanner
 import `in`.dragonbra.vapulla.service.download.DownloadProgress
+import `in`.dragonbra.vapulla.ui.composables.IconLabel
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.UpdateAvailablePill
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.WaitingForWifi
@@ -116,9 +117,11 @@ fun DownloadSection(
     Section(title = "Download") {
         if (download == null) {
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Outlined.Download, contentDescription = null)
                 val size = plans.firstOrNull()?.installBytes?.toFileSize()
-                Text(text = listOfNotNull("  Download", size).joinToString(" · "))
+                IconLabel(
+                    icon = Icons.Outlined.Download,
+                    text = listOfNotNull("Download", size).joinToString(" · "),
+                )
             }
         } else {
             DownloadCard(
@@ -218,20 +221,17 @@ private fun DownloadCard(
                 when (download.state) {
                     DownloadState.DOWNLOADING, DownloadState.QUEUED ->
                         FilledTonalButton(onClick = onPause, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Outlined.Pause, contentDescription = null)
-                            Text(text = "  Pause")
+                            IconLabel(Icons.Outlined.Pause, "Pause")
                         }
 
                     DownloadState.PAUSED ->
                         FilledTonalButton(onClick = onResume, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Outlined.PlayArrow, contentDescription = null)
-                            Text(text = "  Resume")
+                            IconLabel(Icons.Outlined.PlayArrow, "Resume")
                         }
 
                     DownloadState.FAILED ->
                         FilledTonalButton(onClick = onResume, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = null)
-                            Text(text = "  Retry")
+                            IconLabel(Icons.Outlined.Refresh, "Retry")
                         }
 
                     // Picks up an update: files that are still current are not fetched again.
@@ -240,15 +240,13 @@ private fun DownloadCard(
                             onClick = onDownloadAgain,
                             modifier = Modifier.weight(1f),
                         ) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = null)
-                            Text(text = "  Update")
+                            IconLabel(Icons.Outlined.Refresh, "Update")
                         }
                     }
                 }
 
                 OutlinedButton(onClick = onOpenDownloads, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Outlined.Download, contentDescription = null)
-                    Text(text = "  Downloads")
+                    IconLabel(Icons.Outlined.Download, "Downloads")
                 }
             }
         }
@@ -285,7 +283,7 @@ private fun DownloadDialog(
         )
     }
 
-    // The platform is kept by name: the plans are made anew for every branch and language.
+    // The platform is kept, not the plan: the plans are made anew for every branch and language.
     var selectedOs by remember { mutableStateOf(plans.firstOrNull()?.os) }
     val selected = plans.find { it.os == selectedOs } ?: plans.firstOrNull()
     val fits = selected != null && selected.installBytes <= freeBytes

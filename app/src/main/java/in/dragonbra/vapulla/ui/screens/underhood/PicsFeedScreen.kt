@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,35 +19,32 @@ import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.PicsChange
 import `in`.dragonbra.vapulla.service.PicsFeed
 import `in`.dragonbra.vapulla.service.PicsFeedStatus
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.FollowNewestEffect
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-
-/** Rows from the top within which the list still follows new changes. */
-private const val FOLLOW_THRESHOLD = 3
 
 /**
  * Apps and packages changing anywhere on Steam, newest first, from `picsGetChangesSince`.
@@ -60,9 +56,11 @@ fun PicsFeedScreen(onBack: () -> Unit, onOpen: (id: Int, isApp: Boolean) -> Unit
     val status by PicsFeed.status.collectAsStateWithLifecycle()
     val entries by PicsFeed.entries.collectAsStateWithLifecycle()
 
-    DisposableEffect(Unit) {
+    // Only while the screen is in front: an app left in the background with the feed open
+    // has nobody watching it.
+    LifecycleStartEffect(Unit) {
         PicsFeed.watching.value = true
-        onDispose { PicsFeed.watching.value = false }
+        onStopOrDispose { PicsFeed.watching.value = false }
     }
 
     PicsFeedContent(
@@ -85,13 +83,7 @@ private fun PicsFeedContent(
     val listState = rememberLazyListState()
     val uriHandler = LocalUriHandler.current
 
-    // Keyed rows stay put when new ones are inserted above them, so the list would drift
-    // away from the top. Follow new changes unless the user has scrolled down.
-    LaunchedEffect(entries.lastOrNull()?.id) {
-        if (listState.firstVisibleItemIndex <= FOLLOW_THRESHOLD && !listState.isScrollInProgress) {
-            listState.scrollToItem(0)
-        }
-    }
+    FollowNewestEffect(listState, entries.lastOrNull()?.id)
 
     UnderHoodScaffold(
         title = "PICS Change Feed",
@@ -125,16 +117,11 @@ private fun PicsFeedContent(
             }
 
             status.note?.let { note ->
-                Text(
-                    text = note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                )
+                Hint(text = note, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             }
 
             if (entries.isEmpty()) {
-                SearchResultMessage(
+                EmptyMessage(
                     message = if (status.checks == 0) {
                         "Waiting for Steam's answer"
                     } else {
@@ -152,7 +139,8 @@ private fun PicsFeedContent(
                     itemsIndexed(newestFirst, key = { _, change -> change.id }) { index, change ->
                         ChangeRow(
                             change = change,
-                            shape = groupedListShape(index, newestFirst.size),
+                            index = index,
+                            count = newestFirst.size,
                             onClick = { onOpen(change.targetId, change.isApp) },
                             onHistory = { uriHandler.openUri(change.historyUrl()) },
                         )
@@ -177,19 +165,22 @@ private fun PicsChange.historyUrl(): String =
 @Composable
 private fun ChangeRow(
     change: PicsChange,
-    shape: Shape,
+    index: Int,
+    count: Int,
     onClick: () -> Unit,
     onHistory: () -> Unit,
 ) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
+    val kind = if (change.isApp) "App" else "Package"
+
+    GroupedListItem(
+        index = index,
+        count = count,
         color = if (change.inLibrary) {
             MaterialTheme.colorScheme.secondaryContainer
         } else {
             MaterialTheme.colorScheme.surfaceContainer
         },
-        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -202,15 +193,13 @@ private fun ChangeRow(
                 } else {
                     Icons.Outlined.Inventory2
                 },
-                contentDescription = if (change.isApp) "App" else "Package",
+                contentDescription = kind,
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = change.name.ifEmpty {
-                        "${if (change.isApp) "App" else "Package"} ${change.targetId}"
-                    },
+                    text = change.name.decodeHtml().ifEmpty { "$kind ${change.targetId}" },
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -218,7 +207,7 @@ private fun ChangeRow(
                 Text(
                     text = listOfNotNull(
                         // The ID is the title when there is no name to show.
-                        "App ${change.targetId}".takeIf { change.name.isNotEmpty() },
+                        "$kind ${change.targetId}".takeIf { change.name.isNotEmpty() },
                         "change ${change.changeNumber}",
                         "in your library".takeIf { change.inLibrary },
                         "details need a token".takeIf { change.needsToken },

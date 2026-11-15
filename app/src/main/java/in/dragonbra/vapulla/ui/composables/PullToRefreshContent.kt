@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
 /**
@@ -58,7 +57,7 @@ fun RefreshableMessage(message: String) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        SearchResultMessage(message = message, modifier = Modifier.fillMaxSize())
+        EmptyMessage(message = message, modifier = Modifier.fillMaxSize())
     }
 }
 

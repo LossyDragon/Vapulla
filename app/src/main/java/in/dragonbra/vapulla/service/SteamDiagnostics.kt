@@ -2,14 +2,13 @@ package `in`.dragonbra.vapulla.service
 
 import androidx.compose.runtime.Immutable
 import `in`.dragonbra.javasteam.steam.CMClient
+import `in`.dragonbra.vapulla.util.appendCapped
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 /**
  * What Steam told the client when it accepted the logon, plus where the client is connected.
@@ -46,11 +45,15 @@ data class CmServer(val host: String, val port: Int, val protocols: String, val 
 
 /**
  * Process-wide record of what the connection is doing and has done, for the Under the Hood
- * screens. Written by [SteamConnection]. Nothing here is persisted: it describes this run.
+ * screens. Written by [SteamConnection], and by [NetworkLog] and JavaSteam's log for the
+ * reason of a disconnect. Nothing here is persisted: it describes this run.
  */
 object SteamDiagnostics {
 
     private const val MAX_EVENTS = 200
+
+    /** How recent JavaSteam's last log line must be to count as the reason for a disconnect. */
+    private const val LOG_IS_REASON_MS = 5_000
 
     /** When this process started, for uptime. */
     val processStartedAt: Long = System.currentTimeMillis()
@@ -77,7 +80,7 @@ object SteamDiagnostics {
 
     internal fun record(text: String) {
         val event = ConnectionEvent(nextId.getAndIncrement(), System.currentTimeMillis(), text)
-        _events.update { current -> (current + event).takeLast(MAX_EVENTS).toImmutableList() }
+        _events.appendCapped(event, MAX_EVENTS)
     }
 
     /** Something seen on the connection, and when. */
@@ -127,6 +130,4 @@ object SteamDiagnostics {
         lastIn?.let { append("\nLast in: ${it.ago()}") }
         lastOut?.let { append("\nLast out: ${it.ago()}") }
     }
-
-    private const val LOG_IS_REASON_MS = 5_000
 }

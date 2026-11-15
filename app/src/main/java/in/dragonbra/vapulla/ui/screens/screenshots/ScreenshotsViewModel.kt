@@ -3,17 +3,18 @@ package `in`.dragonbra.vapulla.ui.screens.screenshots
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.Screenshot
+import `in`.dragonbra.vapulla.service.requestMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Immutable
 data class ScreenshotsUiState(
@@ -25,10 +26,12 @@ data class ScreenshotsUiState(
 )
 
 /** The signed-in account's uploaded screenshots, loaded a page at a time. */
-class ScreenshotsViewModel(private val connection: ServiceConnection) : ViewModel() {
+class ScreenshotsViewModel(private val connection: SteamServiceConnection) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScreenshotsUiState())
     val uiState: StateFlow<ScreenshotsUiState> = _uiState.asStateFlow()
+
+    private var loadJob: Job? = null
 
     init {
         load(reset = true)
@@ -38,20 +41,17 @@ class ScreenshotsViewModel(private val connection: ServiceConnection) : ViewMode
 
     fun loadMore() = load(reset = false)
 
+    /** Loads the first page, or with [reset] off the next one. A newer load replaces this one. */
     private fun load(reset: Boolean) {
         val state = _uiState.value
         if (!reset && (state.nextPage == null || state.isLoading)) return
 
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val apis = connection.steamService?.apis
-            if (apis == null) {
-                _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
-                return@launch
-            }
 
-            runCatching {
-                apis.screenshots.mine(page = if (reset) 1 else checkNotNull(state.nextPage))
+            connection.request("GetUserFiles") {
+                it.screenshots.mine(page = if (reset) 1 else checkNotNull(state.nextPage))
             }.onSuccess { page ->
                 _uiState.update {
                     val items = if (reset) page.items else (it.items + page.items).toImmutableList()
@@ -63,10 +63,7 @@ class ScreenshotsViewModel(private val connection: ServiceConnection) : ViewMode
                     )
                 }
             }.onFailure { error ->
-                Timber.w(error, "GetUserFiles failed")
-                _uiState.update {
-                    it.copy(isLoading = false, error = error.message ?: "Request failed")
-                }
+                _uiState.update { it.copy(isLoading = false, error = error.requestMessage) }
             }
         }
     }

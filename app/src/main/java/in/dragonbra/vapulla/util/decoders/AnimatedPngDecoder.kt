@@ -13,8 +13,13 @@ import com.github.penfeizhou.animation.io.StreamReader
 import java.nio.ByteBuffer
 import okio.BufferedSource
 
-// .png (Animated) PNG file decoder
-// Reference: https://github.com/coil-kt/coil/issues/506#issuecomment-952526682
+/**
+ * Coil decoder for animated PNG files, which Steam uses for animated avatars, frames and
+ * stickers. Android shows only the first frame of one by itself. A PNG that is not animated
+ * is left to Coil's own decoder.
+ *
+ * Follows https://github.com/coil-kt/coil/issues/506#issuecomment-952526682.
+ */
 class AnimatedPngDecoder(private val source: ImageSource) : Decoder {
     override suspend fun decode(): DecodeResult {
         val buffer = source.source().squashToDirectByteBuffer()
@@ -24,6 +29,7 @@ class AnimatedPngDecoder(private val source: ImageSource) : Decoder {
         )
     }
 
+    /** Reads the whole file into memory, where the drawable reads its frames from. */
     private fun BufferedSource.squashToDirectByteBuffer(): ByteBuffer {
         request(Long.MAX_VALUE)
 

@@ -26,6 +26,10 @@ import `in`.dragonbra.vapulla.ui.composables.InfoPillSkeleton
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/**
+ * The signed-in account at the top of the drawer: avatar, name, Steam level, and the status
+ * friends see, which can be changed here.
+ */
 @Composable
 internal fun DrawerHeader(
     avatar: String,

@@ -1,14 +1,11 @@
 package `in`.dragonbra.vapulla.service.api
 
 import androidx.compose.runtime.Immutable
+import `in`.dragonbra.vapulla.util.LenientJson
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import `in`.dragonbra.vapulla.util.httpGetText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 /**
  * One news post of a game.
@@ -37,9 +34,6 @@ object SteamNews {
 
     /** Steam cuts each post down to about this many characters and drops its formatting. */
     private const val SUMMARY_LENGTH = 300
-    private const val TIMEOUT_MS = 10_000
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     /** What is left of a link or other markup in a summary. */
     private val HTML_TAG = Regex("<[^>]+>")
@@ -65,19 +59,11 @@ object SteamNews {
      *
      * @throws java.io.IOException if the Web API cannot be reached.
      */
-    suspend fun load(appId: Int, count: Int = 5): List<NewsItem> = withContext(Dispatchers.IO) {
+    suspend fun load(appId: Int, count: Int = 5): List<NewsItem> {
         val address = "$NEWS_URL?appid=$appId&count=$count&maxlength=$SUMMARY_LENGTH&format=json"
-        val connection = URL(address).openConnection() as HttpURLConnection
-        connection.connectTimeout = TIMEOUT_MS
-        connection.readTimeout = TIMEOUT_MS
+        val answer = LenientJson.decodeFromString<Answer>(httpGetText(address))
 
-        val text = try {
-            connection.inputStream.use { it.readBytes().decodeToString() }
-        } finally {
-            connection.disconnect()
-        }
-
-        json.decodeFromString<Answer>(text).appNews.posts.map { post ->
+        return answer.appNews.posts.map { post ->
             NewsItem(
                 id = post.gid,
                 title = post.title.decodeHtml(),

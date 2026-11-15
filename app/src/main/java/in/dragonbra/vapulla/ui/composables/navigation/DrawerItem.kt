@@ -13,17 +13,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/** One destination in the drawer. The icon is not described: the label beside it says it all. */
 @Composable
 internal fun DrawerItem(
     text: String,
     imageVector: ImageVector,
-    contentDescription: String? = null,
     selected: Boolean = false,
     onClick: () -> Unit,
 ) {
     NavigationDrawerItem(
         label = { Text(text = text) },
-        icon = { Icon(imageVector = imageVector, contentDescription = contentDescription) },
+        icon = { Icon(imageVector = imageVector, contentDescription = null) },
         selected = selected,
         onClick = onClick,
     )

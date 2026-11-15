@@ -4,32 +4,29 @@ import androidx.room.TypeConverter
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.javasteam.enums.ELicenseType
 import `in`.dragonbra.javasteam.enums.EPaymentMethod
-import java.util.Date
 import java.util.EnumSet
 
+/**
+ * JavaSteam's license enums, stored as Steam's own numbers. A number this version of
+ * JavaSteam does not know reads as the enum's "none" value.
+ */
 class LicenseTypeConverters {
     @TypeConverter
-    fun fromTimestamp(value: Long?): Date? = value?.let { Date(it) }
+    fun fromLicenseType(value: ELicenseType): Int = value.code()
 
     @TypeConverter
-    fun dateToTimestamp(date: Date?): Long? = date?.time
+    fun toLicenseType(code: Int): ELicenseType = ELicenseType.from(code) ?: ELicenseType.NoLicense
 
     @TypeConverter
-    fun fromLicenseType(value: ELicenseType?): Int? = value?.code()
+    fun fromPaymentMethod(value: EPaymentMethod): Int = value.code()
 
     @TypeConverter
-    fun toLicenseType(code: Int?): ELicenseType? = code?.let { ELicenseType.from(it) }
+    fun toPaymentMethod(code: Int): EPaymentMethod =
+        EPaymentMethod.from(code) ?: EPaymentMethod.None
 
     @TypeConverter
-    fun fromPaymentMethod(value: EPaymentMethod?): Int? = value?.code()
+    fun fromLicenseFlags(value: EnumSet<ELicenseFlags>): Int = ELicenseFlags.code(value)
 
     @TypeConverter
-    fun toPaymentMethod(code: Int?): EPaymentMethod? = code?.let { EPaymentMethod.from(it) }
-
-    @TypeConverter
-    fun fromLicenseFlags(value: EnumSet<ELicenseFlags>?): Int? =
-        value?.let { ELicenseFlags.code(it) }
-
-    @TypeConverter
-    fun toLicenseFlags(code: Int?): EnumSet<ELicenseFlags>? = code?.let { ELicenseFlags.from(it) }
+    fun toLicenseFlags(code: Int): EnumSet<ELicenseFlags> = ELicenseFlags.from(code)
 }

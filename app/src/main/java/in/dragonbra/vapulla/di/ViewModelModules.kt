@@ -109,7 +109,7 @@ val ViewModelModules = module {
     viewModel { (friendId: Long) ->
         ProfileViewModel(
             friendDao = get(),
-            serviceConnection = get(),
+            connection = get(),
             friendId = friendId,
         )
     }

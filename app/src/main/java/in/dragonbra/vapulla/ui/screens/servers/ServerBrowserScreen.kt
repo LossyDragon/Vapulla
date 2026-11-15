@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
@@ -29,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -49,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,14 +56,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.ERegionCode
 import `in`.dragonbra.vapulla.service.api.GameServer
 import `in`.dragonbra.vapulla.service.api.ServerInfo
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.FabClearance
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -140,11 +138,7 @@ private fun ServerBrowserContent(
         topBar = {
             TopAppBar(
                 title = { Text("Server Browser") },
-                navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                    }
-                },
+                navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
             )
         },
         floatingActionButton = {
@@ -186,10 +180,15 @@ private fun ServerBrowserContent(
             }
 
             when {
-                uiState.error != null -> SearchResultMessage(message = uiState.error)
+                uiState.error != null -> EmptyMessage(message = uiState.error)
 
-                uiState.servers.isEmpty() && !uiState.isLoading ->
-                    SearchResultMessage(message = "Pick a game, then tap Query Servers")
+                uiState.servers.isEmpty() && !uiState.isLoading -> EmptyMessage(
+                    message = if (uiState.queried) {
+                        "No servers found for this game and region"
+                    } else {
+                        "Pick a game, then tap Query Servers"
+                    },
+                )
 
                 else -> LazyColumn(
                     state = listState,
@@ -204,10 +203,7 @@ private fun ServerBrowserContent(
                     itemsIndexed(uiState.servers, key = { _, server ->
                         server.address
                     }) { index, server ->
-                        ServerRow(
-                            server = server,
-                            shape = groupedListShape(index, uiState.servers.size),
-                        )
+                        ServerRow(server, index, uiState.servers.size)
                     }
                 }
             }
@@ -254,8 +250,8 @@ private fun GameSelector(game: ServerGame?, onClick: () -> Unit) {
 }
 
 /**
- * Searchable list of owned games that can have servers, most played first. The list comes
- * from PICS, so it fills in as app info is ingested.
+ * Searchable list of owned games that can have servers, in alphabetical order. The list
+ * comes from PICS, so it fills in as app info is ingested.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -294,7 +290,7 @@ private fun GamePickerSheet(
 
             // A fixed height keeps the sheet steady while the search narrows the list.
             if (games.isEmpty()) {
-                SearchResultMessage(
+                EmptyMessage(
                     message = "No games match. App info may still be loading.",
                     modifier = Modifier.height(PICKER_HEIGHT),
                 )
@@ -359,13 +355,9 @@ private fun GameIcon(game: ServerGame?, size: Dp) {
 }
 
 @Composable
-private fun ServerRow(server: GameServer, shape: Shape) {
+private fun ServerRow(server: GameServer, index: Int, count: Int) {
     val info = server.info
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    GroupedListItem(index = index, count = count) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),

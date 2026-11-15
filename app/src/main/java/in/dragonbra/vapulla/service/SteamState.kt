@@ -8,10 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * through the read-only flows on [SteamService]'s companion.
  */
 internal object SteamState {
-    val isLoading = MutableStateFlow(false)
-
-    /** True while a client exists and its callback loop runs. */
-    val isRunning = MutableStateFlow(false)
 
     /** True between an accepted logon and the end of that session. */
     val isLoggedIn = MutableStateFlow(false)
@@ -22,6 +18,7 @@ internal object SteamState {
      */
     val isAnonymous = MutableStateFlow(false)
 
+    /** Progress of the sign-in attempt under way. Not replayed: only a login screen hears it. */
     val loginResult = MutableSharedFlow<LoginResult>()
 
     /**

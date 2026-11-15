@@ -40,13 +40,12 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.koin.compose.getKoin
-import timber.log.Timber
+import org.koin.compose.koinInject
 
 /**
  * The handler that opens an address in the device's browser. Inside the app
@@ -127,7 +126,7 @@ object SteamPages {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WebPageScreen(url: String, onBack: () -> Unit) {
-    val connection: ServiceConnection = getKoin().get()
+    val connection = koinInject<SteamServiceConnection>()
     val external = LocalExternalUriHandler.current ?: LocalUriHandler.current
 
     var webView by remember { mutableStateOf<WebView?>(null) }
@@ -142,12 +141,9 @@ fun WebPageScreen(url: String, onBack: () -> Unit) {
     LaunchedEffect(Unit) {
         SteamPages.signOut()
 
-        runCatching { requireNotNull(connection.steamService?.apis).web.signInCookie() }
+        connection.request("Sign-in for the web page") { it.web.signInCookie() }
             .onSuccess(SteamPages::signIn)
-            .onFailure {
-                Timber.w(it, "No sign-in for the web page")
-                notice = "Could not sign the page in, it is shown signed out"
-            }
+            .onFailure { notice = "Could not sign the page in, it is shown signed out" }
         ready = true
     }
 
@@ -213,7 +209,7 @@ fun WebPageScreen(url: String, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 factory = { context ->
                     steamWebView(
-                        context = WebView(context),
+                        webView = WebView(context),
                         onTitle = { title = it },
                         onAddress = { page, back ->
                             address = page
@@ -232,17 +228,17 @@ fun WebPageScreen(url: String, onBack: () -> Unit) {
 }
 
 /**
- * Sets [context] up for Steam's pages: scripts on, since the sites need them, and everything
+ * Sets [webView] up for Steam's pages: scripts on, since the sites need them, and everything
  * a page could use to reach the device (files, content providers, new windows) off.
  */
 @SuppressLint("SetJavaScriptEnabled")
 private fun steamWebView(
-    context: WebView,
+    webView: WebView,
     onTitle: (String) -> Unit,
     onAddress: (address: String, canGoBack: Boolean) -> Unit,
     onProgress: (Float) -> Unit,
     onLeaveSteam: (String) -> Unit,
-): WebView = context.apply {
+): WebView = webView.apply {
     settings.javaScriptEnabled = true
     settings.domStorageEnabled = true
     settings.allowFileAccess = false

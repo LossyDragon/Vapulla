@@ -7,7 +7,6 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSt
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesUseraccountSteamclient.CUserAccount_RevokeFriendInviteToken_Request
 import `in`.dragonbra.javasteam.rpc.service.UserAccount
 import `in`.dragonbra.javasteam.types.SteamID
-import timber.log.Timber
 
 /**
  * Friend invite links via the `UserAccount` unified service. A link adds whoever opens it as
@@ -16,36 +15,34 @@ import timber.log.Timber
  */
 class InvitesApi(private val userAccount: UserAccount, private val localSteamId: () -> SteamID?) {
 
-    /** The account's invite links that can still be used, newest first. */
+    /**
+     * The account's invite links that can still be used, newest first. Empty when Steam does
+     * not answer.
+     */
     suspend fun invites(): List<FriendInvite> {
+        val accountId = localSteamId()?.accountID ?: return emptyList()
         val request = CUserAccount_GetFriendInviteTokens_Request.newBuilder().build()
 
-        val response = userAccount.getFriendInviteTokens(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetFriendInviteTokens failed: ${response.result}")
-            return emptyList()
-        }
+        val body = userAccount.getFriendInviteTokens(request).bodyOrNull("GetFriendInviteTokens")
+            ?: return emptyList()
 
-        return response.body.tokensList
+        return body.tokensList
             .filter { it.valid }
-            .map { it.toInvite() }
+            .map { it.toInvite(accountId) }
             .sortedByDescending { it.createdAt }
     }
 
     /** Makes a new single-use link, good for [INVITE_DAYS] days. Null when Steam refuses. */
     suspend fun create(): FriendInvite? {
+        val accountId = localSteamId()?.accountID ?: return null
         val request = CUserAccount_CreateFriendInviteToken_Request.newBuilder()
             .setInviteLimit(1)
             .setInviteDuration(INVITE_DAYS * SECONDS_PER_DAY)
             .build()
 
-        val response = userAccount.createFriendInviteToken(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("CreateFriendInviteToken failed: ${response.result}")
-            return null
-        }
-
-        return response.body.toInvite()
+        return userAccount.createFriendInviteToken(request)
+            .bodyOrNull("CreateFriendInviteToken")
+            ?.toInvite(accountId)
     }
 
     /** Makes the link with [token] stop working. */
@@ -53,23 +50,23 @@ class InvitesApi(private val userAccount: UserAccount, private val localSteamId:
         val request = CUserAccount_RevokeFriendInviteToken_Request.newBuilder()
             .setInviteToken(token)
             .build()
-        return userAccount.revokeFriendInviteToken(request).await().result
+        return userAccount.revokeFriendInviteToken(request).resultOf("RevokeFriendInviteToken")
     }
 
-    private fun CUserAccount_CreateFriendInviteToken_ResponseOrBuilder.toInvite() = FriendInvite(
-        token = inviteToken,
-        link = "$LINK_URL${friendCode()}/$inviteToken",
-        uses = inviteLimit.toInt(),
-        durationSeconds = inviteDuration,
-        createdAt = timeCreated.toUInt().toLong(),
-    )
+    private fun CUserAccount_CreateFriendInviteToken_ResponseOrBuilder.toInvite(accountId: Long) =
+        FriendInvite(
+            token = inviteToken,
+            link = "$LINK_URL${friendCode(accountId)}/$inviteToken",
+            uses = inviteLimit.toInt(),
+            durationSeconds = inviteDuration,
+            createdAt = timeCreated.toUInt().toLong(),
+        )
 
     /**
      * The account ID the way invite links write it: in hexadecimal, each digit swapped for a
      * consonant so that it cannot spell a word, with a dash in the middle.
      */
-    private fun friendCode(): String {
-        val accountId = localSteamId()?.accountID ?: 0L
+    private fun friendCode(accountId: Long): String {
         val code = accountId.toString(HEX).map { CODE_LETTERS[it.digitToInt(HEX)] }.joinToString("")
         val middle = code.length / 2
 

@@ -4,8 +4,9 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.enums.EResult
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.AuthSession
+import `in`.dragonbra.vapulla.service.requestMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Immutable
 data class SessionsUiState(
@@ -27,7 +27,7 @@ data class SessionsUiState(
 )
 
 /** Devices signed in to the account, via the `Authentication` service. */
-class SessionsViewModel(private val connection: ServiceConnection) : ViewModel() {
+class SessionsViewModel(private val connection: SteamServiceConnection) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessionsUiState())
     val uiState: StateFlow<SessionsUiState> = _uiState.asStateFlow()
@@ -41,39 +41,26 @@ class SessionsViewModel(private val connection: ServiceConnection) : ViewModel()
 
     fun refresh() {
         viewModelScope.launch {
-            Timber.d("Refreshing sessions")
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val apis = connection.steamService?.apis
-            if (apis == null) {
-                _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
-                return@launch
-            }
 
-            runCatching { apis.sessions.sessions() }
+            connection.request("EnumerateTokens") { it.sessions.sessions() }
                 .onSuccess { sessions ->
                     _uiState.update {
                         it.copy(sessions = sessions.toImmutableList(), isLoading = false)
                     }
                 }
                 .onFailure { error ->
-                    Timber.w(error, "EnumerateTokens failed")
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error =
-                                error.message ?: "Request failed",
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = error.requestMessage) }
                 }
         }
     }
 
+    /** Signs [session] out of the account; the outcome is reported through [messages]. */
     fun revoke(session: AuthSession) {
         viewModelScope.launch {
-            val apis = connection.steamService?.apis ?: return@launch
-            val result = runCatching { apis.sessions.revoke(session.tokenId) }
-                .onFailure { Timber.w(it, "RevokeRefreshToken failed") }
-                .getOrElse { EResult.Fail }
+            val result = connection.request("RevokeRefreshToken") {
+                it.sessions.revoke(session.tokenId)
+            }.getOrElse { EResult.Fail }
 
             if (result == EResult.OK) {
                 _messages.emit("Signed out ${session.description.ifBlank { session.platform }}")

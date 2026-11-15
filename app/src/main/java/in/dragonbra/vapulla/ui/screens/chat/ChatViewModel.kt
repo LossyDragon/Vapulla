@@ -16,9 +16,8 @@ import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.composables.BBCode
-import `in`.dragonbra.vapulla.util.readChatMedia
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -40,9 +39,6 @@ import timber.log.Timber
 
 @Immutable
 data class ChatUiState(
-    val messageText: String = "",
-    val showEmojiKeyboard: Boolean = false,
-    val isLoading: Boolean = false,
     val friend: SteamFriend? = null,
     /** The friend is typing a message to us right now. */
     val isFriendTyping: Boolean = false,
@@ -60,7 +56,7 @@ class ChatViewModel(
     private val friendDao: SteamFriendDao,
     private val messageDao: ChatMessageDao,
     emoticonDao: EmoticonDao,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val application: Application,
 ) : ViewModel() {
 
@@ -113,7 +109,7 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            connection.steamService?.apis?.chat?.loadRecent(friendId)
+            connection.request("Recent chat history") { it.chat.loadRecent(friendId) }
         }
 
         viewModelScope.launch {
@@ -121,10 +117,6 @@ class ChatViewModel(
                 _uiState.update { it.copy(isFriendTyping = friendId in typing) }
             }
         }
-    }
-
-    override fun onCleared() {
-        Timber.d("onCleared()")
     }
 
     /**
@@ -151,10 +143,9 @@ class ChatViewModel(
         val text = message.trim()
         if (text.isEmpty()) return
 
-        _uiState.update { it.copy(messageText = "") }
-
         viewModelScope.launch {
-            val sent = connection.steamService?.apis?.chat?.send(friendId, text) ?: false
+            val sent = connection.request("SendMessage") { it.chat.send(friendId, text) }
+                .getOrDefault(false)
             if (!sent) {
                 _sendFailures.emit(text)
             }
@@ -170,18 +161,8 @@ class ChatViewModel(
         _uiState.update { it.copy(isUploading = true) }
 
         viewModelScope.launch {
-            val media = connection.steamService?.apis?.media
-
-            val failure = if (media == null) {
-                "Not connected to Steam"
-            } else {
-                runCatching {
-                    val image = application.readChatMedia(uri)
-                    media.sendToFriend(friendId, image.bytes, image.fileName)
-                }
-                    .onFailure { Timber.w(it, "Image upload failed") }
-                    .exceptionOrNull()
-                    ?.let { "Image not sent: ${it.message}" }
+            val failure = connection.sendChatImage(application, uri) { media, image ->
+                media.sendToFriend(friendId, image.bytes, image.fileName)
             }
 
             _uiState.update { it.copy(isUploading = false) }
@@ -189,22 +170,14 @@ class ChatViewModel(
         }
     }
 
-    fun updateMessageText(text: String) {
-        val changed = text != _uiState.value.messageText
-        _uiState.update { it.copy(messageText = text) }
-
-        // Every edit that leaves something in the field counts as typing; the API spaces the
-        // notices out. Clearing the field (sending, deleting everything) does not.
-        if (changed && text.isNotBlank()) {
-            viewModelScope.launch {
-                connection.steamService?.apis?.chat?.sendTyping(friendId)
-            }
+    /**
+     * Tells the friend we are typing. Called for every edit that leaves something in the
+     * message field; the API spaces the notices out.
+     */
+    fun onTyping() {
+        viewModelScope.launch {
+            connection.request("Typing notice") { it.chat.sendTyping(friendId) }
         }
-    }
-
-    /** Toggles the emoji keyboard, or forces it when [show] is given. */
-    fun toggleEmojiKeyboard(show: Boolean? = null) {
-        _uiState.update { it.copy(showEmojiKeyboard = show ?: !it.showEmojiKeyboard) }
     }
 
     /**
@@ -214,7 +187,8 @@ class ChatViewModel(
     fun sendSticker(sticker: Emoticon) {
         viewModelScope.launch {
             val command = "/sticker ${sticker.name}"
-            val sent = connection.steamService?.apis?.chat?.send(friendId, command) ?: false
+            val sent = connection.request("SendMessage") { it.chat.send(friendId, command) }
+                .getOrDefault(false)
             if (!sent) {
                 _notices.emit("Sticker not sent")
             }

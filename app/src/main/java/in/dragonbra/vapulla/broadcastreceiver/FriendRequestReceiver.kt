@@ -14,20 +14,17 @@ import `in`.dragonbra.vapulla.service.SteamService
 abstract class FriendRequestReceiver(private val action: String) : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        check(intent.hasExtra(EXTRA_ID)) { "Missing friend Steam ID extra" }
+        val friendId = intent.getLongExtra(EXTRA_ID, 0L)
+        if (friendId == 0L) return
 
         context.startService(
-            SteamService.actionIntent(
-                context = context,
-                action = action,
-                friendId = intent.getLongExtra(EXTRA_ID, 0L),
-            ),
+            SteamService.actionIntent(context = context, action = action, friendId = friendId),
         )
     }
 
     companion object {
         /** Long extra carrying the friend's 64-bit Steam ID. */
-        const val EXTRA_ID = "id"
+        const val EXTRA_ID = SteamService.EXTRA_ID
     }
 }
 

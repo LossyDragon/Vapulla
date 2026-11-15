@@ -3,10 +3,7 @@ package `in`.dragonbra.vapulla.service.api
 import android.content.Context
 import android.os.SystemClock
 import androidx.room.withTransaction
-import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EChatEntryType
-import `in`.dragonbra.javasteam.enums.EResult
-import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_AckMessage_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_Notification
@@ -23,6 +20,7 @@ import `in`.dragonbra.vapulla.service.SessionComponent
 import `in`.dragonbra.vapulla.service.SteamState
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
+import `in`.dragonbra.vapulla.util.helpers.accountIdToSteamID
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
@@ -30,6 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -98,7 +97,7 @@ class ChatApi(
      *
      * @return false if it could not be sent; the local copy is removed again.
      */
-    suspend fun send(friendId: Long, text: String): Boolean = withContext(Dispatchers.IO) {
+    suspend fun send(friendId: Long, text: String): Boolean = withContext(SEND_CONTEXT) {
         val message = text.trim()
 
         if (message.isEmpty() || !SteamState.isLoggedIn.value) {
@@ -124,18 +123,14 @@ class ChatApi(
             .setContainsBbcode(true)
             .build()
 
-        val response = runCatching { friendMessages.sendMessage(request).await() }
-            .onFailure { Timber.w(it, "SendMessage failed") }
-            .getOrNull()
-
-        if (response?.result != EResult.OK) {
-            Timber.w("SendMessage to $friendId answered ${response?.result}")
+        val body = friendMessages.sendMessage(request).bodyOrNull("SendMessage")
+        if (body == null) {
             dao.delete(localId)
             return@withContext false
         }
 
-        val sentMessage = response.body.modifiedMessage.ifEmpty { message }
-        val timestamp = response.body.serverTimestamp * 1000L
+        val sentMessage = body.modifiedMessage.ifEmpty { message }
+        val timestamp = body.serverTimestamp * 1000L
 
         chatMutex.withLock {
             // An echo of this message may have been stored while the reply was in flight.
@@ -175,18 +170,17 @@ class ChatApi(
             .setChatEntryType(EChatEntryType.Typing.code())
             .build()
 
-        runCatching { friendMessages.sendMessage(request).await() }
-            .onFailure { Timber.w(it, "Typing notice failed") }
+        friendMessages.sendMessage(request).awaitOrNull("Typing notice")
     }
 
-    /** Marks a friend as typing until [TYPING_SHOWN_MS] pass without another notice. */
+    /** Marks a friend as typing until [TYPING_SHOWN] passes without another notice. */
     private fun markTyping(friendId: Long) {
         _typing.update { it + friendId }
 
         typingTimeouts.put(
             friendId,
             scope.launch {
-                delay(TYPING_SHOWN_MS)
+                delay(TYPING_SHOWN)
                 _typing.update { it - friendId }
             },
         )?.cancel()
@@ -215,17 +209,11 @@ class ChatApi(
                 .setTimeLast(Int.MAX_VALUE)
                 .build()
 
-            val response = runCatching { friendMessages.getRecentMessages(request).await() }
-                .onFailure { Timber.w(it, "GetRecentMessages failed") }
-                .getOrNull() ?: return@withContext
-
-            if (response.result != EResult.OK) {
-                Timber.w("GetRecentMessages for $friendId answered ${response.result}")
-                return@withContext
-            }
+            val body = friendMessages.getRecentMessages(request).bodyOrNull("GetRecentMessages")
+                ?: return@withContext
 
             storeConfirmed(
-                response.body.messagesList.map { message ->
+                body.messagesList.map { message ->
                     val timestamp = message.timestamp * 1000L
                     val fromLocal = message.accountid.toUInt().toLong() == localId.accountID
 
@@ -255,10 +243,14 @@ class ChatApi(
 
         val request = CFriendMessages_AckMessage_Notification.newBuilder()
             .setSteamidPartner(friendId)
-            .setTimestamp((System.currentTimeMillis() / 1000).toInt())
+            .setTimestamp(steamTimeNow())
             .build()
 
-        friendMessages.ackMessage(request)
+        try {
+            friendMessages.ackMessage(request)
+        } catch (e: Exception) {
+            Timber.w(e, "AckMessage failed")
+        }
     }
 
     /**
@@ -298,12 +290,7 @@ class ChatApi(
                         .minByOrNull { abs(incoming.timestamp - it.timestamp) }
 
                     if (unconfirmed != null) {
-                        dao.update(
-                            unconfirmed.copy(
-                                timestamp = incoming.timestamp,
-                                timestampConfirmed = true,
-                            ),
-                        )
+                        dao.confirm(unconfirmed.id, unconfirmed.message, incoming.timestamp)
                         false
                     } else {
                         dao.insertMessage(incoming)
@@ -388,24 +375,15 @@ class ChatApi(
             .setOnlySessionsWithMessages(true)
             .build()
 
-        val response = runCatching { friendMessages.getActiveMessageSessions(request).await() }
-            .onFailure { Timber.w(it, "GetActiveMessageSessions failed") }
-            .getOrNull() ?: return
+        val body = friendMessages.getActiveMessageSessions(request)
+            .bodyOrNull("GetActiveMessageSessions")
+            ?: return
 
-        if (response.result != EResult.OK) {
-            Timber.w("GetActiveMessageSessions answered ${response.result}")
-            return
-        }
-
-        val unread = response.body.messageSessionsList.filter { it.unreadMessageCount > 0 }
+        val unread = body.messageSessionsList.filter { it.unreadMessageCount > 0 }
         Timber.d("syncUnread: ${unread.size} conversation(s) with unread messages")
 
         unread.forEach { session ->
-            val friendId = SteamID(
-                session.accountidFriend.toUInt().toLong(),
-                EUniverse.Public,
-                EAccountType.Individual,
-            ).convertToUInt64()
+            val friendId = session.accountidFriend.accountIdToSteamID().convertToUInt64()
 
             loadRecent(friendId, unreadAfter = session.lastView * 1000L)
         }
@@ -419,6 +397,12 @@ class ChatApi(
         const val TYPING_SEND_INTERVAL_MS = 8_000L
 
         /** How long a friend counts as typing after their last notice. */
-        val TYPING_SHOWN_MS = 15.seconds
+        val TYPING_SHOWN = 15.seconds
+
+        /**
+         * A send is seen through even when the chat screen is left meanwhile. Cut short, the
+         * message could reach the friend while its local copy stays unconfirmed.
+         */
+        val SEND_CONTEXT = Dispatchers.IO + NonCancellable
     }
 }

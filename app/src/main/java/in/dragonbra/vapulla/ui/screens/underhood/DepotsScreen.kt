@@ -12,17 +12,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -31,11 +22,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -45,15 +34,18 @@ import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.dao.SteamLicenseDao
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppName
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.composables.search.SearchField
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import java.text.DateFormat
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -66,7 +58,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 
 /** A branch of an app: `public`, or a beta the developer has set up. */
 @Immutable
@@ -129,19 +120,16 @@ class DepotsViewModel(
     initialAppId: Int,
     private val appDao: SteamAppDao,
     private val licenseDao: SteamLicenseDao,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DepotsUiState())
     val uiState: StateFlow<DepotsUiState> = _uiState.asStateFlow()
 
-    private var names: List<SteamAppName> = emptyList()
+    private var searchJob: Job? = null
     private var loadJob: Job? = null
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
-            names = appDao.getAllNames().sortedBy { it.name.lowercase() }
-        }
         if (initialAppId > 0) {
             load(initialAppId)
         }
@@ -150,12 +138,17 @@ class DepotsViewModel(
     /** Offers known apps whose name contains [text], to save looking up an app ID. */
     fun search(text: String) {
         val query = text.trim()
-        val matches = if (query.length < MIN_QUERY || query.toIntOrNull() != null) {
-            emptyList()
-        } else {
-            names.filter { it.name.contains(query, ignoreCase = true) }.take(MAX_SUGGESTIONS)
+
+        // The newest text wins: an older search still running must not answer after it.
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            val matches = if (query.length < MIN_QUERY || query.toIntOrNull() != null) {
+                emptyList()
+            } else {
+                appDao.searchNames(query, MAX_SUGGESTIONS)
+            }
+            _uiState.update { it.copy(suggestions = matches.toImmutableList()) }
         }
-        _uiState.update { it.copy(suggestions = matches.toImmutableList()) }
     }
 
     fun load(appId: Int) {
@@ -164,8 +157,7 @@ class DepotsViewModel(
             _uiState.value = DepotsUiState(isLoading = true)
 
             // Current data from Steam where possible; the stored row is what the library last saw.
-            val fresh = runCatching { connection.steamService?.apis?.library?.appInfo(appId) }
-                .onFailure { Timber.w(it, "App info for $appId failed") }
+            val fresh = connection.request("App info for $appId") { it.library.appInfo(appId) }
                 .getOrNull()
             val app = fresh ?: withContext(Dispatchers.IO) { appDao.findApp(appId) }
 
@@ -181,8 +173,7 @@ class DepotsViewModel(
     }
 
     private suspend fun ownedDepots(): Set<Int> = withContext(Dispatchers.IO) {
-        licenseDao.getAllDepotIds()
-            .flatMapTo(HashSet()) { ids -> ids.split(',').mapNotNull(String::toIntOrNull) }
+        licenseDao.ownedDepotIds()
     }
 
     private fun SteamApp.label(appId: Int) = name.ifEmpty { "App $appId" }
@@ -273,44 +264,23 @@ private fun DepotsContent(
                 .imePadding()
                 .padding(padding.exceptBottom()),
         ) {
-            OutlinedTextField(
+            SearchField(
                 value = text,
                 onValueChange = {
                     text = it
                     onSearch(it)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text("App ID, or the name of a game you know") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    autoCorrectEnabled = false,
-                    imeAction = ImeAction.Search,
-                ),
-                keyboardActions = KeyboardActions(
-                    onSearch = { text.trim().toIntOrNull()?.let(open) },
-                ),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (text.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                text = ""
-                                onSearch("")
-                            },
-                        ) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear")
-                        }
-                    }
-                },
+                placeholder = "App ID, or the name of a game you know",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                // Only an ID can be searched for; a name is picked from the suggestions.
+                onSearch = { text.trim().toIntOrNull()?.let(open) },
             )
 
             when {
                 state.suggestions.isNotEmpty() -> Suggestions(
                     apps = state.suggestions,
                     onPick = { app ->
-                        text = app.name
+                        text = app.name.decodeHtml()
                         open(app.id)
                     },
                 )
@@ -325,7 +295,7 @@ private fun DepotsContent(
                     },
                 )
 
-                else -> SearchResultMessage(
+                else -> EmptyMessage(
                     message = state.message
                         ?: "Enter an app ID and search, or start typing a game's name",
                 )
@@ -341,15 +311,12 @@ private fun Suggestions(apps: ImmutableList<SteamAppName>, onPick: (SteamAppName
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         itemsIndexed(apps, key = { _, app -> app.id }) { index, app ->
-            Surface(
-                shape = groupedListShape(index, apps.size),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onPick(app) },
-            ) {
+            GroupedListItem(index = index, count = apps.size, onClick = { onPick(app) }) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Text(text = app.name, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = app.name.decodeHtml(),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     Text(
                         text = "App ${app.id}",
                         style = MaterialTheme.typography.labelSmall,
@@ -396,7 +363,7 @@ private fun DepotList(
             item(key = "branches-title") { Heading("Branches") }
 
             itemsIndexed(app.branches, key = { _, branch -> "b:${branch.name}" }) { index, branch ->
-                Block(shape = groupedListShape(index, app.branches.size)) {
+                Block(index = index, count = app.branches.size) {
                     Text(
                         text = branch.name,
                         style = MaterialTheme.typography.titleSmall,
@@ -418,7 +385,7 @@ private fun DepotList(
             item(key = "depots-title") { Heading("Depots") }
 
             itemsIndexed(app.depots, key = { _, depot -> "d:${depot.depotId}" }) { index, depot ->
-                Block(shape = groupedListShape(index, app.depots.size)) {
+                Block(index = index, count = app.depots.size) {
                     Text(
                         text = "Depot ${depot.depotId}",
                         style = MaterialTheme.typography.titleSmall,
@@ -453,7 +420,7 @@ private fun DepotList(
                                 },
                         ) {
                             Mono(
-                                "${manifest.branch}: ${manifest.gid.toULong()}" +
+                                "${manifest.branch}: ${manifest.gid.toSteamIdString()}" +
                                     if (manifest.encrypted) " (encrypted)" else "",
                             )
                             if (manifest.size > 0) {
@@ -487,13 +454,10 @@ private fun Heading(text: String) {
     )
 }
 
+/** One branch or depot: a row of its grouped list, with its lines spaced evenly. */
 @Composable
-private fun Block(shape: Shape, content: @Composable () -> Unit) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun Block(index: Int, count: Int, content: @Composable () -> Unit) {
+    GroupedListItem(index = index, count = count) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -515,6 +479,7 @@ private fun Mono(text: String) {
     }
 }
 
+/** A line of small grey text inside a [Block]; a `Hint` would indent it past the lines above. */
 @Composable
 private fun Faint(text: String) {
     Text(

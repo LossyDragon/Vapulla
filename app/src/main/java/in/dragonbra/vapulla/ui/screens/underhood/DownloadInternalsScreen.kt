@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -25,10 +23,11 @@ import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.service.download.DownloadProgress
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.CpuGroup
 import `in`.dragonbra.vapulla.util.CpuUsage
@@ -117,7 +116,7 @@ private fun DownloadInternalsContent(state: DownloadInternalsUiState, onBack: ()
     UnderHoodScaffold(title = "Download internals", onBack = onBack) { padding ->
         if (download == null || live == null) {
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                SearchResultMessage(
+                EmptyMessage(
                     message = "Nothing is downloading. Start a download and come back to " +
                         "watch it work.",
                 )
@@ -182,23 +181,17 @@ private fun DownloadInternalsContent(state: DownloadInternalsUiState, onBack: ()
                                 "%.2f cores · %d thread(s)".format(group.cores, group.threads)
                         },
                 )
-                Text(
-                    text = "Coroutine workers decrypt, decompress and write the chunks; HTTP " +
+                Hint(
+                    "Coroutine workers decrypt, decompress and write the chunks; HTTP " +
                         "downloads fetch them. Workers near the number of cores means the CPU " +
                         "is the limit; idle workers mean it is the network.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
 
-            Text(
-                text = "Counted from the depot downloader's progress callbacks. Which content " +
+            Hint(
+                "Counted from the depot downloader's progress callbacks. Which content " +
                     "servers it uses, how often it retries and how each chunk is compressed " +
                     "are not reported by JavaSteam, so they are not shown.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp),
             )
         }
     }
@@ -235,7 +228,7 @@ private fun Preview() {
                     downloadedBytes = 5_185_185_138,
                     totalBytes = 12_345_678_901,
                     bytesPerSecond = 13_400_000,
-                    status = "Downloading",
+                    status = DownloadProgress.STATUS_DOWNLOADING,
                     chunks = 4_211,
                     chunksPerSecond = 14.5f,
                     networkBytes = 3_300_000_000,

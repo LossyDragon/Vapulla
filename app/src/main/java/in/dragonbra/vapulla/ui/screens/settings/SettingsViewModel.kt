@@ -34,34 +34,15 @@ class SettingsViewModel(private val manager: SettingsManager, downloads: Downloa
             .flowOn(Dispatchers.IO)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), persistentListOf())
 
-    fun setDarkTheme(enabled: Boolean) = save { manager.setDarkTheme(enabled) }
+    /**
+     * Changes settings. [change] is applied to the settings as they are stored, not as the
+     * screen last saw them, so two changes in quick succession cannot undo one another.
+     */
+    fun update(change: (AppSettings) -> AppSettings) {
+        viewModelScope.launch { manager.update(change) }
+    }
 
-    fun setDynamicColor(enabled: Boolean) = save { manager.setDynamicColor(enabled) }
-
-    fun setMaxServers(count: Int) = save { manager.setMaxServers(count) }
-
-    fun setServerTimeoutMs(timeout: Int) = save { manager.setServerTimeoutMs(timeout) }
-
-    fun setWorkshopPageSize(size: Int) = save { manager.setWorkshopPageSize(size) }
-
-    fun setNetworkLogSize(size: Int) = save { manager.setNetworkLogSize(size) }
-    fun setNetworkLogBodies(enabled: Boolean) = save { manager.setNetworkLogBodies(enabled) }
-    fun setRecentChatsDays(days: Int) = save { manager.setRecentChatsDays(days) }
-    fun setAppendNicknames(enabled: Boolean) = save { manager.setAppendNicknames(enabled) }
-    fun setShowBlockedFriends(enabled: Boolean) = save { manager.setShowBlockedFriends(enabled) }
-    fun setRawBBCode(enabled: Boolean) = save { manager.setRawBBCode(enabled) }
-    fun setSignedInWebPages(enabled: Boolean) = save { manager.setSignedInWebPages(enabled) }
-    fun setDownloadWifiOnly(enabled: Boolean) = save { manager.setDownloadWifiOnly(enabled) }
-    fun setDownloadSpeedLimit(limit: Int) = save { manager.setDownloadSpeedLimit(limit) }
-    fun setDownloadConnections(count: Int) = save { manager.setDownloadConnections(count) }
-    fun setDownloadFileWrites(count: Int) = save { manager.setDownloadFileWrites(count) }
-    fun setDownloadDecompressThreads(count: Int) =
-        save { manager.setDownloadDecompressThreads(count) }
-    fun setDownloadLocation(path: String) = save { manager.setDownloadLocation(path) }
-
-    fun resetToDefaults() = save { manager.resetToDefaults() }
-
-    private fun save(block: suspend () -> Unit) {
-        viewModelScope.launch { block() }
+    fun resetToDefaults() {
+        viewModelScope.launch { manager.resetToDefaults() }
     }
 }

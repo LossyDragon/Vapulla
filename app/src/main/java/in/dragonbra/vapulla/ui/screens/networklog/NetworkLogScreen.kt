@@ -4,39 +4,29 @@ import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,9 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,13 +45,16 @@ import `in`.dragonbra.javasteam.enums.EMsg
 import `in`.dragonbra.vapulla.service.NetworkLog
 import `in`.dragonbra.vapulla.service.NetworkLogEntry
 import `in`.dragonbra.vapulla.service.NetworkLogTotal
-import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.FabClearance
+import `in`.dragonbra.vapulla.ui.composables.FollowNewestEffect
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
+import `in`.dragonbra.vapulla.ui.composables.isScrolledAway
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.composables.search.SearchField
+import `in`.dragonbra.vapulla.ui.screens.underhood.UnderHoodScaffold
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
@@ -72,14 +63,11 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
-/** Rows from the top within which the list still follows new packets. */
-private const val FOLLOW_THRESHOLD = 3
-
 /**
  * Live view of the packets JavaSteam sends and receives, newest first. Opened from Under
- * the Hood. Backed directly by
- * [NetworkLog], which the service feeds through the client's debug network listener. The
- * list follows new packets while it sits near the top and stays put once scrolled away.
+ * the Hood. Backed directly by [NetworkLog], which the service feeds through the client's
+ * debug network listener. The list follows new packets while it sits near the top and stays
+ * put once scrolled away.
  *
  * Service calls are listed by method name, and tapping a packet opens [PacketDetailSheet].
  *
@@ -142,42 +130,27 @@ private fun NetworkLogContent(
     val packets = totals.sumOf { it.packetsIn + it.packetsOut }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val scrolledAway by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex >
-                FOLLOW_THRESHOLD
-        }
-    }
+    val scrolledAway by remember { derivedStateOf { listState.isScrolledAway } }
 
-    // Keyed items keep the first visible row anchored when new rows are inserted above it,
-    // so the list would quietly drift down. Snap back unless the user has scrolled away.
-    LaunchedEffect(shownEntries.firstOrNull()?.id, shownEntries.lastOrNull()?.id) {
-        if (listState.firstVisibleItemIndex <= FOLLOW_THRESHOLD && !listState.isScrollInProgress) {
-            listState.scrollToItem(0)
-        }
-    }
+    FollowNewestEffect(listState, shownEntries.firstOrNull()?.id, shownEntries.lastOrNull()?.id)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Network Log") },
-                navigationIcon = { BackButton(onClick = onBack) },
-                actions = {
-                    IconButton(onClick = { showTotals = !showTotals }) {
-                        if (showTotals) {
-                            Icon(
-                                imageVector = Icons.Default.FormatListBulleted,
-                                contentDescription = "Show packets",
-                            )
-                        } else {
-                            Icon(Icons.Default.BarChart, contentDescription = "Show totals")
-                        }
-                    }
-                    IconButton(onClick = onClear) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = "Clear log")
-                    }
-                },
-            )
+    UnderHoodScaffold(
+        title = "Network Log",
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = { showTotals = !showTotals }) {
+                if (showTotals) {
+                    Icon(
+                        imageVector = Icons.Default.FormatListBulleted,
+                        contentDescription = "Show packets",
+                    )
+                } else {
+                    Icon(Icons.Default.BarChart, contentDescription = "Show totals")
+                }
+            }
+            IconButton(onClick = onClear) {
+                Icon(Icons.Default.DeleteSweep, contentDescription = "Clear log")
+            }
         },
         floatingActionButton = {
             AnimatedVisibility(
@@ -214,32 +187,17 @@ private fun NetworkLogContent(
                     },
                 )
             }
-            OutlinedTextField(
+            SearchField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text("Message type or service method") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.None,
-                    autoCorrectEnabled = false,
-                ),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                        }
-                    }
-                },
+                placeholder = "Message type or service method",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
 
             if (entries.isEmpty() && totals.isEmpty()) {
-                SearchResultMessage(message = "No packets yet")
+                EmptyMessage(message = "No packets yet")
             } else if (if (showTotals) shownTotals.isEmpty() else shownEntries.isEmpty()) {
-                SearchResultMessage(message = "Nothing in the log matches \"$search\"")
+                EmptyMessage(message = "Nothing in the log matches \"$search\"")
             } else if (showTotals) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -247,10 +205,7 @@ private fun NetworkLogContent(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     itemsIndexed(shownTotals, key = { _, total -> total.msg }) { index, total ->
-                        TotalRow(
-                            total = total,
-                            shape = groupedListShape(index, shownTotals.size),
-                        )
+                        TotalRow(total = total, index = index, count = shownTotals.size)
                     }
                 }
             } else {
@@ -264,7 +219,8 @@ private fun NetworkLogContent(
                     itemsIndexed(newestFirst, key = { _, entry -> entry.id }) { index, entry ->
                         LogRow(
                             entry = entry,
-                            shape = groupedListShape(index, newestFirst.size),
+                            index = index,
+                            count = newestFirst.size,
                             onClick = { opened = entry },
                         )
                     }
@@ -275,12 +231,8 @@ private fun NetworkLogContent(
 }
 
 @Composable
-private fun TotalRow(total: NetworkLogTotal, shape: Shape) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun TotalRow(total: NetworkLogTotal, index: Int, count: Int) {
+    GroupedListItem(index = index, count = count) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -309,14 +261,8 @@ private fun TotalRow(total: NetworkLogTotal, shape: Shape) {
 }
 
 @Composable
-private fun LogRow(entry: NetworkLogEntry, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClickLabel = "Show packet", onClick = onClick),
-    ) {
+private fun LogRow(entry: NetworkLogEntry, index: Int, count: Int, onClick: () -> Unit) {
+    GroupedListItem(index = index, count = count, onClick = onClick) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),

@@ -29,7 +29,6 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,16 +47,15 @@ import androidx.paging.compose.itemKey
 import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameBottomSheet
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
 import `in`.dragonbra.vapulla.ui.screens.games.components.GamesFloatingToolbar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentMapOf
@@ -75,7 +73,7 @@ fun GamesScreen(
     val downloads by viewModel.downloadBadges.collectAsStateWithLifecycle()
     val appTypes by viewModel.appTypes.collectAsStateWithLifecycle()
     val localAccountId by viewModel.localAccountId.collectAsStateWithLifecycle()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     GamesScreenContent(
         steamApps = steamApps,
@@ -84,7 +82,7 @@ fun GamesScreen(
         searchQuery = searchQuery,
         onNavDrawerAction = onNavDrawerAction,
         onSearchQuery = viewModel::updateSearchQuery,
-        onAppTypeClicked = viewModel::updateAppTypes,
+        onAppTypeClicked = viewModel::toggleAppType,
         onGameClick = onGameClick,
         downloads = downloads,
         onOpenDownloads = onOpenDownloads,
@@ -96,14 +94,14 @@ fun GamesScreen(
 private fun GamesScreenContent(
     steamApps: LazyPagingItems<SteamAppListItem>,
     appTypes: ImmutableSet<SteamApp.AppType>,
-    localAccountId: Long?,
+    localAccountId: Int?,
     searchQuery: String,
+    downloads: ImmutableMap<Int, DownloadBadge>,
     onNavDrawerAction: () -> Unit,
     onAppTypeClicked: (SteamApp.AppType) -> Unit,
     onSearchQuery: (String) -> Unit,
-    onGameClick: (Int) -> Unit = {},
-    downloads: ImmutableMap<Int, DownloadBadge> = persistentMapOf(),
-    onOpenDownloads: () -> Unit = {},
+    onGameClick: (Int) -> Unit,
+    onOpenDownloads: () -> Unit,
 ) {
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberBottomSheetState(
@@ -153,14 +151,14 @@ private fun GamesScreenContent(
                                 steamApps.loadState.refresh !is LoadState.Loading
                             ) {
                                 item {
-                                    SearchResultMessage(
+                                    EmptyMessage(
                                         message = "No games found matching \"$searchQuery\"",
                                     )
                                 }
                             }
                         }
                     } else {
-                        SearchResultMessage(message = "Start typing to search games")
+                        EmptyMessage(message = "Start typing to search games")
                     }
                 },
             )
@@ -273,7 +271,7 @@ private fun DownloadsSummary(downloads: ImmutableMap<Int, DownloadBadge>, onClic
     val failed = downloads.values.count { it.state == DownloadState.FAILED }
     val done = downloads.values.count { it.state == DownloadState.COMPLETED }
 
-    val title = running?.let { "Downloading ${it.name.decodeHtml()} · ${it.percent}%" }
+    val title = running?.let { "Downloading ${it.name} · ${it.percent}%" }
         ?: "Downloads"
     val details = listOfNotNull(
         "$waiting queued".takeIf { waiting > 0 },
@@ -362,6 +360,8 @@ private fun GamesScreenContentPreview() {
             onNavDrawerAction = {},
             onAppTypeClicked = {},
             onSearchQuery = {},
+            onGameClick = {},
+            onOpenDownloads = {},
             downloads = persistentMapOf(
                 440 to DownloadBadge("Team Fortress 2", DownloadState.DOWNLOADING, 42),
                 730 to DownloadBadge("Counter-Strike 2", DownloadState.PAUSED, 10),

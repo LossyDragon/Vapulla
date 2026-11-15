@@ -25,13 +25,12 @@ import `in`.dragonbra.vapulla.service.api.WorkshopItem
 import `in`.dragonbra.vapulla.service.download.DownloadPlanner.manifest
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import java.io.File
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
+import java.io.IOException
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -76,7 +75,21 @@ data class DownloadProgress(
     val networkBytes: Long = 0L,
     val writtenBytes: Long = 0L,
     val connections: Int = 0,
-)
+) {
+    /** True while chunks arrive, as opposed to files being checked or made room for. */
+    val isDownloading: Boolean get() = status == STATUS_DOWNLOADING
+
+    companion object {
+        /** The [status] before the downloader has reported anything. */
+        const val STATUS_PREPARING = "Preparing"
+
+        /**
+         * The [status] while chunks arrive. Any other status is the downloader's own words
+         * for something else it is busy with, such as checking the files already there.
+         */
+        const val STATUS_DOWNLOADING = "Downloading"
+    }
+}
 
 /**
  * A place downloads can be installed to: the app's own folder on one of the storage volumes,
@@ -210,7 +223,10 @@ class DownloadManager(
             launch { followSettings() }
 
             for (signal in wake) {
-                drainQueue()
+                // Whatever goes wrong must not end this loop: nothing would run the queue
+                // again until the app is restarted.
+                runSuspendCatching { drainQueue() }
+                    .onFailure { Timber.e(it, "The download queue stopped until its next signal") }
             }
         }
     }
@@ -285,10 +301,17 @@ class DownloadManager(
 
             val refusal = when {
                 download.state != DownloadState.COMPLETED -> "Only a finished download can be moved"
-                _moving.value != null -> "Another download is being moved"
+
                 relative.isEmpty() || target == source -> "It is already there"
+
                 !source.isDirectory -> "Its files are no longer where they were"
+
                 target.exists() -> "There is already a folder for it at the new location"
+
+                // Claims the one move there can be, so two started together cannot both run.
+                !_moving.compareAndSet(null, MoveProgress(appId, workshopId, 0f)) ->
+                    "Another download is being moved"
+
                 else -> null
             }
             if (refusal != null) {
@@ -296,14 +319,13 @@ class DownloadManager(
                 return@launch
             }
 
-            _moving.value = MoveProgress(appId, workshopId, 0f)
             try {
                 val files = source.walkTopDown().filter { it.isFile }.toList()
                 val total = files.sumOf { it.length() }
 
                 target.parentFile?.mkdirs()
                 if (total > (target.parentFile?.usableSpace ?: 0L)) {
-                    throw java.io.IOException("not enough free space, ${total.toFileSize()} needed")
+                    throw IOException("not enough free space, ${total.toFileSize()} needed")
                 }
 
                 var copied = 0L
@@ -367,21 +389,20 @@ class DownloadManager(
      * @return null when queued, otherwise why it was not.
      */
     suspend fun enqueue(app: SteamApp, plan: DownloadPlan, branchPassword: String = ""): String? {
-        val folder = app.installDir.replace(Regex("""[\\/:*?"<>|]"""), "_").trim().trim('.')
+        val folder = app.installDir.replace(UNSAFE_IN_FILE_NAME, "_").trim().trim('.')
             .ifEmpty { app.id.toString() }
 
         return enqueue(
             Download(
                 appId = app.id,
                 name = app.name.ifEmpty { "App ${app.id}" },
-                headerUrl = app.getHeaderImageUrl()
-                    ?: "https://cdn.cloudflare.steamstatic.com/steam/apps/${app.id}/header.jpg",
+                headerUrl = app.headerImageUrl,
                 os = plan.os.name,
                 depotIds = plan.depotIds,
                 branch = plan.branch,
                 branchPassword = branchPassword,
                 language = plan.language,
-                installDir = "steamapps/common/$folder",
+                installDir = "$LIBRARY_FOLDER/common/$folder",
                 totalBytes = plan.installBytes,
                 addedAt = System.currentTimeMillis(),
             ),
@@ -401,7 +422,7 @@ class DownloadManager(
             headerUrl = item.previewUrl,
             os = SteamApp.OS.none.name,
             depotIds = emptyList(),
-            installDir = "steamapps/workshop/content/$appId/${item.id}",
+            installDir = "$LIBRARY_FOLDER/workshop/content/$appId/${item.id}",
             totalBytes = item.fileSize,
             addedAt = System.currentTimeMillis(),
         ),
@@ -444,12 +465,14 @@ class DownloadManager(
             null
         }
 
+    /**
+     * Pauses a download, whether it is running or waiting its turn. Both are done, the row
+     * first: a download that is just being started is caught by one or the other.
+     */
     fun pause(appId: Int, workshopId: Long = 0L) {
-        val current = active
-        if (current?.isFor(appId, workshopId) == true) {
-            current.outcome.complete(Outcome.Paused)
-        } else {
-            scope.launch { downloadDao.pauseQueued(appId, workshopId) }
+        scope.launch {
+            downloadDao.pauseQueued(appId, workshopId)
+            active?.takeIf { it.isFor(appId, workshopId) }?.outcome?.complete(Outcome.Paused)
         }
     }
 
@@ -508,13 +531,9 @@ class DownloadManager(
             if (_waitingForWifi.value) return
             val next = downloadDao.nextQueued() ?: return
 
-            try {
-                download(next, current)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.e(e, "Download of ${next.appId} failed to run")
-                setState(next, DownloadState.FAILED, e.message ?: e.toString())
+            runSuspendCatching { download(next, current) }.onFailure {
+                Timber.e(it, "Download of ${next.appId} failed to run")
+                setState(next, DownloadState.FAILED, it.message ?: it.toString())
             }
         }
     }
@@ -555,10 +574,6 @@ class DownloadManager(
                 "limit ${settings.downloadSpeedLimit} MB/s, verify ${download.verify}",
         )
 
-        active = current
-        setState(download, DownloadState.DOWNLOADING)
-        _progress.value = tracker.snapshot(bytesPerSecond = 0)
-
         // The service keeps the process alive, but not the CPU once the screen is off.
         val wakeLock = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "vapulla:download")
@@ -567,6 +582,15 @@ class DownloadManager(
         var downloader: DepotDownloader? = null
 
         try {
+            // From here on pause() and remove() reach this download through `active`. One
+            // that came just before could only change the row, so the row is asked once more.
+            active = current
+            val state = downloadDao.find(download.appId, download.workshopId)?.state
+            if (state != DownloadState.QUEUED) return
+
+            setState(download, DownloadState.DOWNLOADING)
+            _progress.value = tracker.snapshot(bytesPerSecond = 0)
+
             downloader = DepotDownloader(
                 steamClient = session.client,
                 licenses = session.licenses,
@@ -628,7 +652,7 @@ class DownloadManager(
             branch = branch,
             branchPassword = branchPassword.ifEmpty { null },
             os = os.takeIf { it != SteamApp.OS.none.name },
-            osArch = "64",
+            osArch = OS_ARCH,
             language = language,
             depot = depotIds,
             verify = verify,
@@ -661,7 +685,7 @@ class DownloadManager(
                             "$done of $wanted depots; the rest were not available"
                         }
 
-                        download.verify -> "Files verified"
+                        download.verify -> VERIFIED
 
                         else -> null
                     }
@@ -685,7 +709,7 @@ class DownloadManager(
                         context = context,
                         id = download.notificationId,
                         title = download.name,
-                        text = if (download.verify) "Files verified" else "Download complete",
+                        text = if (download.verify) VERIFIED else "Download complete",
                     )
                 }
             }
@@ -742,7 +766,10 @@ class DownloadManager(
         }
 
         // Both progress callbacks come from the threads that write chunks to disk, so
-        // holding them up is what holds the download to the speed limit.
+        // holding them up is what holds the download to the speed limit. The downloader
+        // reports the last chunk of a file here, in place of onChunkCompleted and without
+        // its size, so that chunk waits for what is owed but adds nothing to it; its bytes
+        // are counted when the depot next reports a chunk or completes.
         override fun onFileCompleted(depotId: Int, fileName: String, depotPercentComplete: Float) {
             tracker.onProgress(depotId, depotPercentComplete)
             limiter.pace(0)
@@ -800,8 +827,11 @@ class DownloadManager(
                 lastActivity = activity
                 quietTicks = 0
             } else if (++quietTicks >= STALL_TICKS) {
+                val minutes = STALL_AFTER.inWholeMinutes
                 current.outcome.complete(
-                    Outcome.Failed("Stalled: nothing arrived for 2 minutes. Retry to continue."),
+                    Outcome.Failed(
+                        "Stalled: nothing arrived for $minutes minutes. Retry to continue.",
+                    ),
                 )
                 return
             }
@@ -850,191 +880,12 @@ class DownloadManager(
         }
     }
 
-    /**
-     * Holds a download to a speed. The downloader has no limit of its own, so the limit is
-     * kept by making the thread that reports a chunk wait until that chunk is "paid for" at
-     * the allowed rate. The chunks behind it queue up, and the network follows.
-     *
-     * @param bytesPerSecond the limit right now; 0 or less for none.
-     * @param stopped true once the download is over and nothing should wait any longer.
-     */
-    private class SpeedLimiter(
-        private val bytesPerSecond: () -> Long,
-        private val stopped: () -> Boolean,
-    ) {
-        /** The moment, on the [System.nanoTime] clock, everything reported so far is paid for. */
-        private var paidUntil = 0L
-
-        /** Counts [bytes] as received and waits until the limit allows for more. */
-        @Synchronized
-        fun pace(bytes: Long) {
-            val limit = bytesPerSecond()
-            if (limit <= 0) return
-
-            val now = System.nanoTime()
-            val cost = (bytes.toDouble() / limit * NANOS_PER_SECOND).toLong()
-            // Capped, so a long wait is not taken for a stalled download.
-            paidUntil = (maxOf(paidUntil, now) + cost).coerceAtMost(now + MAX_WAIT_NANOS)
-
-            while (!stopped() && bytesPerSecond() > 0) {
-                val left = paidUntil - System.nanoTime()
-                if (left <= 0) break
-                Thread.sleep((left / NANOS_PER_MILLI).coerceIn(1, SLEEP_MILLIS))
-            }
-        }
-
-        private companion object {
-            const val NANOS_PER_SECOND = 1_000_000_000L
-            const val NANOS_PER_MILLI = 1_000_000L
-            const val MAX_WAIT_NANOS = 30 * NANOS_PER_SECOND
-
-            /** Short, so pausing or lifting the limit is noticed quickly. */
-            const val SLEEP_MILLIS = 200L
-        }
-    }
-
-    /**
-     * Turns the downloader's per-depot callbacks into figures for the whole app. The callbacks
-     * arrive on the downloader's threads, many per second, so this only stores the latest
-     * values; [reportProgress] reads them at its own pace.
-     */
-    private class ProgressTracker(
-        private val download: Download,
-        sizes: Map<Int, Long>,
-        private val connections: Int,
-    ) {
-
-        val name: String get() = download.name
-
-        /** Sizes when all are known, otherwise every depot counts the same. */
-        private val weights: Map<Int, Long> =
-            if (sizes.isNotEmpty() && sizes.values.all { it > 0 }) {
-                sizes
-            } else {
-                download.depotIds.associateWith { 1L }
-            }
-
-        private val depotFractions = ConcurrentHashMap<Int, Float>()
-        private val depotNetworkBytes = ConcurrentHashMap<Int, Long>()
-        private val depotWrittenBytes = ConcurrentHashMap<Int, Long>()
-        private val completed = ConcurrentHashMap.newKeySet<Int>()
-        private val activityCounter = AtomicLong()
-        private val chunkCounter = AtomicInteger()
-
-        @Volatile
-        private var status = "Preparing"
-
-        /** Changes whenever the downloader reports anything at all. */
-        val activity: Long get() = activityCounter.get()
-
-        /** Chunks written in this run. */
-        val chunks: Int get() = chunkCounter.get()
-
-        val completedDepots: Int get() = completed.size
-
-        /** Why the downloader left depots out, in its own words. */
-        val skipReasons: List<String> get() = skipped.toList()
-
-        private val skipped = CopyOnWriteArrayList<String>()
-
-        fun onDepotSkipped(reason: String) {
-            skipped.add(reason)
-            activityCounter.incrementAndGet()
-        }
-
-        fun onStatus(message: String) {
-            status = message
-            activityCounter.incrementAndGet()
-        }
-
-        /**
-         * One chunk was written.
-         *
-         * @param networkBytes compressed bytes the depot has received so far, when known.
-         * @param writtenBytes the same, decompressed.
-         * @return how many of the compressed bytes are new since the depot last reported.
-         */
-        fun onProgress(
-            depotId: Int,
-            fraction: Float,
-            networkBytes: Long? = null,
-            writtenBytes: Long? = null,
-        ): Long {
-            chunkCounter.incrementAndGet()
-
-            // A depot with nothing to download reports 0 / 0.
-            if (fraction.isFinite()) {
-                depotFractions.merge(depotId, fraction.coerceIn(0f, 1f)) { a, b -> maxOf(a, b) }
-            }
-            if (writtenBytes != null) {
-                depotWrittenBytes.merge(depotId, writtenBytes) { a, b -> maxOf(a, b) }
-            }
-
-            var added = 0L
-            if (networkBytes != null) {
-                depotNetworkBytes.compute(depotId) { _, before ->
-                    added = (networkBytes - (before ?: 0L)).coerceAtLeast(0)
-                    maxOf(before ?: 0L, networkBytes)
-                }
-            }
-            status = "Downloading"
-            activityCounter.incrementAndGet()
-            return added
-        }
-
-        fun onDepotCompleted(depotId: Int, networkBytes: Long, writtenBytes: Long) {
-            completed.add(depotId)
-            depotFractions[depotId] = 1f
-            depotNetworkBytes.merge(depotId, networkBytes) { a, b -> maxOf(a, b) }
-            depotWrittenBytes.merge(depotId, writtenBytes) { a, b -> maxOf(a, b) }
-            activityCounter.incrementAndGet()
-        }
-
-        /** Compressed bytes received in this run. */
-        fun networkBytes(): Long = depotNetworkBytes.values.sum()
-
-        fun downloadedBytes(): Long = (fraction() * download.totalBytes).toLong()
-
-        fun snapshot(bytesPerSecond: Long, chunksPerSecond: Float = 0f) = DownloadProgress(
-            appId = download.appId,
-            workshopId = download.workshopId,
-            fraction = fraction(),
-            downloadedBytes = downloadedBytes(),
-            totalBytes = download.totalBytes,
-            bytesPerSecond = bytesPerSecond,
-            status = status,
-            chunks = chunks,
-            chunksPerSecond = chunksPerSecond,
-            networkBytes = networkBytes(),
-            writtenBytes = depotWrittenBytes.values.sum(),
-            connections = connections,
-        )
-
-        /**
-         * A depot only reports once its first chunk is written, and until then what it already
-         * has on disk from an earlier run counts as nothing. So progress never shows less than
-         * what the last run saved.
-         */
-        private fun fraction(): Float {
-            // A workshop item's depot is not known beforehand, only once it reports.
-            val weights = weights.ifEmpty { depotFractions.keys.associateWith { 1L } }
-            val total = weights.values.sum()
-            if (total <= 0) {
-                return download.fraction
-            }
-
-            val done = weights.entries.sumOf { (depotId, weight) ->
-                (depotFractions[depotId] ?: 0f).toDouble() * weight
-            }
-            return maxOf((done / total).toFloat(), download.fraction).coerceIn(0f, 1f)
-        }
-    }
-
     private companion object {
         val TICK = 500.milliseconds
 
-        /** Two minutes of [TICK]s. Checking a large file that is already there takes a while. */
-        const val STALL_TICKS = 240
+        /** Long, because checking a large file that is already there takes a while. */
+        val STALL_AFTER = 2.minutes
+        val STALL_TICKS = (STALL_AFTER / TICK).toInt()
         const val NOTIFY_EVERY = 2
         const val SAVE_EVERY = 10
 
@@ -1048,6 +899,15 @@ class DownloadManager(
 
         /** The folder of an install location that everything is under, as in a Steam library. */
         const val LIBRARY_FOLDER = "steamapps"
+
+        /** Depots are picked for 64-bit, the only kind of Steam client there still is. */
+        const val OS_ARCH = "64"
+
+        /** The note on a download whose files were checked rather than fetched. */
+        const val VERIFIED = "Files verified"
+
+        /** Characters an app's folder name may not keep, so it is a valid name anywhere. */
+        val UNSAFE_IN_FILE_NAME = Regex("""[\\/:*?"<>|]""")
 
         /** Upper bound on holding the wake lock, in case a download never ends. */
         val WAKE_LOCK_LIMIT = 12.hours

@@ -15,7 +15,11 @@ private val STRAY_TAG = Regex("""\[/?\w+(?:[ =][^\]]*)?]""")
 
 private val QUOTED_VALUE = Regex("""="([^"]*)"""")
 private val BARE_VALUE = Regex("""=([^\s"\]]+)""")
+private val RESULT_VALUE = Regex("""\bresult="([^"]*)"""")
 private val WHITESPACE = Regex("""\s+""")
+
+/** How deep tags are unwrapped. Chat messages nest two or three deep at most. */
+private const val MAX_NESTING = 8
 
 /** Tags whose content is formatting only, so the preview is simply the text they wrap. */
 private val TEXT_TAGS =
@@ -63,17 +67,17 @@ fun String.toChatPreview(): String {
             }
         }
         if (unwrapped == text) {
-            return STRAY_TAG.replace(text, "").replace(WHITESPACE, " ").trim()
+            return text.withoutStrayTags()
         }
         text = unwrapped
     }
 
-    return STRAY_TAG.replace(text, "").replace(WHITESPACE, " ").trim()
+    return text.withoutStrayTags()
 }
 
-private val RESULT_VALUE = Regex("""\bresult="([^"]*)"""")
-
-private const val MAX_NESTING = 8
+/** Drops what is left of the tags and brings the text onto one line. */
+private fun String.withoutStrayTags(): String =
+    STRAY_TAG.replace(this, "").replace(WHITESPACE, " ").trim()
 
 /** The value of the first attribute in a tag's attribute text (` type="x" limit="0"`, `=x`). */
 private fun attributeValue(attributes: String): String =

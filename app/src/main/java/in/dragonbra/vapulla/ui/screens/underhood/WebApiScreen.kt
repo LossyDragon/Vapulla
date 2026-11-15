@@ -1,7 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.underhood
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,19 +12,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,12 +36,15 @@ import `in`.dragonbra.vapulla.service.api.WebApiDirectory
 import `in`.dragonbra.vapulla.service.api.WebApiInterface
 import `in`.dragonbra.vapulla.service.api.WebApiMethod
 import `in`.dragonbra.vapulla.service.api.WebApiParameter
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.composables.search.SearchField
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -80,7 +78,7 @@ class WebApiViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            runCatching { WebApiDirectory.load() }
+            runSuspendCatching { WebApiDirectory.load() }
                 .onSuccess {
                     all = it
                     _uiState.value = WebApiUiState(
@@ -128,7 +126,8 @@ fun WebApiScreen(viewModel: WebApiViewModel, onBack: () -> Unit) {
 @Composable
 private fun WebApiContent(state: WebApiUiState, onBack: () -> Unit, onSearch: (String) -> Unit) {
     // Interfaces opened by hand. A search opens everything it finds.
-    var opened by remember { mutableStateOf(setOf<String>()) }
+    var opened by rememberSaveable { mutableStateOf(setOf<String>()) }
+    var text by rememberSaveable { mutableStateOf(state.query) }
 
     UnderHoodScaffold(title = "Web API", onBack = onBack) { padding ->
         Column(
@@ -137,30 +136,22 @@ private fun WebApiContent(state: WebApiUiState, onBack: () -> Unit, onSearch: (S
                 .imePadding()
                 .padding(padding.exceptBottom()),
         ) {
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = onSearch,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text("Interface or method, e.g. News") },
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (state.query.isNotEmpty()) {
-                        IconButton(onClick = { onSearch("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear")
-                        }
-                    }
+            SearchField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    onSearch(it)
                 },
+                placeholder = "Interface or method, e.g. News",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
 
             when {
                 state.isLoading -> LoadingBox(modifier = Modifier.fillMaxSize())
 
-                state.message != null -> SearchResultMessage(message = state.message)
+                state.message != null -> EmptyMessage(message = state.message)
 
-                state.interfaces.isEmpty() -> SearchResultMessage(message = "Nothing by that name")
+                state.interfaces.isEmpty() -> EmptyMessage(message = "Nothing by that name")
 
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -168,12 +159,10 @@ private fun WebApiContent(state: WebApiUiState, onBack: () -> Unit, onSearch: (S
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     item(key = "note") {
-                        Text(
+                        Hint(
                             text = "${state.total} interfaces at api.steampowered.com that " +
                                 "anyone may call. A publisher key would list more.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+                            modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
                     item(key = "reference") {
@@ -183,7 +172,8 @@ private fun WebApiContent(state: WebApiUiState, onBack: () -> Unit, onSearch: (S
                         InterfaceBlock(
                             api = api,
                             expanded = state.query.isNotBlank() || api.name in opened,
-                            shape = groupedListShape(index, state.interfaces.size),
+                            index = index,
+                            count = state.interfaces.size,
                             onToggle = {
                                 opened = if (api.name in opened) {
                                     opened - api.name
@@ -208,11 +198,10 @@ private fun ReferenceLink(modifier: Modifier = Modifier) {
     val uriHandler = LocalUriHandler.current
 
     Surface(
+        onClick = { uriHandler.openUri(REFERENCE_URL) },
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { uriHandler.openUri(REFERENCE_URL) },
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -239,20 +228,16 @@ private fun ReferenceLink(modifier: Modifier = Modifier) {
 
 private const val REFERENCE_URL = "https://steamapi.xpaw.me/"
 
+/** One interface; tapping it shows or hides its methods. */
 @Composable
 private fun InterfaceBlock(
     api: WebApiInterface,
     expanded: Boolean,
-    shape: androidx.compose.ui.graphics.Shape,
+    index: Int,
+    count: Int,
     onToggle: () -> Unit,
 ) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle),
-    ) {
+    GroupedListItem(index = index, count = count, onClick = onToggle) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

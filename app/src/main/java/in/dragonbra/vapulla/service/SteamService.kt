@@ -38,7 +38,7 @@ import timber.log.Timber
  * - The `sync` package mirrors what Steam pushes (friends, licenses, PICS app info) into
  *   the Room database, which the UI observes.
  *
- * Screens reach the service through [ServiceConnection].
+ * Screens reach the service through [SteamServiceConnection].
  */
 class SteamService : Service() {
 
@@ -76,8 +76,6 @@ class SteamService : Service() {
 
         private const val STATUS_STARTING = "Starting..."
 
-        val isLoading: StateFlow<Boolean> = SteamState.isLoading.asStateFlow()
-        val isRunning: StateFlow<Boolean> = SteamState.isRunning.asStateFlow()
         val isLoggedIn: StateFlow<Boolean> = SteamState.isLoggedIn.asStateFlow()
         val isAnonymous: StateFlow<Boolean> = SteamState.isAnonymous.asStateFlow()
         val loginResult: SharedFlow<LoginResult> = SteamState.loginResult.asSharedFlow()
@@ -89,13 +87,12 @@ class SteamService : Service() {
         fun takeSignOutReason(): String? = SteamState.signOutReason.getAndUpdate { null }
     }
 
-    // Coroutines. A failed job is logged instead of taking the whole process down.
+    // A failed job is logged instead of taking the whole process down.
     private val scope = CoroutineScope(
         context = Dispatchers.IO + SupervisorJob() + CoroutineName("SteamService") +
             CoroutineExceptionHandler { _, error -> Timber.e(error, "Uncaught service error") },
     )
 
-    // Koin DI Injection
     private val db: VapullaDatabase by inject()
     private val account: AccountManager by inject()
     private val downloads: DownloadManager by inject()
@@ -116,28 +113,24 @@ class SteamService : Service() {
     /** The sign-in flows. */
     val auth: SteamAuthenticator by lazy { SteamAuthenticator(scope, account, connection) }
 
-    /** The feature APIs; available while connected. */
+    /** The feature APIs; null when no connection is open, see [SteamConnection.apis]. */
     val apis: SteamApis? get() = connection.apis
 
     /** The CM servers the client knows about. Blocking, see [SteamConnection.cmServers]. */
     fun cmServers(): List<CmServer> = connection.cmServers()
 
     /** Text of the foreground notification, kept so a new start command does not reset it. */
+    @Volatile
     private var statusText = STATUS_STARTING
 
-    private var binder: Binder? = ServiceBinder()
+    private val binder = ServiceBinder()
 
+    /** Hands the service itself to [SteamServiceConnection]; both live in one process. */
     inner class ServiceBinder : Binder() {
         val service: SteamService = this@SteamService
     }
 
-    override fun onBind(intent: Intent): IBinder? = binder
-
-    override fun onCreate() {
-        super.onCreate()
-
-        Timber.i("onCreate")
-    }
+    override fun onBind(intent: Intent): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -174,13 +167,8 @@ class SteamService : Service() {
         super.onDestroy()
         Timber.i("onDestroy")
 
-        // Cancel any ongoing auth operations
         auth.cancel()
-
-        // Clean shutdown
         connection.close()
-
-        // Cancel coroutines
         scope.cancel(CancellationException("Service Destroyed"))
     }
 
@@ -217,23 +205,42 @@ class SteamService : Service() {
                         NotificationHelper
                             .cancelFriendMessageNotification(this@SteamService, friendId)
                     }
+                    stopIfIdle()
                 }
             }
 
-            else -> {
-                val friends = apis?.friends ?: run {
+            ACTION_ACCEPT_REQUEST, ACTION_IGNORE_REQUEST, ACTION_BLOCK_REQUEST -> {
+                val friends = apis?.friends
+                if (friends == null) {
+                    // The notification stays, so the request can be answered once signed in.
                     Timber.w("Ignoring action '$action': not connected")
+                    stopIfIdle()
                     return
                 }
 
                 when (action) {
                     ACTION_ACCEPT_REQUEST -> friends.acceptRequest(friendId)
                     ACTION_IGNORE_REQUEST -> friends.declineRequest(friendId)
-                    ACTION_BLOCK_REQUEST -> friends.blockRequest(friendId)
-                    else -> Timber.w("Unknown action '$action'")
+                    else -> friends.blockRequest(friendId)
                 }
+                NotificationHelper.cancelFriendRequestNotification(this, friendId)
             }
+
+            else -> Timber.w("Unknown action '$action'")
         }
+    }
+
+    /**
+     * Stops the service when a notification action started it and there is nothing to keep
+     * it for: no connection, and no sign-in on its way to one. A notification can outlive the
+     * session it came from, and the service would otherwise stay in the foreground for good.
+     */
+    private fun stopIfIdle() {
+        if (connection.isOpen || auth.isSigningIn) return
+
+        Timber.i("Nothing to run for, stopping")
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     /** Sets the foreground notification text. */

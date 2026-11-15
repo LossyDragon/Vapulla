@@ -4,6 +4,7 @@ import android.net.Uri
 import `in`.dragonbra.javasteam.steam.authentication.SteamAuthentication
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import java.io.IOException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.future.await
@@ -38,13 +39,12 @@ class WebSessionApi(
                 ?.takeIf { it.isNotBlank() }
                 ?: throw IOException("No saved sign-in to make an access token from")
 
-            val token = try {
+            // Whatever goes wrong, a refusal or no answer at all, is an IOException to callers.
+            runSuspendCatching {
                 authentication.generateAccessTokenForApp(steamId, refreshToken).await().accessToken
-            } catch (e: IllegalArgumentException) {
-                throw IOException("Steam did not issue an access token", e)
             }
-
-            token.also { accessToken = it }
+                .getOrElse { throw IOException("Steam did not issue an access token", it) }
+                .also { accessToken = it }
         }
     }
 

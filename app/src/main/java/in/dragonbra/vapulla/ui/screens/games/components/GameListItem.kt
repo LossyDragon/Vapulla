@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +47,9 @@ import `in`.dragonbra.vapulla.util.Utils.minutesToPlaytime
 import java.time.Instant
 import java.time.ZoneId
 
+/** Width to height of the store's header picture of an app, 460 by 215 pixels. */
+internal const val HEADER_ASPECT = 460f / 215f
+
 /**
  * One row of the games list, styled as a Material 3 Expressive grouped list item: a tonal
  * container whose [shape] the caller picks by position, store header art, and info pills
@@ -57,15 +61,21 @@ fun GameListItem(
     onGameClicked: () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.large,
-    localAccountId: Long? = null,
+    localAccountId: Int? = null,
     download: DownloadBadge? = null,
 ) {
-    val isShared = !app.ownerAccountId.contains(localAccountId?.toInt())
-    val byline = listOf(app.developer, app.publisher)
-        .map { it.decodeHtml().trim() }
-        .filter { it.isNotEmpty() }
-        .distinct()
-        .joinToString(" · ")
+    // Until the account is known nothing is called shared, or every row would flash the pill.
+    val isShared = localAccountId != null && localAccountId !in app.ownerAccountId
+
+    // Decoding HTML entities is not cheap, so it is done once per row, not per recomposition.
+    val name = remember(app.name) { app.name.decodeHtml() }
+    val byline = remember(app.developer, app.publisher) {
+        listOf(app.developer, app.publisher)
+            .map { it.decodeHtml().trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .joinToString(" · ")
+    }
 
     Surface(
         onClick = onGameClicked,
@@ -85,7 +95,7 @@ fun GameListItem(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = app.name.decodeHtml(),
+                    text = name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -184,7 +194,7 @@ private fun HeaderArt(app: SteamAppListItem) {
         imageModel = { app.headerImageUrl },
         modifier = Modifier
             .width(116.dp)
-            .aspectRatio(460f / 215f)
+            .aspectRatio(HEADER_ASPECT)
             .clip(MaterialTheme.shapes.medium),
         imageOptions = ImageOptions(contentScale = ContentScale.Crop),
         previewPlaceholder = painterResource(R.drawable.vapulla_background),

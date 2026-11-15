@@ -10,11 +10,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -27,6 +27,12 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/**
+ * A dialog with a message and up to two buttons, shown while [visible]. A button is left out
+ * when its click handler is null.
+ *
+ * @param useHtmlInMsg reads [message] as HTML, so that it can hold links.
+ */
 @Composable
 fun MessageDialog(
     visible: Boolean,
@@ -40,51 +46,49 @@ fun MessageDialog(
     message: String? = null,
     useHtmlInMsg: Boolean = false,
 ) {
-    when {
-        visible -> {
-            AlertDialog(
-                icon = icon?.let { { Icon(imageVector = icon, contentDescription = title) } },
-                title = title?.let { { Text(text = it) } },
-                text = {
-                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        message?.let {
-                            if (useHtmlInMsg) {
-                                Text(
-                                    text = AnnotatedString.fromHtml(
-                                        htmlString = it,
-                                        linkStyles = TextLinkStyles(
-                                            style = SpanStyle(
-                                                textDecoration = TextDecoration.Underline,
-                                                fontStyle = FontStyle.Italic,
-                                                color = Color.Blue,
-                                            ),
-                                        ),
+    if (!visible) return
+
+    AlertDialog(
+        icon = icon?.let { { Icon(imageVector = icon, contentDescription = title) } },
+        title = title?.let { { Text(text = it) } },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                message?.let {
+                    if (useHtmlInMsg) {
+                        Text(
+                            text = AnnotatedString.fromHtml(
+                                htmlString = it,
+                                linkStyles = TextLinkStyles(
+                                    style = SpanStyle(
+                                        textDecoration = TextDecoration.Underline,
+                                        fontStyle = FontStyle.Italic,
+                                        color = MaterialTheme.colorScheme.primary,
                                     ),
-                                )
-                            } else {
-                                Text(text = it)
-                            }
-                        }
+                                ),
+                            ),
+                        )
+                    } else {
+                        Text(text = it)
                     }
-                },
-                onDismissRequest = { onDismissRequest?.invoke() },
-                dismissButton = onDismissClick?.let {
-                    {
-                        TextButton(onClick = it) {
-                            Text(text = dismissBtnText)
-                        }
-                    }
-                },
-                confirmButton = {
-                    onConfirmClick?.let {
-                        TextButton(onClick = it) {
-                            Text(text = confirmBtnText)
-                        }
-                    }
-                },
-            )
-        }
-    }
+                }
+            }
+        },
+        onDismissRequest = { onDismissRequest?.invoke() },
+        dismissButton = onDismissClick?.let {
+            {
+                TextButton(onClick = it) {
+                    Text(text = dismissBtnText)
+                }
+            }
+        },
+        confirmButton = {
+            onConfirmClick?.let {
+                TextButton(onClick = it) {
+                    Text(text = confirmBtnText)
+                }
+            }
+        },
+    )
 }
 
 private class ShortLorem : LoremIpsum(40)

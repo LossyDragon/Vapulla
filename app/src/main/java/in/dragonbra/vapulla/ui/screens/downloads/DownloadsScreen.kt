@@ -17,7 +17,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Download
@@ -35,7 +34,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -61,18 +58,20 @@ import `in`.dragonbra.vapulla.db.entity.Download
 import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.service.download.DownloadProgress
 import `in`.dragonbra.vapulla.service.download.InstallLocation
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.UpdateAvailablePill
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.WaitingForWifi
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.fractionWith
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.liveProgress
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.statusLine
+import `in`.dragonbra.vapulla.ui.screens.games.components.HEADER_ASPECT
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
@@ -150,11 +149,7 @@ private fun DownloadsContent(
         topBar = {
             TopAppBar(
                 title = { Text("Downloads") },
-                navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                    }
-                },
+                navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
                 actions = {
                     IconButton(onClick = onClearFinished, enabled = uiState.finished.isNotEmpty()) {
                         Icon(Icons.Outlined.ClearAll, contentDescription = "Clear finished")
@@ -236,7 +231,8 @@ private fun LazyListScope.section(
             moveFraction = uiState.moving
                 ?.takeIf { it.appId == download.appId && it.workshopId == download.workshopId }
                 ?.fraction,
-            shape = groupedListShape(index, downloads.size),
+            index = index,
+            count = downloads.size,
             onOpen = { actions.onOpen(download.appId) },
             onPause = { actions.onPause(download) },
             onResume = { actions.onResume(download) },
@@ -253,7 +249,8 @@ private fun DownloadRow(
     progress: DownloadProgress?,
     updateAvailable: Boolean,
     moveFraction: Float?,
-    shape: Shape,
+    index: Int,
+    count: Int,
     onOpen: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -268,12 +265,10 @@ private fun DownloadRow(
         download.statusLine(progress)
     }
 
-    Surface(
-        onClick = onOpen,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    // The row is redrawn with every progress update; decode the name once.
+    val name = remember(download.name) { download.name.decodeHtml() }
+
+    GroupedListItem(index = index, count = count, onClick = onOpen) {
         Column(
             modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -286,7 +281,7 @@ private fun DownloadRow(
                     imageModel = { download.headerUrl },
                     modifier = Modifier
                         .width(96.dp)
-                        .aspectRatio(460f / 215f)
+                        .aspectRatio(HEADER_ASPECT)
                         .clip(MaterialTheme.shapes.medium),
                     imageOptions = ImageOptions(contentScale = ContentScale.Crop),
                     previewPlaceholder = painterResource(R.drawable.vapulla_background),
@@ -298,7 +293,7 @@ private fun DownloadRow(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
-                        text = download.name.decodeHtml(),
+                        text = name,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -560,7 +555,7 @@ private fun Preview() {
                     downloadedBytes = 5_185_185_138,
                     totalBytes = 12_345_678_901,
                     bytesPerSecond = 3_400_000,
-                    status = "Downloading",
+                    status = DownloadProgress.STATUS_DOWNLOADING,
                 ),
                 isLoading = false,
             ),

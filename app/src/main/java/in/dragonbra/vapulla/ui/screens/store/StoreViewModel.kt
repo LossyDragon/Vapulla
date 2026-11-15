@@ -4,10 +4,13 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.service.NotConnectedException
 import `in`.dragonbra.vapulla.service.SteamAccount
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.StorePage
 import `in`.dragonbra.vapulla.service.api.StoreSearchResult
+import `in`.dragonbra.vapulla.service.requestMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -20,7 +23,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 /** The country prices are shown for until Steam has said which one the account is in. */
 private const val DEFAULT_COUNTRY = "US"
@@ -41,7 +43,7 @@ data class StoreUiState(
 )
 
 /** Searches the Steam store by name. */
-class StoreViewModel(private val connection: ServiceConnection) : ViewModel() {
+class StoreViewModel(private val connection: SteamServiceConnection) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StoreUiState())
     val uiState: StateFlow<StoreUiState> = _uiState.asStateFlow()
@@ -59,23 +61,20 @@ class StoreViewModel(private val connection: ServiceConnection) : ViewModel() {
         }
 
         searchJob = viewModelScope.launch {
-            val store = connection.steamService?.apis?.store
-            if (store == null) {
-                _uiState.value = StoreUiState(searched = term, message = "Not connected to Steam")
-                return@launch
-            }
-
             _uiState.update { it.copy(searched = term, isSearching = true, message = null) }
 
-            runCatching { store.search(term, storeCountry()) }
+            connection.request("Store search") { it.store.search(term, storeCountry()) }
                 .onSuccess { results ->
                     _uiState.value =
                         StoreUiState(searched = term, results = results.toImmutableList())
                 }
                 .onFailure { error ->
-                    Timber.w(error, "Store search failed")
-                    _uiState.value =
-                        StoreUiState(searched = term, message = "Could not reach the Steam store")
+                    val message = if (error is NotConnectedException) {
+                        error.requestMessage
+                    } else {
+                        "Could not reach the Steam store"
+                    }
+                    _uiState.value = StoreUiState(searched = term, message = message)
                 }
         }
     }
@@ -96,7 +95,7 @@ data class StorePageUiState(
 /** One app's store page, from the `StoreBrowse` service. */
 class StorePageViewModel(
     private val appId: Int,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     appDao: SteamAppDao,
 ) : ViewModel() {
 
@@ -114,7 +113,7 @@ class StorePageViewModel(
                 page = loaded.page,
                 isLoading = loaded.loading,
                 // Apps Steam only told us about, such as a friend's game, have no package.
-                inLibrary = stored != null && stored.packageId != Int.MAX_VALUE,
+                inLibrary = stored != null && stored.packageId != SteamApp.NO_PACKAGE,
                 message = loaded.message,
             )
         }.stateIn(
@@ -125,20 +124,17 @@ class StorePageViewModel(
 
     init {
         viewModelScope.launch {
-            val store = connection.steamService?.apis?.store
-            if (store == null) {
-                loaded.value = Loaded(loading = false, message = "Not connected to Steam")
-                return@launch
+            val result = connection.request("Store page for $appId") {
+                it.store.page(appId, storeCountry())
             }
-
-            val page = runCatching { store.page(appId, storeCountry()) }
-                .onFailure { Timber.w(it, "Store page for $appId failed") }
-                .getOrNull()
+            val page = result.getOrNull()
+            val notConnected = result.exceptionOrNull() as? NotConnectedException
 
             loaded.value = Loaded(
                 page = page,
                 loading = false,
-                message = "The store has no page for app $appId".takeIf { page == null },
+                message = (notConnected?.requestMessage ?: "The store has no page for app $appId")
+                    .takeIf { page == null },
             )
         }
     }

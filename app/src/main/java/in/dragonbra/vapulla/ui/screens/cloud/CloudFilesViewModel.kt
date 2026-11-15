@@ -4,8 +4,9 @@ import android.app.Application
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.CloudFile
+import `in`.dragonbra.vapulla.service.requestMessage
 import java.io.File
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 
 @Immutable
 data class CloudFilesUiState(
@@ -36,7 +36,7 @@ data class CloudFilesUiState(
  */
 class CloudFilesViewModel(
     private val appId: Int,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val application: Application,
 ) : ViewModel() {
 
@@ -52,15 +52,9 @@ class CloudFilesViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            Timber.d("Refreshing cloud files for app $appId")
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val apis = connection.steamService?.apis
-            if (apis == null) {
-                _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
-                return@launch
-            }
 
-            runCatching { apis.cloud.files(appId) }
+            connection.request("EnumerateUserFiles") { it.cloud.files(appId) }
                 .onSuccess { files ->
                     _uiState.update {
                         it.copy(
@@ -72,14 +66,7 @@ class CloudFilesViewModel(
                     }
                 }
                 .onFailure { error ->
-                    Timber.w(error, "EnumerateUserFiles failed")
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error =
-                                error.message ?: "Request failed",
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = error.requestMessage) }
                 }
         }
     }
@@ -88,10 +75,9 @@ class CloudFilesViewModel(
         if (_uiState.value.downloading != null) return
 
         viewModelScope.launch {
-            val apis = connection.steamService?.apis ?: return@launch
             _uiState.update { it.copy(downloading = file.filename) }
 
-            val result = runCatching {
+            val result = connection.request("Cloud download") { apis ->
                 val bytes = apis.cloud.download(appId, file.filename)
                 withContext(Dispatchers.IO) {
                     val target =
@@ -106,10 +92,7 @@ class CloudFilesViewModel(
             _messages.emit(
                 result.fold(
                     onSuccess = { "Saved to ${it.absolutePath}" },
-                    onFailure = {
-                        Timber.w(it, "Cloud download failed")
-                        it.message ?: "Download failed"
-                    },
+                    onFailure = { it.message ?: "Download failed" },
                 ),
             )
         }

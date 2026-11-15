@@ -56,7 +56,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -210,7 +209,7 @@ private fun emoticonContent(names: ImmutableList<String>): Map<String, InlineTex
             ),
         ) {
             RemoteImage(
-                imageModel = { Utils.Constants.EMOTICON_URL + name },
+                imageModel = { Utils.Constants.EMOTICON_URL + Uri.encode(name) },
                 imageOptions = ImageOptions(
                     contentDescription = name,
                     contentScale = ContentScale.Fit,
@@ -266,16 +265,17 @@ private fun BBQuote(quote: BBBlock.Quote) {
 
 @Composable
 private fun BBCodeBlock(content: String) {
+    // The surface sets its own content colour, so the text stays legible in a chat bubble.
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = MaterialTheme.shapes.small,
     ) {
         Text(
             text = content,
             modifier = Modifier.padding(12.dp),
             fontFamily = FontFamily.Monospace,
-            color = Color(0xFFD4D4D4),
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -490,10 +490,6 @@ private val EMOTICON_SIZE = 1.4.em
 
 private val NO_INLINE_CONTENT = emptyMap<String, InlineTextContent>()
 
-private val LINK_STYLES = TextLinkStyles(
-    style = SpanStyle(color = Color(0xFF4A90E2), textDecoration = TextDecoration.Underline),
-)
-
 /** Black on black until tapped, then the text on a faint band that marks it as a spoiler. */
 private val HIDDEN_SPOILER =
     TextLinkStyles(style = SpanStyle(color = Color.Black, background = Color.Black))
@@ -674,10 +670,12 @@ private fun parseBlocks(input: String, start: Int, end: Int, depth: Int): Immuta
             break
         }
 
-        // Tags inside [noparse] are text, so do not look for blocks in there.
-        val noparse = matchTag(input, bracket, "noparse", end)
-        if (noparse != null) {
-            pos = noparse.end
+        // Tags inside [noparse] are text, so do not look for blocks in there. Nor inside a
+        // spoiler: an image taken out of it as a block would be shown unhidden.
+        val inline = matchTag(input, bracket, "noparse", end)
+            ?: matchTag(input, bracket, "spoiler", end)
+        if (inline != null) {
+            pos = inline.end
             continue
         }
 
@@ -877,14 +875,154 @@ private fun parseInline(
         return null
     }
 
-    val out = AnnotatedString.Builder(end - start)
-    val buffer = StringBuilder()
-    val emoticons = mutableListOf<String>()
-    var style = BBStyle()
-    var spoilerCount = 0
-    var pos = start
+    val paragraph = ParagraphBuilder(text, capacity = end - start)
+    paragraph.parse(start, end)
+    return paragraph.build()
+}
 
-    fun flushBuffer() {
+/**
+ * Builds one paragraph out of inline BB Code. [parse] may be called on a range inside a tag
+ * it is working on, so that the label of a link or the text of a spoiler is styled like any
+ * other text.
+ */
+private class ParagraphBuilder(private val text: String, capacity: Int) {
+    private val out = AnnotatedString.Builder(capacity)
+    private val buffer = StringBuilder()
+    private val emoticons = mutableListOf<String>()
+    private var style = BBStyle()
+    private var spoilerCount = 0
+
+    /** Inside the label of a link, where another link cannot start. */
+    private var inLink = false
+
+    /**
+     * Inside a spoiler. Nothing in it may show or act before it is tapped, so links stay
+     * text and emoticons their names: a tap on a link would open it, and an image is not
+     * covered by the black.
+     */
+    private var inSpoiler = false
+
+    fun build(): BBBlock.Paragraph {
+        flushBuffer()
+        return BBBlock.Paragraph(
+            text = out.toAnnotatedString(),
+            emoticons = emoticons.toImmutableList(),
+            spoilerCount = spoilerCount,
+        )
+    }
+
+    /** Appends the inline BB Code in `[start, end)`. */
+    fun parse(start: Int, end: Int) {
+        var pos = start
+
+        while (pos < end) {
+            val c = text[pos]
+
+            // Bare http(s):// URLs become clickable links.
+            if (c == 'h' && !inLink && !inSpoiler && isHttpUrl(text, pos)) {
+                var urlEnd = pos
+                while (urlEnd < end && !isUrlTerminator(text[urlEnd])) {
+                    urlEnd++
+                }
+                // Don't swallow sentence punctuation trailing the URL.
+                while (urlEnd > pos && text[urlEnd - 1] in TRAILING_PUNCTUATION) {
+                    urlEnd--
+                }
+                val url = text.substring(pos, urlEnd)
+                appendLink(url) { buffer.append(url) }
+                pos = urlEnd
+                continue
+            }
+
+            // Fast path: copy the run of ordinary characters in one append.
+            if (c != '[' && c != EMOTICON_DELIMITER) {
+                var next = pos + 1
+                while (next < end &&
+                    text[next] != '[' &&
+                    text[next] != EMOTICON_DELIMITER &&
+                    !(text[next] == 'h' && isHttpUrl(text, next))
+                ) {
+                    next++
+                }
+                buffer.append(text, pos, next)
+                pos = next
+                continue
+            }
+
+            // Emoticons with colon format: ːemoticonː
+            if (c == EMOTICON_DELIMITER) {
+                val closeIndex = text.indexOf(EMOTICON_DELIMITER, pos + 1)
+                val name = if (closeIndex != -1 && closeIndex < end) {
+                    text.substring(pos + 1, closeIndex)
+                } else {
+                    ""
+                }
+                if (isEmoticonName(name)) {
+                    appendEmoticon(name)
+                    pos = closeIndex + 1
+                } else {
+                    buffer.append(c)
+                    pos++
+                }
+                continue
+            }
+
+            // c == '[' — style switches first, then paired tags; unknown tags stay literal text.
+            when {
+                text.startsWith("[b]", pos) -> {
+                    updateStyle(style.copy(bold = true))
+                    pos += 3
+                }
+
+                text.startsWith("[/b]", pos) -> {
+                    updateStyle(style.copy(bold = false))
+                    pos += 4
+                }
+
+                text.startsWith("[i]", pos) -> {
+                    updateStyle(style.copy(italic = true))
+                    pos += 3
+                }
+
+                text.startsWith("[/i]", pos) -> {
+                    updateStyle(style.copy(italic = false))
+                    pos += 4
+                }
+
+                text.startsWith("[u]", pos) -> {
+                    updateStyle(style.copy(underline = true))
+                    pos += 3
+                }
+
+                text.startsWith("[/u]", pos) -> {
+                    updateStyle(style.copy(underline = false))
+                    pos += 4
+                }
+
+                text.startsWith("[strike]", pos) -> {
+                    updateStyle(style.copy(strikethrough = true))
+                    pos += 8
+                }
+
+                text.startsWith("[/strike]", pos) -> {
+                    updateStyle(style.copy(strikethrough = false))
+                    pos += 9
+                }
+
+                else -> {
+                    val tagEnd = parsePairedTag(pos, end)
+                    if (tagEnd != -1) {
+                        pos = tagEnd
+                    } else {
+                        buffer.append(c)
+                        pos++
+                    }
+                }
+            }
+        }
+    }
+
+    private fun flushBuffer() {
         if (buffer.isNotEmpty()) {
             if (style.isPlain) {
                 out.append(buffer)
@@ -896,22 +1034,38 @@ private fun parseInline(
     }
 
     // Buffered text was appended under the old style, so flush before switching.
-    fun updateStyle(newStyle: BBStyle) {
+    private fun updateStyle(newStyle: BBStyle) {
         flushBuffer()
         style = newStyle
     }
 
-    fun appendLink(target: String, label: String) {
-        flushBuffer()
-        val url = linkTarget(target)
+    /**
+     * Appends what [label] adds as a link to [target]. Where [target] may not be followed,
+     * see [linkTarget], or no link may start, the label is appended as it is. The link has no
+     * style of its own, so it is given the theme's link colour and underline.
+     */
+    private fun appendLink(target: String, label: () -> Unit) {
+        val url = if (inLink || inSpoiler) null else linkTarget(target)
         if (url == null) {
-            out.append(label)
-        } else {
-            out.withLink(LinkAnnotation.Url(url, LINK_STYLES)) { append(label) }
+            label()
+            return
         }
+
+        flushBuffer()
+        out.pushLink(LinkAnnotation.Url(url))
+        inLink = true
+        label()
+        flushBuffer()
+        inLink = false
+        out.pop()
     }
 
-    fun appendEmoticon(name: String) {
+    private fun appendEmoticon(name: String) {
+        if (inSpoiler) {
+            buffer.append(':').append(name).append(':')
+            return
+        }
+
         flushBuffer()
         if (name !in emoticons) {
             emoticons.add(name)
@@ -919,39 +1073,45 @@ private fun parseInline(
         out.appendInlineContent(emoticonId(name), ":$name:")
     }
 
-    fun appendStyled(spanStyle: SpanStyle, content: String) {
+    private fun appendStyled(spanStyle: SpanStyle, content: String) {
         flushBuffer()
         out.withStyle(spanStyle) { append(content) }
     }
 
     /**
-     * Handles the paired inline tag opening at [at]. Returns the index just past it, or -1
-     * if it is not a tag known here, in which case the bracket is kept as text.
+     * Handles the paired inline tag opening at [at], which closes before [end]. Returns the
+     * index just past it, or -1 if it is not a tag known here, in which case the bracket is
+     * kept as text.
      */
-    fun parsePairedTag(at: Int): Int {
+    private fun parsePairedTag(at: Int, end: Int): Int {
         if (at + 1 >= end) {
             return -1
         }
 
         when (text[at + 1]) {
             'u' -> matchTag(text, at, "url", end)?.let { tag ->
-                val label = text.substring(tag.contentStart, tag.contentEnd)
                 // [url=target]label[/url], or [url]target[/url]
                 val target = if (tag.attributes.startsWith("=")) {
                     tag.attributes.substring(1).trim().trim('"')
                 } else {
-                    label
+                    text.substring(tag.contentStart, tag.contentEnd)
                 }
-                appendLink(target, label)
+                appendLink(target) { parse(tag.contentStart, tag.contentEnd) }
                 return tag.end
             }
 
-            's' -> matchTag(text, at, "spoiler", end)?.let { tag ->
-                flushBuffer()
-                out.pushStringAnnotation(TAG_SPOILER, "spoiler_${spoilerCount++}")
-                out.append(text, tag.contentStart, tag.contentEnd)
-                out.pop()
-                return tag.end
+            // A spoiler inside a spoiler is left as text: one tap reveals all of the outer one.
+            's' -> if (!inSpoiler) {
+                matchTag(text, at, "spoiler", end)?.let { tag ->
+                    flushBuffer()
+                    out.pushStringAnnotation(TAG_SPOILER, "spoiler_${spoilerCount++}")
+                    inSpoiler = true
+                    parse(tag.contentStart, tag.contentEnd)
+                    flushBuffer()
+                    inSpoiler = false
+                    out.pop()
+                    return tag.end
+                }
             }
 
             'n' -> matchTag(text, at, "noparse", end)?.let { tag ->
@@ -960,7 +1120,9 @@ private fun parseInline(
             }
 
             'e' -> matchTag(text, at, "emoticon", end)?.let { tag ->
-                appendEmoticon(text.substring(tag.contentStart, tag.contentEnd))
+                val name = text.substring(tag.contentStart, tag.contentEnd)
+                if (!isEmoticonName(name)) return -1
+                appendEmoticon(name)
                 return tag.end
             }
 
@@ -991,116 +1153,14 @@ private fun parseInline(
 
         return -1
     }
-
-    while (pos < end) {
-        val c = text[pos]
-
-        // Bare http(s):// URLs become clickable links.
-        if (c == 'h' && isHttpUrl(text, pos)) {
-            var urlEnd = pos
-            while (urlEnd < end && !isUrlTerminator(text[urlEnd])) {
-                urlEnd++
-            }
-            // Don't swallow sentence punctuation trailing the URL.
-            while (urlEnd > pos && text[urlEnd - 1] in TRAILING_PUNCTUATION) {
-                urlEnd--
-            }
-            val url = text.substring(pos, urlEnd)
-            appendLink(url, url)
-            pos = urlEnd
-            continue
-        }
-
-        // Fast path: copy the run of ordinary characters in one append.
-        if (c != '[' && c != EMOTICON_DELIMITER) {
-            var next = pos + 1
-            while (next < end &&
-                text[next] != '[' &&
-                text[next] != EMOTICON_DELIMITER &&
-                !(text[next] == 'h' && isHttpUrl(text, next))
-            ) {
-                next++
-            }
-            buffer.append(text, pos, next)
-            pos = next
-            continue
-        }
-
-        // Emoticons with colon format: ːemoticonː
-        if (c == EMOTICON_DELIMITER) {
-            val closeIndex = text.indexOf(EMOTICON_DELIMITER, pos + 1)
-            if (closeIndex != -1 && closeIndex < end) {
-                appendEmoticon(text.substring(pos + 1, closeIndex))
-                pos = closeIndex + 1
-            } else {
-                buffer.append(c)
-                pos++
-            }
-            continue
-        }
-
-        // c == '[' — style switches first, then paired tags; unknown tags stay literal text.
-        when {
-            text.startsWith("[b]", pos) -> {
-                updateStyle(style.copy(bold = true))
-                pos += 3
-            }
-
-            text.startsWith("[/b]", pos) -> {
-                updateStyle(style.copy(bold = false))
-                pos += 4
-            }
-
-            text.startsWith("[i]", pos) -> {
-                updateStyle(style.copy(italic = true))
-                pos += 3
-            }
-
-            text.startsWith("[/i]", pos) -> {
-                updateStyle(style.copy(italic = false))
-                pos += 4
-            }
-
-            text.startsWith("[u]", pos) -> {
-                updateStyle(style.copy(underline = true))
-                pos += 3
-            }
-
-            text.startsWith("[/u]", pos) -> {
-                updateStyle(style.copy(underline = false))
-                pos += 4
-            }
-
-            text.startsWith("[strike]", pos) -> {
-                updateStyle(style.copy(strikethrough = true))
-                pos += 8
-            }
-
-            text.startsWith("[/strike]", pos) -> {
-                updateStyle(style.copy(strikethrough = false))
-                pos += 9
-            }
-
-            else -> {
-                val tagEnd = parsePairedTag(pos)
-                if (tagEnd != -1) {
-                    pos = tagEnd
-                } else {
-                    buffer.append(c)
-                    pos++
-                }
-            }
-        }
-    }
-
-    flushBuffer()
-
-    return BBBlock.Paragraph(
-        text = out.toAnnotatedString(),
-        emoticons = emoticons.toImmutableList(),
-        spoilerCount = spoilerCount,
-    )
 }
+
+/**
+ * Whether [name] can be an emoticon's. Two delimiters with a space between them are far
+ * more likely ordinary text than a name, and would be asked of Steam as an image.
+ */
+private fun isEmoticonName(name: String): Boolean =
+    name.isNotEmpty() && name.none { it.isWhitespace() }
 
 private fun isUrlTerminator(c: Char): Boolean =
     c.isWhitespace() || c == '[' || c == EMOTICON_DELIMITER || c == '"'

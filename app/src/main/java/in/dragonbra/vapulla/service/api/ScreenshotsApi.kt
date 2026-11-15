@@ -1,11 +1,8 @@
 package `in`.dragonbra.vapulla.service.api
 
-import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPublishedfileSteamclient.CPublishedFile_GetUserFiles_Request
 import `in`.dragonbra.javasteam.rpc.service.PublishedFile
 import `in`.dragonbra.javasteam.types.SteamID
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
 
 /** The account's uploaded screenshots via the `PublishedFile` unified service. View only. */
@@ -13,9 +10,12 @@ class ScreenshotsApi(
     private val publishedFile: PublishedFile,
     private val localSteamId: () -> SteamID?,
 ) {
-    /** One page of the signed-in account's screenshots, newest first; pages start at 1. */
-    suspend fun mine(page: Int = 1, perPage: Int = PAGE_SIZE): ScreenshotPage {
-        val steamId = localSteamId() ?: return ScreenshotPage(persistentListOf(), 0, null)
+    /**
+     * One page of the signed-in account's screenshots, newest first; pages start at 1. Empty
+     * when Steam does not answer.
+     */
+    suspend fun mine(page: Int = 1): Page<Screenshot> {
+        val steamId = localSteamId() ?: return Page.empty()
 
         val request = CPublishedFile_GetUserFiles_Request.newBuilder()
             .setSteamid(steamId.convertToUInt64())
@@ -24,22 +24,18 @@ class ScreenshotsApi(
             .setSortmethod("newestfirst")
             .setPrivacy(PRIVACY_ALL)
             .setPage(page)
-            .setNumperpage(perPage)
+            .setNumperpage(PAGE_SIZE)
             .setReturnApps(true)
             .build()
 
-        val response = publishedFile.getUserFiles(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("GetUserFiles failed: ${response.result}")
-            return ScreenshotPage(persistentListOf(), 0, null)
-        }
+        val body = publishedFile.getUserFiles(request).bodyOrNull("GetUserFiles")
+            ?: return Page.empty()
         Timber.d(
-            "GetUserFiles page=$page total=${response.body.total} " +
-                "items=${response.body.publishedfiledetailsCount}",
+            "GetUserFiles page=$page total=${body.total} items=${body.publishedfiledetailsCount}",
         )
 
-        val appNames = response.body.appsList.associate { it.appid to it.name }
-        val items = response.body.publishedfiledetailsList.map { details ->
+        val appNames = body.appsList.associate { it.appid to it.name }
+        val items = body.publishedfiledetailsList.map { details ->
             Screenshot(
                 id = details.publishedfileid,
                 appId = details.consumerAppid,
@@ -49,16 +45,11 @@ class ScreenshotsApi(
                 thumbnailUrl = details.previewUrl.ifEmpty { details.imageUrl },
                 width = details.imageWidth,
                 height = details.imageHeight,
-                timeCreated = details.timeCreated.toLong(),
+                timeCreated = details.timeCreated.toUInt().toLong(),
             )
         }
 
-        val seenSoFar = page * perPage
-        return ScreenshotPage(
-            items = items.toImmutableList(),
-            total = response.body.total,
-            nextPage = (page + 1).takeIf { items.isNotEmpty() && seenSoFar < response.body.total },
-        )
+        return Page.of(items, page, PAGE_SIZE, body.total)
     }
 
     private companion object {

@@ -28,12 +28,7 @@ data class SteamAppListItem(
     val clientIconUrl: String
         get() = "${Utils.Constants.APP_IMAGES_URL}$id/$clientIconHash.ico"
 
-    /**
-     * 460x215 store header. Uses the asset from PICS when present and falls back to the
-     * unversioned CDN path, which exists for almost every store app.
-     */
+    /** 460x215 store header; see [steamHeaderImageUrl]. */
     val headerImageUrl: String
-        get() = headerImage[SteamApp.Language.english]
-            ?.let { steamStoreAssetUrl(id, it) }
-            ?: "https://cdn.cloudflare.steamstatic.com/steam/apps/$id/header.jpg"
+        get() = steamHeaderImageUrl(id, headerImage)
 }

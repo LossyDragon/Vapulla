@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExpandedFullScreenSearchBar
@@ -31,9 +30,15 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.coroutines.launch
 
+/**
+ * The top bar of a top-level screen that can be searched: the menu button and a search field,
+ * which opens to a full-screen search showing [expandedSearchBar]. The text is cleared when
+ * the search is closed.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchAppBar(
@@ -114,17 +119,7 @@ fun SearchAppBar(
         scrollBehavior = scrollBehavior,
         state = searchBarState,
         inputField = collapsedInputField,
-        navigationIcon = {
-            IconButton(
-                onClick = onNavDrawerAction,
-                content = {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = null,
-                    )
-                },
-            )
-        },
+        navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
         actions = {
             Spacer(modifier = Modifier.size(48.dp))
         },

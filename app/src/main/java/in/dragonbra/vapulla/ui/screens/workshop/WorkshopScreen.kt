@@ -32,7 +32,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,13 +50,13 @@ import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.service.api.WorkshopItem
 import `in`.dragonbra.vapulla.service.api.WorkshopSort
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import kotlinx.collections.immutable.persistentListOf
@@ -145,9 +144,10 @@ private fun WorkshopContent(
             }
 
             when {
-                uiState.error != null -> SearchResultMessage(message = uiState.error)
+                uiState.error != null && uiState.items.isEmpty() ->
+                    EmptyMessage(message = uiState.error)
 
-                uiState.items.isEmpty() && !uiState.isLoading -> SearchResultMessage(
+                uiState.items.isEmpty() && !uiState.isLoading -> EmptyMessage(
                     message = "No workshop items found",
                 )
 
@@ -161,10 +161,21 @@ private fun WorkshopContent(
                             item = item,
                             subscribed = item.id in uiState.subscribed,
                             download = uiState.downloads[item.id],
-                            shape = groupedListShape(index, uiState.items.size),
+                            index = index,
+                            count = uiState.items.size,
                             onToggleSubscription = { onToggleSubscription(item) },
                             onDownload = { onDownload(item) },
                         )
+                    }
+                    // A page that failed to load leaves the ones already shown in place.
+                    if (uiState.error != null) {
+                        item {
+                            Text(
+                                text = uiState.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                     if (uiState.nextPage != null) {
                         item {
@@ -191,17 +202,14 @@ private fun WorkshopRow(
     item: WorkshopItem,
     subscribed: Boolean,
     download: DownloadState?,
-    shape: androidx.compose.ui.graphics.Shape,
+    index: Int,
+    count: Int,
     onToggleSubscription: () -> Unit,
     onDownload: () -> Unit,
 ) {
     val busy = download == DownloadState.QUEUED || download == DownloadState.DOWNLOADING
 
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    GroupedListItem(index = index, count = count) {
         Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

@@ -6,11 +6,10 @@ import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
-import `in`.dragonbra.vapulla.service.ServiceConnection
-import `in`.dragonbra.vapulla.service.SteamService
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
-import `in`.dragonbra.vapulla.service.api.FriendsApi
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,12 +18,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
-/** Profile screen state for one friend: the stored row plus the profile Steam returns. */
+/**
+ * Profile screen state for one friend: the stored row plus the profile Steam returns. A
+ * request that fails is logged and leaves the screen as it was.
+ */
 class ProfileViewModel(
     private val friendDao: SteamFriendDao,
-    private val serviceConnection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val friendId: Long,
 ) : ViewModel() {
 
@@ -53,61 +54,60 @@ class ProfileViewModel(
      */
     val mutualFriends: StateFlow<ImmutableList<String>?> = _mutualFriends.asStateFlow()
 
-    private val service: SteamService
-        get() = checkNotNull(serviceConnection.steamService) { "SteamService is not bound" }
-
-    private val friends: FriendsApi
-        get() = checkNotNull(service.apis) { "Not connected to Steam" }.friends
-
     init {
         viewModelScope.launch {
-            val response = friends.getProfileInfo(friendId.toSteamID())
-            if (response.result == EResult.OK) {
-                _friendProfile.value = ProfileInfo.from(response)
-            }
+            connection.request("GetProfileInfo") { it.friends.profileInfo(friendId.toSteamID()) }
+                .onSuccess { response ->
+                    if (response.result == EResult.OK) {
+                        _friendProfile.value = ProfileInfo.from(response)
+                    }
+                }
         }
+
         viewModelScope.launch {
-            _favoriteBadge.value =
-                runCatching { service.apis?.profile?.favoriteBadge(friendId.toSteamID()) }
-                    .onFailure { Timber.w(it, "GetFavoriteBadge failed") }
-                    .getOrNull()
+            _favoriteBadge.value = connection
+                .request("GetFavoriteBadge") { it.profile.favoriteBadge(friendId.toSteamID()) }
+                .getOrNull()
             _badgeLoading.value = false
         }
-    }
 
-    init {
         viewModelScope.launch {
             if (friendDao.find(friendId)?.isRequestRecipient != true) return@launch
 
-            val mutual = runCatching { friends.mutualFriendsOfRequests()[friendId].orEmpty() }
-                .onFailure { Timber.w(it, "GetMutualFriendsForIncomingInvites failed") }
-                .getOrNull()
-                ?: return@launch
+            val mutual = connection.request("GetMutualFriendsForIncomingInvites") {
+                it.friends.mutualFriendsOfRequests()[friendId].orEmpty()
+            }.getOrNull() ?: return@launch
 
             _mutualFriends.value = mutual
-                .map { id -> friendDao.find(id)?.nameOrNickname ?: id.toULong().toString() }
+                .map { id -> friendDao.find(id)?.nameOrNickname ?: id.toSteamIdString() }
                 .sorted()
                 .toImmutableList()
         }
     }
 
-    override fun onCleared() {
-        Timber.d("onCleared")
+    /** Blocks the friend, or unblocks one who is blocked. */
+    fun toggleBlocked() {
+        viewModelScope.launch {
+            connection.request("IgnoreFriend") { it.friends.toggleBlocked(friendId) }
+        }
     }
 
-    fun onBlock() {
-        viewModelScope.launch { friends.ignoreFriend(friendId) }
+    fun removeFriend() {
+        viewModelScope.launch {
+            connection.request("RemoveFriend") { it.friends.removeFriend(friendId) }
+        }
     }
 
-    fun onRemove() {
-        viewModelScope.launch { friends.removeFriend(friendId) }
+    fun setNickname(nickname: String) {
+        viewModelScope.launch {
+            connection.request("SetNickname") { it.friends.setNickname(friendId, nickname) }
+        }
     }
 
-    fun onNickname(value: String) {
-        viewModelScope.launch { friends.setNickname(friendId, value) }
-    }
-
-    fun onAlias() {
-        viewModelScope.launch { friends.requestAliasHistory(friendId) }
+    /** Asks Steam for the friend's earlier names, which then arrive in [friend]. */
+    fun loadAliases() {
+        viewModelScope.launch {
+            connection.request("AliasHistory") { it.friends.loadAliases(friendId) }
+        }
     }
 }

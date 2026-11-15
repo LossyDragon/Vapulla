@@ -2,26 +2,16 @@ package `in`.dragonbra.vapulla.ui.screens.underhood
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -30,7 +20,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,13 +28,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.dao.SteamLicenseDao
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.composables.search.SearchField
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.collections.immutable.ImmutableList
@@ -63,7 +54,7 @@ import kotlinx.coroutines.launch
 /** An app a license grants. [name] is empty when the app's info was never fetched. */
 @Immutable
 data class LicensedApp(val id: Int, val name: String) {
-    val label: String get() = name.ifEmpty { "App $id" }
+    val label: String get() = name.decodeHtml().ifEmpty { "App $id" }
 }
 
 /**
@@ -177,8 +168,6 @@ private fun LicensesContent(
     onBack: () -> Unit,
     onSearch: (String) -> Unit,
 ) {
-    // The field keeps its own text. Feeding it from the view model's state, which is worked
-    // out on another thread, would hand it stale text mid-typing and scramble the input.
     var text by rememberSaveable { mutableStateOf(state.query) }
 
     UnderHoodScaffold(title = "Licenses", onBack = onBack) { padding ->
@@ -188,37 +177,20 @@ private fun LicensesContent(
                 .imePadding()
                 .padding(padding.exceptBottom()),
         ) {
-            OutlinedTextField(
+            SearchField(
                 value = text,
                 onValueChange = {
                     text = it
                     onSearch(it)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text("Game name, app ID or package ID") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (text.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                text = ""
-                                onSearch("")
-                            },
-                        ) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                        }
-                    }
-                },
+                placeholder = "Game name, app ID or package ID",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
 
             when {
                 state.isLoading -> LoadingBox(modifier = Modifier.fillMaxSize())
 
-                state.licenses.isEmpty() -> SearchResultMessage(
+                state.licenses.isEmpty() -> EmptyMessage(
                     message = if (state.query.isBlank()) {
                         "No licenses yet: they arrive after signing in"
                     } else {
@@ -258,22 +230,24 @@ private fun LicenseList(state: LicensesUiState, bottomPadding: PaddingValues) {
             LicenseItem(
                 row = row,
                 expanded = expanded == row.packageId,
-                shape = groupedListShape(index, state.licenses.size),
+                index = index,
+                count = state.licenses.size,
                 onClick = { expanded = row.packageId.takeIf { it != expanded } },
             )
         }
     }
 }
 
+/** One package; tapping it shows or hides its details. */
 @Composable
-private fun LicenseItem(row: LicenseRow, expanded: Boolean, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-    ) {
+private fun LicenseItem(
+    row: LicenseRow,
+    expanded: Boolean,
+    index: Int,
+    count: Int,
+    onClick: () -> Unit,
+) {
+    GroupedListItem(index = index, count = count, onClick = onClick) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -325,6 +299,7 @@ private fun LicenseItem(row: LicenseRow, expanded: Boolean, shape: Shape, onClic
     }
 }
 
+/** A labelled value in an opened package; not a `Hint`, which would indent it. */
 @Composable
 private fun Detail(label: String, value: String) {
     Text(

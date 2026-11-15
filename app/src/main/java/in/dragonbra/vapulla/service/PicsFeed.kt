@@ -1,14 +1,20 @@
 package `in`.dragonbra.vapulla.service
 
 import androidx.compose.runtime.Immutable
+import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.PICSChangesCallback
+import `in`.dragonbra.vapulla.util.appendCapped
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * An app or package that Steam reported as changed. [id] is a running number, used as the
@@ -53,6 +59,12 @@ object PicsFeed {
 
     private const val MAX_ENTRIES = 1000
 
+    /** Often enough to keep the library up to date. */
+    private val IDLE_POLL_INTERVAL = 1.minutes
+
+    /** Often enough to watch changes come in. */
+    private val WATCHED_POLL_INTERVAL = 5.seconds
+
     private val nextId = AtomicLong()
 
     private val _status = MutableStateFlow(PicsFeedStatus())
@@ -86,8 +98,6 @@ object PicsFeed {
     }
 
     internal fun add(changes: List<Change>) {
-        if (changes.isEmpty()) return
-
         val now = System.currentTimeMillis()
         val added = changes.sortedBy { it.changeNumber }.map { change ->
             PicsChange(
@@ -101,7 +111,63 @@ object PicsFeed {
                 inLibrary = change.inLibrary,
             )
         }
-        _entries.update { current -> (current + added).takeLast(MAX_ENTRIES).toImmutableList() }
+        _entries.appendCapped(added, MAX_ENTRIES)
+    }
+
+    /**
+     * Takes in Steam's answer to a `picsGetChangesSince` poll: every change in it, and where
+     * the catalogue now stands.
+     *
+     * @param appNames the names of the changed apps that are known, by app ID.
+     * @param ownedApps the changed apps that are in the library.
+     * @param ownedPackages the changed packages the account has a license for.
+     */
+    internal fun report(
+        callback: PICSChangesCallback,
+        appNames: Map<Int, String> = emptyMap(),
+        ownedApps: Set<Int> = emptySet(),
+        ownedPackages: Set<Int> = emptySet(),
+    ) {
+        val apps = callback.appChanges.values.map { change ->
+            Change(
+                isApp = true,
+                targetId = change.id,
+                changeNumber = change.changeNumber,
+                needsToken = change.isNeedsToken,
+                name = appNames[change.id].orEmpty(),
+                inLibrary = change.id in ownedApps,
+            )
+        }
+        val packages = callback.packageChanges.values.map { change ->
+            Change(
+                isApp = false,
+                targetId = change.id,
+                changeNumber = change.changeNumber,
+                needsToken = change.isNeedsToken,
+                name = "",
+                inLibrary = change.id in ownedPackages,
+            )
+        }
+
+        add(apps + packages)
+        checked(
+            changeNumber = callback.currentChangeNumber,
+            // Steam stops listing changes when the last number it was given is too old.
+            note = "Too far behind for a list of changes; the next check will have one."
+                .takeIf { callback.isRequiresFullUpdate },
+        )
+    }
+
+    /**
+     * Waits until the next poll is due: [WATCHED_POLL_INTERVAL] while the feed is on screen,
+     * else [IDLE_POLL_INTERVAL], which opening the feed cuts short.
+     */
+    internal suspend fun awaitNextPoll() {
+        if (watching.value) {
+            delay(WATCHED_POLL_INTERVAL)
+        } else {
+            withTimeoutOrNull(IDLE_POLL_INTERVAL) { watching.first { it } }
+        }
     }
 
     /** A change as the sync hands it over, before it is given an ID and a time. */

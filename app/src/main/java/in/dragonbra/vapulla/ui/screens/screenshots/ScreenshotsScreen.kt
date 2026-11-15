@@ -18,11 +18,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -48,6 +46,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.service.api.Screenshot
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
@@ -90,11 +89,7 @@ private fun ScreenshotsContent(
             topBar = {
                 TopAppBar(
                     title = { Text("Screenshots") },
-                    navigationIcon = {
-                        IconButton(onClick = onNavDrawerAction) {
-                            Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                        }
-                    },
+                    navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
                 )
             },
         ) { padding ->
@@ -106,7 +101,8 @@ private fun ScreenshotsContent(
                     .padding(padding.exceptBottom()),
             ) {
                 when {
-                    uiState.error != null -> RefreshableMessage(message = uiState.error)
+                    uiState.error != null && uiState.items.isEmpty() ->
+                        RefreshableMessage(message = uiState.error)
 
                     uiState.items.isEmpty() && !uiState.isLoading -> RefreshableMessage(
                         message = "You have not uploaded any screenshots to Steam",
@@ -129,6 +125,17 @@ private fun ScreenshotsContent(
                                 screenshot = screenshot,
                                 onClick = { viewing = screenshot },
                             )
+                        }
+
+                        // A page that failed to load leaves the ones already shown in place.
+                        if (uiState.error != null) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Text(
+                                    text = uiState.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
                         }
 
                         if (uiState.nextPage != null) {

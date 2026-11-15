@@ -36,7 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.manager.AccountManager
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.Routes
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import org.koin.compose.getKoin
@@ -50,7 +50,7 @@ fun NavigationDrawer(
 ) {
     val koin = getKoin()
     val accountManager = remember(koin) { koin.get<AccountManager>() }
-    val serviceConnection = remember(koin) { koin.get<ServiceConnection>() }
+    val serviceConnection = remember(koin) { koin.get<SteamServiceConnection>() }
     val avatar by accountManager.accountAvatar.collectAsStateWithLifecycle(null)
     val name by accountManager.accountName.collectAsStateWithLifecycle(null)
     val state by accountManager.accountPersonaState.collectAsStateWithLifecycle(null)

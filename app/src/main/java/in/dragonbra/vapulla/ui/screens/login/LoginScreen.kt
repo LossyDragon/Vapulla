@@ -60,15 +60,11 @@ fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
         onPauseOrDispose {}
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.snackbarMessage.collect { message ->
-            snackbarHostState.showSnackbar(message)
-        }
+    LaunchedEffect(viewModel) {
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
     }
-    LaunchedEffect(Unit) {
-        viewModel.navigateToHome.collect { result ->
-            if (result) onNavigateToHome()
-        }
+    LaunchedEffect(viewModel) {
+        viewModel.navigateToHome.collect { onNavigateToHome() }
     }
 
     LoginScreenContent(

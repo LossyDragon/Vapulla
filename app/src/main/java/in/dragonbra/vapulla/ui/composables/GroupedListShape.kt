@@ -1,6 +1,12 @@
 package `in`.dragonbra.vapulla.ui.composables
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
@@ -29,4 +35,32 @@ fun groupedListShape(index: Int, count: Int): Shape = when {
     )
 
     else -> RoundedCornerShape(InnerCorner)
+}
+
+/**
+ * One row of a grouped list: a surface in the [groupedListShape] of the item at [index] in a
+ * group of [count]. Put the rows in a column spaced 2 dp apart. With [onClick] the row can
+ * be tapped, and the ripple stays inside its rounded corners.
+ */
+@Composable
+fun GroupedListItem(
+    index: Int,
+    count: Int,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.surfaceContainer,
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val shape = groupedListShape(index, count)
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            shape = shape,
+            color = color,
+            modifier = modifier.fillMaxWidth(),
+            content = content,
+        )
+    } else {
+        Surface(shape = shape, color = color, modifier = modifier.fillMaxWidth(), content = content)
+    }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/** The loading indicator centred in a box; give it a size with [modifier]. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LoadingBox(modifier: Modifier = Modifier) {

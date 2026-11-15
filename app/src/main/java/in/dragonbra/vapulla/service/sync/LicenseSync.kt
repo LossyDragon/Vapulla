@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service.sync
 
 import androidx.room.withTransaction
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.javasteam.steam.handlers.steamapps.License
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.PICSRequest
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback
@@ -20,9 +21,9 @@ import `in`.dragonbra.vapulla.service.api.FamilyApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import `in`.dragonbra.vapulla.util.timeChunked
 import java.io.Closeable
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -31,7 +32,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 /**
@@ -80,8 +80,8 @@ class LicenseSync(
             // Before anything is filtered out: the feed shows all of it.
             feedChanges(it)
 
+            // The usual answer: nothing changed since the last poll.
             if (account.lastChangeNumber.first() == it.currentChangeNumber) {
-                Timber.w("Change number was the same as last change number, skipping")
                 return@launch
             }
 
@@ -195,7 +195,7 @@ class LicenseSync(
                 val licenseByPackageId = changeInfoById.values
                     .asSequence()
                     .map { info -> info.packageId }
-                    .filter { packageId -> packageId != Int.MAX_VALUE }
+                    .filter { packageId -> packageId != SteamApp.NO_PACKAGE }
                     .distinct()
                     .chunked(SQL_IN_CHUNK_SIZE)
                     .toList() // Sequence lambdas can't suspend, so query from a list.
@@ -208,7 +208,7 @@ class LicenseSync(
                         return@mapNotNull null
                     }
 
-                    val packageId = changeInfo?.packageId ?: Int.MAX_VALUE
+                    val packageId = changeInfo?.packageId ?: SteamApp.NO_PACKAGE
                     val license = licenseByPackageId[packageId]
 
                     app.keyValues.generateSteamApp().copy(
@@ -239,108 +239,28 @@ class LicenseSync(
     private val onLicenseList: Consumer<LicenseListCallback> = Consumer {
         Timber.d("onLicenseList()")
 
-        val result = it.result
-
-        if (result != EResult.OK) {
-            Timber.w("Failed to get license list: $result")
+        if (it.result != EResult.OK) {
+            Timber.w("Failed to get license list: ${it.result}")
             return@Consumer
         }
 
         scope.launch {
             delay(5.seconds)
 
-            val incomingLicenses = it.licenseList
-            val existingLicenses = db.steamLicenseDao().getAllLicenses()
-            val myAccountId = localSteamId()?.accountID?.toInt()
+            val stored = db.steamLicenseDao().getAllLicenses()
+            val changed = changedLicenses(incoming = it.licenseList, stored = stored)
 
-            // Create lookup maps for efficient comparison
-            val existingLicenseMap =
-                existingLicenses.associateBy { license -> license.packageID }
-            val incomingPackageIds =
-                incomingLicenses.map { license -> license.packageID }.toSet()
-
-            // Find licenses that need to be added or updated. A package can be licensed to
-            // several accounts (family sharing); prefer our own copy for the details.
-            val licensesToProcess = it.licenseList
-                .groupBy { license -> license.packageID }
-                .mapNotNull { entry ->
-                    val preferredAccount = entry.value
-                        .firstOrNull { value -> value.ownerAccountID == myAccountId }
-                        ?: entry.value.first()
-
-                    val existingLicense = existingLicenseMap[entry.key]
-
-                    // Only process if:
-                    // 1. License doesn't exist in DB, OR
-                    // 2. License has been updated (different lastChangeNumber)
-                    if (existingLicense == null ||
-                        existingLicense.lastChangeNumber != preferredAccount.lastChangeNumber
-                    ) {
-
-                        SteamLicense(
-                            packageID = entry.key,
-                            lastChangeNumber = preferredAccount.lastChangeNumber,
-                            timeCreated = preferredAccount.timeCreated,
-                            timeNextProcess = preferredAccount.timeNextProcess,
-                            minuteLimit = preferredAccount.minuteLimit,
-                            minutesUsed = preferredAccount.minutesUsed,
-                            paymentMethod = preferredAccount.paymentMethod,
-                            licenseFlags = entry.value.fold(emptyEnumSet()) { flags, value ->
-                                flags.apply { addAll(value.licenseFlags) }
-                            },
-                            purchaseCode = preferredAccount.purchaseCode,
-                            licenseType = preferredAccount.licenseType,
-                            territoryCode = preferredAccount.territoryCode,
-                            accessToken = preferredAccount.accessToken,
-                            ownerAccountID = entry.value.map { value -> value.ownerAccountID },
-                            masterPackageID = preferredAccount.masterPackageID,
-                            // Preserve existing app/depot data if updating
-                            appIds = existingLicense?.appIds ?: emptyList(),
-                            depotIds = existingLicense?.depotIds ?: emptyList(),
-                        )
-                    } else {
-                        null // Skip unchanged licenses
-                    }
-                }
-
-            if (licensesToProcess.isNotEmpty()) {
-                Timber.i("Adding/updating ${licensesToProcess.size} licenses")
-                db.steamLicenseDao().insert(licensesToProcess)
+            if (changed.isNotEmpty()) {
+                Timber.i("Adding/updating ${changed.size} licenses")
+                db.steamLicenseDao().insert(changed)
             }
 
-            // Find licenses that were removed (exist in DB but not in incoming list)
-            val licensesToRemove = existingLicenses.filter { license ->
-                license.packageID !in incomingPackageIds
-            }
+            val incomingIds = it.licenseList.mapTo(HashSet()) { license -> license.packageID }
+            removeLicenses(stored.filter { license -> license.packageID !in incomingIds })
 
-            if (licensesToRemove.isNotEmpty()) {
-                Timber.i("Removing ${licensesToRemove.size} stale licenses")
-
-                // Clean up associated SteamApps
-                licensesToRemove.forEach { license ->
-                    // Remove apps that were only associated with this package
-                    license.appIds.forEach { appId ->
-                        val app = db.steamAppDao().findApp(appId)
-                        if (app != null && app.packageId == license.packageID) {
-                            // Reset to stub state or remove entirely
-                            db.steamAppDao().update(
-                                app.copy(
-                                    packageId = Int.MAX_VALUE,
-                                    ownerAccountId = emptyList(),
-                                    licenseFlags = emptyEnumSet(),
-                                ),
-                            )
-                        }
-                    }
-                }
-
-                val packageIds = licensesToRemove.map { toRemove -> toRemove.packageID }
-                db.steamLicenseDao().deleteStaleLicenses(packageIds)
-            }
-
-            // Only request PICS for NEW or UPDATED licenses
-            if (licensesToProcess.isNotEmpty()) {
-                val picsRequests = licensesToProcess.map { license ->
+            // Only new and changed licenses need their package info fetched.
+            if (changed.isNotEmpty()) {
+                val picsRequests = changed.map { license ->
                     PICSRequest(license.packageID, license.accessToken)
                 }
 
@@ -359,65 +279,112 @@ class LicenseSync(
         }
     }
 
-    /** Hands everything in a change list to [PicsFeed], with names where they are known. */
-    private suspend fun feedChanges(callback: PICSChangesCallback) {
-        val apps = callback.appChanges.values.chunked(SQL_IN_CHUNK_SIZE).flatMap { chunk ->
-            val ids = chunk.map { change -> change.id }
-            val names = db.steamAppDao().findNames(ids).associate { app -> app.id to app.name }
-            // An app can be in the database without being ours: friends' games are stored too.
-            val owned = db.steamAppDao().findChangeInfo(ids)
-                .filter { info -> info.packageId != INVALID_PKG_ID }
-                .mapTo(HashSet()) { info -> info.id }
+    /**
+     * The licenses in [incoming] that are new or have changed since they were [stored], as the
+     * rows to store. A package can be licensed to several accounts (family sharing): the
+     * details are taken from our own copy when there is one, the owners and flags from all.
+     */
+    private fun changedLicenses(
+        incoming: List<License>,
+        stored: List<SteamLicense>,
+    ): List<SteamLicense> {
+        val storedById = stored.associateBy { license -> license.packageID }
+        val myAccountId = localSteamId()?.accountID?.toInt()
 
-            chunk.map { change ->
-                PicsFeed.Change(
-                    isApp = true,
-                    targetId = change.id,
-                    changeNumber = change.changeNumber,
-                    needsToken = change.isNeedsToken,
-                    name = names[change.id].orEmpty(),
-                    inLibrary = change.id in owned,
+        return incoming
+            .groupBy { license -> license.packageID }
+            .mapNotNull { (packageId, copies) ->
+                val license = copies.firstOrNull { copy -> copy.ownerAccountID == myAccountId }
+                    ?: copies.first()
+                val old = storedById[packageId]
+
+                if (old != null && old.lastChangeNumber == license.lastChangeNumber) {
+                    return@mapNotNull null
+                }
+
+                SteamLicense(
+                    packageID = packageId,
+                    lastChangeNumber = license.lastChangeNumber,
+                    timeCreated = license.timeCreated,
+                    timeNextProcess = license.timeNextProcess,
+                    minuteLimit = license.minuteLimit,
+                    minutesUsed = license.minutesUsed,
+                    paymentMethod = license.paymentMethod,
+                    licenseFlags = copies.fold(emptyEnumSet()) { flags, copy ->
+                        flags.apply { addAll(copy.licenseFlags) }
+                    },
+                    purchaseCode = license.purchaseCode,
+                    licenseType = license.licenseType,
+                    territoryCode = license.territoryCode,
+                    accessToken = license.accessToken,
+                    ownerAccountID = copies.map { copy -> copy.ownerAccountID },
+                    masterPackageID = license.masterPackageID,
+                    // The package info that was fetched for the old row still applies.
+                    appIds = old?.appIds ?: emptyList(),
+                    depotIds = old?.depotIds ?: emptyList(),
                 )
             }
-        }
-
-        val packages = callback.packageChanges.values.chunked(SQL_IN_CHUNK_SIZE).flatMap { chunk ->
-            val owned = db.steamLicenseDao().findLicenseInfo(chunk.map { change -> change.id })
-                .mapTo(HashSet()) { info -> info.packageID }
-
-            chunk.map { change ->
-                PicsFeed.Change(
-                    isApp = false,
-                    targetId = change.id,
-                    changeNumber = change.changeNumber,
-                    needsToken = change.isNeedsToken,
-                    name = "",
-                    inLibrary = change.id in owned,
-                )
-            }
-        }
-
-        PicsFeed.add(apps + packages)
-        PicsFeed.checked(
-            changeNumber = callback.currentChangeNumber,
-            // Steam stops listing changes when the last number it was given is too old.
-            note = "Too far behind for a list of changes; the next check will have one."
-                .takeIf { callback.isRequiresFullUpdate },
-        )
     }
 
     /**
-     * Polls the PICS change list; [onPicsChanges] handles the answer. Once a minute is plenty
-     * for the library. While the change feed is on screen it polls every few seconds, and
-     * opening the feed cuts the current wait short.
+     * Deletes licenses the account no longer has. The apps they granted stay in the table,
+     * since friends may be playing them, but no longer count as in the library.
+     */
+    private suspend fun removeLicenses(licenses: List<SteamLicense>) {
+        if (licenses.isEmpty()) return
+        Timber.i("Removing ${licenses.size} stale licenses")
+
+        val appDao = db.steamAppDao()
+        db.withTransaction {
+            licenses.forEach { license ->
+                license.appIds.forEach { appId ->
+                    val app = appDao.findApp(appId)
+                    // Left alone when it has since been put under another package.
+                    if (app != null && app.packageId == license.packageID) {
+                        appDao.update(
+                            app.copy(
+                                packageId = SteamApp.NO_PACKAGE,
+                                ownerAccountId = emptyList(),
+                                licenseFlags = emptyEnumSet(),
+                            ),
+                        )
+                    }
+                }
+            }
+
+            db.steamLicenseDao().deleteStaleLicenses(licenses.map { it.packageID })
+        }
+    }
+
+    /** Hands everything in a change list to [PicsFeed], with names where they are known. */
+    private suspend fun feedChanges(callback: PICSChangesCallback) {
+        val appDao = db.steamAppDao()
+        val appIdChunks = callback.appChanges.keys.chunked(SQL_IN_CHUNK_SIZE)
+
+        val appNames = appIdChunks
+            .flatMap { ids -> appDao.findNames(ids) }
+            .associate { app -> app.id to app.name }
+
+        // An app can be in the database without being ours: friends' games are stored too.
+        val ownedApps = appIdChunks
+            .flatMap { ids -> appDao.findChangeInfo(ids) }
+            .filter { info -> info.packageId != SteamApp.NO_PACKAGE }
+            .mapTo(HashSet()) { info -> info.id }
+
+        val ownedPackages = callback.packageChanges.keys.chunked(SQL_IN_CHUNK_SIZE)
+            .flatMap { ids -> db.steamLicenseDao().findLicenseInfo(ids) }
+            .mapTo(HashSet()) { info -> info.packageID }
+
+        PicsFeed.report(callback, appNames, ownedApps, ownedPackages)
+    }
+
+    /**
+     * Polls the PICS change list; [onPicsChanges] handles the answer. How often is up to
+     * [PicsFeed.awaitNextPoll]: seldom for the library alone, often while the feed is watched.
      */
     private fun CoroutineScope.continuousPicsChanges() = launch {
         while (isActive) {
-            if (PicsFeed.watching.value) {
-                delay(FEED_POLL_INTERVAL)
-            } else {
-                withTimeoutOrNull(1.minutes) { PicsFeed.watching.first { watching -> watching } }
-            }
+            PicsFeed.awaitNextPoll()
 
             val lastChangeNumber = account.lastChangeNumber.first() ?: 0
 
@@ -434,9 +401,7 @@ class LicenseSync(
     /** Drains [picsRequestChannel] into batched app info requests. */
     private fun CoroutineScope.continuousPicsChecker() = launch {
         picsRequestChannel.receiveAsFlow()
-            // Long enough to batch a burst (a library ingest fills 500 well within it), short
-            // enough that a single lookup, such as a friend's unknown game, is not held up.
-            .timeChunked(500, 2.seconds)
+            .timeChunked(PICS_BATCH_SIZE, PICS_BATCH_WINDOW)
             .collect { ids ->
                 Timber.d("Collected ${ids.size} app(s) to query PICS")
                 steamApps.picsGetProductInfo(
@@ -448,7 +413,7 @@ class LicenseSync(
 
     /** Copies playtime and last-played from `Player.GetOwnedGames` onto the stored apps. */
     private fun CoroutineScope.syncPlaytime() = launch {
-        val games = runCatching { library.ownedGames() }
+        val games = runSuspendCatching { library.ownedGames() }
             .onFailure { Timber.w(it, "Playtime sync failed") }
             .getOrNull() ?: return@launch
 
@@ -473,7 +438,7 @@ class LicenseSync(
      * Apps new to the table show up once their app info has arrived.
      */
     private fun CoroutineScope.syncFamilyLibrary() = launch {
-        val shared = runCatching { family.family()?.let { family.sharedLibrary(it.id) } }
+        val shared = runSuspendCatching { family.family()?.let { family.sharedLibrary(it.id) } }
             .onFailure { Timber.w(it, "Family library sync failed") }
             .getOrNull()
             ?: return@launch
@@ -488,7 +453,7 @@ class LicenseSync(
 
         // No license of ours grants these, so nothing else would put them in the library.
         val toAdd = sharedIds.filter { id ->
-            (known[id]?.packageId ?: INVALID_PKG_ID) == INVALID_PKG_ID
+            (known[id]?.packageId ?: SteamApp.NO_PACKAGE) == SteamApp.NO_PACKAGE
         }
         val noLongerShared = appDao.findAppIdsOfPackage(FAMILY_PKG_ID) - sharedIds.toSet()
 
@@ -496,7 +461,7 @@ class LicenseSync(
             appDao.insertIfAbsent(toAdd.map { SteamApp(id = it, packageId = FAMILY_PKG_ID) })
             toAdd.chunked(SQL_IN_CHUNK_SIZE).forEach { appDao.updatePackageId(FAMILY_PKG_ID, it) }
             noLongerShared.chunked(SQL_IN_CHUNK_SIZE)
-                .forEach { appDao.updatePackageId(INVALID_PKG_ID, it) }
+                .forEach { appDao.updatePackageId(SteamApp.NO_PACKAGE, it) }
         }
 
         toAdd.forEach { requestAppInfo(it) }
@@ -512,16 +477,20 @@ class LicenseSync(
         /** Max ids per `WHERE id IN (...)` query, kept well under SQLite's bound-parameter limit. */
         const val SQL_IN_CHUNK_SIZE = 500
 
-        /** The package ID stored for an app that no license of ours grants. */
-        const val INVALID_PKG_ID = Int.MAX_VALUE
-
         /**
          * The package ID stored for an app that is in the library only because the Steam
          * Family shares it. Not a real package: no license is looked up for it.
          */
         const val FAMILY_PKG_ID = Int.MAX_VALUE - 1
 
-        /** How often the change list is polled while the change feed is on screen. */
-        val FEED_POLL_INTERVAL = 5.seconds
+        /** Most app IDs sent in one PICS app info request. */
+        const val PICS_BATCH_SIZE = 500
+
+        /**
+         * How long app IDs are collected for one request: long enough to batch a burst (a
+         * library ingest fills a batch well within it), short enough that a single lookup,
+         * such as a friend's unknown game, is not held up.
+         */
+        val PICS_BATCH_WINDOW = 2.seconds
     }
 }

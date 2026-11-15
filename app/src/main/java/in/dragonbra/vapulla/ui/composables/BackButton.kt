@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/** The top bar button of a screen that was opened from another; it goes back to that one. */
 @Composable
 fun BackButton(onClick: () -> Unit) {
     IconButton(

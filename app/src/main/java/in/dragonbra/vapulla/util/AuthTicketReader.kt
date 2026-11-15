@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.util
 
 import `in`.dragonbra.javasteam.types.SteamID
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -57,7 +58,7 @@ object AuthTicketReader {
             title = "Game connect token",
             note = "Steam hands the client a few of these after sign-in. Each ticket uses one up.",
             rows = listOf(
-                "Steam ID" to steamId.convertToUInt64().toULong().toString(),
+                "Steam ID" to steamId.convertToUInt64().toSteamIdString(),
                 "Issued" to issued.toDate(),
             ),
         )
@@ -111,7 +112,7 @@ object AuthTicketReader {
                 "the signature with Steam's public key.",
             rows = listOf(
                 "Version" to version.toString(),
-                "Steam ID" to steamId.convertToUInt64().toULong().toString(),
+                "Steam ID" to steamId.convertToUInt64().toSteamIdString(),
                 "App ID" to appId.toUInt().toString(),
                 "Public address" to publicIp.toAddress(),
                 "Flags" to "0x%08x".format(flags),

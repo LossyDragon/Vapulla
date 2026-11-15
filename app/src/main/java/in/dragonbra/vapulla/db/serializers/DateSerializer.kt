@@ -8,6 +8,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/** A date inside a JSON column, as epoch milliseconds. */
 object DateSerializer : KSerializer<Date> {
 
     override val descriptor: SerialDescriptor =

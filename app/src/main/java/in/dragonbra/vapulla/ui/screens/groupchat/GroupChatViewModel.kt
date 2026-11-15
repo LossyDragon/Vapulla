@@ -7,12 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.db.dao.EmoticonDao
 import `in`.dragonbra.vapulla.db.entity.Emoticon
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
+import `in`.dragonbra.vapulla.service.requestMessage
 import `in`.dragonbra.vapulla.ui.composables.BBCode
-import `in`.dragonbra.vapulla.util.readChatMedia
+import `in`.dragonbra.vapulla.ui.screens.chat.sendChatImage
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -59,7 +61,7 @@ class GroupChatViewModel(
     groupName: String,
     roomName: String,
     emoticonDao: EmoticonDao,
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val application: Application,
 ) : ViewModel() {
 
@@ -116,7 +118,7 @@ class GroupChatViewModel(
             }
 
             viewModelScope.launch {
-                runCatching { api.history(groupId, chatId) }
+                runSuspendCatching { api.history(groupId, chatId) }
                     .onSuccess { page ->
                         add(page.messages)
                         _uiState.update {
@@ -127,7 +129,7 @@ class GroupChatViewModel(
                     .onFailure { error ->
                         Timber.w(error, "GetMessageHistory failed")
                         _uiState.update {
-                            it.copy(isLoading = false, error = error.message ?: "Request failed")
+                            it.copy(isLoading = false, error = error.requestMessage)
                         }
                     }
             }
@@ -150,7 +152,7 @@ class GroupChatViewModel(
         _uiState.update { it.copy(isLoadingOlder = true) }
 
         viewModelScope.launch {
-            runCatching { api.history(groupId, chatId, before = oldest) }
+            runSuspendCatching { api.history(groupId, chatId, before = oldest) }
                 .onSuccess { page ->
                     val known = _uiState.value.messages.size
                     add(page.messages)
@@ -207,18 +209,8 @@ class GroupChatViewModel(
         _uiState.update { it.copy(isUploading = true) }
 
         viewModelScope.launch {
-            val media = connection.steamService?.apis?.media
-
-            val failure = if (media == null) {
-                "Not connected to Steam"
-            } else {
-                runCatching {
-                    val image = application.readChatMedia(uri)
-                    media.sendToChatRoom(groupId, chatId, image.bytes, image.fileName)
-                }
-                    .onFailure { Timber.w(it, "Image upload failed") }
-                    .exceptionOrNull()
-                    ?.let { "Image not sent: ${it.message}" }
+            val failure = connection.sendChatImage(application, uri) { media, image ->
+                media.sendToChatRoom(groupId, chatId, image.bytes, image.fileName)
             }
 
             _uiState.update { it.copy(isUploading = false) }

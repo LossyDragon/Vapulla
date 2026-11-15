@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -14,7 +13,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -29,13 +27,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.service.CmServer
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -55,7 +53,7 @@ data class CmServersUiState(
 )
 
 /** The client's CM server list (`SmartCMServerList`), with the server in use first. */
-class CmServersViewModel(private val connection: ServiceConnection) : ViewModel() {
+class CmServersViewModel(private val connection: SteamServiceConnection) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CmServersUiState())
     val uiState: StateFlow<CmServersUiState> = _uiState.asStateFlow()
@@ -108,7 +106,7 @@ private fun CmServersContent(state: CmServersUiState, onBack: () -> Unit, onRefr
                     .padding(padding),
             )
 
-            state.servers.isEmpty() -> SearchResultMessage(
+            state.servers.isEmpty() -> EmptyMessage(
                 message = "No servers: the client is not running",
                 modifier = Modifier.padding(padding),
             )
@@ -131,14 +129,14 @@ private fun CmServersContent(state: CmServersUiState, onBack: () -> Unit, onRefr
                         items = state.servers,
                         key = { _, server -> "${server.host}:${server.port}:${server.protocols}" },
                     ) { index, server ->
-                        Surface(
-                            shape = groupedListShape(index, state.servers.size),
+                        GroupedListItem(
+                            index = index,
+                            count = state.servers.size,
                             color = if (server.current) {
                                 MaterialTheme.colorScheme.secondaryContainer
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainer
                             },
-                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

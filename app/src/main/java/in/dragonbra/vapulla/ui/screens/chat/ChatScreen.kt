@@ -1,8 +1,5 @@
 package `in`.dragonbra.vapulla.ui.screens.chat
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +13,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Person
@@ -37,7 +33,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
@@ -57,13 +55,17 @@ import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatEvents
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatInputBox
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatMessageItem
 import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
+import `in`.dragonbra.vapulla.ui.screens.chat.components.FOLLOW_THRESHOLD
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
+import `in`.dragonbra.vapulla.ui.screens.chat.components.rememberImagePicker
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
 import `in`.dragonbra.vapulla.ui.screens.home.components.friendDisplayName
+import `in`.dragonbra.vapulla.ui.screens.home.components.statusText
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
@@ -72,11 +74,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
-/** How many messages up from the bottom the list still follows incoming messages down. */
-private const val FOLLOW_THRESHOLD = 5
-
 /** How long to wait for a sent message to appear before giving up on scrolling to it. */
-private val SENT_SCROLL_TIMEOUT_MS = 3.seconds
+private val SENT_SCROLL_TIMEOUT = 3.seconds
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit, onProfile: () -> Unit) {
@@ -86,9 +85,13 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit, onProfile: () -> Un
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val textFieldState = rememberTextFieldState(initialText = uiState.messageText)
-    LaunchedEffect(textFieldState.text.toString()) {
-        viewModel.updateMessageText(textFieldState.text.toString())
+    val textFieldState = rememberTextFieldState()
+
+    // Every edit that leaves something in the field counts as typing. Clearing the field
+    // (sending, deleting everything) does not.
+    LaunchedEffect(viewModel, textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { text -> if (text.isNotBlank()) viewModel.onTyping() }
     }
 
     // The chat counts as open only while it is actually on screen, so messages that arrive
@@ -98,26 +101,9 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit, onProfile: () -> Un
         onPauseOrDispose { viewModel.onChatVisible(false) }
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.sendFailures.collect { text ->
-            // Hand the text back unless something new has been typed in the meantime.
-            if (textFieldState.text.isEmpty()) {
-                textFieldState.setTextAndPlaceCursorAtEnd(text)
-            }
-            snackbarHostState.showSnackbar("Message not sent")
-        }
-    }
+    ChatEvents(viewModel.sendFailures, viewModel.notices, textFieldState, snackbarHostState)
 
-    LaunchedEffect(viewModel) {
-        viewModel.notices.collect { snackbarHostState.showSnackbar(it) }
-    }
-
-    // The system photo picker needs no storage permission; it hands back one image.
-    val imagePicker = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
-        if (uri != null) {
-            viewModel.sendImage(uri)
-        }
-    }
+    val pickImage = rememberImagePicker(onPicked = viewModel::sendImage)
 
     ChatScreenContent(
         uiState = uiState,
@@ -131,11 +117,8 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit, onProfile: () -> Un
             textFieldState.clearText()
         },
         emoticons = emoticons,
-        onEmojiPanelChange = { viewModel.toggleEmojiKeyboard(it) },
         onStickerClick = viewModel::sendSticker,
-        onAttachClick = {
-            imagePicker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
-        },
+        onAttachClick = pickImage,
     )
 }
 
@@ -144,17 +127,17 @@ private fun ChatScreenContent(
     uiState: ChatUiState,
     messages: LazyPagingItems<ChatMessage>,
     textFieldState: TextFieldState,
+    snackbarHostState: SnackbarHostState,
+    emoticons: ImmutableList<Emoticon>,
     onBack: () -> Unit,
     onProfile: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    onSendClick: () -> Unit = { },
-    emoticons: ImmutableList<Emoticon> = persistentListOf(),
-    onEmojiPanelChange: (Boolean) -> Unit = { },
-    onStickerClick: (Emoticon) -> Unit = { },
-    onAttachClick: () -> Unit = { },
+    onSendClick: () -> Unit,
+    onStickerClick: (Emoticon) -> Unit,
+    onAttachClick: () -> Unit,
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    var showEmojiPanel by rememberSaveable { mutableStateOf(false) }
 
     // Keeping up with the conversation. A new message is inserted at index 0, and the lazy
     // list holds on to the item it was showing, so the new one lands just out of view. When
@@ -178,7 +161,7 @@ private fun ChatScreenContent(
     // and yank the list down on some later incoming message.
     LaunchedEffect(scrollToSentMessage) {
         if (scrollToSentMessage) {
-            delay(SENT_SCROLL_TIMEOUT_MS)
+            delay(SENT_SCROLL_TIMEOUT)
             scrollToSentMessage = false
         }
     }
@@ -201,7 +184,6 @@ private fun ChatScreenContent(
             TopAppBar(
                 title = {
                     Row {
-                        // TODO add Profile Equiped items around PFP.
                         FriendAvatar(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             size = 48.dp,
@@ -261,8 +243,8 @@ private fun ChatScreenContent(
             ChatInputBox(
                 textFieldState = textFieldState,
                 emoticons = emoticons,
-                showEmojiPanel = uiState.showEmojiKeyboard,
-                onEmojiPanelChange = onEmojiPanelChange,
+                showEmojiPanel = showEmojiPanel,
+                onEmojiPanelChange = { showEmojiPanel = it },
                 onStickerClick = { sticker ->
                     onStickerClick(sticker)
                     scrollToSentMessage = true
@@ -323,10 +305,7 @@ private fun ChatScreenContent(
                                 if (showDay) {
                                     DayHeader(timestamp = message.timestamp)
                                 }
-                                ChatMessageItem(
-                                    message = message,
-                                    isFromLocal = message.fromLocal,
-                                )
+                                ChatMessageItem(message = message)
                             }
                         }
                     }
@@ -388,13 +367,16 @@ private fun Preview() {
 
     VapullaTheme {
         ChatScreenContent(
-            onBack = { },
-            onProfile = { },
             messages = messages,
             textFieldState = TextFieldState("Hello World!"),
+            snackbarHostState = remember { SnackbarHostState() },
+            emoticons = persistentListOf(),
+            onBack = { },
+            onProfile = { },
+            onSendClick = { },
+            onStickerClick = { },
+            onAttachClick = { },
             uiState = ChatUiState(
-                messageText = "Hello World!",
-                showEmojiKeyboard = true,
                 friend = SteamFriend(
                     id = 1L,
                     name = "In Game 1",

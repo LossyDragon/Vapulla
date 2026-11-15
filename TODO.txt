@@ -24,6 +24,30 @@ To Verify
 - TokenCipher on a device: encrypting and decrypting a token needs the Android Keystore,
   so the unit tests (./gradlew :app:testDebugUnitTest) only cover telling the stored forms
   apart
+- The code clean-up of 15 Nov 2026 was checked on the emulator by opening every screen
+  (the upgrade from a version 15 database, auto sign-in, friends, a chat and a profile,
+  every drawer screen and Under the Hood tool, game detail, store search, PICS explorer,
+  depot suggestions, Settings and rotation). Not yet run:
+  - Sign-in: typing another account while a token is saved (must use the typed one);
+    wrong password; Steam Guard code; QR code, its cancel, and a second QR straight
+    after (the poll is now every few seconds, it was every few milliseconds)
+  - Sign out and Stop from the drawer and the notification, then signing in again; a lost
+    connection (at most three tries, then sign-in); network back mid-retry
+  - Explore without signing in: open a tool, rotate, leave, then sign in; back from the
+    friends list must leave the app, not show sign-in
+  - A reply or friend-request action from a notification after the session ended: the
+    service should stop, not stay on "Starting..."
+  - Friends list: the time of the last message on a row (needs a stored chat)
+  - Nicknames set, changed and removed while the friend's presence changes; alias list
+  - Friend chat: typing notices, the emoji panel, a failed send, leaving right after
+    sending, image upload; group chat image and sticker
+  - Chat text: a bold link, markup inside a link label and inside a spoiler, an image in
+    a spoiler, emoticons
+  - Downloads: pause right after queueing and while running, two moves at once
+  - Lists with airplane mode on mid-request: an error or empty list, not a spinner
+  - Workshop sort switched quickly; a failed "load more" in Workshop and Screenshots;
+    server browser with no result; leaderboards Everyone / Friends
+  - PICS explorer filter with open / close all
 
 Issues or Bugs
 -------------------
@@ -32,7 +56,6 @@ Issues or Bugs
   "Sign in" has to be tapped (it then uses the saved sign-in)
 - PICS app access tokens are always requested as 0
 - TryAnotherCM returns to sign-in instead of trying another CM
-- Database is not cleared on log out
 - Friend request notification only opens the app, not the profile
 - Two identical messages in the same second are stored as one
 - The client connects to a far-away CM server (seen: Buenos Aires from the US); it seems to take
@@ -58,7 +81,23 @@ Issues or Bugs
   setFriendNickname returning a job that can be awaited would let the app wait for
   Steam's answer
 
+- Achievements screen: which achievements are unlocked is wrong. Seen on the emulator:
+  A Hat in Time shows 17 / 41 on the game page and "0 of 46 unlocked" in the list; 7 Days
+  to Die shows 39 / 43 and "43 of 43 unlocked". The game page asks
+  Player.GetAchievementsProgress; the list takes isUnlocked from JavaSteam's
+  getExpandedAchievements (LibraryApi.gameStats). Older than the clean-up
 - Is "Expired" another EResult that should clear the saved token?
+- Code clean-up left over from the review of 15 Nov 2026:
+  - Utils is still an object of mixed helpers; its functions could be top-level
+  - Profile, Home, Games and the server browser expose several flows, not one UiState
+  - Friend chat and group chat still share code by copy (emoticons flow, send failures,
+    day headers)
+  - The ID decoder decodes in its composable, and the signed-in web page has no view
+    model; Diagnostics counts reconnects by the text of the event
+  - DownloadManager.move could be a class of its own
+  - Screens differ in how they show loading and errors (pull to refresh in some only)
+  - README has no screenshots
+  - LicenseSync waits 5 seconds before it handles the license list, with no reason given
 
 Feature Ideas
 ----------------------------------------------------
@@ -72,6 +111,7 @@ Feature Ideas
 - Per-friend notification preferences (Player.GetPerFriendPreferences)
 - Reactions in friend chat (FriendMessages.UpdateMessageReaction)
 - Badges: per-game badge levels and community badge progress (Player service)
+- Profile items: avatar frame, animated avatar and backgrounds (Player.GetProfileItemsEquipped)
 
 DECIDED AGAINST
 ---------------

@@ -7,12 +7,14 @@ import `in`.dragonbra.javasteam.enums.ERegionCode
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.manager.SettingsManager
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.GameServer
+import `in`.dragonbra.vapulla.service.requestMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,16 +27,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-/** The game whose servers are listed; null until the user picks one or the library loads. */
+/** A game of the library that can have servers, as the picker lists it. */
 @Immutable
 data class ServerGame(val appId: Int, val name: String, val iconUrl: String)
 
+/**
+ * @property game the game whose servers are listed; null until the user picks one or the
+ *   library loads.
+ * @property queried the [servers] are the answer to a query, so none means none were found.
+ */
 @Immutable
 data class ServerBrowserUiState(
     val game: ServerGame? = null,
     val region: ERegionCode = ERegionCode.World,
     val servers: ImmutableList<GameServer> = persistentListOf(),
     val isLoading: Boolean = false,
+    val queried: Boolean = false,
     val error: String? = null,
 )
 
@@ -45,7 +53,7 @@ data class ServerBrowserUiState(
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerBrowserViewModel(
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val settingsManager: SettingsManager,
     private val appDao: SteamAppDao,
 ) : ViewModel() {
@@ -62,6 +70,8 @@ class ServerBrowserViewModel(
         .map { apps -> apps.map { it.toServerGame() }.toImmutableList() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), persistentListOf())
 
+    private var queryJob: Job? = null
+
     init {
         // Start on the most played game so the first query works without a pick.
         viewModelScope.launch {
@@ -77,7 +87,9 @@ class ServerBrowserViewModel(
 
     /** Picks [game] and queries straight away; the picker is the natural trigger. */
     fun selectGame(game: ServerGame) {
-        _uiState.update { it.copy(game = game, servers = persistentListOf(), error = null) }
+        _uiState.update {
+            it.copy(game = game, servers = persistentListOf(), queried = false, error = null)
+        }
         query()
     }
 
@@ -85,20 +97,18 @@ class ServerBrowserViewModel(
         _uiState.update { it.copy(region = region) }
     }
 
+    /** Asks for the servers of the picked game. A newer query replaces this one. */
     fun query() {
         val state = _uiState.value
         val game = state.game ?: return
-        viewModelScope.launch {
+
+        queryJob?.cancel()
+        queryJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val apis = connection.steamService?.apis
-            if (apis == null) {
-                _uiState.update { it.copy(isLoading = false, error = "Not connected to Steam") }
-                return@launch
-            }
 
             val settings = settingsManager.settings.first()
             Timber.d("Querying ${settings.maxServers} servers for ${game.name} (${game.appId})")
-            runCatching {
+            connection.request("Server query") { apis ->
                 apis.servers.query(
                     appId = game.appId,
                     region = state.region,
@@ -113,18 +123,15 @@ class ServerBrowserViewModel(
                             .thenBy { it.info?.name?.trim()?.lowercase() ?: it.address },
                     )
                     _uiState.update {
-                        it.copy(servers = sorted.toImmutableList(), isLoading = false)
+                        it.copy(
+                            servers = sorted.toImmutableList(),
+                            isLoading = false,
+                            queried = true,
+                        )
                     }
                 }
                 .onFailure { error ->
-                    Timber.w(error, "Server query failed")
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error =
-                                error.message ?: "Query failed",
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = error.requestMessage) }
                 }
         }
     }

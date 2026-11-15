@@ -4,9 +4,9 @@ import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,14 +15,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -33,14 +31,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.api.Leaderboard
 import `in`.dragonbra.vapulla.service.api.LeaderboardScore
 import `in`.dragonbra.vapulla.ui.composables.BackButton
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.Utils.decodeHtml
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlinx.collections.immutable.persistentListOf
 
 /**
@@ -83,7 +81,7 @@ private fun LeaderboardsContent(
                         )
                         if (uiState.gameName.isNotEmpty()) {
                             Text(
-                                text = uiState.gameName.decodeHtml(),
+                                text = uiState.gameName,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -106,7 +104,7 @@ private fun LeaderboardsContent(
             uiState.isLoading -> LoadingBox(modifier = modifier)
 
             uiState.message != null ->
-                SearchResultMessage(message = uiState.message, modifier = modifier)
+                EmptyMessage(message = uiState.message, modifier = modifier)
 
             selected == null -> LazyColumn(
                 modifier = modifier,
@@ -116,7 +114,8 @@ private fun LeaderboardsContent(
                 itemsIndexed(uiState.boards, key = { _, board -> board.id }) { index, board ->
                     BoardRow(
                         board = board,
-                        shape = groupedListShape(index, uiState.boards.size),
+                        index = index,
+                        count = uiState.boards.size,
                         onClick = { onSelect(board) },
                     )
                 }
@@ -146,16 +145,15 @@ private fun LeaderboardsContent(
 }
 
 @Composable
-private fun Scores(
-    uiState: LeaderboardsUiState,
-    bottomPadding: androidx.compose.foundation.layout.PaddingValues,
-) {
+private fun Scores(uiState: LeaderboardsUiState, bottomPadding: PaddingValues) {
     val uriHandler = LocalUriHandler.current
 
     when {
         uiState.isLoadingScores -> LoadingBox(modifier = Modifier.fillMaxSize())
 
-        uiState.scores.isEmpty() -> SearchResultMessage(
+        uiState.scoresError != null -> EmptyMessage(message = uiState.scoresError)
+
+        uiState.scores.isEmpty() -> EmptyMessage(
             message = if (uiState.friendsOnly) {
                 "None of your friends has a score here"
             } else {
@@ -171,7 +169,8 @@ private fun Scores(
             itemsIndexed(uiState.scores, key = { _, score -> score.steamId }) { index, score ->
                 ScoreRow(
                     score = score,
-                    shape = groupedListShape(index, uiState.scores.size),
+                    index = index,
+                    count = uiState.scores.size,
                     onClick = { uriHandler.openUri(Utils.getProfileUrl(score.steamId)) },
                 )
             }
@@ -180,13 +179,8 @@ private fun Scores(
 }
 
 @Composable
-private fun BoardRow(board: Leaderboard, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun BoardRow(board: Leaderboard, index: Int, count: Int, onClick: () -> Unit) {
+    GroupedListItem(index = index, count = count, onClick = onClick) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -210,13 +204,8 @@ private fun BoardRow(board: Leaderboard, shape: Shape, onClick: () -> Unit) {
 
 /** One score; tapping it opens the player's Steam profile. */
 @Composable
-private fun ScoreRow(score: LeaderboardScore, shape: Shape, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+private fun ScoreRow(score: LeaderboardScore, index: Int, count: Int, onClick: () -> Unit) {
+    GroupedListItem(index = index, count = count, onClick = onClick) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -231,7 +220,7 @@ private fun ScoreRow(score: LeaderboardScore, shape: Shape, onClick: () -> Unit)
             )
             Text(
                 // A player Steam would not name is shown by Steam ID.
-                text = score.name.ifEmpty { score.steamId.toULong().toString() },
+                text = score.name.ifEmpty { score.steamId.toSteamIdString() },
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

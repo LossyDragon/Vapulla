@@ -14,6 +14,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamApp.AppType
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.download.DownloadManager
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import java.util.EnumSet
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
@@ -31,12 +32,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import timber.log.Timber
+import kotlinx.coroutines.flow.update
 
 /** What the library shows about a game's download: enough for a pill and the summary. */
 @Immutable
 data class DownloadBadge(val name: String, val state: DownloadState, val percent: Int)
 
+/**
+ * The library: the owned apps, paged out of the database and narrowed by the search text and
+ * the app types picked, with what each one's download is up to.
+ */
 class GamesViewModel(
     private val steamAppDao: SteamAppDao,
     accountManager: AccountManager,
@@ -64,7 +69,8 @@ class GamesViewModel(
                     live?.first == download.appId -> live.second
                     else -> (download.fraction * 100).toInt()
                 }
-                download.appId to DownloadBadge(download.name, download.state, percent)
+                val name = download.name.decodeHtml()
+                download.appId to DownloadBadge(name, download.state, percent)
             }.toImmutableMap()
         }.stateIn(
             scope = viewModelScope,
@@ -72,7 +78,12 @@ class GamesViewModel(
             initialValue = persistentMapOf(),
         )
 
-    val localAccountId: StateFlow<Long?> = accountManager.steamid
+    /**
+     * The signed-in account's ID, which is the low half of its Steam ID and what licenses
+     * name their owner by. Null until it is known.
+     */
+    val localAccountId: StateFlow<Int?> = accountManager.steamid
+        .map { steamId -> steamId?.toInt() }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -106,15 +117,10 @@ class GamesViewModel(
         _searchQuery.value = query
     }
 
-    fun updateAppTypes(appType: AppType) {
-        _appTypes.value = if (_appTypes.value.contains(appType)) {
-            _appTypes.value.removing(appType)
-        } else {
-            _appTypes.value.adding(appType)
+    /** Adds [appType] to the types shown, or takes it out when it is one of them. */
+    fun toggleAppType(appType: AppType) {
+        _appTypes.update { types ->
+            if (appType in types) types.removing(appType) else types.adding(appType)
         }
-    }
-
-    override fun onCleared() {
-        Timber.d("onCleared")
     }
 }

@@ -3,12 +3,10 @@ package `in`.dragonbra.vapulla.ui.screens.underhood
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
@@ -23,7 +21,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +37,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.FabClearance
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
@@ -108,7 +107,7 @@ fun IdDecoderScreen(onBack: () -> Unit, initialInput: String = "") {
                 .padding(padding.exceptBottom())
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(listContentPadding(padding)),
+                .padding(listContentPadding(padding, extraBottom = FabClearance)),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             OutlinedTextField(
@@ -163,9 +162,6 @@ fun IdDecoderScreen(onBack: () -> Unit, initialInput: String = "") {
                     }
                 }
             }
-
-            // Room to scroll the last rows out from under the search button.
-            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }
@@ -183,16 +179,6 @@ private fun Reading(reading: DecodedId) {
         Hint(reading.note)
         DetailList(reading.rows)
     }
-}
-
-@Composable
-internal fun Hint(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 4.dp),
-    )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)

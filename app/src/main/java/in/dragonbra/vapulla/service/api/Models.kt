@@ -2,9 +2,37 @@ package `in`.dragonbra.vapulla.service.api
 
 import androidx.compose.runtime.Immutable
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.javasteam.types.KeyValue
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
-/** A game the account owns, from `Player.GetOwnedGames`. Playtimes are minutes. */
+/*
+ * Times in these models are seconds since 1970 unless a property says otherwise; only chat
+ * messages carry milliseconds, to match the stored friend chat.
+ */
+
+/**
+ * Raw PICS info of one app or package.
+ *
+ * @property changeNumber the change of Steam's catalogue that last touched it.
+ * @property token the access token the request was made with; 0 when Steam gave none.
+ * @property missingToken Steam held details back because the account has no token for it.
+ */
+class PicsProduct(
+    val id: Int,
+    val isApp: Boolean,
+    val changeNumber: Int,
+    val token: Long,
+    val missingToken: Boolean,
+    val keyValues: KeyValue,
+)
+
+/**
+ * A game the account owns, from `Player.GetOwnedGames`. Playtimes are minutes.
+ *
+ * @property lastPlayed seconds since 1970; 0 when never played.
+ */
 @Immutable
 data class OwnedGame(
     val appId: Int,
@@ -12,7 +40,6 @@ data class OwnedGame(
     val playtimeForever: Int,
     val playtimeTwoWeeks: Int,
     val lastPlayed: Long,
-    val familyShared: Boolean,
 )
 
 /** Achievement completion for one app, from `Player.GetAchievementsProgress`. */
@@ -32,10 +59,6 @@ data class FreeLicenseResult(
     val grantedPackages: ImmutableList<Int>,
 )
 
-/** The local account's Steam level and the badge for one app, from `Player.GetGameBadgeLevels`. */
-@Immutable
-data class BadgeLevels(val playerLevel: Int, val gameBadgeLevel: Int)
-
 /** A friend's showcased badge, from `Player.GetFavoriteBadge`. */
 @Immutable
 data class FavoriteBadge(val badgeId: Int, val appId: Int, val level: Int)
@@ -49,12 +72,10 @@ data class ChatGroup(
     /** Full avatar URL when Steam provides one, otherwise empty. */
     val avatarUrl: String,
     val activeMembers: Int,
-    val clanId: Int,
-    val appId: Int,
     val rooms: ImmutableList<ChatRoomInfo>,
 )
 
-/** One text channel inside a [ChatGroup]. */
+/** One text channel inside a [ChatGroup]. [timeLastMessage] is seconds since 1970. */
 @Immutable
 data class ChatRoomInfo(
     val chatId: Long,
@@ -117,14 +138,17 @@ data class ServerInfo(
     val vacSecured: Boolean,
 )
 
-/** A file in the account's Steam Cloud for one app, from `Cloud.EnumerateUserFiles`. */
+/**
+ * A file in the account's Steam Cloud for one app, from `Cloud.EnumerateUserFiles`.
+ *
+ * @property timestamp when it was last changed, in seconds since 1970.
+ */
 @Immutable
 data class CloudFile(
     val appId: Int,
     val filename: String,
     val size: Long,
     val timestamp: Long,
-    val sha: String,
     val platforms: ImmutableList<String>,
 )
 
@@ -142,9 +166,26 @@ data class WorkshopItem(
     val favorited: Int,
 )
 
-/** One page of Workshop results. [nextPage] is null on the last page. */
+/**
+ * One page of a list Steam hands out in pages, such as Workshop items or screenshots.
+ *
+ * @property total how many items there are over all pages.
+ * @property nextPage null on the last page.
+ */
 @Immutable
-data class WorkshopPage(val items: ImmutableList<WorkshopItem>, val total: Int, val nextPage: Int?)
+data class Page<T>(val items: ImmutableList<T>, val total: Int, val nextPage: Int?) {
+    companion object {
+        /** A page with nothing on it, for when Steam does not answer. */
+        fun <T> empty(): Page<T> = Page(persistentListOf(), 0, null)
+
+        /** Page number [page] (counted from 1) of [perPage] items each, out of [total]. */
+        fun <T> of(items: List<T>, page: Int, perPage: Int, total: Int): Page<T> = Page(
+            items = items.toImmutableList(),
+            total = total,
+            nextPage = (page + 1).takeIf { items.isNotEmpty() && page * perPage < total },
+        )
+    }
+}
 
 /** Sort order for Workshop queries; the values are Steam's `EPublishedFileQueryType`. */
 enum class WorkshopSort(val queryType: Int, val label: String) {
@@ -155,7 +196,10 @@ enum class WorkshopSort(val queryType: Int, val label: String) {
     LastUpdated(21, "Last updated"),
 }
 
-/** A device signed in to the account, from `Authentication.EnumerateTokens`. */
+/**
+ * A device signed in to the account, from `Authentication.EnumerateTokens`. [firstSeen] and
+ * [lastSeen] are seconds since 1970.
+ */
 @Immutable
 data class AuthSession(
     val tokenId: Long,
@@ -261,11 +305,11 @@ data class LeaderboardScore(val rank: Int, val steamId: Long, val name: String, 
  */
 @Immutable
 data class FriendsGameplay(
-    val playingNow: List<Long>,
-    val playedRecently: List<Long>,
-    val playedBefore: List<Long>,
-    val own: List<Long>,
-    val wishlisted: List<Long>,
+    val playingNow: ImmutableList<Long>,
+    val playedRecently: ImmutableList<Long>,
+    val playedBefore: ImmutableList<Long>,
+    val own: ImmutableList<Long>,
+    val wishlisted: ImmutableList<Long>,
 )
 
 /**
@@ -286,7 +330,7 @@ data class Family(
  * One member of a Steam Family.
  *
  * @property name their profile name; empty when Steam did not give one.
- * @property role "Adult" or "Child", as the family has them.
+ * @property role "Adult" or "Child", as the family has them; "Member" for any other role.
  * @property joinedAt seconds since 1970.
  * @property isSelf this member is the signed-in account.
  */
@@ -349,7 +393,3 @@ data class Screenshot(
     /** Epoch seconds. */
     val timeCreated: Long,
 )
-
-/** One page of screenshots. [nextPage] is null on the last page. */
-@Immutable
-data class ScreenshotPage(val items: ImmutableList<Screenshot>, val total: Int, val nextPage: Int?)

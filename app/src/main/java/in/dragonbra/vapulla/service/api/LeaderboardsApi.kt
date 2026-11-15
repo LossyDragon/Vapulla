@@ -4,10 +4,7 @@ import `in`.dragonbra.javasteam.enums.ELeaderboardDataRequest
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.SteamUserStats
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import `in`.dragonbra.vapulla.util.httpGetText
 import timber.log.Timber
 
 /**
@@ -22,18 +19,10 @@ class LeaderboardsApi(private val userStats: SteamUserStats, private val profile
      *
      * @throws java.io.IOException if the community website cannot be reached.
      */
-    suspend fun boards(appId: Int): List<Leaderboard> = withContext(Dispatchers.IO) {
-        val connection = URL(LIST_URL.format(appId)).openConnection() as HttpURLConnection
-        connection.connectTimeout = TIMEOUT_MS
-        connection.readTimeout = TIMEOUT_MS
+    suspend fun boards(appId: Int): List<Leaderboard> {
+        val xml = httpGetText(LIST_URL.format(appId))
 
-        val xml = try {
-            connection.inputStream.use { it.readBytes().decodeToString() }
-        } finally {
-            connection.disconnect()
-        }
-
-        BOARD.findAll(xml).mapNotNull { match ->
+        return BOARD.findAll(xml).mapNotNull { match ->
             val board = match.groupValues[1]
             val id = board.tag("lbid")?.toIntOrNull() ?: return@mapNotNull null
 
@@ -66,10 +55,10 @@ class LeaderboardsApi(private val userStats: SteamUserStats, private val profile
             } else {
                 ELeaderboardDataRequest.Global
             },
-        ).await()
+        ).awaitOrNull("GetLBEntries") ?: return emptyList()
 
         if (callback.result != EResult.OK) {
-            Timber.w("GetLBEntries for ${board.id} failed: ${callback.result}")
+            Timber.w("GetLBEntries for ${board.id} answered ${callback.result}")
             return emptyList()
         }
 
@@ -110,7 +99,6 @@ class LeaderboardsApi(private val userStats: SteamUserStats, private val profile
 
     private companion object {
         const val LIST_URL = "https://steamcommunity.com/stats/%d/leaderboards/?xml=1"
-        const val TIMEOUT_MS = 10_000
         const val TOP_COUNT = 25
 
         /** Steam's `ELeaderboardDisplayType` values. */

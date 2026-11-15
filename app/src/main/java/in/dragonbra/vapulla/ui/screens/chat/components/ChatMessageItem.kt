@@ -25,19 +25,15 @@ import `in`.dragonbra.vapulla.util.Utils.toTimeString
 
 /** One chat bubble, aligned right for messages we sent and left for the friend's. */
 @Composable
-internal fun ChatMessageItem(
-    message: ChatMessage,
-    isFromLocal: Boolean,
-    modifier: Modifier = Modifier,
-) {
+internal fun ChatMessageItem(message: ChatMessage, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = if (isFromLocal) Arrangement.End else Arrangement.Start,
+        horizontalArrangement = if (message.fromLocal) Arrangement.End else Arrangement.Start,
     ) {
         MessageBubble(
             text = message.message,
             timestamp = message.timestamp,
-            isFromLocal = isFromLocal,
+            isFromLocal = message.fromLocal,
         )
     }
 }
@@ -130,14 +126,8 @@ private fun Preview() {
                 modifier = Modifier.padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                ChatMessageItem(
-                    message = message("Want to play some games later?", local = false),
-                    isFromLocal = false,
-                )
-                ChatMessageItem(
-                    message = message("Sure, [b]Team Fortress 2[/b]?", local = true),
-                    isFromLocal = true,
-                )
+                ChatMessageItem(message("Want to play some games later?", local = false))
+                ChatMessageItem(message("Sure, [b]Team Fortress 2[/b]?", local = true))
             }
         }
     }

@@ -1,14 +1,6 @@
 package `in`.dragonbra.vapulla.db.entity
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.PersonAddAlt1
-import androidx.compose.material.icons.filled.Smartphone
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Web
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
@@ -16,16 +8,7 @@ import `in`.dragonbra.javasteam.enums.EFriendRelationship
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EPersonaStateFlag
 import `in`.dragonbra.javasteam.types.GameID
-import `in`.dragonbra.vapulla.data.ProfileItems
-import `in`.dragonbra.vapulla.ui.icons.VR
-import `in`.dragonbra.vapulla.ui.theme.friendAwayOrSnooze
-import `in`.dragonbra.vapulla.ui.theme.friendBlocked
-import `in`.dragonbra.vapulla.ui.theme.friendInGame
-import `in`.dragonbra.vapulla.ui.theme.friendInGameAwayOrSnooze
-import `in`.dragonbra.vapulla.ui.theme.friendOffline
-import `in`.dragonbra.vapulla.ui.theme.friendOnline
 import `in`.dragonbra.vapulla.util.Utils
-import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
@@ -33,8 +16,9 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 /**
- * A friend (or pending request) as mirrored from Steam, plus the chat and profile extras the
- * app tracks for them. The `is*` helpers drive the friends list grouping and colours.
+ * A friend (or pending request) as mirrored from Steam, plus the profile extras the app
+ * tracks for them. The `is*` helpers drive the friends list grouping; how a friend's status
+ * is worded, coloured and marked is in `ui/screens/home/components/FriendStatus.kt`.
  */
 @Immutable
 @Entity(tableName = "steam_friend")
@@ -46,7 +30,6 @@ data class SteamFriend(
     val state: EPersonaState = EPersonaState.Offline,
     val gameAppID: Int = 0,
     val gameID: GameID = GameID(0),
-    val gameDataBlob: ByteArray = byteArrayOf(0),
     val gameName: String = "",
     /** Rich presence key/values from the game (e.g. `status`, `steam_display`). */
     val richPresence: Map<String, String> = emptyMap(),
@@ -54,21 +37,20 @@ data class SteamFriend(
     val lastLogOff: Date = Date(0),
     val stateFlags: EnumSet<EPersonaStateFlag> = emptyEnumSet(),
     val statusFlags: EnumSet<EClientPersonaStateFlag> = emptyEnumSet(),
-    val typingTs: Long = -1,
     val nickname: String = "",
-    val lastMessage: String = "",
+    /**
+     * Epoch milliseconds of the newest stored chat message. Not kept up to date in the
+     * database: the friends list fills it in memory from the stored messages.
+     */
     val lastMessageTime: Long = -1,
+    /** Unread chat messages. Filled in memory for the friends list, like [lastMessageTime]. */
     val newMessageCount: Int = 0,
     val aliases: ImmutableList<String> = persistentListOf(),
-    val profileBackground: ProfileItems = ProfileItems(),
-    val profileMiniBackground: ProfileItems = ProfileItems(),
-    val profileAvatarFrame: ProfileItems = ProfileItems(),
-    val profileAnimatedAvatar: ProfileItems = ProfileItems(),
-    val profileProfileModifier: ProfileItems = ProfileItems(),
 ) {
 
+    /** Every state from Online to LookingToPlay, so away and busy count; Invisible does not. */
     val isOnline: Boolean
-        get() = (state.code() in 1..6)
+        get() = state.code() in EPersonaState.Online.code()..EPersonaState.LookingToPlay.code()
 
     val isOffline: Boolean
         get() = state == EPersonaState.Offline
@@ -85,29 +67,6 @@ data class SteamFriend(
      */
     val richPresenceStatus: String
         get() = richPresence["status"].orEmpty().takeUnless { it.startsWith("#") }.orEmpty()
-
-    /** One line describing what the friend is doing, or when they were last seen. */
-    val statusText: String
-        get() = when {
-            isBlocked -> "Blocked"
-
-            isRequestRecipient -> "Wants to be your friend"
-
-            isPlayingGame -> {
-                val game = gameName.ifEmpty { "Playing game id: $gameAppID" }
-                if (richPresenceStatus.isNotEmpty()) "$game · $richPresenceStatus" else game
-            }
-
-            isOffline -> if (lastLogOff.time >
-                0
-            ) {
-                "Last online ${lastLogOff.time.toTimeAgo()}"
-            } else {
-                "Offline"
-            }
-
-            else -> state.name
-        }
 
     val isAwayOrSnooze: Boolean
         get() = state == EPersonaState.Away ||
@@ -131,91 +90,4 @@ data class SteamFriend(
 
     val isFriend: Boolean
         get() = relation == EFriendRelationship.Friend
-
-    val statusColor: Color
-        get() = when {
-            isBlocked -> friendBlocked
-            isOffline -> friendOffline
-            isInGameAwayOrSnooze -> friendInGameAwayOrSnooze
-            isAwayOrSnooze -> friendAwayOrSnooze
-            isPlayingGame -> friendInGame
-            isOnline -> friendOnline
-            else -> friendOffline
-        }
-
-    val statusIcon: ImageVector?
-        get() = when {
-            isRequestRecipient -> Icons.Default.PersonAddAlt1
-            isAwayOrSnooze -> Icons.Default.Bedtime
-            stateFlags.contains(EPersonaStateFlag.ClientTypeVR) -> Icons.Default.VR
-            stateFlags.contains(EPersonaStateFlag.ClientTypeTenfoot) -> Icons.Default.SportsEsports
-            stateFlags.contains(EPersonaStateFlag.ClientTypeMobile) -> Icons.Default.Smartphone
-            stateFlags.contains(EPersonaStateFlag.ClientTypeWeb) -> Icons.Default.Web
-            else -> null
-        }
-
-    // Custom equals/hashCode only because gameDataBlob (ByteArray) needs content comparison.
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as SteamFriend
-
-        if (id != other.id) return false
-        if (gameAppID != other.gameAppID) return false
-        if (lastLogOn != other.lastLogOn) return false
-        if (lastLogOff != other.lastLogOff) return false
-        if (typingTs != other.typingTs) return false
-        if (lastMessageTime != other.lastMessageTime) return false
-        if (newMessageCount != other.newMessageCount) return false
-        if (name != other.name) return false
-        if (avatar != other.avatar) return false
-        if (relation != other.relation) return false
-        if (state != other.state) return false
-        if (gameID != other.gameID) return false
-        if (!gameDataBlob.contentEquals(other.gameDataBlob)) return false
-        if (gameName != other.gameName) return false
-        if (richPresence != other.richPresence) return false
-        if (stateFlags != other.stateFlags) return false
-        if (statusFlags != other.statusFlags) return false
-        if (nickname != other.nickname) return false
-        if (lastMessage != other.lastMessage) return false
-        if (aliases != other.aliases) return false
-        if (profileBackground != other.profileBackground) return false
-        if (profileMiniBackground != other.profileMiniBackground) return false
-        if (profileAvatarFrame != other.profileAvatarFrame) return false
-        if (profileAnimatedAvatar != other.profileAnimatedAvatar) return false
-        if (profileProfileModifier != other.profileProfileModifier) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + gameAppID
-        result = 31 * result + lastLogOn.hashCode()
-        result = 31 * result + lastLogOff.hashCode()
-        result = 31 * result + typingTs.hashCode()
-        result = 31 * result + lastMessageTime.hashCode()
-        result = 31 * result + newMessageCount
-        result = 31 * result + name.hashCode()
-        result = 31 * result + avatar.hashCode()
-        result = 31 * result + relation.hashCode()
-        result = 31 * result + state.hashCode()
-        result = 31 * result + gameID.hashCode()
-        result = 31 * result + gameDataBlob.contentHashCode()
-        result = 31 * result + gameName.hashCode()
-        result = 31 * result + richPresence.hashCode()
-        result = 31 * result + stateFlags.hashCode()
-        result = 31 * result + statusFlags.hashCode()
-        result = 31 * result + nickname.hashCode()
-        result = 31 * result + lastMessage.hashCode()
-        result = 31 * result + aliases.hashCode()
-        result = 31 * result + profileBackground.hashCode()
-        result = 31 * result + profileMiniBackground.hashCode()
-        result = 31 * result + profileAvatarFrame.hashCode()
-        result = 31 * result + profileAnimatedAvatar.hashCode()
-        result = 31 * result + profileProfileModifier.hashCode()
-        return result
-    }
 }

@@ -7,27 +7,26 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclie
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclient.EAuthTokenRevokeAction
 import `in`.dragonbra.javasteam.rpc.service.Authentication
 import `in`.dragonbra.javasteam.types.SteamID
-import timber.log.Timber
 
 /** Signed-in devices via the `Authentication` unified service. */
 class SessionsApi(
     private val authentication: Authentication,
     private val localSteamId: () -> SteamID?,
 ) {
-    /** Every refresh token the account currently holds, newest activity first. */
+    /**
+     * Every refresh token the account currently holds, newest activity first. Empty when
+     * Steam does not answer.
+     */
     suspend fun sessions(): List<AuthSession> {
         val request = CAuthentication_RefreshToken_Enumerate_Request.newBuilder()
             .setIncludeRevoked(false)
             .build()
 
-        val response = authentication.enumerateTokens(request).await()
-        if (response.result != EResult.OK) {
-            Timber.w("EnumerateTokens failed: ${response.result}")
-            return emptyList()
-        }
+        val body = authentication.enumerateTokens(request).bodyOrNull("EnumerateTokens")
+            ?: return emptyList()
 
-        val thisToken = response.body.requestingToken
-        return response.body.refreshTokensList
+        val thisToken = body.requestingToken
+        return body.refreshTokensList
             .map { token ->
                 AuthSession(
                     tokenId = token.tokenId,
@@ -35,8 +34,8 @@ class SessionsApi(
                     platform = token.platformType.displayName(),
                     loggedIn = token.loggedIn,
                     isThisDevice = token.tokenId == thisToken,
-                    firstSeen = token.firstSeen.time.toLong(),
-                    lastSeen = token.lastSeen.time.toLong(),
+                    firstSeen = token.firstSeen.time.toUInt().toLong(),
+                    lastSeen = token.lastSeen.time.toUInt().toLong(),
                     lastSeenCity = token.lastSeen.city,
                     lastSeenCountry = token.lastSeen.country,
                 )
@@ -44,14 +43,16 @@ class SessionsApi(
             .sortedByDescending { it.lastSeen }
     }
 
-    /** Signs that device out for good. */
+    /** Signs that device out for good. `Fail` when this session is not signed in itself. */
     suspend fun revoke(tokenId: Long): EResult {
+        val steamId = localSteamId() ?: return EResult.Fail
+
         val request = CAuthentication_RefreshToken_Revoke_Request.newBuilder()
             .setTokenId(tokenId)
-            .setSteamid(localSteamId()?.convertToUInt64() ?: 0L)
+            .setSteamid(steamId.convertToUInt64())
             .setRevokeAction(EAuthTokenRevokeAction.k_EAuthTokenRevokePermanent)
             .build()
-        return authentication.revokeRefreshToken(request).await().result
+        return authentication.revokeRefreshToken(request).resultOf("RevokeRefreshToken")
     }
 
     private fun EAuthTokenPlatformType.displayName(): String = when (this) {

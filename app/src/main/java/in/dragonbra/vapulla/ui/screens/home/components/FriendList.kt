@@ -39,15 +39,22 @@ import me.saket.swipe.SwipeAction
 import me.saket.swipe.SwipeableActionsBox
 import timber.log.Timber
 
+/**
+ * The friends in their sections, each under a sticky header that folds it away. A long press
+ * or a swipe on a row opens that friend's profile.
+ *
+ * @param stickyHeaders the sections that are collapsed, by header.
+ * @param typing the friends typing to us right now.
+ */
 @Composable
 fun FriendList(
-    modifier: Modifier,
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
     stickyHeaders: ImmutableSet<Int>,
     typing: ImmutableSet<Long>,
     onStickyHeaderAction: (Int) -> Unit,
-    onFriendClick: (Long) -> Unit,
-    onFriendLongClick: (Long) -> Unit,
+    onFriendClick: (SteamFriend) -> Unit,
+    onOpenProfile: (Long) -> Unit,
+    modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
 ) {
     val listState = rememberLazyListState()
@@ -91,7 +98,7 @@ fun FriendList(
                         background = MaterialTheme.colorScheme.secondary,
                         onSwipe = {
                             Timber.d("Swipe to profile ${friend.id}")
-                            onFriendLongClick(friend.id)
+                            onOpenProfile(friend.id)
                         },
                     )
 
@@ -106,14 +113,8 @@ fun FriendList(
                                 friend = friend,
                                 shape = shape,
                                 isTyping = friend.id in typing,
-                                onClick = {
-                                    if (friend.isBlocked) {
-                                        onFriendLongClick(friend.id)
-                                    } else {
-                                        onFriendClick(friend.id)
-                                    }
-                                },
-                                onLongClick = { onFriendLongClick(friend.id) },
+                                onClick = { onFriendClick(friend) },
+                                onLongClick = { onOpenProfile(friend.id) },
                             )
                         },
                     )
@@ -135,7 +136,7 @@ private fun Preview() {
                 typing = persistentSetOf(),
                 onStickyHeaderAction = {},
                 onFriendClick = {},
-                onFriendLongClick = {},
+                onOpenProfile = {},
             )
         }
     }

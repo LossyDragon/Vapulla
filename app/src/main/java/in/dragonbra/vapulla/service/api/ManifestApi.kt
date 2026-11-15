@@ -6,6 +6,8 @@ import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamcontent.SteamContent
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
 import `in`.dragonbra.javasteam.types.DepotManifest
+import `in`.dragonbra.vapulla.util.SteamTimeoutException
+import `in`.dragonbra.vapulla.util.runSuspendCatching
 import kotlinx.coroutines.CoroutineScope
 import timber.log.Timber
 
@@ -26,6 +28,7 @@ class ManifestApi(
     /**
      * @throws IllegalStateException with a message fit to show when Steam will not serve it,
      *   which is the case for depots the account has no license for.
+     * @throws SteamTimeoutException if Steam does not answer.
      */
     suspend fun manifest(
         appId: Int,
@@ -34,7 +37,7 @@ class ManifestApi(
         branch: String,
     ): DepotManifest {
         // File names in a manifest are encrypted with the depot's key.
-        val key = steamApps.getDepotDecryptionKey(depotId, appId).await()
+        val key = steamApps.getDepotDecryptionKey(depotId, appId).awaitOrThrow()
         check(key.result == EResult.OK) { "Steam gave no key for depot $depotId: ${key.result}" }
 
         // Proof to the content servers that this account may have this manifest.
@@ -48,23 +51,27 @@ class ManifestApi(
         check(code != 0L) { "Steam gave no request code for manifest ${manifestId.toULong()}" }
 
         val servers = content.getServersForSteamPipe(parentScope = scope).await()
-            .filter { it.type == "SteamCache" || it.type == "CDN" }
+            .filter { it.type in SERVER_TYPES }
             .filter { it.allowedAppIds.isEmpty() || appId in it.allowedAppIds }
         check(servers.isNotEmpty()) { "Steam listed no content server for app $appId" }
 
-        var lastError: Exception? = null
+        var lastError: Throwable? = null
         for (server in servers.take(MAX_SERVERS)) {
-            try {
-                return cdn.downloadManifest(
+            // Not a plain try: leaving the screen cancels this call, and that must end the
+            // loop rather than count as a server that did not serve.
+            runSuspendCatching {
+                cdn.downloadManifest(
                     depotId = depotId,
                     manifestId = manifestId,
                     manifestRequestCode = code.toULong(),
                     server = server,
                     depotKey = key.depotKey,
                 )
-            } catch (e: Exception) {
-                Timber.w(e, "Manifest ${manifestId.toULong()} not served by ${server.host}")
-                lastError = e
+            }.onSuccess {
+                return it
+            }.onFailure {
+                Timber.w(it, "Manifest ${manifestId.toULong()} not served by ${server.host}")
+                lastError = it
             }
         }
         error("No content server served the manifest: ${lastError?.message}")
@@ -72,5 +79,8 @@ class ManifestApi(
 
     private companion object {
         const val MAX_SERVERS = 3
+
+        /** The kinds of content server that serve manifests to any client. */
+        val SERVER_TYPES = setOf("SteamCache", "CDN")
     }
 }

@@ -6,22 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,8 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -43,28 +32,28 @@ import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.steam.handlers.steamauthticket.TicketInfo
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.service.PacketInspector
-import `in`.dragonbra.vapulla.service.ServiceConnection
+import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
-import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
+import `in`.dragonbra.vapulla.ui.composables.search.SearchField
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.AuthTicketReader
 import `in`.dragonbra.vapulla.util.TicketPart
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 /**
  * @property appId the app that was picked; 0 while there is none.
@@ -100,7 +89,7 @@ data class AuthTicketUiState(
  * is never logged or copied.
  */
 class AuthTicketViewModel(
-    private val connection: ServiceConnection,
+    private val connection: SteamServiceConnection,
     private val appDao: SteamAppDao,
 ) : ViewModel() {
 
@@ -117,7 +106,7 @@ class AuthTicketViewModel(
         discard()
         _uiState.value = AuthTicketUiState(
             appId = appId,
-            title = listOfNotNull(name, "App $appId").joinToString(" · "),
+            title = listOfNotNull(name?.decodeHtml(), "App $appId").joinToString(" · "),
         )
     }
 
@@ -131,24 +120,18 @@ class AuthTicketViewModel(
             discard()
             _uiState.value = picked.copy(isLoading = true, message = null)
 
-            val api = connection.steamService?.apis?.authTickets
-            if (api == null) {
-                _uiState.value = picked.copy(made = false, message = "Not connected to Steam")
-                return@launch
-            }
-
-            val made = try {
-                api.make(picked.appId)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.w(e, "Auth ticket for app ${picked.appId} failed")
-                _uiState.value = picked.copy(
-                    made = false,
-                    message = e.message ?: "Steam gave no ticket for app ${picked.appId}",
-                )
-                return@launch
-            }
+            val made = connection
+                .request("Auth ticket for app ${picked.appId}") {
+                    it.authTickets.make(picked.appId)
+                }
+                .getOrElse { error ->
+                    _uiState.value = picked.copy(
+                        made = false,
+                        message = error.message
+                            ?: "Steam gave no ticket for app ${picked.appId}",
+                    )
+                    return@launch
+                }
 
             ticket = made
             _uiState.value = AuthTicketUiState(
@@ -171,8 +154,7 @@ class AuthTicketViewModel(
             discard()
             _uiState.value = AuthTicketUiState(isLoading = true)
 
-            val matches = appDao.searchNames(query, NAME_MATCHES)
-                .map { PicsNameMatch(it.id, it.name, "App ${it.id}") }
+            val matches = appDao.findAppsByName(query)
 
             _uiState.value = AuthTicketUiState(
                 nameMatches = matches.toImmutableList(),
@@ -197,11 +179,6 @@ class AuthTicketViewModel(
         val made = ticket ?: return
         ticket = null
         connection.steamService?.apis?.authTickets?.cancel(made)
-    }
-
-    private companion object {
-        /** How many apps a search by name looks at. */
-        const val NAME_MATCHES = 100
     }
 }
 
@@ -231,17 +208,6 @@ private fun AuthTicketContent(
     val keyboard = LocalSoftwareKeyboardController.current
     var text by rememberSaveable { mutableStateOf("") }
 
-    // A number is an app ID; anything else is a name, looked up in the app.
-    val search: () -> Unit = {
-        val entered = text.trim()
-        val id = entered.toIntOrNull()
-
-        if (entered.isNotEmpty()) {
-            keyboard?.hide()
-            if (id != null) onSelect(id, null) else onFindByName(entered)
-        }
-    }
-
     UnderHoodScaffold(title = "Auth tickets", onBack = onBack) { padding ->
         Column(
             modifier = Modifier
@@ -249,47 +215,31 @@ private fun AuthTicketContent(
                 .imePadding()
                 .padding(padding.exceptBottom()),
         ) {
-            OutlinedTextField(
+            SearchField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text("App ID or name of a game you own") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.None,
-                    autoCorrectEnabled = false,
-                    imeAction = ImeAction.Search,
-                ),
-                keyboardActions = KeyboardActions(onSearch = { search() }),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                placeholder = "App ID or name of a game you own",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                // A number is an app ID; anything else is a name, looked up in the app.
+                onSearch = {
+                    keyboard?.hide()
+                    searchByIdOrName(text, onId = { onSelect(it, null) }, onName = onFindByName)
+                },
             )
 
             when {
                 state.isLoading -> LoadingBox(modifier = Modifier.fillMaxSize())
 
-                state.nameMatches.isNotEmpty() -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = listContentPadding(padding),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    itemsIndexed(
-                        items = state.nameMatches,
-                        key = { _, match -> match.id },
-                    ) { index, match ->
-                        NameMatchRow(
-                            match = match,
-                            shape = groupedListShape(index, state.nameMatches.size),
-                            onClick = {
-                                text = match.id.toString()
-                                onSelect(match.id, match.title)
-                            },
-                        )
-                    }
-                }
+                state.nameMatches.isNotEmpty() -> NameMatchList(
+                    matches = state.nameMatches,
+                    scaffoldPadding = padding,
+                    onPick = { match ->
+                        text = match.id.toString()
+                        onSelect(match.id, match.title)
+                    },
+                )
 
-                state.appId == 0 -> SearchResultMessage(
+                state.appId == 0 -> EmptyMessage(
                     message = state.message
                         ?: "Enter a game you own to make an auth session ticket for it: the " +
                         "proof of who you are and that you own the game, which a game " +
@@ -328,6 +278,7 @@ private fun Picked(state: AuthTicketUiState, onMake: () -> Unit) {
                 "sign-in. When they run out, no more can be made until you sign in again.",
         )
         state.message?.let { message ->
+            // Like a Hint, but in the error colour.
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodySmall,

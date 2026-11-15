@@ -41,7 +41,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import `in`.dragonbra.vapulla.BuildConfig
+import `in`.dragonbra.vapulla.service.DEVICE_NAME
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialog
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
@@ -195,7 +195,7 @@ private val PASSWORD_INFO = """
     1. Open <b>Steam Guard</b>.<br>
     2. Tap the gear icon in the bottom left.<br>
     3. Choose <b>Authorized Devices</b>.<br>
-    4. Tap <b>PC Steam Client - "Vapulla ${BuildConfig.VERSION_NAME}"</b>.<br>
+    4. Tap <b>PC Steam Client - "$DEVICE_NAME"</b>.<br>
     5. Tap <b>Remove Access</b>.<br>
     6. Steam asks whether to change your password as well. <b>No Thanks</b> is fine, unless
     you suspect your account has been compromised.

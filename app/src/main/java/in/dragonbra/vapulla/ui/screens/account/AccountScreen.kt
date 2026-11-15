@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.AddLink
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -42,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,14 +50,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.AccountDetails
 import `in`.dragonbra.vapulla.service.api.FriendInvite
 import `in`.dragonbra.vapulla.ui.composables.DetailList
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
+import `in`.dragonbra.vapulla.ui.composables.Hint
+import `in`.dragonbra.vapulla.ui.composables.IconLabel
+import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
-import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.toDateString
+import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import java.util.Locale
 import kotlinx.collections.immutable.persistentListOf
 
@@ -135,11 +137,7 @@ private fun AccountContent(
         topBar = {
             TopAppBar(
                 title = { Text("Account") },
-                navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
-                    }
-                },
+                navigationIcon = { MenuButton(onClick = onNavDrawerAction) },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -217,7 +215,7 @@ private fun ProfileSection(uiState: AccountUiState, onEditName: () -> Unit) {
         DetailList(
             listOf(
                 "Name" to uiState.name,
-                "Steam ID" to uiState.steamId.takeIf { it != 0L }?.toULong()?.toString().orEmpty(),
+                "Steam ID" to uiState.steamId.takeIf { it != 0L }?.toSteamIdString().orEmpty(),
                 "Country" to countryName(details.country),
                 "Authorized computers" to details.authorizedComputers.takeIf { it > 0 }
                     ?.toString().orEmpty(),
@@ -225,8 +223,7 @@ private fun ProfileSection(uiState: AccountUiState, onEditName: () -> Unit) {
             ),
         )
         FilledTonalButton(onClick = onEditName, shapes = ButtonDefaults.shapes()) {
-            Icon(Icons.Outlined.Edit, contentDescription = null)
-            Text(text = "  Change name")
+            IconLabel(Icons.Outlined.Edit, "Change name")
         }
     }
 }
@@ -286,7 +283,8 @@ private fun InvitesSection(
             invites.forEachIndexed { index, invite ->
                 InviteRow(
                     invite = invite,
-                    shape = groupedListShape(index, invites.size),
+                    index = index,
+                    count = invites.size,
                     onShare = { context.share(invite.link) },
                     onRevoke = { onRevoke(invite) },
                 )
@@ -294,8 +292,7 @@ private fun InvitesSection(
         }
 
         FilledTonalButton(onClick = onCreate, shapes = ButtonDefaults.shapes()) {
-            Icon(Icons.Outlined.AddLink, contentDescription = null)
-            Text(text = "  New invite link")
+            IconLabel(Icons.Outlined.AddLink, "New invite link")
         }
     }
 }
@@ -303,18 +300,15 @@ private fun InvitesSection(
 @Composable
 private fun InviteRow(
     invite: FriendInvite,
-    shape: Shape,
+    index: Int,
+    count: Int,
     onShare: () -> Unit,
     onRevoke: () -> Unit,
 ) {
     val people = if (invite.uses == 1) "1 person" else "${invite.uses} people"
     val days = invite.durationSeconds / SECONDS_PER_DAY
 
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    GroupedListItem(index = index, count = count) {
         Row(
             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -374,16 +368,6 @@ private fun NameDialog(current: String, onConfirm: (String) -> Unit, onDismiss: 
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
-    )
-}
-
-@Composable
-private fun Hint(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 4.dp),
     )
 }
 
