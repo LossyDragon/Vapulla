@@ -321,7 +321,11 @@ private fun GamePickerSheet(
 private fun GamePickerRow(game: ServerGame, selected: Boolean, onClick: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(

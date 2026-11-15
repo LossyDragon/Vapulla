@@ -33,11 +33,29 @@ interface SteamAppDao {
     @Query("UPDATE steam_app SET packageId = :packageId WHERE id IN (:appIds)")
     suspend fun updatePackageId(packageId: Int, appIds: List<Int>)
 
+    /** The apps whose name contains [query], by name; only the first [limit] of them. */
+    @Query(
+        "SELECT id, name FROM steam_app WHERE name LIKE '%' || :query || '%' " +
+            "ORDER BY LOWER(name) LIMIT :limit",
+    )
+    suspend fun searchNames(query: String, limit: Int): List<SteamAppName>
+
+    @Query("DELETE FROM steam_app")
+    suspend fun deleteAll()
+
+    /** The apps a package grants, as far as the table knows. */
+    @Query("SELECT id FROM steam_app WHERE packageId = :packageId")
+    suspend fun findAppIdsOfPackage(packageId: Int): List<Int>
+
     @Query(
         "UPDATE steam_app SET playtimeForever = :forever, playtimeTwoWeeks = :twoWeeks, " +
             "lastPlayed = :lastPlayed WHERE id = :appId",
     )
     suspend fun updatePlaytime(appId: Int, forever: Int, twoWeeks: Int, lastPlayed: Long)
+
+    /** Full rows of a few apps as a flow; meant for a handful, as the rows are large. */
+    @Query("SELECT * FROM steam_app WHERE id IN (:appIds)")
+    fun findAppsFlow(appIds: List<Int>): Flow<List<SteamApp>>
 
     /** Full row as a flow, for the game detail screen. */
     @Query("SELECT * FROM steam_app WHERE id = :appId")

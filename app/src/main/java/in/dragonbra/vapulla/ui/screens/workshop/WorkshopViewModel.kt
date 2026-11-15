@@ -4,15 +4,21 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.vapulla.db.dao.DownloadDao
+import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.ServiceConnection
 import `in`.dragonbra.vapulla.service.api.WorkshopItem
 import `in`.dragonbra.vapulla.service.api.WorkshopSort
+import `in`.dragonbra.vapulla.service.download.DownloadManager
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,6 +38,8 @@ data class WorkshopUiState(
     val total: Int = 0,
     val nextPage: Int? = null,
     val subscribed: PersistentSet<Long> = persistentSetOf(),
+    /** Items on the download list, by item ID, with how far each has got. */
+    val downloads: ImmutableMap<Long, DownloadState> = persistentMapOf(),
     val isLoading: Boolean = true,
     val error: String? = null,
 )
@@ -39,11 +47,14 @@ data class WorkshopUiState(
 /**
  * Workshop browser for one app via the `PublishedFile` service. Subscriptions toggled here
  * are remembered for the session only; Steam does not report them back in query results.
+ * An item can also be downloaded, which puts it on the Downloads screen.
  */
 class WorkshopViewModel(
     private val appId: Int,
     private val connection: ServiceConnection,
     private val settingsManager: SettingsManager,
+    downloadDao: DownloadDao,
+    private val downloads: DownloadManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkshopUiState())
@@ -54,6 +65,21 @@ class WorkshopViewModel(
 
     init {
         load(reset = true)
+
+        viewModelScope.launch {
+            downloadDao.observeWorkshop(appId).collect { items ->
+                val states = items.associate { it.workshopId to it.state }.toImmutableMap()
+                _uiState.update { it.copy(downloads = states) }
+            }
+        }
+    }
+
+    /** Puts [item] in the download queue; the outcome is reported through [messages]. */
+    fun download(item: WorkshopItem) {
+        viewModelScope.launch {
+            val problem = downloads.enqueueWorkshop(appId, item)
+            _messages.emit(problem ?: "Added ${item.title} to downloads")
+        }
     }
 
     fun setSort(sort: WorkshopSort) {
@@ -139,7 +165,11 @@ class WorkshopViewModel(
                     it.copy(subscribed = set)
                 }
                 _messages.emit(
-                    if (subscribed) "Unsubscribed from ${item.title}" else "Subscribed to ${item.title}",
+                    if (subscribed) {
+                        "Unsubscribed from ${item.title}"
+                    } else {
+                        "Subscribed to ${item.title}"
+                    },
                 )
             } else {
                 _messages.emit("Steam answered $result")

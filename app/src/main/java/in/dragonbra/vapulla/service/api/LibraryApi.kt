@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service.api
 
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetAchievementsProgress_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetFriendsGameplayInfo_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetGameAchievements_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetOwnedGames_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
@@ -12,9 +13,26 @@ import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.callback.UserStats
 import `in`.dragonbra.javasteam.types.KeyValue
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.db.entity.SteamApp.ManifestInfo
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
+
+/**
+ * Raw PICS info of one app or package.
+ *
+ * @property changeNumber the change of Steam's catalogue that last touched it.
+ * @property token the access token the request was made with; 0 when Steam gave none.
+ * @property missingToken Steam held details back because the account has no token for it.
+ */
+class PicsProduct(
+    val id: Int,
+    val isApp: Boolean,
+    val changeNumber: Int,
+    val token: Long,
+    val missingToken: Boolean,
+    val keyValues: KeyValue,
+)
 
 /**
  * Library features: player counts, achievements and stats via the `SteamUserStats` handler,
@@ -63,6 +81,28 @@ class LibraryApi(
         }
     }
 
+    /** Which friends play, played, own or want [appId]. Null when Steam does not say. */
+    suspend fun friendsGameplay(appId: Int): FriendsGameplay? {
+        val request = CPlayer_GetFriendsGameplayInfo_Request.newBuilder()
+            .setAppid(appId)
+            .build()
+
+        val response = player.getFriendsGameplayInfo(request).await()
+        if (response.result != EResult.OK) {
+            Timber.w("GetFriendsGameplayInfo failed: ${response.result}")
+            return null
+        }
+
+        val body = response.body
+        return FriendsGameplay(
+            playingNow = body.inGameList.map { it.steamid },
+            playedRecently = body.playedRecentlyList.map { it.steamid },
+            playedBefore = body.playedEverList.map { it.steamid },
+            own = body.ownsList.map { it.steamid },
+            wishlisted = body.inWishlistList.map { it.steamid },
+        )
+    }
+
     /** Achievement completion for the given apps, keyed by app ID. */
     suspend fun achievementsProgress(appIds: List<Int>): Map<Int, AchievementProgress> {
         val steamId = localSteamId() ?: return emptyMap()
@@ -100,6 +140,71 @@ class LibraryApi(
             .firstNotNullOfOrNull { it.apps[appId] }
             ?.keyValues
             ?.generateSteamApp()
+    }
+
+    /**
+     * Opens a [branch] of [appId] that is behind a password. Steam turns the password into a
+     * key, and with the key hands out the part of the app info it otherwise keeps encrypted.
+     *
+     * @return the manifest each depot has on the branch, by depot ID; null when Steam does
+     *   not accept the password for this branch.
+     */
+    suspend fun unlockBranch(
+        appId: Int,
+        branch: String,
+        password: String,
+    ): Map<Int, ManifestInfo>? {
+        val key = steamApps.checkAppBetaPassword(appId, password).await().betaPasswords[branch]
+            ?: return null
+        val token = steamApps.picsGetAccessTokens(appId).await().appTokens[appId] ?: 0L
+        val depots = steamApps.picsGetPrivateBeta(appId, token, branch, key).await().depotSection
+
+        return depots.children.mapNotNull { depot ->
+            val depotId = depot.name?.toIntOrNull() ?: return@mapNotNull null
+            val manifest = depot["manifests"][branch]
+            if (manifest["gid"].value == null) return@mapNotNull null
+
+            depotId to ManifestInfo(
+                name = branch,
+                gid = manifest["gid"].asLong(),
+                size = manifest["size"].asLong(),
+                download = manifest["download"].asLong(),
+            )
+        }.toMap()
+    }
+
+    /**
+     * An app's or a package's PICS info exactly as Steam sends it, or null if Steam does not
+     * know the ID. The account's access token is asked for first, since without it Steam
+     * leaves out everything that is not public.
+     */
+    suspend fun productInfo(id: Int, isApp: Boolean): PicsProduct? {
+        val tokens = if (isApp) {
+            steamApps.picsGetAccessTokens(app = id).await().appTokens
+        } else {
+            steamApps.picsGetAccessTokens(`package` = id).await().packageTokens
+        }
+        val token = tokens[id] ?: 0L
+
+        val request = PICSRequest(id, token)
+        val callback = if (isApp) {
+            steamApps.picsGetProductInfo(app = request).await()
+        } else {
+            steamApps.picsGetProductInfo(`package` = request).await()
+        }
+
+        val info = callback.results
+            .firstNotNullOfOrNull { if (isApp) it.apps[id] else it.packages[id] }
+            ?: return null
+
+        return PicsProduct(
+            id = id,
+            isApp = isApp,
+            changeNumber = info.changeNumber,
+            token = token,
+            missingToken = info.isMissingToken,
+            keyValues = info.keyValues,
+        )
     }
 
     /** Adds a free-to-play or free-on-demand app to the account. */

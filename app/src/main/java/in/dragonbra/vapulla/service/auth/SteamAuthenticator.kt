@@ -208,6 +208,33 @@ class SteamAuthenticator(
         }
     }
 
+    /**
+     * Signs in without an account, the way SteamCMD does. Steam then answers what it tells
+     * anyone: its public catalogue, depots and servers. Nothing is saved.
+     */
+    fun handleAnonymousLogin() {
+        Timber.i("Logging in anonymously.")
+
+        cancel()
+
+        currentAuthJob = scope.launch {
+            try {
+                connection.open(anonymous = true)
+                connection.awaitConnected()
+
+                SteamState.loginResult.emit(LoginResult.Loading)
+                connection.logOnAnonymous()
+            } catch (e: CancellationException) {
+                Timber.i(e, "Anonymous login cancelled")
+            } catch (e: Exception) {
+                Timber.e(e, "Error during anonymous login")
+                SteamState.loginResult.emit(LoginResult.Error("Login failed: ${e.message}"))
+            } finally {
+                currentAuthJob = null
+            }
+        }
+    }
+
     fun handleQrCodeCancel() {
         Timber.i("Cancelling QR Login")
         cancel()

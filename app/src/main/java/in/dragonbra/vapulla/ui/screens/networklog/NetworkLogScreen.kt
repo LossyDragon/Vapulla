@@ -10,22 +10,27 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -78,7 +84,8 @@ private const val FOLLOW_THRESHOLD = 3
  * Service calls are listed by method name, and tapping a packet opens [PacketDetailSheet].
  *
  * The list only holds the most recent packets. The totals view counts every packet since the
- * log was cleared, grouped by message type.
+ * log was cleared, grouped by message type. The search box narrows both, by message type
+ * and for packets also by service method.
  */
 @Composable
 fun NetworkLogScreen(onBack: () -> Unit) {
@@ -107,6 +114,27 @@ private fun NetworkLogContent(
 ) {
     var showTotals by rememberSaveable { mutableStateOf(false) }
     var opened by remember { mutableStateOf<NetworkLogEntry?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
+
+    // Everything is on the phone already, so the lists narrow as the search is typed.
+    val search = query.trim()
+    val shownEntries = remember(entries, search) {
+        if (search.isEmpty()) {
+            entries
+        } else {
+            entries.filter { entry ->
+                entry.label.contains(search, ignoreCase = true) ||
+                    entry.msg.name.contains(search, ignoreCase = true)
+            }.toImmutableList()
+        }
+    }
+    val shownTotals = remember(totals, search) {
+        if (search.isEmpty()) {
+            totals
+        } else {
+            totals.filter { it.msg.name.contains(search, ignoreCase = true) }.toImmutableList()
+        }
+    }
 
     opened?.let { entry -> PacketDetailSheet(entry = entry, onDismiss = { opened = null }) }
     val bytesIn = totals.sumOf { it.bytesIn }
@@ -123,7 +151,7 @@ private fun NetworkLogContent(
 
     // Keyed items keep the first visible row anchored when new rows are inserted above it,
     // so the list would quietly drift down. Snap back unless the user has scrolled away.
-    LaunchedEffect(entries.firstOrNull()?.id, entries.lastOrNull()?.id) {
+    LaunchedEffect(shownEntries.firstOrNull()?.id, shownEntries.lastOrNull()?.id) {
         if (listState.firstVisibleItemIndex <= FOLLOW_THRESHOLD && !listState.isScrollInProgress) {
             listState.scrollToItem(0)
         }
@@ -168,6 +196,7 @@ private fun NetworkLogContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding()
                 .padding(padding.exceptBottom()),
         ) {
             Row(
@@ -177,24 +206,51 @@ private fun NetworkLogContent(
                 InfoPill(text = bytesIn.toFileSize(), icon = Icons.Default.ArrowDownward)
                 InfoPill(text = bytesOut.toFileSize(), icon = Icons.Default.ArrowUpward)
                 InfoPill(
-                    text = if (showTotals) {
-                        "$packets packets · ${totals.size} types"
-                    } else {
-                        "last ${entries.size} of $packets"
+                    text = when {
+                        search.isNotEmpty() && showTotals -> "${shownTotals.size} matching types"
+                        search.isNotEmpty() -> "${shownEntries.size} matching"
+                        showTotals -> "$packets packets · ${totals.size} types"
+                        else -> "last ${entries.size} of $packets"
                     },
                 )
             }
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                placeholder = { Text("Message type or service method") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrectEnabled = false,
+                ),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { query = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        }
+                    }
+                },
+            )
 
             if (entries.isEmpty() && totals.isEmpty()) {
                 SearchResultMessage(message = "No packets yet")
+            } else if (if (showTotals) shownTotals.isEmpty() else shownEntries.isEmpty()) {
+                SearchResultMessage(message = "Nothing in the log matches \"$search\"")
             } else if (showTotals) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = listContentPadding(padding),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    itemsIndexed(totals, key = { _, total -> total.msg }) { index, total ->
-                        TotalRow(total = total, shape = groupedListShape(index, totals.size))
+                    itemsIndexed(shownTotals, key = { _, total -> total.msg }) { index, total ->
+                        TotalRow(
+                            total = total,
+                            shape = groupedListShape(index, shownTotals.size),
+                        )
                     }
                 }
             } else {
@@ -204,7 +260,7 @@ private fun NetworkLogContent(
                     contentPadding = listContentPadding(padding, extraBottom = FabClearance),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    val newestFirst = entries.asReversed()
+                    val newestFirst = shownEntries.asReversed()
                     itemsIndexed(newestFirst, key = { _, entry -> entry.id }) { index, entry ->
                         LogRow(
                             entry = entry,

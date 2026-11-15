@@ -10,6 +10,8 @@ import android.graphics.Bitmap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
 import coil.imageLoader
@@ -33,6 +35,7 @@ object NotificationHelper {
     const val CHANNEL_FRIEND_MESSAGES = "friend_messages"
     const val CHANNEL_FRIEND_REQUESTS = "friend_requests"
     const val CHANNEL_FOREGROUND_SERVICE = "foreground_service"
+    const val CHANNEL_DOWNLOADS = "downloads"
 
     const val NOTIFICATION_ID_SERVICE = 1
     private const val NOTIFICATION_ID_SIGNED_OUT = 2
@@ -43,6 +46,17 @@ object NotificationHelper {
 
     /** Keeps chat notifications apart from friend requests, which share the friend's ID. */
     private const val TAG_FRIEND_MESSAGE = "friend_message"
+
+    /** Start of the ID of the shortcut that stands for the chat with one friend. */
+    private const val SHORTCUT_FRIEND = "friend_"
+
+    /**
+     * Notifications without a group are bundled into one by Android. Naming a group for each
+     * kind keeps the service's own notification apart from everything else.
+     */
+    private const val GROUP_SERVICE = "service"
+    private const val GROUP_DOWNLOADS = "downloads"
+    private const val GROUP_FRIEND_REQUESTS = "friend_requests"
 
     private val AVATAR_TIMEOUT_MS = 5.seconds
     private const val AVATAR_SIZE_PX = 200
@@ -79,6 +93,16 @@ object NotificationHelper {
                 enableVibration(false)
                 setShowBadge(false)
             },
+            NotificationChannel(
+                CHANNEL_DOWNLOADS,
+                "Downloads",
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                description = "Progress of the running download, and how downloads ended"
+                enableLights(false)
+                enableVibration(false)
+                setShowBadge(false)
+            },
         )
 
         channels.forEach { context.notificationManager.createNotificationChannel(it) }
@@ -92,6 +116,7 @@ object NotificationHelper {
             .setSmallIcon(R.drawable.ic_vapulla)
             .setContentIntent(openAppIntent(context))
             .setOngoing(true)
+            .setGroup(GROUP_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
@@ -112,6 +137,7 @@ object NotificationHelper {
             .setContentTitle(context.getString(R.string.app_name))
             .setContentText("Signed out")
             .setSmallIcon(R.drawable.ic_vapulla)
+            .setGroup(GROUP_SERVICE)
             .setContentIntent(openAppIntent(context))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -126,12 +152,13 @@ object NotificationHelper {
 
     /** The ongoing notification of the download that is running; [fraction] is 0 to 1. */
     fun showDownloadProgress(context: Context, title: String, fraction: Float, text: String) {
-        val notification = NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
+        val notification = NotificationCompat.Builder(context, CHANNEL_DOWNLOADS)
             .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentIntent(openAppIntent(context))
             .setProgress(100, (fraction * 100).toInt(), false)
+            .setGroup(GROUP_DOWNLOADS)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -144,23 +171,24 @@ object NotificationHelper {
         context.notificationManager.cancel(NOTIFICATION_ID_DOWNLOAD)
     }
 
-    /** Says how the download of [appId] ended; one notification per app. */
-    fun showDownloadFinished(context: Context, appId: Int, title: String, text: String) {
-        val notification = NotificationCompat.Builder(context, CHANNEL_FOREGROUND_SERVICE)
+    /** Says how a download ended; one notification per download, told apart by [id]. */
+    fun showDownloadFinished(context: Context, id: Int, title: String, text: String) {
+        val notification = NotificationCompat.Builder(context, CHANNEL_DOWNLOADS)
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setGroup(GROUP_DOWNLOADS)
             .setContentIntent(openAppIntent(context))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
-        context.notificationManager.notify(TAG_DOWNLOAD, appId, notification)
+        context.notificationManager.notify(TAG_DOWNLOAD, id, notification)
     }
 
-    fun cancelDownloadFinished(context: Context, appId: Int) {
-        context.notificationManager.cancel(TAG_DOWNLOAD, appId)
+    fun cancelDownloadFinished(context: Context, id: Int) {
+        context.notificationManager.cancel(TAG_DOWNLOAD, id)
     }
 
     private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
@@ -176,6 +204,10 @@ object NotificationHelper {
     /**
      * Posts a chat message from a friend with an inline Reply action. Messages from the same
      * friend are collected into one conversation notification until it is cleared.
+     *
+     * The friend also gets a shortcut, which is what makes the notification a conversation
+     * to Android: it is shown among the conversations, apart from the app's other
+     * notifications, and can be given notification settings of its own.
      */
     suspend fun sendFriendMessageNotification(
         context: Context,
@@ -195,6 +227,23 @@ object NotificationHelper {
             .setKey(friendId.toString())
             .setIcon(avatarBitmap?.let(IconCompat::createWithBitmap))
             .build()
+
+        val shortcutId = SHORTCUT_FRIEND + friendId
+        val shortcut = ShortcutInfoCompat.Builder(context, shortcutId)
+            .setLongLived(true)
+            .setIsConversation()
+            .setShortLabel(friendName)
+            .setPerson(sender)
+            .setIcon(
+                avatarBitmap?.let(IconCompat::createWithBitmap)
+                    ?: IconCompat.createWithResource(context, R.drawable.ic_message),
+            )
+            // A shortcut's intent must name an action.
+            .setIntent(
+                MainActivity.openChatIntent(context, friendId).setAction(Intent.ACTION_VIEW),
+            )
+            .build()
+        ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
 
         // Carry on the conversation already shown for this friend, if there is one.
         val style = context.notificationManager.activeNotifications
@@ -236,6 +285,7 @@ object NotificationHelper {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_MESSAGES)
             .setStyle(style)
+            .setShortcutId(shortcutId)
             .setSmallIcon(R.drawable.ic_message)
             .setLargeIcon(avatarBitmap)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
@@ -251,6 +301,18 @@ object NotificationHelper {
     /** Removes the chat notification for a friend, e.g. once their chat has been read. */
     fun cancelFriendMessageNotification(context: Context, friendId: Long) {
         context.notificationManager.cancel(TAG_FRIEND_MESSAGE, friendId.toInt())
+    }
+
+    /** Removes every friend's chat notification and shortcut, for when the account goes. */
+    fun forgetFriends(context: Context) {
+        context.notificationManager.activeNotifications
+            .filter { it.tag == TAG_FRIEND_MESSAGE }
+            .forEach { context.notificationManager.cancel(it.tag, it.id) }
+
+        val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(context).map { it.id }
+        if (shortcuts.isNotEmpty()) {
+            ShortcutManagerCompat.removeLongLivedShortcuts(context, shortcuts)
+        }
     }
 
     /**
@@ -279,6 +341,7 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_FRIEND_REQUESTS)
             .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
             .setSmallIcon(R.drawable.ic_add_friend)
+            .setGroup(GROUP_FRIEND_REQUESTS)
             .setLargeIcon(avatarBitmap)
             .setContentTitle("New friend request")
             .setContentText("$friendName has added to their friends list!")

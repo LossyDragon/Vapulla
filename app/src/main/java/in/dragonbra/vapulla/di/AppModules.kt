@@ -12,5 +12,5 @@ val AppModules = module {
     single { AccountManager(androidApplication()) }
     single { SettingsManager(androidApplication()) }
     single { ServiceConnection(androidApplication()) }
-    single { DownloadManager(androidApplication(), get(), get()) }
+    single { DownloadManager(androidApplication(), get(), get(), get()) }
 }

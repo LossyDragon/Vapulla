@@ -40,6 +40,9 @@ class LoginViewModel(
     /** Completed by [onTwoFactorSubmit] while JavaSteam waits for a Steam Guard code. */
     private var pendingGuardCode: CompletableFuture<String>? = null
 
+    /** A saved sign-in is waiting for the screen to be in front of the user. */
+    private var signInWhenVisible = false
+
     /**
      * Answers JavaSteam's Steam Guard prompts. Codes are asked for on the two-factor step and
      * handed back through [pendingGuardCode]; mobile confirmation just shows a waiting state.
@@ -87,22 +90,15 @@ class LoginViewModel(
 
         viewModelScope.launch {
             connection.isBound.collect { bound ->
-                if (bound &&
-                    (
-                        !accountManager.username.first().isNullOrBlank() &&
-                            !accountManager.refreshToken.first().isNullOrBlank()
-                        )
-                ) {
-                    _uiState.update {
-                        it.copy(
-                            username = accountManager.username.first()!!,
-                            refreshToken = accountManager.refreshToken.first()!!,
-                            isLoading = true,
-                        )
-                    }
-                    Timber.d("Auto Logging in ")
-                    onSignInViaCredentials()
-                }
+                if (bound) autoSignIn()
+            }
+        }
+
+        // An anonymous session has started and its screens are in front. This one stays
+        // underneath, so leave it ready for when they are left again.
+        viewModelScope.launch {
+            SteamService.isAnonymous.collect { anonymous ->
+                if (anonymous) _uiState.update { it.copy(isLoading = false, error = null) }
             }
         }
 
@@ -153,6 +149,31 @@ class LoginViewModel(
 
     override fun onCleared() {
         Timber.d("ViewModel Cleared")
+    }
+
+    /**
+     * Signs in with the saved sign-in, if there is one. This screen also comes up when a
+     * session is lost while the app is in the background, where Android does not let the
+     * service start; the sign-in is then left for [onScreenResumed].
+     */
+    private suspend fun autoSignIn() {
+        val username = accountManager.username.first()
+        val refreshToken = accountManager.refreshToken.first()
+        if (username.isNullOrBlank() || refreshToken.isNullOrBlank()) return
+
+        _uiState.update {
+            it.copy(username = username, refreshToken = refreshToken, isLoading = true)
+        }
+        Timber.d("Auto Logging in ")
+        signInWhenVisible = !signIn()
+    }
+
+    /** The screen is in front of the user: do the sign-in that could not start before. */
+    fun onScreenResumed() {
+        if (!signInWhenVisible) return
+        signInWhenVisible = false
+
+        viewModelScope.launch { autoSignIn() }
     }
 
     fun onQrCodeCancel() {
@@ -212,7 +233,20 @@ class LoginViewModel(
         connection.steamService!!.auth.handleQRLogin()
     }
 
+    /** Signs in without an account, to look at what Steam shows anyone. */
+    fun onExplore() {
+        if (!connection.startForegroundService()) return
+
+        _uiState.update { it.copy(error = null, isLoading = true) }
+        connection.steamService!!.auth.handleAnonymousLogin()
+    }
+
     fun onSignInViaCredentials() {
+        signIn()
+    }
+
+    /** @return false when the service could not be started, so nothing was sent. */
+    private fun signIn(): Boolean {
         val state = _uiState.value
 
         if (state.username.isBlank()) {
@@ -220,24 +254,28 @@ class LoginViewModel(
             viewModelScope.launch {
                 _snackbarMessage.emit("Username is empty")
             }
-            return
+            return true
         }
         if (state.password.isBlank() && state.refreshToken.isBlank()) {
             Timber.w("password is blank!")
             viewModelScope.launch {
                 _snackbarMessage.emit("Password is empty")
             }
-            return
+            return true
         }
 
         _uiState.update { it.copy(error = null) }
 
         // The service stops itself when a session ends, so make sure it is started again.
-        connection.startForegroundService()
+        if (!connection.startForegroundService()) {
+            _uiState.update { it.copy(isLoading = false) }
+            return false
+        }
         connection.steamService!!.auth.handleCredentialLogin(
             username = state.username,
             password = state.password,
             authenticator = authenticator,
         )
+        return true
     }
 }

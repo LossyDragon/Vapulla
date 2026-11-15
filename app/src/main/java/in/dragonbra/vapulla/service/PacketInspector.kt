@@ -164,7 +164,9 @@ object PacketInspector {
      * by name rather than a list of every such message, so it errs towards withholding.
      */
     private fun isSecret(msg: EMsg, method: String?): Boolean {
-        val words = listOf("logon", "channelencrypt", "nonce", "ticket", "token", "password")
+        // "authlist" is ClientAuthList, which carries the auth tickets in use.
+        val words =
+            listOf("logon", "channelencrypt", "nonce", "ticket", "token", "password", "authlist")
         val name = msg.name.lowercase()
         val call = method.orEmpty().lowercase()
 

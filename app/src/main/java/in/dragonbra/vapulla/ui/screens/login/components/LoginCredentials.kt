@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
@@ -57,6 +56,7 @@ internal fun LoginCredentials(
     onPasswordChange: (String) -> Unit,
     onSignInViaCredentials: () -> Unit,
     onSignInViaQR: () -> Unit,
+    onExplore: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -95,7 +95,11 @@ internal fun LoginCredentials(
                         } else {
                             Icons.Default.VisibilityOff
                         },
-                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        contentDescription = if (passwordVisible) {
+                            "Hide password"
+                        } else {
+                            "Show password"
+                        },
                     )
                 }
             },
@@ -111,7 +115,15 @@ internal fun LoginCredentials(
             keyboardActions = KeyboardActions(onDone = { onSignInViaCredentials() }),
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Stays enabled while signing in: it only explains, and changes nothing.
+        var showPasswordInfo by rememberSaveable { mutableStateOf(false) }
+
+        TextButton(
+            onClick = { showPasswordInfo = true },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            Text(text = "Signing in with password?")
+        }
 
         Button(
             onClick = onSignInViaCredentials,
@@ -149,14 +161,13 @@ internal fun LoginCredentials(
             Text(text = "Sign in with QR code", style = MaterialTheme.typography.titleMedium)
         }
 
-        // Stays enabled while signing in: it only explains, and changes nothing.
-        var showPasswordInfo by rememberSaveable { mutableStateOf(false) }
-
+        // No account needed: an anonymous session, with Under the Hood to look around in.
         TextButton(
-            onClick = { showPasswordInfo = true },
+            onClick = onExplore,
+            enabled = !isLoading,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
-            Text(text = "Signing in with password?")
+            Text(text = "Explore without signing in")
         }
 
         MessageDialog(
@@ -205,6 +216,7 @@ private fun Preview() {
                 onPasswordChange = { },
                 onSignInViaCredentials = { },
                 onSignInViaQR = { },
+                onExplore = { },
             )
         }
     }

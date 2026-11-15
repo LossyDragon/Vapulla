@@ -79,6 +79,7 @@ class SteamService : Service() {
         val isLoading: StateFlow<Boolean> = SteamState.isLoading.asStateFlow()
         val isRunning: StateFlow<Boolean> = SteamState.isRunning.asStateFlow()
         val isLoggedIn: StateFlow<Boolean> = SteamState.isLoggedIn.asStateFlow()
+        val isAnonymous: StateFlow<Boolean> = SteamState.isAnonymous.asStateFlow()
         val loginResult: SharedFlow<LoginResult> = SteamState.loginResult.asSharedFlow()
 
         /**
@@ -149,7 +150,16 @@ class SteamService : Service() {
             text = statusText,
         )
 
-        startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
+        // Android can refuse this, for one when it restarts the service on its own while the
+        // app is in the background. Running without it would only get the service killed, so
+        // it stops; opening the app starts it again.
+        try {
+            startForeground(NotificationHelper.NOTIFICATION_ID_SERVICE, notification)
+        } catch (e: IllegalStateException) {
+            Timber.w(e, "Not allowed to run in the foreground, stopping")
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         // The service is wanted again (the app was opened, or a sign-in started), so the
         // notice left by a lost session is out of date.

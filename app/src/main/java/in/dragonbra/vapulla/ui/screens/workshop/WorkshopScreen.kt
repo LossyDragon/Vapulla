@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.service.api.WorkshopItem
 import `in`.dragonbra.vapulla.service.api.WorkshopSort
 import `in`.dragonbra.vapulla.ui.composables.BackButton
@@ -60,6 +61,7 @@ import `in`.dragonbra.vapulla.ui.composables.search.SearchResultMessage
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 
 @Composable
@@ -80,6 +82,7 @@ fun WorkshopScreen(viewModel: WorkshopViewModel, onBack: () -> Unit) {
         onSearch = viewModel::search,
         onLoadMore = viewModel::loadMore,
         onToggleSubscription = viewModel::toggleSubscription,
+        onDownload = viewModel::download,
     )
 }
 
@@ -93,6 +96,7 @@ private fun WorkshopContent(
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
     onToggleSubscription: (WorkshopItem) -> Unit,
+    onDownload: (WorkshopItem) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -156,8 +160,10 @@ private fun WorkshopContent(
                         WorkshopRow(
                             item = item,
                             subscribed = item.id in uiState.subscribed,
+                            download = uiState.downloads[item.id],
                             shape = groupedListShape(index, uiState.items.size),
                             onToggleSubscription = { onToggleSubscription(item) },
+                            onDownload = { onDownload(item) },
                         )
                     }
                     if (uiState.nextPage != null) {
@@ -184,9 +190,13 @@ private fun WorkshopContent(
 private fun WorkshopRow(
     item: WorkshopItem,
     subscribed: Boolean,
+    download: DownloadState?,
     shape: androidx.compose.ui.graphics.Shape,
     onToggleSubscription: () -> Unit,
+    onDownload: () -> Unit,
 ) {
+    val busy = download == DownloadState.QUEUED || download == DownloadState.DOWNLOADING
+
     Surface(
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -237,21 +247,42 @@ private fun WorkshopRow(
                     }
                 }
             }
-            if (subscribed) {
-                OutlinedButton(
-                    onClick = onToggleSubscription,
-                    modifier = Modifier.fillMaxWidth(),
-                    shapes = ButtonDefaults.shapes(),
-                ) {
-                    Text("Unsubscribe")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (subscribed) {
+                    OutlinedButton(
+                        onClick = onToggleSubscription,
+                        modifier = Modifier.weight(1f),
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
+                        Text("Unsubscribe")
+                    }
+                } else {
+                    FilledTonalButton(
+                        onClick = onToggleSubscription,
+                        modifier = Modifier.weight(1f),
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
+                        Text("Subscribe")
+                    }
                 }
-            } else {
-                FilledTonalButton(
-                    onClick = onToggleSubscription,
-                    modifier = Modifier.fillMaxWidth(),
+
+                // Downloading does not need a subscription; the item goes to the Downloads screen.
+                OutlinedButton(
+                    onClick = onDownload,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f),
                     shapes = ButtonDefaults.shapes(),
                 ) {
-                    Text("Subscribe")
+                    Text(
+                        when (download) {
+                            null -> "Download"
+                            DownloadState.QUEUED -> "Queued"
+                            DownloadState.DOWNLOADING -> "Downloading"
+                            DownloadState.PAUSED -> "Paused"
+                            DownloadState.COMPLETED -> "Downloaded"
+                            DownloadState.FAILED -> "Retry"
+                        },
+                    )
                 }
             }
         }
@@ -284,6 +315,7 @@ private fun Preview() {
                 total = 1_234,
                 nextPage = 2,
                 subscribed = persistentSetOf(1L),
+                downloads = persistentMapOf(2L to DownloadState.COMPLETED),
                 isLoading = false,
             ),
             snackbarHostState = remember { SnackbarHostState() },
@@ -293,6 +325,7 @@ private fun Preview() {
             onSearch = {},
             onLoadMore = {},
             onToggleSubscription = {},
+            onDownload = {},
         )
     }
 }

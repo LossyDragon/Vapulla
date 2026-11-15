@@ -2,9 +2,11 @@ package `in`.dragonbra.vapulla.util
 
 import androidx.core.text.HtmlCompat
 import `in`.dragonbra.vapulla.manager.AccountManager
+import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Currency
 import java.util.Locale
 import java.util.UUID
 import java.util.regex.Pattern
@@ -27,9 +29,18 @@ object Utils {
             "${AVATAR_BASE_URL}fe/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg"
 
         const val PROFILE_URL = "https://steamcommunity.com/profiles/"
+        const val CUSTOM_URL = "https://steamcommunity.com/id/"
         const val BASE_STEAM_STORE_URL = "https://store.steampowered.com/app/"
+
+        /** Where an app's logo and icons are; the app ID and the image's file name follow. */
+        const val APP_IMAGES_URL =
+            "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/"
         const val EMOTICON_URL = "https://steamcommunity-a.akamaihd.net/economy/emoticonlarge/"
         const val STICKER_URL = "https://steamcommunity-a.akamaihd.net/economy/sticker/"
+
+        /** A video is opened by adding its ID; its thumbnail has `%s` where the ID goes. */
+        const val YOUTUBE_WATCH_URL = "https://www.youtube.com/watch?v="
+        const val YOUTUBE_THUMBNAIL_URL = "https://img.youtube.com/vi/%s/hqdefault.jpg"
     }
 
     private val EMOTE_PATTERN: Pattern = Pattern.compile(":([a-zA-Z0-9]+):")
@@ -44,6 +55,21 @@ object Utils {
 
     /** Profile URL for a 64-bit Steam ID. Steam redirects to the vanity URL if one is set. */
     fun getProfileUrl(id: Long): String = "${Constants.PROFILE_URL}$id/"
+
+    /**
+     * [cents] as money in [currencyCode], e.g. "$9.99". Steam counts every currency in
+     * hundredths, and names some that the device may not know; those are shown as a plain
+     * number with the code.
+     */
+    fun formatMoney(cents: Long, currencyCode: String): String {
+        val amount = cents / 100.0
+
+        return runCatching {
+            NumberFormat.getCurrencyInstance()
+                .apply { currency = Currency.getInstance(currencyCode) }
+                .format(amount)
+        }.getOrElse { "%.2f %s".format(amount, currencyCode).trim() }
+    }
 
     fun String.toAvatarURL(): String = getAvatarURL(this)
 

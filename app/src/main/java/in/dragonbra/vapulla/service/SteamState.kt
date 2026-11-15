@@ -16,6 +16,12 @@ internal object SteamState {
     /** True between an accepted logon and the end of that session. */
     val isLoggedIn = MutableStateFlow(false)
 
+    /**
+     * True during a session without an account, see `SteamConnection.logOnAnonymous`.
+     * [isLoggedIn] stays false then: nothing that belongs to an account exists.
+     */
+    val isAnonymous = MutableStateFlow(false)
+
     val loginResult = MutableSharedFlow<LoginResult>()
 
     /**

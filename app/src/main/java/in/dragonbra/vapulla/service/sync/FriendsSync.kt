@@ -1,10 +1,15 @@
 package `in`.dragonbra.vapulla.service.sync
 
 import android.content.Context
+import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EFriendRelationship
+import `in`.dragonbra.javasteam.enums.EUniverse
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_FriendNicknameChanged_Notification
+import `in`.dragonbra.javasteam.rpc.service.PlayerClient
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendsListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.NicknameListCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaStateCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodNotification
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.javasteam.util.compat.Consumer
@@ -12,6 +17,7 @@ import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.SessionComponent
+import `in`.dragonbra.vapulla.service.SteamAccount
 import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.helpers.toLong
@@ -52,6 +58,10 @@ class FriendsSync(
         callbacks.subscribe(onPersonaState),
         callbacks.subscribe(onFriendsList),
         callbacks.subscribe(onNicknameList),
+        callbacks.subscribeServiceNotification<
+            PlayerClient,
+            CPlayer_FriendNicknameChanged_Notification.Builder,
+            >(onNicknameChanged),
     )
 
     override fun start(session: CoroutineScope) {
@@ -133,6 +143,16 @@ class FriendsSync(
             Timber.d("Updating local user info")
             scope.launch {
                 account.saveLocalUser(it)
+            }
+
+            // Our presence is the account's, whichever device it comes from, so a game in
+            // it tells the Account screen that one is running somewhere else.
+            if (!profileOnly) {
+                val appId = it.gamePlayedAppId
+                val gameName = it.gameName
+                SteamAccount.update { details ->
+                    details.copy(presenceGameAppId = appId, presenceGameName = gameName)
+                }
             }
             return@Consumer
         }
@@ -299,6 +319,34 @@ class FriendsSync(
             dao.update(friendsToUpdate)
         }
     }
+
+    /**
+     * One friend's nickname was set, changed or removed, on this device or another one. The
+     * list in [onNicknameList] only comes at sign-in; changes after that arrive here, through
+     * the `PlayerClient` service. An empty nickname means it was removed.
+     */
+    private val onNicknameChanged:
+        (ServiceMethodNotification<CPlayer_FriendNicknameChanged_Notification.Builder>) -> Unit =
+        { notification ->
+            val body = notification.body
+            // The notification names the friend by account ID, the low half of a Steam ID.
+            val friendId = SteamID(
+                body.accountid.toUInt().toLong(),
+                EUniverse.Public,
+                EAccountType.Individual,
+            ).toLong()
+
+            Timber.d("onNicknameChanged() echo=${body.isEchoToSelf}")
+
+            scope.launch {
+                with(db.steamFriendDao()) {
+                    find(friendId)
+                        ?.takeIf { it.nickname != body.nickname }
+                        ?.copy(nickname = body.nickname)
+                        ?.also { update(it) }
+                }
+            }
+        }
 
     /** Safety net for game names: re-checks in-game friends against the apps table. */
     private fun CoroutineScope.continuousFriendChecker() = launch {

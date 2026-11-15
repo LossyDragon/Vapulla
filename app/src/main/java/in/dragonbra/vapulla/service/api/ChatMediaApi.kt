@@ -1,15 +1,9 @@
 package `in`.dragonbra.vapulla.service.api
 
-import `in`.dragonbra.javasteam.steam.authentication.SteamAuthentication
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
 import `in`.dragonbra.javasteam.types.SteamID
-import `in`.dragonbra.vapulla.manager.AccountManager
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.future.await
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -19,18 +13,9 @@ import timber.log.Timber
  * arrives like any other.
  *
  * The upload goes through the community website rather than the CM connection, which wants
- * an access token. One is generated from the saved refresh token with
- * [SteamAuthentication.generateAccessTokenForApp] and kept for later uploads.
+ * an access token; [WebSessionApi] makes one and keeps it for later uploads.
  */
-class ChatMediaApi(
-    private val steamCloud: SteamCloud,
-    private val authentication: SteamAuthentication,
-    private val account: AccountManager,
-    private val localSteamId: () -> SteamID?,
-) {
-
-    private val tokenMutex = Mutex()
-    private var accessToken: String? = null
+class ChatMediaApi(private val steamCloud: SteamCloud, private val webSession: WebSessionApi) {
 
     /**
      * Uploads [media] to the chat with a friend.
@@ -74,36 +59,14 @@ class ChatMediaApi(
      */
     private suspend fun <T> upload(request: suspend (String) -> T): T =
         withContext(Dispatchers.IO) {
-            val cached = accessToken
-
-            if (cached != null) {
-                try {
-                    return@withContext request(cached)
-                } catch (e: IOException) {
-                    Timber.w(e, "Upload with the kept access token failed, trying a new one")
-                    accessToken = null
-                }
+            val result = try {
+                request(webSession.accessToken())
+            } catch (e: IOException) {
+                Timber.w(e, "Upload failed, trying once more with a new access token")
+                request(webSession.accessToken(fresh = true))
             }
 
-            val result = request(newAccessToken())
             Timber.d("Chat media uploaded: $result")
             result
         }
-
-    private suspend fun newAccessToken(): String = tokenMutex.withLock {
-        accessToken ?: run {
-            val steamId = localSteamId() ?: throw IOException("Not signed in")
-            val refreshToken = account.refreshToken.first()
-                ?.takeIf { it.isNotBlank() }
-                ?: throw IOException("No saved sign-in to upload with")
-
-            val token = try {
-                authentication.generateAccessTokenForApp(steamId, refreshToken).await().accessToken
-            } catch (e: IllegalArgumentException) {
-                throw IOException("Steam did not issue an access token", e)
-            }
-
-            token.also { accessToken = it }
-        }
-    }
 }

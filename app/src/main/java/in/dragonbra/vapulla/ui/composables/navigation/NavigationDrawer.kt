@@ -8,7 +8,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Diversity3
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Forum
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalDrawerSheet
@@ -115,6 +118,12 @@ private fun NavigationDrawerContent(
                 onClick = { onNavigationClick(Routes.Games) },
             )
             DrawerItem(
+                text = "Store",
+                imageVector = Icons.Outlined.Storefront,
+                selected = currentSelection == Routes.Store,
+                onClick = { onNavigationClick(Routes.Store) },
+            )
+            DrawerItem(
                 text = "Server Browser",
                 imageVector = Icons.Outlined.Dns,
                 selected = currentSelection == Routes.ServerBrowser,
@@ -135,6 +144,18 @@ private fun NavigationDrawerContent(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
+            DrawerItem(
+                text = "Account",
+                imageVector = Icons.Outlined.AccountCircle,
+                selected = currentSelection == Routes.Account,
+                onClick = { onNavigationClick(Routes.Account) },
+            )
+            DrawerItem(
+                text = "Family",
+                imageVector = Icons.Outlined.Diversity3,
+                selected = currentSelection == Routes.Family,
+                onClick = { onNavigationClick(Routes.Family) },
+            )
             DrawerItem(
                 text = "Sessions",
                 imageVector = Icons.Outlined.Devices,

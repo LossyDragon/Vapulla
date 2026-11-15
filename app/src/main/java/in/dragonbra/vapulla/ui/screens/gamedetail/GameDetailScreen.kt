@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,7 @@ import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.steamStoreAssetUrl
 import `in`.dragonbra.vapulla.service.api.AchievementProgress
+import `in`.dragonbra.vapulla.service.api.NewsItem
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
@@ -60,6 +62,7 @@ import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
+import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.components.DownloadSection
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
@@ -71,6 +74,7 @@ import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeAgo
 import java.util.Date
 import java.util.EnumSet
+import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun GameDetailScreen(
@@ -81,6 +85,8 @@ fun GameDetailScreen(
     onOpenAchievements: (Int) -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenDepots: (Int) -> Unit,
+    onOpenStore: (Int) -> Unit,
+    onOpenLeaderboards: (Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -99,9 +105,15 @@ fun GameDetailScreen(
         onRequestFreeLicense = viewModel::requestFreeLicense,
         onOpenDownloads = onOpenDownloads,
         onOpenDepots = onOpenDepots,
+        onOpenStore = onOpenStore,
+        onOpenLeaderboards = onOpenLeaderboards,
         onDownload = viewModel::startDownload,
         onPauseDownload = viewModel::pauseDownload,
         onResumeDownload = viewModel::resumeDownload,
+        onVerifyDownload = viewModel::verifyDownload,
+        onSelectBranch = viewModel::selectBranch,
+        onUnlockBranch = viewModel::unlockBranch,
+        onSelectLanguage = viewModel::selectLanguage,
     )
 }
 
@@ -116,9 +128,15 @@ private fun GameDetailContent(
     onRequestFreeLicense: () -> Unit,
     onOpenDownloads: () -> Unit = {},
     onOpenDepots: (Int) -> Unit = {},
+    onOpenStore: (Int) -> Unit = {},
+    onOpenLeaderboards: (Int) -> Unit = {},
     onDownload: (SteamApp.OS) -> Unit = {},
     onPauseDownload: () -> Unit = {},
     onResumeDownload: () -> Unit = {},
+    onVerifyDownload: () -> Unit = {},
+    onSelectBranch: (String) -> Unit = {},
+    onUnlockBranch: (branch: String, password: String) -> Unit = { _, _ -> },
+    onSelectLanguage: (String) -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val app = uiState.app
@@ -157,7 +175,7 @@ private fun GameDetailContent(
             item {
                 ActionRow(
                     app = app,
-                    onStore = { uriHandler.openUri(Utils.Constants.BASE_STEAM_STORE_URL + app.id) },
+                    onStore = { onOpenStore(app.id) },
                     onCloud = { onOpenCloud(app.id) },
                     onWorkshop = { onOpenWorkshop(app.id) },
                     onFreeLicense = onRequestFreeLicense,
@@ -168,11 +186,17 @@ private fun GameDetailContent(
                 DownloadSection(
                     download = uiState.download,
                     progress = uiState.downloadProgress,
-                    plans = uiState.downloadPlans,
+                    updateAvailable = uiState.updateAvailable,
+                    waitingForWifi = uiState.waitingForWifi,
+                    choices = uiState.downloadChoices,
                     freeBytes = uiState.freeBytes,
                     onDownload = onDownload,
                     onPause = onPauseDownload,
                     onResume = onResumeDownload,
+                    onVerify = onVerifyDownload,
+                    onSelectBranch = onSelectBranch,
+                    onUnlockBranch = onUnlockBranch,
+                    onSelectLanguage = onSelectLanguage,
                     onOpenDownloads = onOpenDownloads,
                     onOpenDepots = { onOpenDepots(app.id) },
                 )
@@ -181,6 +205,27 @@ private fun GameDetailContent(
             item {
                 Section(title = "Details") {
                     DetailRows(app, uiState, onAchievements = { onOpenAchievements(app.id) })
+                }
+            }
+
+            if (uiState.leaderboards > 0) {
+                item {
+                    LeaderboardsRow(
+                        count = uiState.leaderboards,
+                        onClick = { onOpenLeaderboards(app.id) },
+                    )
+                }
+            }
+
+            if (uiState.friends.isNotEmpty()) {
+                item { Section(title = "Friends") { DetailList(uiState.friends) } }
+            }
+
+            if (uiState.news.isNotEmpty()) {
+                item {
+                    Section(title = "News") {
+                        NewsRows(news = uiState.news, onOpen = uriHandler::openUri)
+                    }
                 }
             }
 
@@ -294,6 +339,81 @@ private fun ActionRow(
                 ) {
                     Icon(Icons.Outlined.CardGiftcard, contentDescription = null)
                     Text(text = "  Free license")
+                }
+            }
+        }
+    }
+}
+
+/** Opens the game's leaderboards; only shown for a game that has some. */
+@Composable
+private fun LeaderboardsRow(count: Int, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = "Leaderboards", style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Show leaderboards",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** The game's latest news posts; tapping one opens it in the browser. */
+@Composable
+private fun NewsRows(news: List<NewsItem>, onOpen: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        news.forEachIndexed { index, post ->
+            Surface(
+                onClick = { onOpen(post.url) },
+                shape = groupedListShape(index, news.size),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = post.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = listOf(post.source, post.date.toDateString())
+                            .filter { it.isNotEmpty() }
+                            .joinToString(" · "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (post.summary.isNotEmpty()) {
+                        Text(
+                            text = post.summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -459,6 +579,22 @@ private fun Preview() {
                     percentage = 60f,
                 ),
                 isLoadingExtras = false,
+                leaderboards = 12,
+                friends = persistentListOf(
+                    "Playing now" to "Ann",
+                    "Own it" to "Bob, Cid, Dee, Eve and 7 more",
+                ),
+                news = persistentListOf(
+                    NewsItem(
+                        id = "1",
+                        title = "Team Fortress 2 Update Released",
+                        url = "https://store.steampowered.com/news/app/440",
+                        summary = "An update to Team Fortress 2 has been released. The update " +
+                            "will be applied automatically when you restart Team Fortress 2.",
+                        source = "Community Announcements",
+                        date = 1_760_722_982,
+                    ),
+                ),
             ),
             snackbarHostState = remember { SnackbarHostState() },
             onBack = {},

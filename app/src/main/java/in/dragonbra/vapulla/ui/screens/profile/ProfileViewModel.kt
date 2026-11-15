@@ -11,6 +11,8 @@ import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
 import `in`.dragonbra.vapulla.service.api.FriendsApi
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +23,7 @@ import timber.log.Timber
 
 /** Profile screen state for one friend: the stored row plus the profile Steam returns. */
 class ProfileViewModel(
-    friendDao: SteamFriendDao,
+    private val friendDao: SteamFriendDao,
     private val serviceConnection: ServiceConnection,
     private val friendId: Long,
 ) : ViewModel() {
@@ -43,6 +45,14 @@ class ProfileViewModel(
     private val _badgeLoading = MutableStateFlow(true)
     val badgeLoading: StateFlow<Boolean> = _badgeLoading.asStateFlow()
 
+    private val _mutualFriends = MutableStateFlow<ImmutableList<String>?>(null)
+
+    /**
+     * For someone who sent a friend request: the names of the friends they share with the
+     * account, empty when there are none. Null for everyone else, and until Steam answers.
+     */
+    val mutualFriends: StateFlow<ImmutableList<String>?> = _mutualFriends.asStateFlow()
+
     private val service: SteamService
         get() = checkNotNull(serviceConnection.steamService) { "SteamService is not bound" }
 
@@ -62,6 +72,22 @@ class ProfileViewModel(
                     .onFailure { Timber.w(it, "GetFavoriteBadge failed") }
                     .getOrNull()
             _badgeLoading.value = false
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            if (friendDao.find(friendId)?.isRequestRecipient != true) return@launch
+
+            val mutual = runCatching { friends.mutualFriendsOfRequests()[friendId].orEmpty() }
+                .onFailure { Timber.w(it, "GetMutualFriendsForIncomingInvites failed") }
+                .getOrNull()
+                ?: return@launch
+
+            _mutualFriends.value = mutual
+                .map { id -> friendDao.find(id)?.nameOrNickname ?: id.toULong().toString() }
+                .sorted()
+                .toImmutableList()
         }
     }
 

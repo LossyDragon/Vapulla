@@ -50,9 +50,12 @@ class GamesViewModel(
      */
     val downloadBadges: StateFlow<ImmutableMap<Int, DownloadBadge>> =
         combine(
-            downloadDao.observeAll(),
+            downloadDao.observeApps(),
             downloads.progress
-                .map { live -> live?.let { it.appId to (it.fraction * 100).toInt() } }
+                .map { live ->
+                    live?.takeIf { it.workshopId == 0L }
+                        ?.let { it.appId to (it.fraction * 100).toInt() }
+                }
                 .distinctUntilChanged(),
         ) { all, live ->
             all.associate { download ->

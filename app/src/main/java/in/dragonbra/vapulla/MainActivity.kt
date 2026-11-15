@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
         Timber.i("Created...")
 
         handledRequest = savedInstanceState?.getLong(STATE_HANDLED_REQUEST, -1L) ?: -1L
-        readOpenChat(intent)
+        readOpenChat(intent, isNew = savedInstanceState == null)
 
         serviceConnection.bindService()
         serviceConnection.startForegroundService()
@@ -121,7 +121,7 @@ class MainActivity : ComponentActivity() {
     /** A notification tapped while the activity already exists arrives here. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        readOpenChat(intent)
+        readOpenChat(intent, isNew = true)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -129,15 +129,18 @@ class MainActivity : ComponentActivity() {
         outState.putLong(STATE_HANDLED_REQUEST, handledRequest)
     }
 
-    private fun readOpenChat(intent: Intent?) {
+    /** @param isNew true for an intent the activity has not been handed before. */
+    private fun readOpenChat(intent: Intent?, isNew: Boolean) {
         val friendId = intent?.getLongExtra(EXTRA_OPEN_CHAT, 0L) ?: 0L
         val requestTime = intent?.getLongExtra(EXTRA_REQUEST_TIME, 0L) ?: 0L
         Timber.d("readOpenChat: friend=$friendId request=$requestTime handled=$handledRequest")
 
         // A recreated activity is handed the intent it was first started with, which may be a
-        // tap it acted on long ago. Only a tap newer than the last one handled counts.
-        if (friendId != 0L && requestTime > handledRequest) {
-            handledRequest = requestTime
+        // tap it acted on long ago, so there only a tap newer than the last one handled
+        // counts. A friend's shortcut always carries the time it was made, so a new intent
+        // counts whatever its time.
+        if (friendId != 0L && (isNew || requestTime > handledRequest)) {
+            handledRequest = maxOf(handledRequest, requestTime)
             chatToOpen.value = friendId
         }
     }

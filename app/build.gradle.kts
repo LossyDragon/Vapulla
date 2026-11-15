@@ -55,6 +55,14 @@ android {
                 "proguard-rules.pro"
             )
         }
+
+        // The release build, signed with the debug key so that it installs over a debug build
+        // and keeps its data. For measuring speed on a device: a debuggable build runs slower.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
 
     compileOptions {
@@ -106,6 +114,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.swipe)
+
+    // Unit tests of the plain Kotlin parts; run with ./gradlew :app:testDebugUnitTest
+    testImplementation(libs.junit)
 }
 
 

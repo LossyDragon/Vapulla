@@ -16,6 +16,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamLicense
 import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.PicsFeed
 import `in`.dragonbra.vapulla.service.SessionComponent
+import `in`.dragonbra.vapulla.service.api.FamilyApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
@@ -47,6 +48,7 @@ class LicenseSync(
     private val account: AccountManager,
     private val steamApps: SteamApps,
     private val library: LibraryApi,
+    private val family: FamilyApi,
     private val localSteamId: () -> SteamID?,
     private val onAppsNamed: suspend (Map<Int, String>) -> Unit,
 ) : SessionComponent {
@@ -64,6 +66,7 @@ class LicenseSync(
         session.continuousPicsChanges()
         session.continuousPicsChecker()
         session.syncPlaytime()
+        session.syncFamilyLibrary()
     }
 
     /** Queues a PICS app info request for [appId]; the reply is stored like any other. */
@@ -463,12 +466,60 @@ class LicenseSync(
         Timber.d("Synced playtime for ${games.size} games")
     }
 
+    /**
+     * Makes sure every game the Steam Family shares is in the library. Most are there
+     * already, because Steam lists the family's licenses with the account's own; this adds
+     * the ones no license brought in, and takes out the ones that are no longer shared.
+     * Apps new to the table show up once their app info has arrived.
+     */
+    private fun CoroutineScope.syncFamilyLibrary() = launch {
+        val shared = runCatching { family.family()?.let { family.sharedLibrary(it.id) } }
+            .onFailure { Timber.w(it, "Family library sync failed") }
+            .getOrNull()
+            ?: return@launch
+
+        val appDao = db.steamAppDao()
+        val sharedIds = shared.map { it.appId }
+
+        val known = sharedIds
+            .chunked(SQL_IN_CHUNK_SIZE)
+            .flatMap { ids -> appDao.findChangeInfo(ids) }
+            .associateBy { info -> info.id }
+
+        // No license of ours grants these, so nothing else would put them in the library.
+        val toAdd = sharedIds.filter { id ->
+            (known[id]?.packageId ?: INVALID_PKG_ID) == INVALID_PKG_ID
+        }
+        val noLongerShared = appDao.findAppIdsOfPackage(FAMILY_PKG_ID) - sharedIds.toSet()
+
+        db.withTransaction {
+            appDao.insertIfAbsent(toAdd.map { SteamApp(id = it, packageId = FAMILY_PKG_ID) })
+            toAdd.chunked(SQL_IN_CHUNK_SIZE).forEach { appDao.updatePackageId(FAMILY_PKG_ID, it) }
+            noLongerShared.chunked(SQL_IN_CHUNK_SIZE)
+                .forEach { appDao.updatePackageId(INVALID_PKG_ID, it) }
+        }
+
+        toAdd.forEach { requestAppInfo(it) }
+        Timber.d(
+            "Family library: %d shared, %d added, %d removed",
+            sharedIds.size,
+            toAdd.size,
+            noLongerShared.size,
+        )
+    }
+
     private companion object {
         /** Max ids per `WHERE id IN (...)` query, kept well under SQLite's bound-parameter limit. */
         const val SQL_IN_CHUNK_SIZE = 500
 
         /** The package ID stored for an app that no license of ours grants. */
         const val INVALID_PKG_ID = Int.MAX_VALUE
+
+        /**
+         * The package ID stored for an app that is in the library only because the Steam
+         * Family shares it. Not a real package: no license is looked up for it.
+         */
+        const val FAMILY_PKG_ID = Int.MAX_VALUE - 1
 
         /** How often the change list is polled while the change feed is on screen. */
         val FEED_POLL_INTERVAL = 5.seconds

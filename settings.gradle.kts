@@ -17,6 +17,12 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // A JavaSteam build in Maven local (~/.m2) wins over the published snapshot, to try a
+        // library change before publishing it. Delete ~/.m2/repository/in/dragonbra to go
+        // back to the published one.
+        mavenLocal {
+            content { includeGroup("in.dragonbra") }
+        }
         google()
         mavenCentral()
         maven(url = "https://central.sonatype.com/repository/maven-snapshots/")

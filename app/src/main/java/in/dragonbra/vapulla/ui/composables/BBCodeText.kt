@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.ui.composables
 
 import android.net.Uri
 import android.util.LruCache
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,10 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -29,11 +32,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.ContentScale
@@ -50,11 +55,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import `in`.dragonbra.vapulla.service.api.YouTubeApi
+import `in`.dragonbra.vapulla.ui.screens.web.ExternalLinks
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils
 import kotlinx.collections.immutable.ImmutableList
@@ -70,6 +78,9 @@ import timber.log.Timber
  * costs a cache lookup. A message that is a single paragraph, which is nearly all of chat,
  * is one [Text] with no extra layout around it.
  *
+ * The text is written by other people, so its links always open in the device's browser,
+ * never in the app's signed-in web view.
+ *
  * @param style Base text style; headers and code blocks derive from it.
  * @param color Text colour, when it should differ from [style] and the content colour.
  */
@@ -82,13 +93,15 @@ fun BBCodeText(
 ) {
     val document = remember(text) { BBCode.parse(text) }
 
-    ProvideTextStyle(if (color.isSpecified) style.copy(color = color) else style) {
-        val only = document.blocks.singleOrNull()
-        if (only is BBBlock.Paragraph) {
-            BBParagraph(paragraph = only, modifier = modifier)
-        } else {
-            Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                BBBlocks(document.blocks)
+    ExternalLinks {
+        ProvideTextStyle(if (color.isSpecified) style.copy(color = color) else style) {
+            val only = document.blocks.singleOrNull()
+            if (only is BBBlock.Paragraph) {
+                BBParagraph(paragraph = only, modifier = modifier)
+            } else {
+                Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    BBBlocks(document.blocks)
+                }
             }
         }
     }
@@ -119,6 +132,8 @@ private fun BBBlocks(blocks: ImmutableList<BBBlock>) {
             is BBBlock.Code -> BBCodeBlock(block.content)
 
             is BBBlock.Image -> BBImage(block)
+
+            is BBBlock.YouTube -> BBYouTube(block)
 
             is BBBlock.Sticker -> RemoteImage(
                 imageModel = { Utils.Constants.STICKER_URL + Uri.encode(block.type) },
@@ -162,11 +177,14 @@ private fun spoilerText(paragraph: BBBlock.Paragraph): AnnotatedString {
             paragraph.text
                 .getStringAnnotations(TAG_SPOILER, 0, paragraph.text.length)
                 .forEach { spoiler ->
-                    if (spoiler.item !in revealed) {
-                        addStyle(HIDDEN_SPOILER_STYLE, spoiler.start, spoiler.end)
-                    }
+                    // The style rides on the link: a link without one is given the theme's
+                    // link colour and underline, which would show the text through the black.
+                    val hidden = spoiler.item !in revealed
                     addLink(
-                        clickable = LinkAnnotation.Clickable(tag = spoiler.item) {
+                        clickable = LinkAnnotation.Clickable(
+                            tag = spoiler.item,
+                            styles = if (hidden) HIDDEN_SPOILER else REVEALED_SPOILER,
+                        ) {
                             revealed = if (spoiler.item in revealed) {
                                 revealed - spoiler.item
                             } else {
@@ -303,6 +321,85 @@ private fun BBImage(image: BBBlock.Image) {
     )
 }
 
+/**
+ * A YouTube video posted to chat: its thumbnail with a play button, opening the video. The
+ * video's name and channel are asked of YouTube and laid over the thumbnail when they
+ * arrive, so the card keeps its size.
+ */
+@Composable
+private fun BBYouTube(video: BBBlock.YouTube) {
+    val uriHandler = LocalUriHandler.current
+    val details by produceState(YouTubeApi.cached(video.videoId), video.videoId) {
+        if (value == null) value = YouTubeApi.load(video.videoId)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable {
+                try {
+                    uriHandler.openUri(Utils.Constants.YOUTUBE_WATCH_URL + video.videoId)
+                } catch (e: Exception) {
+                    Timber.e(e, "Could not open video")
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        // The thumbnail is 4:3 with black bars; cropping to 16:9 cuts exactly those off.
+        RemoteImage(
+            imageModel = { Utils.Constants.YOUTUBE_THUMBNAIL_URL.format(video.videoId) },
+            imageOptions = ImageOptions(
+                contentDescription = "YouTube video",
+                contentScale = ContentScale.Crop,
+            ),
+            modifier = Modifier.fillMaxSize(),
+            failure = {
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+            },
+        )
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = "Play",
+            tint = Color.White,
+            modifier = Modifier
+                .size(48.dp)
+                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                .padding(8.dp),
+        )
+
+        details?.let { found ->
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
+                        ),
+                    )
+                    .padding(start = 10.dp, end = 10.dp, top = 16.dp, bottom = 8.dp),
+            ) {
+                Text(
+                    text = found.title,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = found.channel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
 // region Model
 
 /** A parsed BB Code text: block-level elements, top to bottom. */
@@ -336,6 +433,9 @@ sealed interface BBBlock {
         BBBlock
 
     data class Sticker(val type: String) : BBBlock
+
+    /** A YouTube video, by the ID in its address. */
+    data class YouTube(val videoId: String) : BBBlock
 }
 
 // endregion
@@ -394,7 +494,11 @@ private val LINK_STYLES = TextLinkStyles(
     style = SpanStyle(color = Color(0xFF4A90E2), textDecoration = TextDecoration.Underline),
 )
 
-private val HIDDEN_SPOILER_STYLE = SpanStyle(color = Color.Black, background = Color.Black)
+/** Black on black until tapped, then the text on a faint band that marks it as a spoiler. */
+private val HIDDEN_SPOILER =
+    TextLinkStyles(style = SpanStyle(color = Color.Black, background = Color.Black))
+private val REVEALED_SPOILER =
+    TextLinkStyles(style = SpanStyle(background = Color.Black.copy(alpha = 0.25f)))
 
 private fun emoticonId(name: String) = "emoticon_$name"
 
@@ -648,8 +752,30 @@ private fun parseBlock(text: String, pos: Int, limit: Int, depth: Int): BlockMat
                 ?.let { BlockMatch(BBBlock.Sticker(it), tag.end) }
         }
 
+        'y' -> matchTag(text, pos, "youtube", limit)?.let { tag ->
+            parseYouTube(text, tag)?.let { BlockMatch(it, tag.end) }
+        }
+
         else -> null
     }
+}
+
+/** A YouTube video ID, where it sits in an address: `youtu.be/ID` or `v=ID`. */
+private val YOUTUBE_ID = Regex("""(?:youtu\.be/|[?&]v=)([A-Za-z0-9_-]{6,20})""")
+private val YOUTUBE_ID_ALONE = Regex("""[A-Za-z0-9_-]{6,20}""")
+
+/**
+ * Steam chat sends `[youtube=URL v=ID]URL[/youtube]`. Only the ID is kept, and the address to
+ * open is built from it, so a message cannot dress another site up as a video. Without a
+ * usable ID the tag is left as text.
+ */
+private fun parseYouTube(text: String, tag: Tag): BBBlock.YouTube? {
+    val id = parseAttributes(tag.attributes)["v"]?.takeIf(YOUTUBE_ID_ALONE::matches)
+        ?: YOUTUBE_ID.find(tag.attributes)?.groupValues?.get(1)
+        ?: YOUTUBE_ID.find(text.substring(tag.contentStart, tag.contentEnd))?.groupValues?.get(1)
+        ?: return null
+
+    return BBBlock.YouTube(id)
 }
 
 /** Accepts both `[hr][/hr]` and a bare `[hr]`. */
@@ -1015,6 +1141,11 @@ private fun Preview_BBCodeText() {
 
                 BBCodeText(
                     text = "[sticker type=\"Winter2019JingleIntensifies\" limit=\"0\"][/sticker]",
+                )
+
+                BBCodeText(
+                    text = "[youtube=https://youtu.be/tax4e4hBBZc v=tax4e4hBBZc]" +
+                        "https://youtu.be/tax4e4hBBZc[/youtube]",
                 )
 
                 BBCodeText(

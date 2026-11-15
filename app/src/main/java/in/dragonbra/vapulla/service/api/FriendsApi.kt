@@ -1,8 +1,11 @@
 package `in`.dragonbra.vapulla.service.api
 
+import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetMutualFriendsForIncomingInvites_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.ProfileInfoCallback
@@ -28,6 +31,38 @@ class FriendsApi(
 
     fun setPersonaState(state: EPersonaState) {
         steamFriends.setPersonaState(state = state)
+    }
+
+    /**
+     * Asks Steam to change the account's own profile name. Its answer is not tied to this
+     * call: it arrives as a `PersonaChangeCallback`, which
+     * [in.dragonbra.vapulla.service.SteamConnection] passes on.
+     */
+    fun setPersonaName(name: String) {
+        steamFriends.setPersonaName(name)
+    }
+
+    /**
+     * The friends each sender of an incoming friend request has in common with the account:
+     * the sender's Steam ID to the Steam IDs of those friends. Senders with none in common
+     * may be left out. Empty when Steam does not answer.
+     */
+    suspend fun mutualFriendsOfRequests(): Map<Long, List<Long>> {
+        val request = CPlayer_GetMutualFriendsForIncomingInvites_Request.newBuilder().build()
+
+        val response = player.getMutualFriendsForIncomingInvites(request).await()
+        if (response.result != EResult.OK) {
+            Timber.w("GetMutualFriendsForIncomingInvites failed: ${response.result}")
+            return emptyMap()
+        }
+
+        return response.body.incomingInviteMutualFriendsListsList.associate { invite ->
+            // The friends come as account IDs, the low half of a Steam ID.
+            invite.steamid to invite.mutualFriendAccountIdsList.map { accountId ->
+                SteamID(accountId.toUInt().toLong(), EUniverse.Public, EAccountType.Individual)
+                    .convertToUInt64()
+            }
+        }
     }
 
     /** Accepts the friend request from [friendId]. */
@@ -98,9 +133,23 @@ class FriendsApi(
         db.steamFriendDao().remove(friendId)
     }
 
+    /**
+     * Sets the nickname of [friendId]; an empty [value] removes it.
+     *
+     * The nickname is stored here as well as sent, so the change shows at once. Steam also
+     * announces a changed nickname to every signed-in device, which
+     * [in.dragonbra.vapulla.service.sync.FriendsSync] writes; if that reaches this device
+     * too it finds the nickname already in place. Steam's answer cannot be awaited with this
+     * call, so should it refuse the change, the list at the next sign-in puts the stored
+     * one right again.
+     */
     suspend fun setNickname(friendId: Long, value: String) = withContext(Dispatchers.IO) {
-        val friend = friendId.toSteamID()
-        steamFriends.setFriendNickname(friend, value)
+        val nickname = value.trim()
+        steamFriends.setFriendNickname(friendId.toSteamID(), nickname)
+
+        with(db.steamFriendDao()) {
+            find(friendId)?.copy(nickname = nickname)?.also { update(it) }
+        }
     }
 
     suspend fun requestAliasHistory(friendId: Long) = withContext(Dispatchers.IO) {

@@ -17,4 +17,11 @@ class SteamApis(
     val workshop: WorkshopApi,
     val sessions: SessionsApi,
     val screenshots: ScreenshotsApi,
+    val manifests: ManifestApi,
+    val invites: InvitesApi,
+    val store: StoreApi,
+    val web: WebSessionApi,
+    val leaderboards: LeaderboardsApi,
+    val family: FamilyApi,
+    val authTickets: AuthTicketApi,
 )

@@ -233,7 +233,11 @@ class DepotsViewModel(
 }
 
 @Composable
-fun DepotsScreen(viewModel: DepotsViewModel, onBack: () -> Unit) {
+fun DepotsScreen(
+    viewModel: DepotsViewModel,
+    onBack: () -> Unit,
+    onOpenManifest: (appId: Int, depotId: Int, manifestId: Long, branch: String) -> Unit,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     DepotsContent(
@@ -241,6 +245,7 @@ fun DepotsScreen(viewModel: DepotsViewModel, onBack: () -> Unit) {
         onBack = onBack,
         onSearch = viewModel::search,
         onLoad = viewModel::load,
+        onOpenManifest = onOpenManifest,
     )
 }
 
@@ -250,6 +255,7 @@ private fun DepotsContent(
     onBack: () -> Unit,
     onSearch: (String) -> Unit,
     onLoad: (Int) -> Unit,
+    onOpenManifest: (appId: Int, depotId: Int, manifestId: Long, branch: String) -> Unit,
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     var text by rememberSaveable { mutableStateOf("") }
@@ -311,7 +317,13 @@ private fun DepotsContent(
 
                 state.isLoading -> LoadingBox(modifier = Modifier.fillMaxSize())
 
-                state.app != null -> DepotList(app = state.app, bottomPadding = padding)
+                state.app != null -> DepotList(
+                    app = state.app,
+                    bottomPadding = padding,
+                    onOpenManifest = { depotId, manifest ->
+                        onOpenManifest(state.app.appId, depotId, manifest.gid, manifest.branch)
+                    },
+                )
 
                 else -> SearchResultMessage(
                     message = state.message
@@ -350,7 +362,11 @@ private fun Suggestions(apps: ImmutableList<SteamAppName>, onPick: (SteamAppName
 }
 
 @Composable
-private fun DepotList(app: AppDepots, bottomPadding: PaddingValues) {
+private fun DepotList(
+    app: AppDepots,
+    bottomPadding: PaddingValues,
+    onOpenManifest: (depotId: Int, ManifestRow) -> Unit,
+) {
     val dates = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
 
     LazyColumn(
@@ -426,7 +442,16 @@ private fun DepotList(app: AppDepots, bottomPadding: PaddingValues) {
                         Faint("No manifest: nothing of its own to download")
                     }
                     depot.manifests.forEach { manifest ->
-                        Column {
+                        // An encrypted manifest belongs to a branch behind a password, and
+                        // cannot be fetched without it.
+                        val canOpen = !manifest.encrypted && manifest.gid != 0L
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = canOpen) {
+                                    onOpenManifest(depot.depotId, manifest)
+                                },
+                        ) {
                             Mono(
                                 "${manifest.branch}: ${manifest.gid.toULong()}" +
                                     if (manifest.encrypted) " (encrypted)" else "",
@@ -435,6 +460,13 @@ private fun DepotList(app: AppDepots, bottomPadding: PaddingValues) {
                                 Faint(
                                     "${manifest.size.toFileSize()} on disk · " +
                                         "${manifest.download.toFileSize()} to download",
+                                )
+                            }
+                            if (canOpen) {
+                                Text(
+                                    text = "List files",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
                                 )
                             }
                         }
@@ -528,6 +560,7 @@ private fun Preview() {
             onBack = {},
             onSearch = {},
             onLoad = {},
+            onOpenManifest = { _, _, _, _ -> },
         )
     }
 }

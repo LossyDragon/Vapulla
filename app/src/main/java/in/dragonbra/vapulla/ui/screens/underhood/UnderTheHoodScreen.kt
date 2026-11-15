@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.ui.screens.underhood
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,12 +15,16 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.outlined.Api
+import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.MonitorHeart
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material.icons.outlined.SettingsEthernet
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material3.Icon
@@ -30,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,11 +48,13 @@ import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 
+/** @property needsAccount it shows something of the account, so not in an anonymous session. */
 private data class Tool(
     val route: Routes,
     val title: String,
     val description: String,
     val icon: ImageVector,
+    val needsAccount: Boolean = false,
 )
 
 private val TOOLS = listOf(
@@ -73,6 +81,7 @@ private val TOOLS = listOf(
         title = "Licenses",
         description = "The packages on your account, and which one grants a given app",
         icon = Icons.Outlined.Key,
+        needsAccount = true,
     ),
     Tool(
         route = Routes.Depots(),
@@ -81,16 +90,42 @@ private val TOOLS = listOf(
         icon = Icons.Outlined.Storage,
     ),
     Tool(
+        route = Routes.DownloadInternals,
+        title = "Download internals",
+        description = "The running download in chunks, bytes and connections",
+        icon = Icons.Outlined.Speed,
+        needsAccount = true,
+    ),
+    Tool(
+        route = Routes.PicsExplorer(),
+        title = "PICS explorer",
+        description = "Everything Steam's catalogue holds on any app or package",
+        icon = Icons.Outlined.AccountTree,
+    ),
+    Tool(
         route = Routes.PicsFeed,
         title = "PICS change feed",
         description = "Apps and packages changing across Steam, as they change",
         icon = Icons.Outlined.DynamicFeed,
     ),
     Tool(
+        route = Routes.WebApi,
+        title = "Web API",
+        description = "The interfaces and methods of api.steampowered.com",
+        icon = Icons.Outlined.Api,
+    ),
+    Tool(
         route = Routes.IdDecoder,
         title = "ID decoder",
         description = "Break a Steam ID, game ID or global ID into its parts",
         icon = Icons.Outlined.Pin,
+    ),
+    Tool(
+        route = Routes.AuthTicket,
+        title = "Auth tickets",
+        description = "Make the ticket a game hands to a server, and see what is in it",
+        icon = Icons.Outlined.ConfirmationNumber,
+        needsAccount = true,
     ),
     Tool(
         route = Routes.Diagnostics,
@@ -100,16 +135,38 @@ private val TOOLS = listOf(
     ),
 )
 
-/** Table of contents for the screens that show how Steam and JavaSteam work underneath. */
+/**
+ * Table of contents for the screens that show how Steam and JavaSteam work underneath.
+ *
+ * It is also the whole app in an anonymous session, started from the sign-in screen: the
+ * tools that need an account are left out then, and going back ends the session.
+ *
+ * @param onLeave ends an anonymous session; only used when [anonymous].
+ */
 @Composable
-fun UnderTheHoodScreen(onNavDrawerAction: () -> Unit, onOpen: (Routes) -> Unit) {
+fun UnderTheHoodScreen(
+    onNavDrawerAction: () -> Unit,
+    onOpen: (Routes) -> Unit,
+    anonymous: Boolean = false,
+    onLeave: () -> Unit = {},
+) {
+    val tools = remember(anonymous) {
+        if (anonymous) TOOLS.filterNot { it.needsAccount } else TOOLS
+    }
+
+    BackHandler(enabled = anonymous, onBack = onLeave)
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Under the Hood") },
                 navigationIcon = {
-                    IconButton(onClick = onNavDrawerAction) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open navigation")
+                    if (anonymous) {
+                        BackButton(onClick = onLeave)
+                    } else {
+                        IconButton(onClick = onNavDrawerAction) {
+                            Icon(Icons.Default.Menu, contentDescription = "Open navigation")
+                        }
                     }
                 },
             )
@@ -122,9 +179,21 @@ fun UnderTheHoodScreen(onNavDrawerAction: () -> Unit, onOpen: (Routes) -> Unit) 
             contentPadding = listContentPadding(padding),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            itemsIndexed(TOOLS, key = { _, tool -> tool.title }) { index, tool ->
+            if (anonymous) {
+                item(key = "anonymous") {
+                    Text(
+                        text = "You are signed in anonymously, the way SteamCMD is: no account, " +
+                            "and only what Steam shows anyone. The tools that need an " +
+                            "account are left out. Go back to sign in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
+                    )
+                }
+            }
+            itemsIndexed(tools, key = { _, tool -> tool.title }) { index, tool ->
                 Surface(
-                    shape = groupedListShape(index, TOOLS.size),
+                    shape = groupedListShape(index, tools.size),
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -158,13 +227,14 @@ fun UnderTheHoodScreen(onNavDrawerAction: () -> Unit, onOpen: (Routes) -> Unit) 
 
 /**
  * Shared frame of the Under the Hood detail screens: a title, a back button, and a body that
- * is handed the scaffold padding.
+ * is handed the scaffold padding. A screen may add a floating button.
  */
 @Composable
 internal fun UnderHoodScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable () -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -175,6 +245,7 @@ internal fun UnderHoodScaffold(
                 actions = { actions() },
             )
         },
+        floatingActionButton = floatingActionButton,
         content = content,
     )
 }

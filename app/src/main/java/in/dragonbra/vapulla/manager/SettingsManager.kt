@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,23 @@ data class AppSettings(
     val showBlockedFriends: Boolean = false,
     /** Shows chat messages as the BBCode Steam sent instead of rendering it. */
     val rawBBCode: Boolean = false,
+    /** Steam's community and store pages open inside the app, signed in to the account. */
+    val signedInWebPages: Boolean = false,
+    /** Downloads wait while the device is on mobile data or another metered network. */
+    val downloadWifiOnly: Boolean = false,
+    /** Megabytes per second downloads are held to; 0 for no limit. */
+    val downloadSpeedLimit: Int = 0,
+    /** Chunks fetched at the same time, each over its own connection. */
+    val downloadConnections: Int = 8,
+    /** Chunks written to disk at the same time. */
+    val downloadFileWrites: Int = 1,
+    /** Threads that decrypt and decompress chunks; 0 for half the cores. */
+    val downloadDecompressThreads: Int = 0,
+    /**
+     * Folder new downloads are installed under, one of the storage volumes Android gives the
+     * app. Empty for the default, the device's own storage.
+     */
+    val downloadLocation: String = "",
 ) {
     companion object {
         val RECENT_CHATS_DAYS = listOf(1, 5, 7, 30)
@@ -53,6 +71,10 @@ data class AppSettings(
         const val SERVER_TIMEOUT_STEP = 250
         val WORKSHOP_PAGE_SIZES = listOf(10, 20, 50, 100)
         val NETWORK_LOG_SIZES = listOf(100, 250, 500, 1000)
+        val DOWNLOAD_SPEED_LIMITS = listOf(0, 1, 2, 5, 10)
+        val DOWNLOAD_CONNECTIONS = listOf(4, 8, 16, 32, 64)
+        val DOWNLOAD_FILE_WRITES = listOf(1, 2, 4, 8, 16)
+        val DOWNLOAD_DECOMPRESS_THREADS = listOf(0, 2, 4, 6, 8)
     }
 }
 
@@ -79,6 +101,13 @@ class SettingsManager(private val context: Context) {
         val APPEND_NICKNAMES = booleanPreferencesKey("append_nicknames")
         val SHOW_BLOCKED_FRIENDS = booleanPreferencesKey("show_blocked_friends")
         val RAW_BBCODE = booleanPreferencesKey("raw_bbcode")
+        val SIGNED_IN_WEB_PAGES = booleanPreferencesKey("signed_in_web_pages")
+        val DOWNLOAD_WIFI_ONLY = booleanPreferencesKey("download_wifi_only")
+        val DOWNLOAD_SPEED_LIMIT = intPreferencesKey("download_speed_limit")
+        val DOWNLOAD_CONNECTIONS = intPreferencesKey("download_connections")
+        val DOWNLOAD_FILE_WRITES = intPreferencesKey("download_file_writes")
+        val DOWNLOAD_DECOMPRESS_THREADS = intPreferencesKey("download_decompress_threads")
+        val DOWNLOAD_LOCATION = stringPreferencesKey("download_location")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -99,6 +128,14 @@ class SettingsManager(private val context: Context) {
                 appendNicknames = prefs[APPEND_NICKNAMES] ?: defaults.appendNicknames,
                 showBlockedFriends = prefs[SHOW_BLOCKED_FRIENDS] ?: defaults.showBlockedFriends,
                 rawBBCode = prefs[RAW_BBCODE] ?: defaults.rawBBCode,
+                signedInWebPages = prefs[SIGNED_IN_WEB_PAGES] ?: defaults.signedInWebPages,
+                downloadWifiOnly = prefs[DOWNLOAD_WIFI_ONLY] ?: defaults.downloadWifiOnly,
+                downloadSpeedLimit = prefs[DOWNLOAD_SPEED_LIMIT] ?: defaults.downloadSpeedLimit,
+                downloadConnections = prefs[DOWNLOAD_CONNECTIONS] ?: defaults.downloadConnections,
+                downloadFileWrites = prefs[DOWNLOAD_FILE_WRITES] ?: defaults.downloadFileWrites,
+                downloadDecompressThreads = prefs[DOWNLOAD_DECOMPRESS_THREADS]
+                    ?: defaults.downloadDecompressThreads,
+                downloadLocation = prefs[DOWNLOAD_LOCATION] ?: defaults.downloadLocation,
             )
         }
 
@@ -113,6 +150,13 @@ class SettingsManager(private val context: Context) {
     suspend fun setAppendNicknames(enabled: Boolean) = set(APPEND_NICKNAMES, enabled)
     suspend fun setShowBlockedFriends(enabled: Boolean) = set(SHOW_BLOCKED_FRIENDS, enabled)
     suspend fun setRawBBCode(enabled: Boolean) = set(RAW_BBCODE, enabled)
+    suspend fun setSignedInWebPages(enabled: Boolean) = set(SIGNED_IN_WEB_PAGES, enabled)
+    suspend fun setDownloadWifiOnly(enabled: Boolean) = set(DOWNLOAD_WIFI_ONLY, enabled)
+    suspend fun setDownloadSpeedLimit(limit: Int) = set(DOWNLOAD_SPEED_LIMIT, limit)
+    suspend fun setDownloadConnections(count: Int) = set(DOWNLOAD_CONNECTIONS, count)
+    suspend fun setDownloadFileWrites(count: Int) = set(DOWNLOAD_FILE_WRITES, count)
+    suspend fun setDownloadDecompressThreads(count: Int) = set(DOWNLOAD_DECOMPRESS_THREADS, count)
+    suspend fun setDownloadLocation(path: String) = set(DOWNLOAD_LOCATION, path)
 
     /** Clears every stored value so [settings] falls back to [AppSettings] defaults. */
     suspend fun resetToDefaults() {

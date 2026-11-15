@@ -86,12 +86,14 @@ fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long
     val profile by viewModel.friendProfile.collectAsStateWithLifecycle()
     val favoriteBadge by viewModel.favoriteBadge.collectAsStateWithLifecycle()
     val badgeLoading by viewModel.badgeLoading.collectAsStateWithLifecycle()
+    val mutualFriends by viewModel.mutualFriends.collectAsStateWithLifecycle()
 
     ProfileScreenContent(
         friend = friend ?: SteamFriend(id = 0),
         profile = profile,
         favoriteBadge = favoriteBadge,
         badgeLoading = badgeLoading,
+        mutualFriends = mutualFriends,
         onBack = onBack,
         onAlias = viewModel::onAlias,
         onBlock = viewModel::onBlock,
@@ -107,6 +109,7 @@ private fun ProfileScreenContent(
     profile: ProfileInfo?,
     favoriteBadge: FavoriteBadge?,
     badgeLoading: Boolean,
+    mutualFriends: ImmutableList<String>?,
     onBack: () -> Unit,
     onAlias: () -> Unit,
     onBlock: () -> Unit,
@@ -252,12 +255,37 @@ private fun ProfileScreenContent(
                 )
             }
 
+            // Only for someone who sent a friend request: who they already know.
+            if (mutualFriends != null) {
+                item { Section(title = "Mutual friends") { MutualFriends(mutualFriends) } }
+            }
+
             item { Section(title = "About") { About(profile) } }
 
             item { Section(title = "Manage") { ActionList(actions) } }
 
             item { FriendDebugSection(friend) }
         }
+    }
+}
+
+/** The friends the sender of a friend request has in common with the account. */
+@Composable
+private fun MutualFriends(names: ImmutableList<String>) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = if (names.isEmpty()) {
+                "None of your friends is friends with them."
+            } else {
+                names.joinToString()
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        )
     }
 }
 
@@ -522,6 +550,7 @@ private fun Preview() {
             ),
             favoriteBadge = FavoriteBadge(badgeId = 1, appId = 440, level = 5),
             badgeLoading = false,
+            mutualFriends = persistentListOf("Ann", "Bob"),
             onBack = {},
             onAlias = {},
             onBlock = {},
@@ -550,6 +579,7 @@ private fun Preview_Private() {
             ),
             favoriteBadge = null,
             badgeLoading = true,
+            mutualFriends = null,
             onBack = {},
             onAlias = {},
             onBlock = {},

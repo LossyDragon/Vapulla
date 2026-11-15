@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.Icon
@@ -28,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,7 +56,7 @@ private const val FOLLOW_THRESHOLD = 3
  * While the screen is open the poll runs every few seconds rather than once a minute.
  */
 @Composable
-fun PicsFeedScreen(onBack: () -> Unit) {
+fun PicsFeedScreen(onBack: () -> Unit, onOpen: (id: Int, isApp: Boolean) -> Unit) {
     val status by PicsFeed.status.collectAsStateWithLifecycle()
     val entries by PicsFeed.entries.collectAsStateWithLifecycle()
 
@@ -63,7 +65,13 @@ fun PicsFeedScreen(onBack: () -> Unit) {
         onDispose { PicsFeed.watching.value = false }
     }
 
-    PicsFeedContent(status = status, entries = entries, onBack = onBack, onClear = PicsFeed::clear)
+    PicsFeedContent(
+        status = status,
+        entries = entries,
+        onBack = onBack,
+        onClear = PicsFeed::clear,
+        onOpen = onOpen,
+    )
 }
 
 @Composable
@@ -72,8 +80,10 @@ private fun PicsFeedContent(
     entries: ImmutableList<PicsChange>,
     onBack: () -> Unit,
     onClear: () -> Unit,
+    onOpen: (id: Int, isApp: Boolean) -> Unit,
 ) {
     val listState = rememberLazyListState()
+    val uriHandler = LocalUriHandler.current
 
     // Keyed rows stay put when new ones are inserted above them, so the list would drift
     // away from the top. Follow new changes unless the user has scrolled down.
@@ -143,6 +153,8 @@ private fun PicsFeedContent(
                         ChangeRow(
                             change = change,
                             shape = groupedListShape(index, newestFirst.size),
+                            onClick = { onOpen(change.targetId, change.isApp) },
+                            onHistory = { uriHandler.openUri(change.historyUrl()) },
                         )
                     }
                 }
@@ -151,9 +163,26 @@ private fun PicsFeedContent(
     }
 }
 
+/**
+ * Where SteamDB lists what each change to this app or package changed. Steam only says that
+ * something changed, not what, so the feed cannot show it itself.
+ */
+private fun PicsChange.historyUrl(): String =
+    "https://steamdb.info/${if (isApp) "app" else "sub"}/$targetId/history/"
+
+/**
+ * One change. Tapping it opens what Steam holds on the app or package now; the button opens
+ * its history on SteamDB.
+ */
 @Composable
-private fun ChangeRow(change: PicsChange, shape: Shape) {
+private fun ChangeRow(
+    change: PicsChange,
+    shape: Shape,
+    onClick: () -> Unit,
+    onHistory: () -> Unit,
+) {
     Surface(
+        onClick = onClick,
         shape = shape,
         color = if (change.inLibrary) {
             MaterialTheme.colorScheme.secondaryContainer
@@ -205,6 +234,14 @@ private fun ChangeRow(change: PicsChange, shape: Shape) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            IconButton(onClick = onHistory, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "What changed, on SteamDB",
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -237,6 +274,7 @@ private fun Preview() {
             ),
             onBack = {},
             onClear = {},
+            onOpen = { _, _ -> },
         )
     }
 }

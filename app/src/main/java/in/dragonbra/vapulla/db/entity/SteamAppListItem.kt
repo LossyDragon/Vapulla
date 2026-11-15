@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.db.entity
 
 import androidx.compose.runtime.Immutable
+import `in`.dragonbra.vapulla.util.Utils
 
 /**
  * Lightweight projection of [SteamApp] for rendering lists.
@@ -25,7 +26,7 @@ data class SteamAppListItem(
     val lastPlayed: Long = 0L,
 ) {
     val clientIconUrl: String
-        get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$clientIconHash.ico"
+        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$clientIconHash.ico"
 
     /**
      * 460x215 store header. Uses the asset from PICS when present and falls back to the

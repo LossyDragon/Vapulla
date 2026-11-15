@@ -49,4 +49,7 @@ interface SteamLicenseDao {
 
     @Query("DELETE FROM steam_license WHERE packageId IN (:packageIds)")
     suspend fun deleteStaleLicenses(packageIds: List<Int>)
+
+    @Query("DELETE FROM steam_license")
+    suspend fun deleteAll()
 }

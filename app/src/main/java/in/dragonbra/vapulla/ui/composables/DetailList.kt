@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.ui.composables
 
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -31,38 +34,72 @@ fun Section(title: String, content: @Composable () -> Unit) {
     }
 }
 
-/** Key/value rows in one grouped container. Values that are empty are skipped. */
+/**
+ * Key/value rows in one grouped container. Values that are empty are skipped. A value that
+ * is a web address is shown as a link on a line of its own, under its label, and tapping
+ * the row opens it.
+ */
 @Composable
 fun DetailList(rows: List<Pair<String, String>>) {
+    val uriHandler = LocalUriHandler.current
     val visible = rows.filter { it.second.isNotBlank() }
+
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         visible.forEachIndexed { index, (label, value) ->
+            val shape = groupedListShape(index, visible.size)
+            val isLink = value.startsWith("https://") || value.startsWith("http://")
+
             Surface(
-                shape = groupedListShape(index, visible.size),
+                shape = shape,
                 color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .clickable(enabled = isLink) { uriHandler.openUri(value) },
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 16.dp),
-                    )
+                if (isLink) {
+                    // An address is too long to share a line with its label.
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Label(label)
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Label(label)
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 16.dp),
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun Label(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
@@ -76,6 +113,7 @@ private fun Preview() {
                         "Developer" to "Valve",
                         "Publisher" to "",
                         "App ID" to "440",
+                        "Store page" to "https://store.steampowered.com/app/440",
                     ),
                 )
             }

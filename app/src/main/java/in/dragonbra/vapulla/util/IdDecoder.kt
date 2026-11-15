@@ -5,7 +5,12 @@ import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.types.GameID
 import `in`.dragonbra.javasteam.types.GlobalID
 import `in`.dragonbra.javasteam.types.SteamID
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Date
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** One way of reading an ID: what it would be, and the parts it breaks into. */
 data class DecodedId(val title: String, val note: String, val rows: List<Pair<String, String>>)
@@ -19,6 +24,13 @@ object IdDecoder {
 
     private val STEAM2 = Regex("""STEAM_\d:[01]:\d+""", RegexOption.IGNORE_CASE)
     private val STEAM3 = Regex("""\[[A-Za-z]:\d:\d+(:\d+)?]""")
+
+    /** A profile's custom URL, alone or as the end of a `steamcommunity.com/id/` link. */
+    private val CUSTOM_URL = Regex(
+        """(?:(?:https?://)?steamcommunity\.com/id/)?([A-Za-z0-9_-]{2,32})/?""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val STEAM_ID_64 = Regex("""<steamID64>(\d+)</steamID64>""")
 
     /** 2^32: below it a number can only be an account ID or an app ID, not a packed ID. */
     private const val ACCOUNT_ID_LIMIT = 1L shl 32
@@ -63,6 +75,32 @@ object IdDecoder {
             add(gameId(GameID(number), "If this is a game ID: an app, mod or non-Steam shortcut."))
             add(globalId(GlobalID(number)))
         }
+    }
+
+    /** The custom URL name in [input], or null when it could not be one. */
+    fun customUrlName(input: String): String? =
+        CUSTOM_URL.matchEntire(input.trim())?.groupValues?.get(1)
+
+    /**
+     * Asks the community site who owns the custom URL [name]. Only Steam knows this, so unlike
+     * [decode] it needs the network. Returns null when no profile uses the name.
+     *
+     * @throws IOException if the site cannot be reached.
+     */
+    suspend fun resolveCustomUrl(name: String): DecodedId? {
+        val url = "${Utils.Constants.CUSTOM_URL}$name/"
+        val xml = withContext(Dispatchers.IO) {
+            val connection = URL("$url?xml=1").openConnection() as HttpURLConnection
+            try {
+                connection.inputStream.use { it.readBytes().decodeToString() }
+            } finally {
+                connection.disconnect()
+            }
+        }
+
+        val id = STEAM_ID_64.find(xml)?.groupValues?.get(1)?.toLongOrNull() ?: return null
+        val reading = steamId(SteamID(id), "From the profile's custom URL.")
+        return reading.copy(rows = reading.rows + ("Custom URL" to url))
     }
 
     private fun steamId(id: SteamID, note: String): DecodedId {

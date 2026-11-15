@@ -2,23 +2,30 @@ package `in`.dragonbra.vapulla.ui.screens.gamedetail.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,15 +47,20 @@ import `in`.dragonbra.vapulla.db.entity.Download
 import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.service.download.DownloadPlan
+import `in`.dragonbra.vapulla.service.download.DownloadPlanner
 import `in`.dragonbra.vapulla.service.download.DownloadProgress
 import `in`.dragonbra.vapulla.ui.composables.Section
+import `in`.dragonbra.vapulla.ui.screens.downloads.components.UpdateAvailablePill
+import `in`.dragonbra.vapulla.ui.screens.downloads.components.WaitingForWifi
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.fractionWith
 import `in`.dragonbra.vapulla.ui.screens.downloads.components.statusLine
+import `in`.dragonbra.vapulla.ui.screens.gamedetail.DownloadChoices
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.helpers.capitalize
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 
 /**
  * The download part of the game detail screen. Before anything was started it is a single
@@ -60,22 +73,38 @@ import kotlinx.collections.immutable.persistentListOf
 fun DownloadSection(
     download: Download?,
     progress: DownloadProgress?,
-    plans: ImmutableList<DownloadPlan>,
+    choices: DownloadChoices,
     freeBytes: Long,
     onDownload: (SteamApp.OS) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onOpenDownloads: () -> Unit,
+    onVerify: () -> Unit = {},
+    onSelectBranch: (String) -> Unit = {},
+    onSelectLanguage: (String) -> Unit = {},
     onOpenDepots: () -> Unit = {},
+    updateAvailable: Boolean = false,
+    waitingForWifi: Boolean = false,
+    onUnlockBranch: (branch: String, password: String) -> Unit = { _, _ -> },
 ) {
-    if (download == null && plans.isEmpty()) return
+    val plans = choices.plans
+    // Another branch or language can leave nothing to download; the dialog says so.
+    val canDownload = plans.isNotEmpty() ||
+        choices.branches.size > 1 ||
+        choices.languages.size > 1 ||
+        choices.lockedBranches.isNotEmpty()
+
+    if (download == null && !canDownload) return
 
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {
         DownloadDialog(
-            plans = plans,
+            choices = choices,
             freeBytes = freeBytes,
+            onSelectBranch = onSelectBranch,
+            onUnlockBranch = onUnlockBranch,
+            onSelectLanguage = onSelectLanguage,
             onConfirm = { os ->
                 showDialog = false
                 onDownload(os)
@@ -88,22 +117,35 @@ fun DownloadSection(
         if (download == null) {
             Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Outlined.Download, contentDescription = null)
-                Text(text = "  Download · ${plans.first().installBytes.toFileSize()}")
+                val size = plans.firstOrNull()?.installBytes?.toFileSize()
+                Text(text = listOfNotNull("  Download", size).joinToString(" · "))
             }
         } else {
             DownloadCard(
                 download = download,
                 progress = progress,
-                canDownloadAgain = plans.isNotEmpty(),
+                updateAvailable = updateAvailable,
+                canDownloadAgain = canDownload,
                 onDownloadAgain = { showDialog = true },
                 onPause = onPause,
                 onResume = onResume,
                 onOpenDownloads = onOpenDownloads,
             )
+
+            // Only for a download that is waiting or running: the others are not held up.
+            val held = download.state == DownloadState.QUEUED ||
+                download.state == DownloadState.DOWNLOADING
+            if (waitingForWifi && held) WaitingForWifi()
         }
 
-        // For the curious: what the download is made of.
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            if (download?.state == DownloadState.COMPLETED) {
+                TextButton(onClick = onVerify) {
+                    Text(text = "Verify files")
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            // For the curious: what the download is made of.
             TextButton(onClick = onOpenDepots) {
                 Text(text = "Depots and branches")
             }
@@ -115,6 +157,7 @@ fun DownloadSection(
 private fun DownloadCard(
     download: Download,
     progress: DownloadProgress?,
+    updateAvailable: Boolean,
     canDownloadAgain: Boolean,
     onDownloadAgain: () -> Unit,
     onPause: () -> Unit,
@@ -144,6 +187,9 @@ private fun DownloadCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
+            // Steam's catalogue has moved on from what was downloaded; Update fetches it.
+            if (updateAvailable) UpdateAvailablePill()
+
             if (download.state != DownloadState.COMPLETED) {
                 LinearProgressIndicator(
                     progress = { download.fractionWith(progress) },
@@ -159,6 +205,8 @@ private fun DownloadCard(
             Text(
                 text = listOfNotNull(
                     download.os.capitalize().takeIf { download.os != SteamApp.OS.none.name },
+                    download.branch.takeIf { it != DownloadPlanner.BRANCH },
+                    download.language.takeIf { it != DownloadPlanner.LANGUAGE }?.capitalize(),
                     "${download.depotIds.size} depot(s)",
                     download.installDir,
                 ).joinToString(" · "),
@@ -207,16 +255,40 @@ private fun DownloadCard(
     }
 }
 
-/** Picks the platform to download, with what each takes and what the device has free. */
+/**
+ * Picks what to download: the branch and language where the game has a choice of them, and
+ * the platform, with what each takes and what the device has free.
+ */
 @Composable
 private fun DownloadDialog(
-    plans: ImmutableList<DownloadPlan>,
+    choices: DownloadChoices,
     freeBytes: Long,
+    onSelectBranch: (String) -> Unit,
+    onUnlockBranch: (branch: String, password: String) -> Unit,
+    onSelectLanguage: (String) -> Unit,
     onConfirm: (SteamApp.OS) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var selected by remember(plans) { mutableStateOf(plans.first()) }
-    val fits = selected.installBytes <= freeBytes
+    val plans = choices.plans
+
+    // The locked branch whose password is being asked for.
+    var unlocking by remember { mutableStateOf<String?>(null) }
+
+    unlocking?.let { branch ->
+        BranchPasswordDialog(
+            branch = branch,
+            onConfirm = { password ->
+                onUnlockBranch(branch, password)
+                unlocking = null
+            },
+            onDismiss = { unlocking = null },
+        )
+    }
+
+    // The platform is kept by name: the plans are made anew for every branch and language.
+    var selectedOs by remember { mutableStateOf(plans.firstOrNull()?.os) }
+    val selected = plans.find { it.os == selectedOs } ?: plans.firstOrNull()
+    val fits = selected != null && selected.installBytes <= freeBytes
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -224,6 +296,28 @@ private fun DownloadDialog(
         title = { Text("Download") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Locked branches are offered too; picking one asks for its password first.
+                OptionPicker(
+                    label = "Branch",
+                    options = (choices.branches + choices.lockedBranches).toImmutableList(),
+                    selected = choices.branch,
+                    display = { if (it in choices.lockedBranches) "$it (password)" else it },
+                    onSelect = { branch ->
+                        if (branch in choices.lockedBranches) {
+                            unlocking = branch
+                        } else {
+                            onSelectBranch(branch)
+                        }
+                    },
+                )
+                OptionPicker(
+                    label = "Language",
+                    options = choices.languages,
+                    selected = choices.language,
+                    display = { it.capitalize() },
+                    onSelect = onSelectLanguage,
+                )
+
                 plans.forEach { plan ->
                     Row(
                         modifier = Modifier
@@ -232,7 +326,7 @@ private fun DownloadDialog(
                             .selectable(
                                 selected = plan == selected,
                                 role = Role.RadioButton,
-                                onClick = { selected = plan },
+                                onClick = { selectedOs = plan.os },
                             )
                             .padding(vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -261,10 +355,13 @@ private fun DownloadDialog(
                 }
 
                 Text(
-                    text = if (fits) {
-                        "${freeBytes.toFileSize()} available on this device."
-                    } else {
-                        "Not enough space: only ${freeBytes.toFileSize()} available on this device."
+                    text = when {
+                        selected == null -> "Nothing to download for this branch and language."
+
+                        fits -> "${freeBytes.toFileSize()} available on this device."
+
+                        else -> "Not enough space: only ${freeBytes.toFileSize()} available " +
+                            "on this device."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (fits) {
@@ -277,7 +374,9 @@ private fun DownloadDialog(
             }
         },
         confirmButton = {
-            TextButton(enabled = fits, onClick = { onConfirm(selected.os) }) { Text("Download") }
+            TextButton(enabled = fits, onClick = { selected?.let { onConfirm(it.os) } }) {
+                Text("Download")
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -285,9 +384,97 @@ private fun DownloadDialog(
     )
 }
 
-private val previewPlans = persistentListOf(
-    DownloadPlan(SteamApp.OS.windows, listOf(441, 442), 12_345_678_901, 9_000_000_000),
-    DownloadPlan(SteamApp.OS.linux, listOf(441, 443), 12_000_000_000, 8_800_000_000),
+/**
+ * Asks for the password of a [branch] that is behind one. Steam says whether it is right;
+ * until then the branch's size and depots are not known.
+ */
+@Composable
+private fun BranchPasswordDialog(
+    branch: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Password for $branch") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("This branch is private. The game's developer hands out its password.")
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Branch password") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.None,
+                        autoCorrectEnabled = false,
+                    ),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = password.isNotBlank(), onClick = { onConfirm(password.trim()) }) {
+                Text("Unlock")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+/**
+ * One setting of the download with a menu to change it. Draws nothing when there is only
+ * one option, which is the case for most games.
+ */
+@Composable
+private fun OptionPicker(
+    label: String,
+    options: ImmutableList<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    display: (String) -> String = { it },
+) {
+    if (options.size < 2) return
+
+    var expanded by remember { mutableStateOf(false) }
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Box {
+            TextButton(onClick = { expanded = true }) {
+                Text(text = display(selected))
+                Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(display(option)) },
+                        onClick = {
+                            expanded = false
+                            onSelect(option)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val previewChoices = DownloadChoices(
+    plans = persistentListOf(
+        DownloadPlan(SteamApp.OS.windows, listOf(441, 442), 12_345_678_901, 9_000_000_000),
+        DownloadPlan(SteamApp.OS.linux, listOf(441, 443), 12_000_000_000, 8_800_000_000),
+    ),
+    branches = persistentListOf("public", "prerelease"),
+    lockedBranches = persistentListOf("internal"),
+    languages = persistentListOf("english", "french", "german"),
 )
 
 private val previewDownload = Download(
@@ -315,7 +502,7 @@ private fun Preview() {
                 DownloadSection(
                     download = null,
                     progress = null,
-                    plans = previewPlans,
+                    choices = previewChoices,
                     freeBytes = 64_000_000_000,
                     onDownload = {},
                     onPause = {},
@@ -325,7 +512,7 @@ private fun Preview() {
                 DownloadSection(
                     download = previewDownload,
                     progress = null,
-                    plans = previewPlans,
+                    choices = previewChoices,
                     freeBytes = 64_000_000_000,
                     onDownload = {},
                     onPause = {},
@@ -342,8 +529,11 @@ private fun Preview() {
 private fun Preview_Dialog() {
     VapullaTheme {
         DownloadDialog(
-            plans = previewPlans,
+            choices = previewChoices,
             freeBytes = 10_000_000_000,
+            onSelectBranch = {},
+            onUnlockBranch = { _, _ -> },
+            onSelectLanguage = {},
             onConfirm = {},
             onDismiss = {},
         )

@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.ui.composables.VapullaLoadingAnimation
@@ -53,6 +54,11 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LifecycleResumeEffect(Unit) {
+        viewModel.onScreenResumed()
+        onPauseOrDispose {}
+    }
 
     LaunchedEffect(Unit) {
         viewModel.snackbarMessage.collect { message ->
@@ -70,6 +76,7 @@ fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
         uiState = uiState,
         onSignInViaCredentials = viewModel::onSignInViaCredentials,
         onSignInViaQR = viewModel::onSignInViaQR,
+        onExplore = viewModel::onExplore,
         onQrCodeCancel = viewModel::onQrCodeCancel,
         onTwoFactorChange = viewModel::onTwoFactorChange,
         onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
@@ -84,6 +91,7 @@ private fun LoginScreenContent(
     uiState: LoginUiState,
     onSignInViaCredentials: () -> Unit,
     onSignInViaQR: () -> Unit,
+    onExplore: () -> Unit,
     onQrCodeCancel: () -> Unit,
     onTwoFactorSubmit: () -> Unit,
     onTwoFactorChange: (String) -> Unit,
@@ -185,6 +193,7 @@ private fun LoginScreenContent(
                         onPasswordChange = onPasswordChange,
                         onSignInViaCredentials = onSignInViaCredentials,
                         onSignInViaQR = onSignInViaQR,
+                        onExplore = onExplore,
                     )
 
                     LoginStep.QRCODE -> LoginQRCode(
@@ -241,6 +250,7 @@ private fun Preview(@PreviewParameter(LoginUiStateProvider::class) uiState: Logi
             uiState = uiState,
             onSignInViaCredentials = { },
             onSignInViaQR = { },
+            onExplore = { },
             onQrCodeCancel = { },
             onTwoFactorChange = { },
             onTwoFactorSubmit = { },

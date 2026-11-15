@@ -52,8 +52,18 @@ class ServiceConnection(private val context: Context) {
         steamService = null
     }
 
-    fun startForegroundService() {
+    /**
+     * Starts the service so that it outlives the activity.
+     *
+     * @return false when Android refused, which it does while the app is not on screen.
+     */
+    fun startForegroundService(): Boolean = try {
         ContextCompat.startForegroundService(context, Intent(context, SteamService::class.java))
+        true
+    } catch (e: IllegalStateException) {
+        // ForegroundServiceStartNotAllowedException on Android 12 and up.
+        Timber.w(e, "Not allowed to start the service from the background")
+        false
     }
 
     fun stopForegroundService() {

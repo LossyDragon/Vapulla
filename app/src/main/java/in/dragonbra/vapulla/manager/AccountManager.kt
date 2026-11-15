@@ -42,6 +42,7 @@ class AccountManager(private val context: Context) {
         val LOGIN_UUID = intPreferencesKey("account_uuid")
 
         val LAST_CHANGE_NUMBER = intPreferencesKey("last_change_number")
+        val DATA_OWNER = longPreferencesKey("data_owner_steamid")
     }
 
     val username: Flow<String?> = preference(LOGIN_USERNAME)
@@ -115,16 +116,43 @@ class AccountManager(private val context: Context) {
         }
     }
 
+    /** Stores a new profile name once Steam has accepted it. */
+    suspend fun setAccountName(name: String) {
+        context.dataStore.edit { it[ACCOUNT_NAME] = name }
+    }
+
+    /**
+     * The Steam ID of the account the database holds the friends, chats and library of; null
+     * when it holds none. Unlike [steamid] it is set at sign-in, before anything is stored.
+     */
+    suspend fun dataOwner(): Long? = preference(DATA_OWNER).first()
+
+    suspend fun setDataOwner(steamId: Long) {
+        context.dataStore.edit { it[DATA_OWNER] = steamId }
+    }
+
+    /**
+     * Forgets what is saved about the account itself: its persona, its level, whose data the
+     * database holds, and how far the PICS changes were followed. The sign-in is kept.
+     */
+    suspend fun clearAccount() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(ACCOUNT_NAME)
+            prefs.remove(ACCOUNT_AVATAR_HASH)
+            prefs.remove(ACCOUNT_PERSONA_STATE)
+            prefs.remove(ACCOUNT_STEAMID)
+            prefs.remove(ACCOUNT_LEVEL)
+            prefs.remove(LAST_CHANGE_NUMBER)
+            prefs.remove(DATA_OWNER)
+        }
+    }
+
     /** Forgets the saved sign-in so the next launch asks for credentials again. */
     suspend fun clearLogin() {
         context.dataStore.edit { prefs ->
             prefs.remove(LOGIN_USERNAME)
             prefs.remove(LOGIN_REFRESH_TOKEN)
         }
-    }
-
-    suspend fun clearPreferences() {
-        context.dataStore.edit { it.clear() }
     }
 
     /**

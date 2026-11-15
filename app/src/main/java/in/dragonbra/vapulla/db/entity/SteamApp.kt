@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import `in`.dragonbra.javasteam.enums.ELicenseFlags
 import `in`.dragonbra.vapulla.db.serializers.DateSerializer
 import `in`.dragonbra.vapulla.db.serializers.OsEnumSetSerializer
+import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import java.util.Date
 import java.util.EnumSet
@@ -98,15 +99,15 @@ data class SteamApp(
         get() = ufs.quota > 0 || ufs.maxNumFiles > 0
 
     val logoUrl: String
-        get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$logoHash.jpg"
+        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$logoHash.jpg"
     val logoSmallUrl: String
-        get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$logoSmallHash.jpg"
+        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$logoSmallHash.jpg"
     val iconUrl: String
-        get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$iconHash.jpg"
+        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$iconHash.jpg"
     val clientIconUrl: String
-        get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$clientIconHash.ico"
+        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$clientIconHash.ico"
     val clientTgaUrl: String
-        get() = "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/$id/$clientTgaHash.tga"
+        get() = "${Utils.Constants.APP_IMAGES_URL}$id/$clientTgaHash.tga"
 
     // source: https://github.com/Nemirtingas/games-infos/blob/3915100198bac34553b3c862f9e295d277f5520a/steam_retriever/Program.cs#L589C43-L589C89
     fun getSmallCapsuleUrl(language: Language = Language.english): String? =

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Some of Steam's content servers only speak plain HTTP, which Android refuses by default.
+    Depot chunks are encrypted with the depot key and checked against the manifest, so they
+    are safe to fetch that way. Everything else stays HTTPS-only.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">steamcontent.com</domain>
+    </domain-config>
+</network-security-config>

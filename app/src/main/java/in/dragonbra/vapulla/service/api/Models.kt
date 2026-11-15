@@ -169,6 +169,140 @@ data class AuthSession(
     val lastSeenCountry: String,
 )
 
+/**
+ * A friend invite link, from the `UserAccount` service.
+ *
+ * @property token what Steam knows the link by; the last part of [link].
+ * @property uses how many people the link was made for.
+ * @property durationSeconds how long the link still lasts; Steam counts it down.
+ * @property createdAt when it was made, in seconds since 1970.
+ */
+@Immutable
+data class FriendInvite(
+    val token: String,
+    val link: String,
+    val uses: Int,
+    val durationSeconds: Long,
+    val createdAt: Long,
+)
+
+/**
+ * One hit of a store search.
+ *
+ * @property price ready to show: an amount, "Free" or "Coming soon"; empty when not known.
+ * @property originalPrice the price before a discount; empty when there is none.
+ */
+@Immutable
+data class StoreSearchResult(
+    val appId: Int,
+    val name: String,
+    val imageUrl: String,
+    val price: String,
+    val originalPrice: String = "",
+    val discountPercent: Int = 0,
+)
+
+/**
+ * A game's store page, from the `StoreBrowse` service.
+ *
+ * @property price what it costs now, as the store writes it; empty when it cannot be bought.
+ * @property originalPrice the price before a discount; empty when there is none.
+ * @property reviewLabel the store's verdict, e.g. "Very Positive"; empty without reviews.
+ * @property releaseDate seconds since 1970; 0 when the store gives no date.
+ * @property screenshots addresses of the page's screenshots, in the store's order.
+ */
+@Immutable
+data class StorePage(
+    val appId: Int,
+    val name: String,
+    val description: String,
+    val headerUrl: String,
+    val developers: String,
+    val publishers: String,
+    val isFree: Boolean,
+    val price: String,
+    val originalPrice: String,
+    val discountPercent: Int,
+    val reviewLabel: String,
+    val reviewPercent: Int,
+    val reviewCount: Int,
+    val releaseDate: Long,
+    val isComingSoon: Boolean,
+    val isEarlyAccess: Boolean,
+    val windows: Boolean,
+    val mac: Boolean,
+    val linux: Boolean,
+    val tags: ImmutableList<String>,
+    val screenshots: ImmutableList<String>,
+    val storeUrl: String,
+)
+
+/**
+ * One of a game's leaderboards.
+ *
+ * @property entries how many players have a score on it.
+ * @property displayType Steam's `ELeaderboardDisplayType`: what a score on it means.
+ */
+@Immutable
+data class Leaderboard(val id: Int, val name: String, val entries: Int, val displayType: Int)
+
+/**
+ * One player's place on a leaderboard.
+ *
+ * @property name the player's profile name; empty when Steam did not give one.
+ * @property score ready to show: a count, or a time for a leaderboard of times.
+ */
+@Immutable
+data class LeaderboardScore(val rank: Int, val steamId: Long, val name: String, val score: String)
+
+/**
+ * How the account's friends stand with one game, from `Player.GetFriendsGameplayInfo`. Each
+ * list holds the Steam IDs of the friends it applies to.
+ */
+@Immutable
+data class FriendsGameplay(
+    val playingNow: List<Long>,
+    val playedRecently: List<Long>,
+    val playedBefore: List<Long>,
+    val own: List<Long>,
+    val wishlisted: List<Long>,
+)
+
+/**
+ * The account's Steam Family, from the `FamilyGroups` service.
+ *
+ * @property freeSpots how many more members it has room for.
+ * @property members the account itself first, then the others by when they joined.
+ */
+@Immutable
+data class Family(
+    val id: Long,
+    val name: String,
+    val freeSpots: Int,
+    val members: ImmutableList<FamilyMember>,
+)
+
+/**
+ * One member of a Steam Family.
+ *
+ * @property name their profile name; empty when Steam did not give one.
+ * @property role "Adult" or "Child", as the family has them.
+ * @property joinedAt seconds since 1970.
+ * @property isSelf this member is the signed-in account.
+ */
+@Immutable
+data class FamilyMember(
+    val steamId: Long,
+    val name: String,
+    val role: String,
+    val joinedAt: Long,
+    val isSelf: Boolean,
+)
+
+/** A game a Steam Family shares with the account; [owners] are the members who own it. */
+@Immutable
+data class SharedGame(val appId: Int, val name: String, val owners: ImmutableList<Long>)
+
 /** One achievement of a game with the account's own state, from `SteamUserStats.getUserStats`. */
 @Immutable
 data class Achievement(

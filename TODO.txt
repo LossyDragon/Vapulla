@@ -4,29 +4,32 @@ Vapulla TODO
 To Verify
 ---------------------------------------------
 - Friend request notification actions: Accept / Ignore / Block
-- Reconnect after a dropped connection
+- Explore without signing in: a reconnect during an anonymous session, and starting one
+  while a sign-in is saved and data is stored (the screens, a dedicated server manifest
+  and leaving with back are confirmed on the emulator)
 - Saved token is cleared on AccessDenied / InvalidPassword (Revoked is confirmed)
 - Sign-in screen says why when Steam ends a session ("Signed out by Steam: Revoked")
-- Channel last-message previews for tags other than stickers (image, spoiler, flip, ...)
-- Emoticon tab while its images are still loading (sticker tab is confirmed)
-- Downloads: losing the network mid-download, a queue of several games, a multi-GB game
-- Downloads: a second download refused when the first has the space spoken for; switching a
-  downloaded game to another platform (the old files should be deleted)
-- "Signed out" notification after three failed reconnects, and that tapping it signs back in
-- Images after the move from Landscapist to Coil's AsyncImage (RemoteImage): achievements,
-  screenshots, workshop, server browser, group chat, chat rooms, emoji picker; avatars in
-  notifications
-- Friend profile "Under the hood" for a friend who is in a game (rich presence keys)
-- Depots: an app ID typed in for a game you do not own; the "Depots and branches" link on a
-  game page; an app with DLC, language or shared depots
-- PICS change feed: new rows arriving while it is open, app rows with names, and that the poll
-  drops back to once a minute after leaving the screen
-- Under the Hood: Connection and Diagnostics after a reconnect; the screens on a real phone
-- Network log: with "Keep packet contents" on, no message with a token or ticket keeps its body
-  (the rule matches on names such as logon, token, ticket, nonce, Authentication.*)
+- Downloads: switching a downloaded game to another language (the old files should be
+  deleted); a game in another language (the language picker is only confirmed to show); a
+  workshop collection; the speed limit on a game of many small files
+- Manifest browser: a game with tens of thousands of files (1,161 files in 33,439 chunks
+  loads in about four seconds on the emulator)
+- Download internals on a real phone
+- Account screen: money in a currency other than dollars or euros (the screen and changing
+  the profile name are confirmed)
+- Signed-in web pages: that the cookie is gone after leaving the screen
+- Profile of someone who sent a friend request: the "Mutual friends" section (new, never
+  run), with friends in common and with none
+- Family screen: an account that is in no family (the screen itself is confirmed)
+- TokenCipher on a device: encrypting and decrypting a token needs the Android Keystore,
+  so the unit tests (./gradlew :app:testDebugUnitTest) only cover telling the stored forms
+  apart
 
 Issues or Bugs
 -------------------
+- Sign-in screen: after the connection is lost while the app is open, it shows
+  "Disconnected from Steam" and does not try again by itself once the network is back;
+  "Sign in" has to be tapped (it then uses the saved sign-in)
 - PICS app access tokens are always requested as 0
 - TryAnotherCM returns to sign-in instead of trying another CM
 - Database is not cleared on log out
@@ -38,62 +41,42 @@ Issues or Bugs
 - Downloads skip depots shared from another app (depotfromapp, mostly redistributables)
 - A chat image smaller than the bubble is stretched to its width and looks blurry (seen: a
   96 x 96 image); it should not be drawn larger than the size Steam gives for it
+- Downloads, not tried since JavaSteam pools its chunk buffers: pause and resume, remove
+  while downloading, losing the network, verify, workshop items, several downloads in a row
+- Downloads, memory: the heap peaked at 321 to 465 MB of 512 across runs, and the first
+  10 s of a download allocate 460 to 740 MB before any chunk arrives. Neither is looked
+  at; nothing reads the heap after a download ends
+- Downloads: a paused or queued workshop item is started over, not resumed, when its button
+  on the Workshop screen is tapped; resume it from the Downloads screen instead
+- Updating a game installed to one storage checks free space on the storage picked in
+  Settings, not the one the game is on
+
+- Nicknames: should Steam ever send a ClientPlayerNicknameList with its "incremental" flag
+  set, the app would take that short list for the whole list and clear every other
+  nickname, because JavaSteam's NicknameListCallback leaves out the message's "incremental"
+  and "removal" flags. Not seen to happen; changes arrive through PlayerClient instead.
+  setFriendNickname returning a job that can be awaited would let the app wait for
+  Steam's answer
 
 - Is "Expired" another EResult that should clear the saved token?
 
-To Tidy Up
---------
-- No unit tests; ChatPreview, TokenCipher, IdDecoder and PacketInspector are the obvious first
-  candidates
-- README says the app needs Android 15 (API 35), but minSdk is 28: one of them is wrong
-- third_party.txt is out of date: it lists Glide, and not Coil, xz or zstd-jni
-- 11 lint errors left, all long lines
-- Rename ui/mock/mockSteamFriendDao.kt (it only holds preview data now)
-- AccountManager.clearPreferences() is unused
-
 Feature Ideas
 ----------------------------------------------------
-- Downloads: branch / language picker, verify files, workshop items
-- Downloads: Wi-Fi only setting, speed limit, choice of install folder
 - Game Coordinator (TF2 / CS2 / Dota 2 / Deadlock modules)
-- Family groups: members, shared library
 - Inventory service: owned items
-- Store browsing: store page for any app, including unowned games
 - Lobbies (SteamMatchmaking) next to the server browser
 - Game notifications and parental settings (read-only)
-- Web API: game news on the game detail screen
-- Auth ticket generation
 - Group chat: member list, reactions, mentions
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
-- Downloads: "update available" badge for downloaded games (compare manifest IDs from PICS)
-- Leaderboards on the game detail screen (SteamUserStats find / entries)
-- Friends who own or play a game, on the game detail screen (Player.GetFriendsGameplayInfo)
-- Account screen: wallet balance, email status, country, profile URL (SteamUser callbacks)
-- "Playing elsewhere" notice and kicking the other session (PlayingSessionState)
 - Notification counts: comments, item announcements, offline messages (SteamNotifications)
-- Friend invite links: create, list, revoke (UserAccount friend invite tokens)
-- Mutual friends on incoming friend requests (Player.GetMutualFriendsForIncomingInvites)
 - Per-friend notification preferences (Player.GetPerFriendPreferences)
 - Reactions in friend chat (FriendMessages.UpdateMessageReaction)
-- Open a Steam group's chat from the group (ClanChatRooms.GetClanChatRoomInfo)
-- Change own profile name (SteamFriends.setPersonaName)
 - Badges: per-game badge levels and community badge progress (Player service)
-- Legacy CD keys on the game detail screen (SteamApps.getLegacyGameKey)
-- Signed-in web pages: community / store in a browser tab with the session's web cookies
-
-Under the Hood (debugging / how Steam and JavaSteam work)
----------------------------------------------------------
-- CM server list: show which servers are marked bad (the library does not expose that yet)
-- Network log: field names in the decoded body (needs the message class for each EMsg / method)
-- Network log: export in NetHook format (NetHookNetworkListener) to read on a PC
-- PICS explorer: raw app or package info as a tree for any ID, with change number and token
-- PICS change feed: tap a change to fetch that app's info; show what changed (needs before / after)
-- Manifest browser: fetch a manifest only and list its files, sizes, flags and chunk counts
-- Download internals: CDN servers in use, chunks per second, retries, compression type and ratio
-- JavaSteam: reuse the Zstd input buffer between chunks (RecyclingBufferPool in VZstdUtil)
-- Web API explorer: list of interfaces and methods (ISteamWebAPIUtil/GetSupportedAPIList)
-- In-app log viewer: recent Timber / JavaSteam lines with a tag filter and share
 
 DECIDED AGAINST
 ---------------
 - Steam Guard / TwoFactor: too sensitive for accounts, and no push notifications for MFA
+- Faster downloads through a native LZMA decoder: on a release build two thirds of the CPU
+  time of a download is LZMA decoding in the Java xz library, and only native code (NDK
+  here, or binaries shipped by JavaSteam) would cut that much. Set aside on 14 Nov; a
+  6.7 GB game takes about 52 s on a Pixel 9 Pro XL as it is

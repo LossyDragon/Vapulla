@@ -8,8 +8,11 @@ import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.steam.discovery.FileServerListProvider
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.callback.LicenseListCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamauthticket.SteamAuthTicket
 import `in`.dragonbra.javasteam.steam.handlers.steamcloud.SteamCloud
+import `in`.dragonbra.javasteam.steam.handlers.steamcontent.SteamContent
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
+import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaChangeCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamgamecoordinator.SteamGameCoordinator
 import `in`.dragonbra.javasteam.steam.handlers.steamgameserver.SteamGameServer
 import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServer
@@ -18,8 +21,13 @@ import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnified
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.ChatMode
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.AccountInfoCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.EmailAddrInfoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.PlayingSessionStateCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.VanityURLChangedCallback
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.callback.WalletInfoCallback
 import `in`.dragonbra.javasteam.steam.handlers.steamuserstats.SteamUserStats
 import `in`.dragonbra.javasteam.steam.handlers.steamworkshop.SteamWorkshop
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
@@ -31,23 +39,32 @@ import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.service.api.AuthTicketApi
 import `in`.dragonbra.vapulla.service.api.ChatApi
 import `in`.dragonbra.vapulla.service.api.ChatMediaApi
 import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.CloudApi
+import `in`.dragonbra.vapulla.service.api.FamilyApi
 import `in`.dragonbra.vapulla.service.api.FriendsApi
+import `in`.dragonbra.vapulla.service.api.InvitesApi
+import `in`.dragonbra.vapulla.service.api.LeaderboardsApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
+import `in`.dragonbra.vapulla.service.api.ManifestApi
 import `in`.dragonbra.vapulla.service.api.ProfileApi
 import `in`.dragonbra.vapulla.service.api.ScreenshotsApi
 import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
 import `in`.dragonbra.vapulla.service.api.SessionsApi
 import `in`.dragonbra.vapulla.service.api.SteamApis
+import `in`.dragonbra.vapulla.service.api.StoreApi
+import `in`.dragonbra.vapulla.service.api.WebSessionApi
 import `in`.dragonbra.vapulla.service.api.WorkshopApi
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.service.handler.VapullaHandler
+import `in`.dragonbra.vapulla.service.sync.AnonymousPicsFeed
 import `in`.dragonbra.vapulla.service.sync.FriendsSync
 import `in`.dragonbra.vapulla.service.sync.LicenseSync
+import `in`.dragonbra.vapulla.util.NotificationHelper
 import `in`.dragonbra.vapulla.util.Utils
 import java.io.Closeable
 import java.io.File
@@ -62,6 +79,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 
 /**
@@ -115,6 +133,13 @@ class SteamConnection(
     @Volatile
     private var userSignedOut = false
 
+    /**
+     * True when the current client is for a session without an account. Such a session
+     * syncs and stores nothing, and never touches the saved sign-in or the downloads.
+     */
+    @Volatile
+    private var anonymous = false
+
     private var connectedSignal: CompletableDeferred<Unit>? = null
 
     private var steamThreadJob: Job? = null
@@ -123,10 +148,15 @@ class SteamConnection(
     /** Parent of the background jobs that only make sense while signed in. */
     private var sessionJob: Job? = null
 
-    /** Starts a sign-in attempt: replaces any current client with a new one and connects it. */
-    fun open() {
+    /**
+     * Starts a sign-in attempt: replaces any current client with a new one and connects it.
+     *
+     * @param anonymous true for a session without an account, see [logOnAnonymous].
+     */
+    fun open(anonymous: Boolean = false) {
         loginErrorReported = false
         userSignedOut = false
+        this.anonymous = anonymous
         initializeSteamClient()
         connectToSteam()
     }
@@ -152,6 +182,14 @@ class SteamConnection(
 
             steamUser?.logOn(loginDetails)
         }
+    }
+
+    /**
+     * Logs on without an account. Steam hands such a session what it shows anyone: PICS, the
+     * depots of public apps, the server lists. The answer arrives in [onLoggedOn].
+     */
+    fun logOnAnonymous() {
+        steamUser?.logOnAnonymous()
     }
 
     fun disconnect() {
@@ -190,6 +228,7 @@ class SteamConnection(
         scope.launch {
             if (clearCredentials) {
                 account.clearLogin()
+                eraseAccountData()
             }
 
             val user = steamUser
@@ -201,6 +240,26 @@ class SteamConnection(
                 shutDown()
             }
         }
+    }
+
+    /**
+     * Erases what is stored about the account: its friends, chats, emoticons, library and
+     * licenses, its saved persona, and the friends' chat notifications and shortcuts. Run
+     * when the account is signed out for good, and when another one signs in, so that one
+     * account never sees what belongs to another.
+     *
+     * Downloads are kept: the games they stand for are still on the device.
+     */
+    private suspend fun eraseAccountData() {
+        Timber.i("Erasing the stored account data")
+
+        db.steamFriendDao().delete()
+        db.chatMessageDao().deleteAll()
+        db.emoticonDao().deleteAll()
+        db.steamAppDao().deleteAll()
+        db.steamLicenseDao().deleteAll()
+        account.clearAccount()
+        NotificationHelper.forgetFriends(context)
     }
 
     /**
@@ -234,7 +293,9 @@ class SteamConnection(
 
         SteamState.isRunning.value = false
         SteamState.isLoggedIn.value = false
+        SteamState.isAnonymous.value = false
         SteamDiagnostics.signedOut()
+        SteamAccount.signedOut()
     }
 
     /**
@@ -252,7 +313,9 @@ class SteamConnection(
 
         SteamState.isRunning.value = false
         SteamState.isLoggedIn.value = false
+        SteamState.isAnonymous.value = false
         SteamDiagnostics.signedOut()
+        SteamAccount.signedOut()
         SteamDiagnostics.record(
             if (sessionLost) "Session lost, service stopping" else "Connection ended",
         )
@@ -269,7 +332,7 @@ class SteamConnection(
 
         val session = CoroutineScope(scope.coroutineContext + job)
         components.forEach { it.start(session) }
-        session.syncAccountLevel()
+        if (!anonymous) session.syncAccountLevel()
     }
 
     private fun stopSession() {
@@ -339,6 +402,9 @@ class SteamConnection(
                 localSteamId = localSteamId,
             )
 
+            val webSession = WebSessionApi(client.authentication, account, localSteamId)
+            val profile = ProfileApi(player)
+
             val steamApis = SteamApis(
                 library = LibraryApi(
                     steamApps = steamApps,
@@ -346,21 +412,37 @@ class SteamConnection(
                     player = player,
                     localSteamId = localSteamId,
                 ),
-                profile = ProfileApi(player),
+                profile = profile,
                 chat = chat,
                 friends = FriendsApi(db = db, steamFriends = steamFriends, player = player),
                 chatRooms = chatRooms,
                 media = ChatMediaApi(
                     steamCloud = requireNotNull(client.getHandler<SteamCloud>()),
-                    authentication = client.authentication,
-                    account = account,
-                    localSteamId = localSteamId,
+                    webSession = webSession,
                 ),
                 servers = ServerBrowserApi(requireNotNull(client.getHandler<SteamMasterServer>())),
                 cloud = CloudApi(unified.createService()),
                 workshop = WorkshopApi(unified.createService()),
                 sessions = SessionsApi(unified.createService(), localSteamId),
                 screenshots = ScreenshotsApi(unified.createService(), localSteamId),
+                manifests = ManifestApi(
+                    client = client,
+                    steamApps = steamApps,
+                    content = requireNotNull(client.getHandler<SteamContent>()),
+                    scope = scope,
+                ),
+                invites = InvitesApi(unified.createService(), localSteamId),
+                store = StoreApi(unified.createService(), unified.createService()),
+                web = webSession,
+                leaderboards = LeaderboardsApi(
+                    userStats = requireNotNull(client.getHandler<SteamUserStats>()),
+                    profile = profile,
+                ),
+                family = FamilyApi(unified.createService(), profile, localSteamId),
+                authTickets = AuthTicketApi(
+                    authTicket = requireNotNull(client.getHandler<SteamAuthTicket>()),
+                    scope = scope,
+                ),
             )
             apis = steamApis
 
@@ -373,6 +455,7 @@ class SteamConnection(
                 account = account,
                 steamApps = steamApps,
                 library = steamApis.library,
+                family = steamApis.family,
                 localSteamId = localSteamId,
                 onAppsNamed = { names -> friends.nameGames(names) },
             )
@@ -385,7 +468,14 @@ class SteamConnection(
                 licenses = licenses,
             )
             friendsSync = friends
-            components = listOf(friends, chat, chatRooms, licenses)
+
+            // Without an account there is nothing to sync, and the sync classes must not
+            // hear what Steam sends: an anonymous license list would replace the stored one.
+            components = if (anonymous) {
+                listOf(AnonymousPicsFeed(steamApps))
+            } else {
+                listOf(friends, chat, chatRooms, licenses)
+            }
 
             subscriptions.addAll(
                 listOf(
@@ -395,6 +485,12 @@ class SteamConnection(
                     callbacks.subscribe(onLoggedOff),
                     callbacks.subscribe(onEmoticonList),
                     callbacks.subscribe(onLicenseList),
+                    callbacks.subscribe(onAccountInfo),
+                    callbacks.subscribe(onWalletInfo),
+                    callbacks.subscribe(onEmailInfo),
+                    callbacks.subscribe(onVanityUrlChanged),
+                    callbacks.subscribe(onPersonaChange),
+                    callbacks.subscribe(onPlayingSessionState),
                 ),
             )
             components.forEach { subscriptions.addAll(it.subscribe(callbacks)) }
@@ -444,6 +540,7 @@ class SteamConnection(
         // Whatever happens next, the signed-in jobs have nothing to talk to.
         stopSession()
         SteamDiagnostics.signedOut()
+        SteamAccount.signedOut()
         SteamDiagnostics.record(
             if (it.isUserInitiated) "Disconnected (by the app)" else "Disconnected",
         )
@@ -509,7 +606,10 @@ class SteamConnection(
         }
 
         // Otherwise this is a reconnect, and the session has to be signed in again.
-        if (resumeOnReconnect) {
+        if (resumeOnReconnect && anonymous) {
+            Timber.i("Reconnected, signing in anonymously again")
+            logOnAnonymous()
+        } else if (resumeOnReconnect) {
             scope.launch {
                 val username = account.username.first()
                 val refreshToken = account.refreshToken.first()
@@ -537,7 +637,25 @@ class SteamConnection(
         resumeOnReconnect = it.result == EResult.OK
 
         when (it.result) {
+            EResult.OK if anonymous -> {
+                // No account: nothing is stored or synced, and the app stays "signed out".
+                SteamState.isAnonymous.value = true
+                recordSignIn(it)
+                startSession()
+            }
+
             EResult.OK -> {
+                // What is stored belongs to one account. Anything left by another, or by a
+                // sign-out, is erased before this one's data arrives: on this thread, so that
+                // nothing Steam sends next is handled before it is done.
+                val steamId = it.clientSteamID?.convertToUInt64() ?: 0L
+                runBlocking {
+                    if (account.dataOwner() != steamId) {
+                        eraseAccountData()
+                        account.setDataOwner(steamId)
+                    }
+                }
+
                 SteamState.isLoggedIn.value = true
                 SteamState.signOutReason.value = null
                 recordSignIn(it)
@@ -579,7 +697,7 @@ class SteamConnection(
                 // only forgotten when Steam says it is no good any more; the other refusals
                 // (TryAnotherCM, ServiceUnavailable, ...) are Steam-side trouble, and the
                 // token is still good for a later try.
-                val tokenIsDead = it.result in FRESH_SIGN_IN_RESULTS
+                val tokenIsDead = !anonymous && it.result in FRESH_SIGN_IN_RESULTS
 
                 loginErrorReported = true
                 scope.launch {
@@ -588,6 +706,7 @@ class SteamConnection(
                     if (tokenIsDead) {
                         Timber.i("Forgetting the saved sign-in token after ${it.result}")
                         account.setRefreshToken(null)
+                        eraseAccountData()
                     }
                 }
             }
@@ -607,9 +726,12 @@ class SteamConnection(
 
         // Steam ending the session for one of these reasons (access removed while signed in,
         // say) also ends the token, so do not offer it again at the next sign-in.
-        if (it.result in FRESH_SIGN_IN_RESULTS) {
+        if (!anonymous && it.result in FRESH_SIGN_IN_RESULTS) {
             Timber.i("Forgetting the saved sign-in token after ${it.result}")
-            scope.launch { account.setRefreshToken(null) }
+            scope.launch {
+                account.setRefreshToken(null)
+                eraseAccountData()
+            }
         }
 
         steamClient?.disconnect()
@@ -621,7 +743,8 @@ class SteamConnection(
      */
     private val onLicenseList: Consumer<LicenseListCallback> = Consumer {
         val client = steamClient
-        if (it.result == EResult.OK && client != null) {
+        // An anonymous session has a license list too, but it is not the account's.
+        if (it.result == EResult.OK && client != null && !anonymous) {
             downloads.attach(client, it.licenseList)
         }
     }
@@ -632,6 +755,60 @@ class SteamConnection(
         scope.launch {
             db.emoticonDao().replaceAll(it.emoteList)
         }
+    }
+
+    // Steam sends the next four on its own after a sign-in, and again when one changes.
+
+    private val onAccountInfo: Consumer<AccountInfoCallback> = Consumer { info ->
+        SteamAccount.update {
+            it.copy(country = info.country, authorizedComputers = info.countAuthedComputers)
+        }
+    }
+
+    private val onWalletInfo: Consumer<WalletInfoCallback> = Consumer { wallet ->
+        SteamAccount.update {
+            it.copy(
+                hasWallet = wallet.isHasWallet,
+                walletCents = wallet.longBalance,
+                walletPendingCents = wallet.longBalanceDelayed,
+                walletCurrency = wallet.currency?.name.orEmpty(),
+            )
+        }
+    }
+
+    private val onEmailInfo: Consumer<EmailAddrInfoCallback> = Consumer { email ->
+        SteamAccount.update {
+            it.copy(email = email.emailAddress, emailValidated = email.isEmailValidated)
+        }
+    }
+
+    private val onVanityUrlChanged: Consumer<VanityURLChangedCallback> = Consumer { change ->
+        SteamAccount.update { it.copy(customUrl = change.vanityUrl) }
+    }
+
+    /**
+     * Another device signed in to the account started or stopped a game. Steam lets an
+     * account play on one device at a time and tells the others; this app only shows it.
+     */
+    private val onPlayingSessionState: Consumer<PlayingSessionStateCallback> = Consumer { state ->
+        Timber.d("onPlayingSessionState() blocked=%b", state.isPlayingBlocked)
+
+        SteamAccount.update {
+            it.copy(
+                playingElsewhere = state.isPlayingBlocked,
+                playingElsewhereAppId = state.playingAppID,
+            )
+        }
+    }
+
+    /** Steam's answer to [in.dragonbra.vapulla.service.api.FriendsApi.setPersonaName]. */
+    private val onPersonaChange: Consumer<PersonaChangeCallback> = Consumer { change ->
+        Timber.d("onPersonaChange() result ${change.result}")
+
+        if (change.result == EResult.OK) {
+            scope.launch { account.setAccountName(change.name) }
+        }
+        SteamAccount.nameChanged(NameChange(change.result, change.name))
     }
 
     /** Keeps what the logon answer says about the session, for the Under the Hood screens. */
@@ -659,6 +836,7 @@ class SteamConnection(
             ),
         )
         SteamDiagnostics.record("Signed in")
+        SteamAccount.update { it.copy(customUrl = callback.vanityURL.orEmpty()) }
     }
 
     /** Stores the account's Steam level for the drawer header. */

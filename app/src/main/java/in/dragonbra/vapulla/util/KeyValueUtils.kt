@@ -142,7 +142,8 @@ fun KeyValue.generateSteamApp(): SteamApp {
                 )
             },
             steamControllerTemplateIndex = configNode["steamcontrollertemplateindex"].asInteger(),
-            steamControllerTouchTemplateIndex = configNode["steamcontrollertouchtemplateindex"].asInteger(),
+            steamControllerTouchTemplateIndex =
+                configNode["steamcontrollertouchtemplateindex"].asInteger(),
         ),
         ufs = UFS(
             quota = this["ufs"]["quota"].asInteger(),

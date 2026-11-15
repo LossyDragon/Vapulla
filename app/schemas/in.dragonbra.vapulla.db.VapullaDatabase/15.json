@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 9,
-    "identityHash": "43ac71f0d3dc61e16b6cd2c72b6ccb32",
+    "version": 15,
+    "identityHash": "d926d4680a1ac772c5806df853b3b951",
     "entities": [
       {
         "tableName": "steam_friend",
@@ -757,11 +757,133 @@
             "packageID"
           ]
         }
+      },
+      {
+        "tableName": "download",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`appId` INTEGER NOT NULL, `workshopId` INTEGER NOT NULL, `name` TEXT NOT NULL, `headerUrl` TEXT NOT NULL, `os` TEXT NOT NULL, `depotIds` TEXT NOT NULL, `branch` TEXT NOT NULL, `language` TEXT NOT NULL, `installDir` TEXT NOT NULL, `totalBytes` INTEGER NOT NULL, `downloadedBytes` INTEGER NOT NULL, `state` TEXT NOT NULL, `message` TEXT, `addedAt` INTEGER NOT NULL, `finishedAt` INTEGER NOT NULL, `verify` INTEGER NOT NULL, `manifestIds` TEXT NOT NULL DEFAULT '', `branchPassword` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`appId`, `workshopId`))",
+        "fields": [
+          {
+            "fieldPath": "appId",
+            "columnName": "appId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workshopId",
+            "columnName": "workshopId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "headerUrl",
+            "columnName": "headerUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "os",
+            "columnName": "os",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "depotIds",
+            "columnName": "depotIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "branch",
+            "columnName": "branch",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "installDir",
+            "columnName": "installDir",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalBytes",
+            "columnName": "totalBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "downloadedBytes",
+            "columnName": "downloadedBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAt",
+            "columnName": "finishedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verify",
+            "columnName": "verify",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "manifestIds",
+            "columnName": "manifestIds",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "branchPassword",
+            "columnName": "branchPassword",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "appId",
+            "workshopId"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '43ac71f0d3dc61e16b6cd2c72b6ccb32')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd926d4680a1ac772c5806df853b3b951')"
     ]
   }
 }
