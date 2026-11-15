@@ -85,6 +85,11 @@ runs noticeably slower.
 ./gradlew :app:installBenchmark
 ```
 
+A signed release build is made by GitHub Actions (`.github/workflows/pre-release.yml`) whenever
+a push raises `versionCode` in `app/build.gradle.kts`. It replaces the APK on the
+[prerelease](https://github.com/LossyDragon/Vapulla/releases/tag/prerelease) release. The
+signing key is kept in the repository's secrets, which the top of that file lists.
+
 The plain Kotlin parts have unit tests:
 
 ```

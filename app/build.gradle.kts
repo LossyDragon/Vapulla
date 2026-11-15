@@ -39,16 +39,26 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 
-        // applicationVariants.all { variant ->
-        //     variant.outputs.all { output ->
-        //         outputFileName = "vapulla-${variant.versionName}.apk"
-        //     }
-        // }
+    val releaseKeystore: String? = System.getenv("VAPULLA_KEYSTORE_FILE")
+
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("VAPULLA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("VAPULLA_KEY_ALIAS")
+                keyPassword = System.getenv("VAPULLA_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
+            if (releaseKeystore != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

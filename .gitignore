@@ -55,3 +55,10 @@ $RECYCLE.BIN/
 
 *.bak
 /app/google-services.json
+
+# Signing keys: these never belong in the repository
+*.jks
+*.keystore
+
+app/release/app-release.aab
+app/release/native-debug-symbols.zip
