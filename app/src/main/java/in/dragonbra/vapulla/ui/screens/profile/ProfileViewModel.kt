@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.data.ProfileInfo
+import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
+import `in`.dragonbra.vapulla.service.SteamAccount
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.EquippedProfileItems
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
  */
 class ProfileViewModel(
     private val friendDao: SteamFriendDao,
+    private val appDao: SteamAppDao,
     private val connection: SteamServiceConnection,
     private val friendId: Long,
 ) : ViewModel() {
@@ -84,9 +87,11 @@ class ProfileViewModel(
         }
 
         viewModelScope.launch {
-            _favoriteBadge.value = connection
+            val badge = connection
                 .request("GetFavoriteBadge") { it.profile.favoriteBadge(friendId.toSteamID()) }
                 .getOrNull()
+
+            _favoriteBadge.value = badge?.copy(name = badge.name.ifEmpty { gameBadgeName(badge) })
             _badgeLoading.value = false
         }
 
@@ -102,6 +107,23 @@ class ProfileViewModel(
                 .sorted()
                 .toImmutableList()
         }
+    }
+
+    /**
+     * A game's badge is called after the game: "Portal 2 badge". The name comes from the
+     * library when the game is known there and from the store otherwise; empty when
+     * neither has it, or the badge belongs to no game.
+     */
+    private suspend fun gameBadgeName(badge: FavoriteBadge): String {
+        if (badge.appId <= 0) return ""
+
+        val game = appDao.findAppName(badge.appId)?.ifEmpty { null }
+            ?: connection.request("Store name of ${badge.appId}") {
+                val country = SteamAccount.details.value.country.ifEmpty { "US" }
+                it.store.listing(listOf(badge.appId), country).firstOrNull()?.name
+            }.getOrNull()
+
+        return game?.takeIf { it.isNotEmpty() }?.let { "$it badge" }.orEmpty()
     }
 
     /** Whether the friend is one of the account's favourites on Steam. */

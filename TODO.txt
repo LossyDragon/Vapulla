@@ -16,6 +16,15 @@ To Verify
 - Download internals on a real phone
 - Account screen: money in a currency other than dollars or euros (the screen and changing
   the profile name are confirmed)
+- Account screen, "Playing elsewhere" (new 16 Nov 2026, never run): the Stop button asks
+  first, then closes the game on the other device and leaves that Steam client running
+  (kickPlayingSession with onlyStopGame); the notice then goes by itself
+- Badges (new 16 Nov 2026, never run): a game's page says "Your badge" with the level, and
+  the foil one, for a game a badge was crafted for, and nothing for one without; the
+  Account screen's "Community badge" row says how many tasks are done (taken from memory:
+  that the Community Badge is badge 2 and that a foil badge has a border colour other
+  than 0); the pill on a profile names the favourite badge, after the game or as Years of
+  Service (1), Community Badge (2) or Game Collector (13), and by its number otherwise
 - Signed-in web pages: that the cookie is gone after leaving the screen
 - Profile of someone who sent a friend request: the "Mutual friends" section (new, never
   run), with friends in common and with none
@@ -193,19 +202,11 @@ Feature Ideas
   also fit here
 - Game notifications and parental settings (read-only)
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
-- Badges: per-game badge levels and community badge progress (Player service)
 - From other Steam apps (looked through 16 Nov 2026: GameNative, ArchiSteamFarm, Pluvia,
   UpdogFarmer, SteamTrade, the original Vapulla; taken from the calls their source makes,
   none of it tried here):
   - Game invites from friends: the ClientInviteToGame message, shown as a notification
     or in the chat (GameNative)
-  - "Playing elsewhere", with a button to kick the other session: SteamUser's
-    kickPlayingSession. The playing session state is already listened for and unused
-    (GameNative, UpdogFarmer)
-  - Redeem a product key: Store.RegisterCDKey. It changes the account (ArchiSteamFarm,
-    UpdogFarmer)
-  - Remove a free licence (UserAccount.CancelLicenseForApp) and the list of private apps
-    (AccountPrivateApps.GetPrivateAppList) (ArchiSteamFarm)
   - Steam Points: LoyaltyRewards.GetSummary for the balance and QueryRewardItems,
     read-only; goes with the profile decorations (ArchiSteamFarm)
   - Inventory, read-only: Econ.GetInventoryItemsWithDescriptions (ArchiSteamFarm;

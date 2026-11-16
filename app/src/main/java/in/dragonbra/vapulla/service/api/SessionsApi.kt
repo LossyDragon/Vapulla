@@ -6,13 +6,27 @@ import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclie
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclient.EAuthTokenPlatformType
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesAuthSteamclient.EAuthTokenRevokeAction
 import `in`.dragonbra.javasteam.rpc.service.Authentication
+import `in`.dragonbra.javasteam.steam.handlers.steamuser.SteamUser
 import `in`.dragonbra.javasteam.types.SteamID
 
-/** Signed-in devices via the `Authentication` unified service. */
+/**
+ * Signed-in devices via the `Authentication` unified service, and stopping the game one of
+ * them is playing via `SteamUser`.
+ */
 class SessionsApi(
     private val authentication: Authentication,
+    private val steamUser: SteamUser,
     private val localSteamId: () -> SteamID?,
 ) {
+    /**
+     * Stops the game another device of the account is in; that device stays signed in to
+     * Steam. Steam does not answer this: when it worked, it says that playing is no longer
+     * blocked, which arrives as a `PlayingSessionStateCallback`.
+     */
+    fun stopPlayingElsewhere() {
+        steamUser.kickPlayingSession(onlyStopGame = true)
+    }
+
     /**
      * Every refresh token the account currently holds, newest activity first. Empty when
      * Steam does not answer.

@@ -10,9 +10,11 @@ import `in`.dragonbra.vapulla.service.AccountDetails
 import `in`.dragonbra.vapulla.service.NotConnectedException
 import `in`.dragonbra.vapulla.service.SteamAccount
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.service.api.BadgeProgress
 import `in`.dragonbra.vapulla.service.api.FriendInvite
 import `in`.dragonbra.vapulla.service.api.PrivacySettings
 import `in`.dragonbra.vapulla.service.requestMessage
+import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -36,6 +39,9 @@ import kotlinx.coroutines.launch
  * @property playingElsewhere the game another device on the account is in, by name; null
  *   when none is.
  * @property privacy who may see the profile; null until Steam has answered.
+ * @property level the account's Steam level, as stored at the last sign-in.
+ * @property communityBadge how far the account is with the Community Badge's tasks; null
+ *   until Steam has answered.
  */
 @Immutable
 data class AccountUiState(
@@ -46,6 +52,8 @@ data class AccountUiState(
     val isLoadingInvites: Boolean = true,
     val playingElsewhere: String? = null,
     val privacy: PrivacySettings? = null,
+    val level: Int? = null,
+    val communityBadge: BadgeProgress? = null,
 )
 
 /**
@@ -54,7 +62,7 @@ data class AccountUiState(
  */
 class AccountViewModel(
     private val connection: SteamServiceConnection,
-    account: AccountManager,
+    private val account: AccountManager,
     appDao: SteamAppDao,
 ) : ViewModel() {
 
@@ -66,6 +74,8 @@ class AccountViewModel(
     private val invites = MutableStateFlow(Invites())
 
     private val privacy = MutableStateFlow<PrivacySettings?>(null)
+
+    private val communityBadge = MutableStateFlow<BadgeProgress?>(null)
 
     /**
      * The game being played on another device, named from the library where it is known.
@@ -110,6 +120,10 @@ class AccountViewModel(
             )
         }.combine(privacy) { state, privacy ->
             state.copy(privacy = privacy)
+        }.combine(account.accountLevel) { state, level ->
+            state.copy(level = level)
+        }.combine(communityBadge) { state, progress ->
+            state.copy(communityBadge = progress)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -142,6 +156,15 @@ class AccountViewModel(
      */
     fun refresh() {
         viewModelScope.launch {
+            // A failed request leaves the progress as it was.
+            val steamId = account.steamid.first() ?: return@launch
+
+            connection.request("GetCommunityBadgeProgress") {
+                it.profile.communityBadgeProgress(steamId.toSteamID())
+            }.getOrNull()?.let { communityBadge.value = it }
+        }
+
+        viewModelScope.launch {
             // A failed request leaves the settings as they were.
             connection.request("GetPrivacySettings") { it.profile.privacySettings() }
                 .getOrNull()
@@ -161,6 +184,18 @@ class AccountViewModel(
             invites.update {
                 Invites(list = list?.toImmutableList() ?: it.list, loading = false)
             }
+        }
+    }
+
+    /**
+     * Asks Steam to stop the game another device of the account is in. Steam does not answer
+     * the request; when it worked, the "playing elsewhere" notice goes by itself.
+     */
+    fun stopPlayingElsewhere() {
+        viewModelScope.launch {
+            connection.request("KickPlayingSession") { it.sessions.stopPlayingElsewhere() }
+                .onSuccess { _messages.emit("Asked Steam to stop the game on the other device") }
+                .onFailure { _messages.emit(it.requestMessage) }
         }
     }
 

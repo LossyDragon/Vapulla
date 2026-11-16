@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service.api
 
 import `in`.dragonbra.javasteam.enums.ECommunityPrivacy
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetCommunityBadgeProgress_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetFavoriteBadge_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetGameBadgeLevels_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetPlayerLinkDetails_Request
@@ -24,6 +25,41 @@ class ProfileApi(private val player: Player) {
         val request = CPlayer_GetGameBadgeLevels_Request.newBuilder().build()
 
         return player.getGameBadgeLevels(request).bodyOrNull("GetGameBadgeLevels")?.playerLevel
+    }
+
+    /**
+     * The badges the signed-in account has crafted from [appId]'s trading cards, the
+     * ordinary one before the foil one. Empty when it has none, or Steam does not answer.
+     */
+    suspend fun gameBadges(appId: Int): List<GameBadge> {
+        val request = CPlayer_GetGameBadgeLevels_Request.newBuilder().setAppid(appId).build()
+
+        val body = player.getGameBadgeLevels(request).bodyOrNull("GetGameBadgeLevels")
+            ?: return emptyList()
+
+        return body.badgesList
+            .filter { it.level > 0 }
+            .map { GameBadge(level = it.level, isFoil = it.borderColor != 0) }
+            .sortedBy { it.isFoil }
+    }
+
+    /**
+     * How far [steamId] is with the tasks of the Community Badge, the one Steam hands out
+     * for trying its community features. Null when Steam does not answer or lists no tasks.
+     */
+    suspend fun communityBadgeProgress(steamId: SteamID): BadgeProgress? {
+        val request = CPlayer_GetCommunityBadgeProgress_Request.newBuilder()
+            .setSteamid(steamId.convertToUInt64())
+            .setBadgeid(COMMUNITY_BADGE_ID)
+            .build()
+
+        val quests = player.getCommunityBadgeProgress(request)
+            .bodyOrNull("GetCommunityBadgeProgress")
+            ?.questsList
+            ?.takeIf { it.isNotEmpty() }
+            ?: return null
+
+        return BadgeProgress(done = quests.count { it.completed }, total = quests.size)
     }
 
     /**
@@ -76,7 +112,14 @@ class ProfileApi(private val player: Player) {
             ?.takeIf { it.hasFavoriteBadge }
             ?: return null
 
-        return FavoriteBadge(badgeId = body.badgeid, appId = body.appid, level = body.level)
+        return FavoriteBadge(
+            badgeId = body.badgeid,
+            appId = body.appid,
+            level = body.level,
+            // Steam names no badge. The few that every account can have are named here; a
+            // game's badge is named after the game by whoever shows it.
+            name = if (body.appid == 0) COMMUNITY_BADGE_NAMES[body.badgeid].orEmpty() else "",
+        )
     }
 
     /**
@@ -120,6 +163,16 @@ class ProfileApi(private val player: Player) {
     }
 
     private companion object {
+        /** The Community Badge's number among the badges that belong to no game. */
+        const val COMMUNITY_BADGE_ID = 2
+
+        /** Badges that belong to no game, by their number, as far as they are known here. */
+        val COMMUNITY_BADGE_NAMES = mapOf(
+            1 to "Years of Service",
+            COMMUNITY_BADGE_ID to "Community Badge",
+            13 to "Game Collector",
+        )
+
         const val ITEM_FILES_URL = "https://shared.akamai.steamstatic.com/community_assets/images/"
     }
 }

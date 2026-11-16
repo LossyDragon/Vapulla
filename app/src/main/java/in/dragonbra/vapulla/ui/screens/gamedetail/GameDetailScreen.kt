@@ -462,6 +462,7 @@ private fun DetailRows(app: SteamApp, uiState: GameDetailUiState, onAchievements
             "Playtime" to
                 if (app.playtimeForever > 0) app.playtimeForever.minutesToPlaytime() else "",
             "Last played" to if (app.lastPlayed > 0) (app.lastPlayed * 1000).toTimeAgo() else "",
+            "Your badge" to uiState.badges,
             "Developer" to developer,
             "Publisher" to publisher,
             "Platforms" to app.osList.filter { it != SteamApp.OS.none }.joinToString { it.name },

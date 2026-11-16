@@ -62,7 +62,22 @@ data class FreeLicenseResult(
 
 /** A friend's showcased badge, from `Player.GetFavoriteBadge`. */
 @Immutable
-data class FavoriteBadge(val badgeId: Int, val appId: Int, val level: Int)
+data class FavoriteBadge(
+    val badgeId: Int,
+    /** The game the badge is from; 0 for one that belongs to no game. */
+    val appId: Int,
+    val level: Int,
+    /** What the badge is called; empty when that is not known. */
+    val name: String = "",
+)
+
+/** A badge crafted from a game's trading cards; a game has an ordinary and a foil one. */
+@Immutable
+data class GameBadge(val level: Int, val isFoil: Boolean)
+
+/** How many of a badge's tasks are done. */
+@Immutable
+data class BadgeProgress(val done: Int, val total: Int)
 
 /** A group chat the account belongs to, from `ChatRoom.GetMyChatRoomGroups`. */
 @Immutable

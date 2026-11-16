@@ -43,6 +43,8 @@ import timber.log.Timber
  * @property friends what the account's friends have to do with the game, as rows of a label
  *   and the friends it applies to; empty when none do.
  * @property leaderboards how many leaderboards the game has.
+ * @property badges the levels of the badges the account crafted from the game's trading
+ *   cards, ready to show; empty when it has none.
  * @property download this game's entry in the download list, if it has one.
  * @property downloadProgress live figures, only while this game is the one downloading.
  * @property updateAvailable Steam has newer content than what was downloaded.
@@ -60,6 +62,7 @@ data class GameDetailUiState(
     val news: ImmutableList<NewsItem> = persistentListOf(),
     val friends: ImmutableList<Pair<String, String>> = persistentListOf(),
     val leaderboards: Int = 0,
+    val badges: String = "",
     val download: Download? = null,
     val downloadProgress: DownloadProgress? = null,
     val updateAvailable: Boolean = false,
@@ -110,6 +113,7 @@ class GameDetailViewModel(
         val news: ImmutableList<NewsItem> = persistentListOf(),
         val friends: ImmutableList<Pair<String, String>> = persistentListOf(),
         val leaderboards: Int = 0,
+        val badges: String = "",
     )
 
     private data class DownloadInfo(
@@ -188,6 +192,7 @@ class GameDetailViewModel(
                 news = live.news,
                 friends = live.friends,
                 leaderboards = live.leaderboards,
+                badges = live.badges,
                 download = info.download,
                 downloadProgress = info.progress,
                 updateAvailable = info.download?.let { DownloadPlanner.hasUpdate(it, app) } == true,
@@ -243,6 +248,19 @@ class GameDetailViewModel(
                 ?: return@launch
 
             extras.update { it.copy(leaderboards = boards.size) }
+        }
+
+        // The account's own badges from the game's trading cards: "Level 3, foil level 1".
+        viewModelScope.launch {
+            val badges = connection
+                .request("Badges of $appId") { it.profile.gameBadges(appId) }
+                .getOrNull()
+                ?: return@launch
+
+            val text = badges.joinToString { badge ->
+                if (badge.isFoil) "foil level ${badge.level}" else "level ${badge.level}"
+            }
+            extras.update { it.copy(badges = text.replaceFirstChar(Char::uppercase)) }
         }
 
         // News comes from the Web API, so it does not need the Steam session.

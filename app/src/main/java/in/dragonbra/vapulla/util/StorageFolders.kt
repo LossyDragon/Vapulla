@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.Settings
+import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.RequiresApi
 import java.io.File
 
 /**
@@ -17,12 +19,14 @@ import java.io.File
 object StorageFolders {
 
     /** Whether this Android version has the all-files access that any folder needs. */
+    @get:ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
     val isSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
     /** Whether the user has given the app access to all files. */
     fun hasAccess(): Boolean = isSupported && Environment.isExternalStorageManager()
 
     /** Opens the system screen where access to all files is given to this app. */
+    @RequiresApi(Build.VERSION_CODES.R)
     fun accessSettingsIntent(context: Context): Intent =
         Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             .setData(Uri.fromParts("package", context.packageName, null))

@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -613,6 +614,7 @@ private fun LocationRow(
  * has the user give on a settings screen of its own, so the first time round this explains
  * why, sends the user there, and opens the folder picker once they are back with it given.
  */
+@RequiresApi(Build.VERSION_CODES.R)
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FolderPicker(onSelect: (String) -> Unit) {

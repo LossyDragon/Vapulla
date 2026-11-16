@@ -469,14 +469,24 @@ private fun ProfileHeader(
             style = MaterialTheme.typography.titleMedium,
         )
 
-        // A placeholder holds the pill's spot while the badge loads, and the row folds away
-        // if the friend turns out to have none.
+        // The badge the friend shows off, which is not their Steam level: that is not
+        // something Steam tells a client about anyone but itself. A placeholder holds the
+        // pill's spot while the badge loads, and the row folds away if the friend turns out
+        // to have none.
         AnimatedVisibility(visible = badgeLoading || favoriteBadge != null) {
             if (favoriteBadge != null) {
+                // Named when the badge is known; one that is not is told by its number.
+                val name = favoriteBadge.name.ifEmpty {
+                    if (favoriteBadge.appId > 0) {
+                        "Badge of app ${favoriteBadge.appId}"
+                    } else {
+                        "Badge ${favoriteBadge.badgeId}"
+                    }
+                }
+
                 InfoPill(
                     modifier = Modifier.padding(top = 4.dp),
-                    text = "Favorite badge · level ${favoriteBadge.level}" +
-                        if (favoriteBadge.appId > 0) " · app ${favoriteBadge.appId}" else "",
+                    text = "$name · level ${favoriteBadge.level}",
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
@@ -741,7 +751,7 @@ private fun Preview() {
                 headline = "",
                 summary = "Plays [b]Team Fortress 2[/b] most evenings.",
             ),
-            favoriteBadge = FavoriteBadge(badgeId = 1, appId = 440, level = 5),
+            favoriteBadge = FavoriteBadge(1, appId = 440, level = 5, name = "Team Fortress 2 badge"),
             equipped = EquippedProfileItems(),
             badgeLoading = false,
             mutualFriends = persistentListOf("Ann", "Bob"),

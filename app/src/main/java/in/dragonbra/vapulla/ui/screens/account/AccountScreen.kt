@@ -89,6 +89,7 @@ fun AccountScreen(viewModel: AccountViewModel, onNavDrawerAction: () -> Unit) {
         onChangeName = viewModel::changeName,
         onCreateInvite = viewModel::createInvite,
         onRevokeInvite = viewModel::revokeInvite,
+        onStopPlayingElsewhere = viewModel::stopPlayingElsewhere,
     )
 }
 
@@ -102,9 +103,37 @@ private fun AccountContent(
     onChangeName: (String) -> Unit,
     onCreateInvite: () -> Unit,
     onRevokeInvite: (FriendInvite) -> Unit,
+    onStopPlayingElsewhere: () -> Unit,
 ) {
     var editingName by remember { mutableStateOf(false) }
     var pendingRevoke by remember { mutableStateOf<FriendInvite?>(null) }
+    var confirmStop by remember { mutableStateOf(false) }
+
+    // Asked first: it closes a game someone may be in the middle of.
+    if (confirmStop) {
+        AlertDialog(
+            onDismissRequest = { confirmStop = false },
+            title = { Text("Stop the game there?") },
+            text = {
+                Text(
+                    "${uiState.playingElsewhere ?: "The game"} is closed on the other device, " +
+                        "as if it had been quit there. Progress that was not saved may be " +
+                        "lost. The device stays signed in to Steam.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onStopPlayingElsewhere()
+                        confirmStop = false
+                    },
+                ) { Text("Stop the game") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmStop = false }) { Text("Cancel") }
+            },
+        )
+    }
 
     if (editingName) {
         NameDialog(
@@ -159,7 +188,9 @@ private fun AccountContent(
                     .padding(listContentPadding(padding)),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                uiState.playingElsewhere?.let { PlayingElsewhere(game = it) }
+                uiState.playingElsewhere?.let {
+                    PlayingElsewhere(game = it, onStop = { confirmStop = true })
+                }
                 ProfileSection(uiState = uiState, onEditName = { editingName = true })
                 NotificationsSection(uiState.details.notifications)
                 WalletSection(uiState.details)
@@ -176,11 +207,11 @@ private fun AccountContent(
 }
 
 /**
- * Says that the account is in [game] on another device. Steam lets an account play on one
- * device at a time and tells the others; here it is only shown.
+ * Says that the account is in [game] on another device, with a button to stop it there.
+ * Steam lets an account play on one device at a time and tells the others.
  */
 @Composable
-private fun PlayingElsewhere(game: String) {
+private fun PlayingElsewhere(game: String, onStop: () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -193,13 +224,14 @@ private fun PlayingElsewhere(game: String) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Outlined.SportsEsports, contentDescription = null)
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = "Playing elsewhere", style = MaterialTheme.typography.titleSmall)
                 Text(
                     text = "$game is running on another device signed in to this account.",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            TextButton(onClick = onStop) { Text("Stop") }
         }
     }
 }
@@ -221,6 +253,9 @@ private fun ProfileSection(uiState: AccountUiState, onEditName: () -> Unit) {
             listOf(
                 "Name" to uiState.name,
                 "Steam ID" to uiState.steamId.takeIf { it != 0L }?.toSteamIdString().orEmpty(),
+                "Steam level" to uiState.level?.toString().orEmpty(),
+                "Community badge" to uiState.communityBadge
+                    ?.let { "${it.done} of ${it.total} tasks done" }.orEmpty(),
                 "Country" to countryName(details.country),
                 "Authorized computers" to details.authorizedComputers.takeIf { it > 0 }
                     ?.toString().orEmpty(),
@@ -510,6 +545,7 @@ private fun Preview() {
             onChangeName = {},
             onCreateInvite = {},
             onRevokeInvite = {},
+            onStopPlayingElsewhere = {},
         )
     }
 }

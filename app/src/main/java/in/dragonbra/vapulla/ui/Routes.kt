@@ -5,33 +5,105 @@ import java.io.Serializable
 /**
  * Navigation 3 destinations: an object for a screen that needs nothing, a data class for one
  * that is opened on something, such as a friend or an app. They are [Serializable] so the
- * back stack can be saved as it is.
+ * back stack can be saved as it is. Each object has a `readResolve`, so a restored back stack
+ * holds the object itself and not a second instance of it.
  */
 sealed class Routes : Serializable {
-    data object Downloads : Routes()
-    data object Games : Routes()
-    data object Home : Routes()
-    data object Login : Routes()
-    data object Settings : Routes()
-    data object ChatRooms : Routes()
-    data object ServerBrowser : Routes()
-    data object Sessions : Routes()
-    data object RemoteClients : Routes()
-    data object Account : Routes()
-    data object Family : Routes()
-    data object Store : Routes()
-    data object Screenshots : Routes()
-    data object NetworkLog : Routes()
-    data object UnderTheHood : Routes()
-    data object ConnectionInfo : Routes()
-    data object CmServers : Routes()
-    data object Licenses : Routes()
-    data object IdDecoder : Routes()
-    data object AuthTicket : Routes()
-    data object Diagnostics : Routes()
-    data object PicsFeed : Routes()
-    data object WebApi : Routes()
-    data object DownloadInternals : Routes()
+    data object Downloads : Routes() {
+        private fun readResolve(): Any = Downloads
+    }
+
+    data object Games : Routes() {
+        private fun readResolve(): Any = Games
+    }
+
+    data object Home : Routes() {
+        private fun readResolve(): Any = Home
+    }
+
+    data object Login : Routes() {
+        private fun readResolve(): Any = Login
+    }
+
+    data object Settings : Routes() {
+        private fun readResolve(): Any = Settings
+    }
+
+    data object ChatRooms : Routes() {
+        private fun readResolve(): Any = ChatRooms
+    }
+
+    data object ServerBrowser : Routes() {
+        private fun readResolve(): Any = ServerBrowser
+    }
+
+    data object Sessions : Routes() {
+        private fun readResolve(): Any = Sessions
+    }
+
+    data object RemoteClients : Routes() {
+        private fun readResolve(): Any = RemoteClients
+    }
+
+    data object Account : Routes() {
+        private fun readResolve(): Any = Account
+    }
+
+    data object Family : Routes() {
+        private fun readResolve(): Any = Family
+    }
+
+    data object Store : Routes() {
+        private fun readResolve(): Any = Store
+    }
+
+    data object Screenshots : Routes() {
+        private fun readResolve(): Any = Screenshots
+    }
+
+    data object NetworkLog : Routes() {
+        private fun readResolve(): Any = NetworkLog
+    }
+
+    data object UnderTheHood : Routes() {
+        private fun readResolve(): Any = UnderTheHood
+    }
+
+    data object ConnectionInfo : Routes() {
+        private fun readResolve(): Any = ConnectionInfo
+    }
+
+    data object CmServers : Routes() {
+        private fun readResolve(): Any = CmServers
+    }
+
+    data object Licenses : Routes() {
+        private fun readResolve(): Any = Licenses
+    }
+
+    data object IdDecoder : Routes() {
+        private fun readResolve(): Any = IdDecoder
+    }
+
+    data object AuthTicket : Routes() {
+        private fun readResolve(): Any = AuthTicket
+    }
+
+    data object Diagnostics : Routes() {
+        private fun readResolve(): Any = Diagnostics
+    }
+
+    data object PicsFeed : Routes() {
+        private fun readResolve(): Any = PicsFeed
+    }
+
+    data object WebApi : Routes() {
+        private fun readResolve(): Any = WebApi
+    }
+
+    data object DownloadInternals : Routes() {
+        private fun readResolve(): Any = DownloadInternals
+    }
 
     /** The chat with a friend; [id] is the friend's 64-bit Steam ID. */
     data class FriendChat(val id: Long) : Routes()

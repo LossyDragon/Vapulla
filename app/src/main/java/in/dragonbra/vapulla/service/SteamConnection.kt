@@ -534,7 +534,11 @@ class SteamConnection(
             servers = ServerBrowserApi(requireNotNull(client.getHandler<SteamMasterServer>())),
             cloud = CloudApi(unified.createService()),
             workshop = WorkshopApi(unified.createService()),
-            sessions = SessionsApi(unified.createService(), localSteamId),
+            sessions = SessionsApi(
+                authentication = unified.createService(),
+                steamUser = requireNotNull(client.getHandler<SteamUser>()),
+                localSteamId = localSteamId,
+            ),
             remoteClients = RemoteClientsApi(unified.createService()) { clientInstanceId },
             screenshots = ScreenshotsApi(unified.createService(), localSteamId),
             manifests = ManifestApi(

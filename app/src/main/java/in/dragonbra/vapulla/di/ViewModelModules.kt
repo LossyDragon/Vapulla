@@ -111,6 +111,7 @@ val ViewModelModules = module {
     viewModel { (friendId: Long) ->
         ProfileViewModel(
             friendDao = get(),
+            appDao = get(),
             connection = get(),
             friendId = friendId,
         )
