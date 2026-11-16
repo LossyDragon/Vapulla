@@ -1,14 +1,19 @@
 package `in`.dragonbra.vapulla.service.api
 
+import `in`.dragonbra.javasteam.enums.ECommunityPrivacy
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetFavoriteBadge_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetGameBadgeLevels_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetPlayerLinkDetails_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetPrivacySettings_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetProfileItemsEquipped_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.types.SteamID
 
-/** Profile extras from the `Player` unified service: Steam level, badges and profile names. */
+/**
+ * Profile extras from the `Player` unified service: Steam level, badges, profile names and
+ * the account's privacy settings.
+ */
 class ProfileApi(private val player: Player) {
 
     /**
@@ -19,6 +24,29 @@ class ProfileApi(private val player: Player) {
         val request = CPlayer_GetGameBadgeLevels_Request.newBuilder().build()
 
         return player.getGameBadgeLevels(request).bodyOrNull("GetGameBadgeLevels")?.playerLevel
+    }
+
+    /**
+     * Who may see what of the signed-in account's profile. Steam answers this for that
+     * account only. Null when it does not answer.
+     */
+    suspend fun privacySettings(): PrivacySettings? {
+        val request = CPlayer_GetPrivacySettings_Request.newBuilder().build()
+
+        val settings = player.getPrivacySettings(request).bodyOrNull("GetPrivacySettings")
+            ?.privacySettings
+            ?: return null
+
+        fun privacy(state: Int) = ECommunityPrivacy.from(state) ?: ECommunityPrivacy.Invalid
+
+        return PrivacySettings(
+            profile = privacy(settings.privacyState),
+            ownedGames = privacy(settings.privacyStateOwnedgames),
+            playtime = privacy(settings.privacyStatePlaytime),
+            friendsList = privacy(settings.privacyStateFriendslist),
+            inventory = privacy(settings.privacyStateInventory),
+            gifts = privacy(settings.privacyStateGifts),
+        )
     }
 
     /**

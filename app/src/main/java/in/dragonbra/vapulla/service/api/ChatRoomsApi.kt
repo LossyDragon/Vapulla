@@ -3,11 +3,17 @@ package `in`.dragonbra.vapulla.service.api
 import `in`.dragonbra.javasteam.enums.EAccountType
 import `in`.dragonbra.javasteam.enums.EUniverse
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_AckChatMessage_Notification
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoomMember
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_GetMessageHistory_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_GetMyChatRoomGroups_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_IncomingChatMessage_Notification
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_MessageReaction_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_SendChatMessage_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_SetSessionActiveChatRoomGroups_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.CChatRoom_UpdateMessageReaction_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.EChatRoomGroupRank
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.EChatRoomJoinState
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.EChatRoomMessageReactionType
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.EChatRoomServerMessage
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesChatSteamclient.ServerMessage
 import `in`.dragonbra.javasteam.rpc.service.ChatRoom
@@ -41,9 +47,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 /**
- * Group chats via the `ChatRoom` unified service: the groups the account is in, and reading
- * and writing the messages of one of their channels. Nothing is stored; a channel's history
- * is fetched when it is opened and new messages are handed out through [incoming].
+ * Group chats via the `ChatRoom` unified service: the groups the account is in, their
+ * members, and reading, writing and reacting to the messages of one of their channels.
+ * Nothing is stored; a channel's history is fetched when it is opened, and new messages and
+ * reactions are handed out through [incoming] and [reactionChanges].
  *
  * Names and avatars are not part of a chat message, only the sender's ID, so they are looked
  * up through [SteamFriends] persona state, the same way the Steam client fills them in. That
@@ -69,16 +76,28 @@ class ChatRoomsApi(
     private val heldGroups = HashMap<Long, Int>()
     private val activeGroupsMutex = Mutex()
 
+    /** Group ID to its members as Steam last listed them, for the groups held. */
+    private val groupMembers = ConcurrentHashMap<Long, List<CChatRoomMember>>()
+
     private val _groups = MutableStateFlow<List<ChatGroup>>(emptyList())
 
     /** The groups as last fetched by [myGroups], for screens that need a group's channels. */
     val groups: StateFlow<List<ChatGroup>> = _groups.asStateFlow()
+
+    private val _reactionChanges = MutableSharedFlow<GroupReactionChange>(extraBufferCapacity = 64)
+
+    /** Reactions given and taken back in the groups held with [holdGroup], as they happen. */
+    val reactionChanges: SharedFlow<GroupReactionChange> = _reactionChanges.asSharedFlow()
 
     override fun subscribe(callbacks: CallbackManager): List<Closeable> = listOf(
         callbacks.subscribeServiceNotification<
             ChatRoomClient,
             CChatRoom_IncomingChatMessage_Notification.Builder,
             >(onIncomingMessage),
+        callbacks.subscribeServiceNotification<
+            ChatRoomClient,
+            CChatRoom_MessageReaction_Notification.Builder,
+            >(onReaction),
     )
 
     /**
@@ -157,20 +176,36 @@ class ChatRoomsApi(
      * runs last sends the latest state.
      */
     private fun sendActiveGroups() {
-        scope.launch {
-            activeGroupsMutex.withLock {
-                val groupIds = synchronized(heldGroups) { heldGroups.keys.toList() }
+        scope.launch { tellActiveGroups() }
+    }
 
-                val request = CChatRoom_SetSessionActiveChatRoomGroups_Request.newBuilder()
-                    .addAllChatGroupIds(groupIds)
-                    .addAllChatGroupsDataRequested(groupIds)
-                    .build()
+    /**
+     * Sends Steam the set of held groups. Its answer carries the state of each, members
+     * included, which is kept in [groupMembers]: Steam turns down a request for one group's
+     * state on its own (`GetChatRoomGroupState` answers `Fail`), so this is where the member
+     * list comes from.
+     *
+     * @return false when Steam refused or did not answer.
+     */
+    private suspend fun tellActiveGroups(): Boolean = activeGroupsMutex.withLock {
+        val groupIds = synchronized(heldGroups) { heldGroups.keys.toList() }
 
-                val result = chatRoom.setSessionActiveChatRoomGroups(request)
-                    .resultOf("SetSessionActiveChatRoomGroups")
-                Timber.d("Active chat groups $groupIds answered $result")
-            }
+        val request = CChatRoom_SetSessionActiveChatRoomGroups_Request.newBuilder()
+            .addAllChatGroupIds(groupIds)
+            .addAllChatGroupsDataRequested(groupIds)
+            .build()
+
+        val body = chatRoom.setSessionActiveChatRoomGroups(request)
+            .bodyOrNull("SetSessionActiveChatRoomGroups")
+        Timber.d("Active chat groups $groupIds answered, ${body?.chatStatesCount} with state")
+
+        body?.chatStatesList?.forEach { state ->
+            groupMembers[state.headerState.chatGroupId] = state.membersList
         }
+        // A group no longer held gets no member updates, so what is kept of it goes.
+        groupMembers.keys.retainAll(groupIds.toSet())
+
+        body != null
     }
 
     /**
@@ -216,6 +251,15 @@ class ChatRoomsApi(
                 timestamp = entry.serverTimestamp * 1000L,
                 ordinal = entry.ordinal,
                 serverMessage = entry.serverMessage.takeIf { entry.hasServerMessage() },
+            )?.copy(
+                reactions = entry.reactionsList.map {
+                    MessageReaction(
+                        reaction = it.reaction,
+                        isSticker = it.reactionType == STICKER,
+                        count = it.numReactors,
+                        mine = it.hasUserReacted,
+                    )
+                }.toImmutableList(),
             )
         }.sortedWith(NEWEST_FIRST)
 
@@ -254,6 +298,78 @@ class ChatRoomsApi(
         )
     }
 
+    /**
+     * Gives a reaction to a message of a channel, or takes it back.
+     *
+     * Steam pushes the change to everyone else in the channel but not back to the session
+     * that made it, so the caller has to show it itself.
+     *
+     * @param reaction an emoticon's name between colons, or a sticker's name.
+     * @return false if Steam refused or did not answer.
+     */
+    suspend fun react(
+        message: GroupChatMessage,
+        reaction: String,
+        isSticker: Boolean,
+        add: Boolean,
+    ): Boolean {
+        val request = CChatRoom_UpdateMessageReaction_Request.newBuilder()
+            .setChatGroupId(message.groupId)
+            .setChatId(message.chatId)
+            .setServerTimestamp((message.timestamp / 1000).toInt())
+            .setOrdinal(message.ordinal)
+            .setReactionType(if (isSticker) STICKER else EMOTICON)
+            .setReaction(reaction)
+            .setIsAdd(add)
+            .build()
+
+        return chatRoom.updateMessageReaction(request)
+            .bodyOrNull("ChatRoom.UpdateMessageReaction") != null
+    }
+
+    /**
+     * The members of a group held with [holdGroup], highest rank first and by name within a
+     * rank. They are asked for anew each time, as people come and go; without an answer the
+     * ones from last time are given. Steam leaves the list out for the largest groups, which
+     * the Steam client pages through instead; those come out empty here. Names are looked up
+     * for the first [MEMBER_NAME_LIMIT]; the rest are listed by their account ID.
+     */
+    suspend fun members(groupId: Long): List<ChatGroupMember> {
+        tellActiveGroups()
+        val members = groupMembers[groupId] ?: return emptyList()
+
+        // Highest rank first here too, so that those are the ones whose names are asked for.
+        val joined = members
+            .filter { it.state == EChatRoomJoinState.k_EChatRoomJoinState_Joined }
+            .sortedByDescending { it.rank.number }
+
+        awaitPersonas(joined.take(MEMBER_NAME_LIMIT).map { it.accountid.accountIdToSteamID() }) {
+            friends.getFriendPersonaName(it).isNullOrBlank()
+        }
+
+        // The sort is stable, so sorting by name first leaves each rank in name order.
+        return joined
+            .map { member ->
+                val steamId = member.accountid.accountIdToSteamID()
+                val listed = ChatGroupMember(
+                    steamId = steamId.convertToUInt64(),
+                    accountId = member.accountid,
+                    name = personaName(steamId),
+                    avatarUrl = avatarUrl(steamId),
+                    rank = when (member.rank) {
+                        EChatRoomGroupRank.k_EChatRoomGroupRank_Owner -> "Owner"
+                        EChatRoomGroupRank.k_EChatRoomGroupRank_Officer -> "Officer"
+                        EChatRoomGroupRank.k_EChatRoomGroupRank_Moderator -> "Moderator"
+                        else -> ""
+                    },
+                )
+                listed to member.rank.number
+            }
+            .sortedBy { (member, _) -> member.name.lowercase() }
+            .sortedByDescending { (_, rank) -> rank }
+            .map { (member, _) -> member }
+    }
+
     /** Marks a channel as read up to now, which clears its unread state on other devices. */
     fun ack(groupId: Long, chatId: Long) {
         val request = CChatRoom_AckChatMessage_Notification.newBuilder()
@@ -287,8 +403,37 @@ class ChatRoomsApi(
                     timestamp = body.timestamp * 1000L,
                     ordinal = body.ordinal,
                     serverMessage = body.serverMessage.takeIf { body.hasServerMessage() },
-                )?.let { _incoming.emit(it) }
+                )?.let { message ->
+                    // Steam has worked out who a pushed message calls on; no need to read it.
+                    val self = localSteamId()?.accountID?.toInt()
+                    val mentions = body.mentions
+                    val mentionsMe = mentions.mentionAll ||
+                        mentions.mentionHere ||
+                        self in mentions.mentionAccountidsList
+
+                    _incoming.emit(message.copy(mentionsMe = mentionsMe && !message.fromLocal))
+                }
             }
+        }
+
+    private val onReaction:
+        (ServiceMethodNotification<CChatRoom_MessageReaction_Notification.Builder>) -> Unit =
+        { notification ->
+            val body = notification.body
+            Timber.d("onReaction() group=${body.chatGroupId} add=${body.isAdd}")
+
+            _reactionChanges.tryEmit(
+                GroupReactionChange(
+                    groupId = body.chatGroupId,
+                    chatId = body.chatId,
+                    timestamp = body.serverTimestamp * 1000L,
+                    ordinal = body.ordinal,
+                    reaction = body.reaction,
+                    isSticker = body.reactionType == STICKER,
+                    isAdd = body.isAdd,
+                    fromLocal = SteamID(body.reactor) == localSteamId(),
+                ),
+            )
         }
 
     /**
@@ -314,23 +459,42 @@ class ChatRoomsApi(
             text.ifEmpty { return null }
         }
 
+        val fromLocal = sender == localSteamId()
+
         return GroupChatMessage(
             groupId = groupId,
             chatId = chatId,
             senderId = sender.convertToUInt64(),
             senderName = personaName(sender),
-            senderAvatarUrl = friends.getFriendAvatar(sender)
-                ?.takeIf { it.isNotEmpty() }
-                ?.toHexString()
-                ?.let(Utils::getAvatarURL)
-                .orEmpty(),
+            senderAvatarUrl = avatarUrl(sender),
             message = body,
             timestamp = timestamp,
             ordinal = ordinal,
-            fromLocal = sender == localSteamId(),
+            fromLocal = fromLocal,
             isServerMessage = serverMessage != null,
+            mentionsMe = serverMessage == null && !fromLocal && mentionsLocal(text),
         )
     }
+
+    /**
+     * Whether a message's text calls on the signed-in account. A mention of someone is a
+     * `[mention=accountid]@Name[/mention]` tag; everyone is called with `@all`, and everyone
+     * online with `@here`, which are looked for both as a tag and as a plain word.
+     */
+    private fun mentionsLocal(text: String): Boolean {
+        if ('@' !in text) return false
+        val called = setOf(localSteamId()?.accountID?.toString(), "all", "here")
+
+        return MENTION_TAG.findAll(text).any { it.groupValues[1].lowercase() in called } ||
+            MENTION_EVERYONE.containsMatchIn(text)
+    }
+
+    /** The full address of [steamId]'s avatar; empty when JavaSteam does not hold it. */
+    private fun avatarUrl(steamId: SteamID): String = friends.getFriendAvatar(steamId)
+        ?.takeIf { it.isNotEmpty() }
+        ?.toHexString()
+        ?.let(Utils::getAvatarURL)
+        .orEmpty()
 
     private fun describe(message: ServerMessage, name: String): String? = when (message.message) {
         EChatRoomServerMessage.k_EChatRoomServerMsg_Joined -> "$name joined"
@@ -399,6 +563,15 @@ class ChatRoomsApi(
 
         /** Messages per page of channel history. */
         const val HISTORY_PAGE_SIZE = 50
+
+        /** Members of a group whose names are asked for; a persona request has its limits. */
+        const val MEMBER_NAME_LIMIT = 200
+
+        val EMOTICON = EChatRoomMessageReactionType.k_EChatRoomMessageReactionType_Emoticon
+        val STICKER = EChatRoomMessageReactionType.k_EChatRoomMessageReactionType_Sticker
+
+        val MENTION_TAG = Regex("""\[mention=(\d+|all|here)]""", RegexOption.IGNORE_CASE)
+        val MENTION_EVERYONE = Regex("""(^|\s)@(all|here)\b""", RegexOption.IGNORE_CASE)
 
         /** Steam orders a channel by time, then by ordinal within the same second. */
         val NEWEST_FIRST: Comparator<GroupChatMessage> =

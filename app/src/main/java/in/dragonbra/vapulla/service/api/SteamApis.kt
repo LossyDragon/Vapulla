@@ -34,4 +34,6 @@ class SteamApis(
     val family: FamilyApi,
     val authTickets: AuthTicketApi,
     val notifications: NotificationsApi,
+    val wishlist: WishlistApi,
+    val collections: CollectionsApi,
 )

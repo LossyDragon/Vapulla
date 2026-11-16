@@ -11,6 +11,7 @@ import `in`.dragonbra.vapulla.service.NotConnectedException
 import `in`.dragonbra.vapulla.service.SteamAccount
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.FriendInvite
+import `in`.dragonbra.vapulla.service.api.PrivacySettings
 import `in`.dragonbra.vapulla.service.requestMessage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
  * @property isLoadingInvites the invite links are being fetched, made or revoked.
  * @property playingElsewhere the game another device on the account is in, by name; null
  *   when none is.
+ * @property privacy who may see the profile; null until Steam has answered.
  */
 @Immutable
 data class AccountUiState(
@@ -43,6 +45,7 @@ data class AccountUiState(
     val invites: ImmutableList<FriendInvite> = persistentListOf(),
     val isLoadingInvites: Boolean = true,
     val playingElsewhere: String? = null,
+    val privacy: PrivacySettings? = null,
 )
 
 /**
@@ -61,6 +64,8 @@ class AccountViewModel(
     )
 
     private val invites = MutableStateFlow(Invites())
+
+    private val privacy = MutableStateFlow<PrivacySettings?>(null)
 
     /**
      * The game being played on another device, named from the library where it is known.
@@ -103,6 +108,8 @@ class AccountViewModel(
                 isLoadingInvites = invites.loading,
                 playingElsewhere = playingElsewhere,
             )
+        }.combine(privacy) { state, privacy ->
+            state.copy(privacy = privacy)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -130,10 +137,17 @@ class AccountViewModel(
     }
 
     /**
-     * Fetches the invite links again and asks for the notification counts again. The other
-     * details arrive on their own.
+     * Fetches the invite links and the privacy settings again, and asks for the notification
+     * counts again. The other details arrive on their own.
      */
     fun refresh() {
+        viewModelScope.launch {
+            // A failed request leaves the settings as they were.
+            connection.request("GetPrivacySettings") { it.profile.privacySettings() }
+                .getOrNull()
+                ?.let { privacy.value = it }
+        }
+
         viewModelScope.launch {
             invites.update { it.copy(loading = true) }
 

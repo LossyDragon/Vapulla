@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Games
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.ButtonDefaults
@@ -25,9 +27,13 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,7 +68,8 @@ private val SCREENSHOT_HEIGHT = 150.dp
 
 /**
  * What the Steam store shows for one app: price, reviews, description, tags and
- * screenshots. An owned app links on to its page in the library.
+ * screenshots. An owned app links on to its page in the library; one that is not owned can
+ * be put on the wishlist or taken off it.
  */
 @Composable
 fun StorePageScreen(
@@ -71,16 +78,29 @@ fun StorePageScreen(
     onOpenLibrary: (appId: Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    StorePageContent(uiState = uiState, onBack = onBack, onOpenLibrary = onOpenLibrary)
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
+    }
+
+    StorePageContent(
+        uiState = uiState,
+        snackbarHostState = snackbarHostState,
+        onBack = onBack,
+        onOpenLibrary = onOpenLibrary,
+        onToggleWishlist = viewModel::toggleWishlist,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StorePageContent(
     uiState: StorePageUiState,
+    snackbarHostState: SnackbarHostState,
     onBack: () -> Unit,
     onOpenLibrary: (appId: Int) -> Unit,
+    onToggleWishlist: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
     val page = uiState.page
@@ -98,6 +118,7 @@ private fun StorePageContent(
                 navigationIcon = { BackButton(onClick = onBack) },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (page == null) {
             if (uiState.isLoading) {
@@ -144,6 +165,17 @@ private fun StorePageContent(
                     onStore = { uriHandler.openUri(page.storeUrl) },
                     onLibrary = { onOpenLibrary(page.appId) },
                 )
+            }
+
+            // Something already owned has no place on a wishlist.
+            if (uiState.onWishlist != null && !uiState.inLibrary) {
+                item {
+                    WishlistButton(
+                        onWishlist = uiState.onWishlist,
+                        enabled = !uiState.isChangingWishlist,
+                        onClick = onToggleWishlist,
+                    )
+                }
             }
 
             item { Section(title = "Details") { DetailList(details(page)) } }
@@ -219,6 +251,31 @@ private fun Actions(inLibrary: Boolean, onStore: () -> Unit, onLibrary: () -> Un
             ) {
                 IconLabel(Icons.Outlined.Games, "In your library")
             }
+        }
+    }
+}
+
+/** Puts the app on the account's wishlist, or takes it off when it is on it. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun WishlistButton(onWishlist: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    if (onWishlist) {
+        FilledTonalButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+            shapes = ButtonDefaults.shapes(),
+        ) {
+            IconLabel(Icons.Filled.Favorite, "On your wishlist · Remove")
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
+            shapes = ButtonDefaults.shapes(),
+        ) {
+            IconLabel(Icons.Outlined.FavoriteBorder, "Add to your wishlist")
         }
     }
 }
@@ -316,10 +373,13 @@ private fun Preview() {
                     storeUrl = "https://store.steampowered.com/app/620/Portal_2",
                 ),
                 isLoading = false,
-                inLibrary = true,
+                inLibrary = false,
+                onWishlist = true,
             ),
+            snackbarHostState = remember { SnackbarHostState() },
             onBack = {},
             onOpenLibrary = {},
+            onToggleWishlist = {},
         )
     }
 }

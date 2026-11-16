@@ -8,7 +8,6 @@ To Verify
   while a sign-in is saved and data is stored (the screens, a dedicated server manifest
   and leaving with back are confirmed on the emulator)
 - Saved token is cleared on AccessDenied / InvalidPassword (Revoked is confirmed)
-- Sign-in screen says why when Steam ends a session ("Signed out by Steam: Revoked")
 - Downloads: switching a downloaded game to another language (the old files should be
   deleted); a game in another language (the language picker is only confirmed to show); a
   workshop collection; the speed limit on a game of many small files
@@ -193,19 +192,13 @@ Feature Ideas
   setting to ask on the phone before a download asked for from elsewhere starts would
   also fit here
 - Game notifications and parental settings (read-only)
-- Group chat: member list, reactions, mentions
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
-- Reactions in friend chat (FriendMessages.UpdateMessageReaction)
 - Badges: per-game badge levels and community badge progress (Player service)
 - From other Steam apps (looked through 16 Nov 2026: GameNative, ArchiSteamFarm, Pluvia,
   UpdogFarmer, SteamTrade, the original Vapulla; taken from the calls their source makes,
   none of it tried here):
   - Game invites from friends: the ClientInviteToGame message, shown as a notification
     or in the chat (GameNative)
-  - Wishlist: view, add and remove. Wishlist.AddToWishlist / RemoveFromWishlist and the
-    Web API's IWishlistService/GetWishlist (GameNative)
-  - Library collections: CloudConfigStore.Download, namespace 1, as filters on the Games
-    screen (GameNative)
   - "Playing elsewhere", with a button to kick the other session: SteamUser's
     kickPlayingSession. The playing session state is already listened for and unused
     (GameNative, UpdogFarmer)
@@ -215,13 +208,8 @@ Feature Ideas
     (AccountPrivateApps.GetPrivateAppList) (ArchiSteamFarm)
   - Steam Points: LoyaltyRewards.GetSummary for the balance and QueryRewardItems,
     read-only; goes with the profile decorations (ArchiSteamFarm)
-  - Privacy settings and account security on the Account screen, read-only:
-    Player.GetPrivacySettings, Credentials.GetSteamGuardDetails and
-    LastCredentialChangeTime (ArchiSteamFarm)
   - Inventory, read-only: Econ.GetInventoryItemsWithDescriptions (ArchiSteamFarm;
     SteamTrade's way through the website no longer works)
-  - Trade link: Econ.GetTradeOfferAccessToken, to show and copy; no trading
-    (ArchiSteamFarm)
   - Family sharing, preferred lender: FamilyGroups.GetPreferredLenders /
     SetPreferredLender, on the Family screen (GameNative)
   - Join or leave a group chat: ChatRoom.JoinChatRoomGroup / LeaveChatRoomGroup

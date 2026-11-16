@@ -181,6 +181,22 @@ class ChatViewModel(
     }
 
     /**
+     * Gives [reaction] to the stored message with [messageId], or takes it back. The change
+     * shows once Steam has agreed to it, through the stored message.
+     */
+    fun react(messageId: Long, reaction: String, isSticker: Boolean, add: Boolean) {
+        viewModelScope.launch {
+            val done = connection.request("UpdateMessageReaction") {
+                it.chat.react(messageId, reaction, isSticker, add)
+            }.getOrDefault(false)
+
+            if (!done) {
+                _notices.emit(if (add) "Reaction not added" else "Reaction not removed")
+            }
+        }
+    }
+
+    /**
      * Sends a sticker, which in Steam chat is a message of its own: the `/sticker` slash
      * command, which Steam turns into the sticker for everyone in the conversation.
      */

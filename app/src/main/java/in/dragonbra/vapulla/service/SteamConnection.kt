@@ -47,6 +47,7 @@ import `in`.dragonbra.vapulla.service.api.ChatApi
 import `in`.dragonbra.vapulla.service.api.ChatMediaApi
 import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.CloudApi
+import `in`.dragonbra.vapulla.service.api.CollectionsApi
 import `in`.dragonbra.vapulla.service.api.FamilyApi
 import `in`.dragonbra.vapulla.service.api.FavoritesApi
 import `in`.dragonbra.vapulla.service.api.FriendPreferencesApi
@@ -62,10 +63,13 @@ import `in`.dragonbra.vapulla.service.api.ScreenshotsApi
 import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
 import `in`.dragonbra.vapulla.service.api.SessionsApi
 import `in`.dragonbra.vapulla.service.api.SteamApis
+import `in`.dragonbra.vapulla.service.api.SteamCollections
 import `in`.dragonbra.vapulla.service.api.SteamFavorites
 import `in`.dragonbra.vapulla.service.api.SteamFriendPreferences
+import `in`.dragonbra.vapulla.service.api.SteamWishlist
 import `in`.dragonbra.vapulla.service.api.StoreApi
 import `in`.dragonbra.vapulla.service.api.WebSessionApi
+import `in`.dragonbra.vapulla.service.api.WishlistApi
 import `in`.dragonbra.vapulla.service.api.WorkshopApi
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.service.download.DownloadManager
@@ -352,7 +356,8 @@ class SteamConnection(
         SteamAccount.signedOut()
         SteamFavorites.set(emptyList())
         SteamFriendPreferences.set(emptyMap())
-        SteamAccount.signedOut()
+        SteamWishlist.set(null)
+        SteamCollections.set(emptyList())
     }
 
     /**
@@ -550,6 +555,8 @@ class SteamConnection(
             notifications = NotificationsApi(
                 requireNotNull(client.getHandler<SteamNotifications>()),
             ),
+            wishlist = WishlistApi(unified.createService(), localSteamId),
+            collections = CollectionsApi(unified.createService()),
         )
     }
 
@@ -604,6 +611,8 @@ class SteamConnection(
             steamApis.favorites,
             steamApis.friendPreferences,
             steamApis.notifications,
+            steamApis.wishlist,
+            steamApis.collections,
             licenses,
             remoteRequests,
         )

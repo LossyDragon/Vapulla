@@ -3,6 +3,7 @@ package `in`.dragonbra.vapulla.ui.screens.store
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
@@ -52,6 +53,7 @@ import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.composables.search.SearchField
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 /** A search result's picture is the store's small capsule, 231 by 87 pixels. */
@@ -60,7 +62,7 @@ private const val CAPSULE_RATIO = 231f / 87f
 /**
  * Finds any app in the Steam store by name, owned or not, and opens its store page. Nothing
  * is looked up while typing, only when the search button or the keyboard's search key is
- * pressed.
+ * pressed. Until something is searched for, the account's wishlist is listed.
  */
 @Composable
 fun StoreScreen(
@@ -137,34 +139,68 @@ private fun StoreContent(
 
                 uiState.message != null -> EmptyMessage(message = uiState.message)
 
-                uiState.searched.isEmpty() -> EmptyMessage(
-                    message = "Search the Steam store for any game, whether you own it or not",
-                )
+                // With nothing searched for, the wishlist takes the place of the results.
+                uiState.searched.isEmpty() -> when {
+                    uiState.wishlist.isNotEmpty() -> ResultList(
+                        results = uiState.wishlist,
+                        title = "Your wishlist",
+                        padding = padding,
+                        onOpen = onOpen,
+                    )
+
+                    uiState.isLoadingWishlist -> LoadingBox(modifier = Modifier.fillMaxSize())
+
+                    else -> EmptyMessage(
+                        message = "Search the Steam store for any game, whether you own it " +
+                            "or not. Games on your wishlist are listed here.",
+                    )
+                }
 
                 uiState.results.isEmpty() ->
                     EmptyMessage(message = "The store has nothing by that name")
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = listContentPadding(
-                        scaffoldPadding = padding,
-                        extraBottom = FabClearance,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    itemsIndexed(
-                        items = uiState.results,
-                        key = { _, result -> result.appId },
-                    ) { index, result ->
-                        ResultRow(
-                            result = result,
-                            index = index,
-                            count = uiState.results.size,
-                            onClick = { onOpen(result.appId) },
-                        )
-                    }
-                }
+                else -> ResultList(
+                    results = uiState.results,
+                    title = null,
+                    padding = padding,
+                    onOpen = onOpen,
+                )
             }
+        }
+    }
+}
+
+/** Store apps as rows, under [title] when there is one. */
+@Composable
+private fun ResultList(
+    results: ImmutableList<StoreSearchResult>,
+    title: String?,
+    padding: PaddingValues,
+    onOpen: (appId: Int) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = listContentPadding(scaffoldPadding = padding, extraBottom = FabClearance),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        if (title != null) {
+            item(key = "title") {
+                Text(
+                    text = "$title · ${results.size}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 6.dp),
+                )
+            }
+        }
+
+        itemsIndexed(items = results, key = { _, result -> result.appId }) { index, result ->
+            ResultRow(
+                result = result,
+                index = index,
+                count = results.size,
+                onClick = { onOpen(result.appId) },
+            )
         }
     }
 }

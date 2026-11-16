@@ -61,6 +61,8 @@ import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatMessageItem
 import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FOLLOW_THRESHOLD
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
+import `in`.dragonbra.vapulla.ui.screens.chat.components.ReactionPickerSheet
+import `in`.dragonbra.vapulla.ui.screens.chat.components.reactionOf
 import `in`.dragonbra.vapulla.ui.screens.chat.components.rememberImagePicker
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendAvatar
@@ -119,6 +121,7 @@ fun ChatScreen(viewModel: ChatViewModel, onBack: () -> Unit, onProfile: () -> Un
         emoticons = emoticons,
         onStickerClick = viewModel::sendSticker,
         onAttachClick = pickImage,
+        onReact = viewModel::react,
     )
 }
 
@@ -134,10 +137,25 @@ private fun ChatScreenContent(
     onSendClick: () -> Unit,
     onStickerClick: (Emoticon) -> Unit,
     onAttachClick: () -> Unit,
+    onReact: (messageId: Long, reaction: String, isSticker: Boolean, add: Boolean) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var showEmojiPanel by rememberSaveable { mutableStateOf(false) }
+
+    // The message a reaction is being picked for, by its row ID; null while none is.
+    var reactingTo by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    reactingTo?.let { messageId ->
+        ReactionPickerSheet(
+            emoticons = emoticons,
+            onPick = { emoticon ->
+                onReact(messageId, reactionOf(emoticon), emoticon.isSticker, true)
+                reactingTo = null
+            },
+            onDismiss = { reactingTo = null },
+        )
+    }
 
     // Keeping up with the conversation. A new message is inserted at index 0, and the lazy
     // list holds on to the item it was showing, so the new one lands just out of view. When
@@ -305,7 +323,19 @@ private fun ChatScreenContent(
                                 if (showDay) {
                                     DayHeader(timestamp = message.timestamp)
                                 }
-                                ChatMessageItem(message = message)
+                                ChatMessageItem(
+                                    message = message,
+                                    onReactionClick = { reaction ->
+                                        // Tapping one of ours takes it back.
+                                        onReact(
+                                            message.id,
+                                            reaction.reaction,
+                                            reaction.isSticker,
+                                            !reaction.mine,
+                                        )
+                                    },
+                                    onPickReaction = { reactingTo = message.id },
+                                )
                             }
                         }
                     }
@@ -376,6 +406,7 @@ private fun Preview() {
             onSendClick = { },
             onStickerClick = { },
             onAttachClick = { },
+            onReact = { _, _, _, _ -> },
             uiState = ChatUiState(
                 friend = SteamFriend(
                     id = 1L,

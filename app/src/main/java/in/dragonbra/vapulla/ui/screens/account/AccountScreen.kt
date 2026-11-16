@@ -47,9 +47,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `in`.dragonbra.javasteam.enums.ECommunityPrivacy
 import `in`.dragonbra.vapulla.service.AccountDetails
 import `in`.dragonbra.vapulla.service.api.FriendInvite
 import `in`.dragonbra.vapulla.service.api.NotificationCounts
+import `in`.dragonbra.vapulla.service.api.PrivacySettings
 import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.Hint
@@ -162,6 +164,7 @@ private fun AccountContent(
                 NotificationsSection(uiState.details.notifications)
                 WalletSection(uiState.details)
                 EmailSection(uiState.details)
+                PrivacySection(uiState.privacy)
                 InvitesSection(
                     invites = uiState.invites,
                     onCreate = onCreateInvite,
@@ -296,6 +299,36 @@ private fun EmailSection(details: AccountDetails) {
             )
         }
     }
+}
+
+/** Who may see the profile and its parts. Shown only: they are changed on Steam itself. */
+@Composable
+private fun PrivacySection(privacy: PrivacySettings?) {
+    Section(title = "Privacy") {
+        if (privacy == null) {
+            Hint("Steam has not sent the privacy settings yet.")
+        } else {
+            DetailList(
+                listOf(
+                    "Profile" to privacy.profile.label(),
+                    "Game details" to privacy.ownedGames.label(),
+                    "Total playtime" to privacy.playtime.label(),
+                    "Friends list" to privacy.friendsList.label(),
+                    "Inventory" to privacy.inventory.label(),
+                    "Gifts" to privacy.gifts.label(),
+                ),
+            )
+            Hint("Each part is seen by no more people than the profile itself.")
+        }
+    }
+}
+
+/** Empty for a setting Steam did not send, so that its row is left out. */
+private fun ECommunityPrivacy.label(): String = when (this) {
+    ECommunityPrivacy.Private -> "Private"
+    ECommunityPrivacy.FriendsOnly -> "Friends only"
+    ECommunityPrivacy.Public -> "Public"
+    else -> ""
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -462,6 +495,14 @@ private fun Preview() {
                 ),
                 isLoadingInvites = false,
                 playingElsewhere = "Portal 2",
+                privacy = PrivacySettings(
+                    profile = ECommunityPrivacy.Public,
+                    ownedGames = ECommunityPrivacy.FriendsOnly,
+                    playtime = ECommunityPrivacy.Private,
+                    friendsList = ECommunityPrivacy.Public,
+                    inventory = ECommunityPrivacy.FriendsOnly,
+                    gifts = ECommunityPrivacy.Private,
+                ),
             ),
             snackbarHostState = remember { SnackbarHostState() },
             onNavDrawerAction = {},

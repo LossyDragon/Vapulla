@@ -8,9 +8,12 @@ import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.vapulla.db.dao.EmoticonDao
 import `in`.dragonbra.vapulla.db.entity.Emoticon
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.service.api.ChatGroupMember
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
+import `in`.dragonbra.vapulla.service.api.GroupReactionChange
+import `in`.dragonbra.vapulla.service.api.MessageReaction
 import `in`.dragonbra.vapulla.service.requestMessage
 import `in`.dragonbra.vapulla.ui.composables.BBCode
 import `in`.dragonbra.vapulla.ui.screens.chat.sendChatImage
@@ -48,12 +51,15 @@ data class GroupChatUiState(
     val hasOlder: Boolean = false,
     val isUploading: Boolean = false,
     val error: String? = null,
+    /** The group's members, highest rank first; empty until [GroupChatViewModel.loadMembers]. */
+    val members: ImmutableList<ChatGroupMember> = persistentListOf(),
+    val isLoadingMembers: Boolean = false,
 )
 
 /**
  * One channel of a group chat. Unlike friend chats nothing is stored: the latest page of
- * history is fetched on opening, older pages as the list is scrolled up, and messages Steam
- * pushes while the channel is open are added as they arrive.
+ * history is fetched on opening, older pages as the list is scrolled up, and messages and
+ * reactions Steam pushes while the channel is open are added as they arrive.
  */
 class GroupChatViewModel(
     private val groupId: Long,
@@ -113,6 +119,15 @@ class GroupChatViewModel(
                     if (message.groupId == groupId && message.chatId == chatId) {
                         add(listOf(message))
                         api.ack(groupId, chatId)
+                    }
+                }
+            }
+
+            // Reactions given by anyone, this account on another device included.
+            viewModelScope.launch {
+                api.reactionChanges.collect { change ->
+                    if (change.groupId == groupId && change.chatId == chatId) {
+                        applyChange(change)
                     }
                 }
             }
@@ -216,6 +231,116 @@ class GroupChatViewModel(
             _uiState.update { it.copy(isUploading = false) }
             failure?.let { _notices.emit(it) }
         }
+    }
+
+    /**
+     * Fetches the group's members, for the member list. Asked for each time the list is
+     * opened, as people come and go; the ones from last time are shown meanwhile.
+     */
+    fun loadMembers() {
+        val api = chatRooms
+        if (api == null || _uiState.value.isLoadingMembers) return
+
+        _uiState.update { it.copy(isLoadingMembers = true) }
+
+        viewModelScope.launch {
+            val members = runSuspendCatching { api.members(groupId) }
+                .onFailure { Timber.w(it, "Loading the group's members failed") }
+                .getOrNull()
+
+            _uiState.update {
+                it.copy(
+                    members = members?.toImmutableList() ?: it.members,
+                    isLoadingMembers = false,
+                )
+            }
+        }
+    }
+
+    /**
+     * Gives [reaction] to [message], or takes it back; it shows once Steam has agreed. Steam
+     * does not push our own reaction back to this session, so it is counted here, the same
+     * way as one that is pushed.
+     */
+    fun react(message: GroupChatMessage, reaction: String, isSticker: Boolean, add: Boolean) {
+        viewModelScope.launch {
+            val done = runSuspendCatching { chatRooms?.react(message, reaction, isSticker, add) }
+                .getOrNull() == true
+
+            if (done) {
+                applyChange(
+                    GroupReactionChange(
+                        groupId = groupId,
+                        chatId = chatId,
+                        timestamp = message.timestamp,
+                        ordinal = message.ordinal,
+                        reaction = reaction,
+                        isSticker = isSticker,
+                        isAdd = add,
+                        fromLocal = true,
+                    ),
+                )
+            } else {
+                _notices.emit(if (add) "Reaction not added" else "Reaction not removed")
+            }
+        }
+    }
+
+    /**
+     * Counts a reaction given or taken back, whether Steam pushed it or it was made here.
+     * One of our own that is already counted is left alone, so that it is not counted twice
+     * when it comes in both ways.
+     */
+    private fun applyChange(change: GroupReactionChange) {
+        updateReactions("${change.timestamp}:${change.ordinal}") { reactions ->
+            val current = reactions.find {
+                it.reaction == change.reaction && it.isSticker == change.isSticker
+            }
+            val mine = current?.mine ?: false
+
+            if (change.fromLocal && mine == change.isAdd) {
+                reactions
+            } else {
+                reactions.with(
+                    MessageReaction(
+                        reaction = change.reaction,
+                        isSticker = change.isSticker,
+                        count = (current?.count ?: 0) + if (change.isAdd) 1 else -1,
+                        mine = if (change.fromLocal) change.isAdd else mine,
+                    ),
+                )
+            }
+        }
+    }
+
+    /** Changes the reactions of the loaded message with [key], if it is loaded. */
+    private fun updateReactions(
+        key: String,
+        change: (List<MessageReaction>) -> List<MessageReaction>,
+    ) {
+        _uiState.update { state ->
+            val messages = state.messages.map { message ->
+                if (message.key == key) {
+                    message.copy(reactions = change(message.reactions).toImmutableList())
+                } else {
+                    message
+                }
+            }
+            state.copy(messages = messages.toImmutableList())
+        }
+    }
+
+    /**
+     * The reactions with [changed] in the place of the one it stands for, or last when it is
+     * new. One that nobody gives any more goes.
+     */
+    private fun List<MessageReaction>.with(changed: MessageReaction): List<MessageReaction> {
+        fun MessageReaction.isSame() =
+            reaction == changed.reaction && isSticker == changed.isSticker
+
+        return (if (any { it.isSame() }) this else this + changed)
+            .map { if (it.isSame()) changed else it }
+            .filter { it.count > 0 }
     }
 
     /** Merges [incoming] into the list, dropping ones already there and keeping it sorted. */

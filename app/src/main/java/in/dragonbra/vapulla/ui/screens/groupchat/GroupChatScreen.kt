@@ -20,13 +20,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,20 +54,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.db.entity.Emoticon
+import `in`.dragonbra.vapulla.service.api.ChatGroupMember
 import `in`.dragonbra.vapulla.service.api.ChatRoomInfo
 import `in`.dragonbra.vapulla.service.api.GroupChatMessage
+import `in`.dragonbra.vapulla.service.api.MessageReaction
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
+import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
+import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.ShimmerBox
+import `in`.dragonbra.vapulla.ui.composables.rememberExpandedSheetState
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatEvents
 import `in`.dragonbra.vapulla.ui.screens.chat.components.ChatInputBox
 import `in`.dragonbra.vapulla.ui.screens.chat.components.DayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FOLLOW_THRESHOLD
 import `in`.dragonbra.vapulla.ui.screens.chat.components.FloatingDayHeader
 import `in`.dragonbra.vapulla.ui.screens.chat.components.MessageBubble
+import `in`.dragonbra.vapulla.ui.screens.chat.components.ReactionPickerSheet
+import `in`.dragonbra.vapulla.ui.screens.chat.components.reactionOf
 import `in`.dragonbra.vapulla.ui.screens.chat.components.rememberImagePicker
 import `in`.dragonbra.vapulla.ui.screens.chat.components.startsNewDay
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
@@ -104,6 +114,8 @@ fun GroupChatScreen(
         onSwitchChannel = onSwitchChannel,
         emoticons = emoticons,
         onStickerClick = viewModel::sendSticker,
+        onReact = viewModel::react,
+        onLoadMembers = viewModel::loadMembers,
     )
 }
 
@@ -120,9 +132,41 @@ private fun GroupChatContent(
     onSwitchChannel: (ChatRoomInfo) -> Unit = {},
     emoticons: ImmutableList<Emoticon> = persistentListOf(),
     onStickerClick: (Emoticon) -> Unit = {},
+    onReact: (GroupChatMessage, reaction: String, isSticker: Boolean, add: Boolean) -> Unit =
+        { _, _, _, _ -> },
+    onLoadMembers: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     var showEmojiPanel by rememberSaveable { mutableStateOf(false) }
+    var showMembers by rememberSaveable { mutableStateOf(false) }
+
+    // The message a reaction is being picked for, by its key; null while none is.
+    var reactingTo by rememberSaveable { mutableStateOf<String?>(null) }
+
+    reactingTo?.let { key ->
+        ReactionPickerSheet(
+            emoticons = emoticons,
+            onPick = { emoticon ->
+                uiState.messages.find { it.key == key }?.let { message ->
+                    onReact(message, reactionOf(emoticon), emoticon.isSticker, true)
+                }
+                reactingTo = null
+            },
+            onDismiss = { reactingTo = null },
+        )
+    }
+
+    if (showMembers) {
+        MembersSheet(
+            members = uiState.members,
+            isLoading = uiState.isLoadingMembers,
+            onMention = { member ->
+                textFieldState.edit { append(member.mention()) }
+                showMembers = false
+            },
+            onDismiss = { showMembers = false },
+        )
+    }
 
     // Follow the conversation down when a new message lands, unless the reader has scrolled
     // up; our own message always scrolls to itself.
@@ -155,6 +199,16 @@ private fun GroupChatContent(
                     )
                 },
                 navigationIcon = { BackButton(onClick = onBack) },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            onLoadMembers()
+                            showMembers = true
+                        },
+                    ) {
+                        Icon(Icons.Outlined.Group, contentDescription = "Members")
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -226,7 +280,19 @@ private fun GroupChatContent(
                             if (message.isServerMessage) {
                                 ServerMessageRow(message)
                             } else {
-                                GroupMessageRow(message)
+                                GroupMessageRow(
+                                    message = message,
+                                    onReactionClick = { reaction ->
+                                        // Tapping one of ours takes it back.
+                                        onReact(
+                                            message,
+                                            reaction.reaction,
+                                            reaction.isSticker,
+                                            !reaction.mine,
+                                        )
+                                    },
+                                    onPickReaction = { reactingTo = message.key },
+                                )
                             }
                         }
                     }
@@ -319,9 +385,110 @@ private fun ChannelTitle(uiState: GroupChatUiState, onSwitchChannel: (ChatRoomIn
 /** A channel's name for display. A group's first channel has none; Steam calls it Home. */
 internal fun String.channelName(): String = ifEmpty { "Home" }
 
-/** A member's message: avatar and name for others, a plain right-aligned bubble for ours. */
+/**
+ * What to put in a message to call on this member: the mention tag Steam's own chat writes,
+ * which names them by account ID and shows as their name. Square brackets in a name would
+ * end the tag early, so they are left out.
+ */
+private fun ChatGroupMember.mention(): String {
+    val shown = name.filterNot { it == '[' || it == ']' }
+    return "[mention=$accountId]@$shown[/mention] "
+}
+
+/**
+ * The group's members, highest rank first. Tapping one puts a mention of them in the
+ * message being written.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GroupMessageRow(message: GroupChatMessage) {
+private fun MembersSheet(
+    members: ImmutableList<ChatGroupMember>,
+    isLoading: Boolean,
+    onMention: (ChatGroupMember) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberExpandedSheetState()) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            Text(
+                text = if (members.isEmpty()) "Members" else "Members · ${members.size}",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+            Text(
+                text = "Tap a member to mention them in your message.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 12.dp),
+            )
+
+            when {
+                members.isNotEmpty() -> LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                ) {
+                    itemsIndexed(items = members, key = { _, it -> it.steamId }) { index, member ->
+                        MemberRow(
+                            member = member,
+                            index = index,
+                            count = members.size,
+                            onClick = { onMention(member) },
+                        )
+                    }
+                }
+
+                isLoading -> LoadingBox(modifier = Modifier.fillMaxWidth().padding(24.dp))
+
+                else -> EmptyMessage(
+                    message = "Steam did not list this group's members. It leaves the list " +
+                        "out for the largest groups.",
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemberRow(member: ChatGroupMember, index: Int, count: Int, onClick: () -> Unit) {
+    GroupedListItem(index = index, count = count, onClick = onClick) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RemoteImage(
+                imageModel = { member.avatarUrl },
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                imageOptions = ImageOptions(contentScale = ContentScale.Crop),
+                loading = { ShimmerBox(modifier = Modifier.fillMaxSize()) },
+                failure = { Icon(Icons.Default.Person, contentDescription = null) },
+            )
+            Text(
+                text = member.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (member.rank.isNotEmpty()) {
+                InfoPill(text = member.rank)
+            }
+        }
+    }
+}
+
+/**
+ * A member's message: avatar and name for others, a plain right-aligned bubble for ours. One
+ * that calls on us is set apart by its colour.
+ */
+@Composable
+private fun GroupMessageRow(
+    message: GroupChatMessage,
+    onReactionClick: (MessageReaction) -> Unit,
+    onPickReaction: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.fromLocal) {
@@ -348,6 +515,10 @@ private fun GroupMessageRow(message: GroupChatMessage) {
             timestamp = message.timestamp,
             isFromLocal = message.fromLocal,
             senderName = message.senderName.takeUnless { message.fromLocal },
+            highlighted = message.mentionsMe,
+            reactions = message.reactions,
+            onReactionClick = onReactionClick,
+            onLongPress = onPickReaction,
         )
     }
 }
@@ -367,8 +538,20 @@ private fun ServerMessageRow(message: GroupChatMessage) {
 @Preview
 @Composable
 private fun Preview() {
-    fun message(ordinal: Int, text: String, local: Boolean = false, server: Boolean = false) =
+    fun message(
+        ordinal: Int,
+        text: String,
+        local: Boolean = false,
+        server: Boolean = false,
+        mentionsMe: Boolean = false,
+    ) =
         GroupChatMessage(
+            mentionsMe = mentionsMe,
+            reactions = if (local) {
+                persistentListOf(MessageReaction(":steamhappy:", false, count = 2, mine = false))
+            } else {
+                persistentListOf()
+            },
             groupId = 1,
             chatId = 2,
             senderId = 3,
@@ -390,6 +573,7 @@ private fun Preview() {
                 messages = persistentListOf(
                     message(0, "Sounds good to me", local = true),
                     message(1, "Anyone up for [b]MvM[/b] tonight?"),
+                    message(3, "[mention=1]@You[/mention] are you in?", mentionsMe = true),
                     message(2, "Gamer joined", server = true),
                 ),
             ),

@@ -10,6 +10,7 @@ import `in`.dragonbra.vapulla.db.converters.DateTypeConverter
 import `in`.dragonbra.vapulla.db.converters.FriendTypeConverters
 import `in`.dragonbra.vapulla.db.converters.LicenseTypeConverters
 import `in`.dragonbra.vapulla.db.converters.ListTypeConverter
+import `in`.dragonbra.vapulla.db.converters.ReactionTypeConverter
 import `in`.dragonbra.vapulla.db.dao.ChatMessageDao
 import `in`.dragonbra.vapulla.db.dao.DownloadDao
 import `in`.dragonbra.vapulla.db.dao.EmoticonDao
@@ -36,7 +37,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamLicense
         SteamLicense::class,
         Download::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,
 )
 @TypeConverters(
@@ -45,6 +46,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamLicense
     AppTypeConverters::class,
     ListTypeConverter::class,
     DateTypeConverter::class,
+    ReactionTypeConverter::class,
 )
 abstract class VapullaDatabase : RoomDatabase() {
     companion object {
@@ -208,6 +210,22 @@ abstract class VapullaDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Chat messages gain Steam's ordinal, which with the time names a message, and the
+         * reactions given to them. Messages already stored get ordinal 0 until the chat's
+         * history is next fetched.
+         */
+        private val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `chat_message` ADD COLUMN `ordinal` INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "ALTER TABLE `chat_message` ADD COLUMN `reactions` TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+
         /** Every migration there is, oldest first, for the database builder. */
         val ALL_MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_10_11,
@@ -216,6 +234,7 @@ abstract class VapullaDatabase : RoomDatabase() {
             MIGRATION_13_14,
             MIGRATION_14_15,
             MIGRATION_15_16,
+            MIGRATION_16_17,
         )
 
         /**

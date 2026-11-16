@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,10 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.service.api.LibraryCollection
 import `in`.dragonbra.vapulla.ui.composables.rememberExpandedSheetState
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.helpers.capitalize
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 
 @SuppressLint("DefaultLocale")
@@ -34,8 +39,11 @@ import kotlinx.collections.immutable.persistentSetOf
 internal fun GameBottomSheet(
     sheetState: SheetState,
     appTypes: ImmutableSet<SteamApp.AppType>,
+    collections: ImmutableList<LibraryCollection>,
+    collectionId: String?,
     onDismissRequest: () -> Unit,
     onAppTypeClicked: (SteamApp.AppType) -> Unit,
+    onCollectionClicked: (String) -> Unit,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -44,6 +52,7 @@ internal fun GameBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp)
                 .navigationBarsPadding(),
@@ -81,6 +90,55 @@ internal fun GameBottomSheet(
                         )
                     }
             }
+
+            if (collections.isNotEmpty()) {
+                Collections(
+                    collections = collections,
+                    collectionId = collectionId,
+                    onCollectionClicked = onCollectionClicked,
+                )
+            }
+        }
+    }
+}
+
+/** The account's collections from the Steam client; one at a time can be picked. */
+@Composable
+private fun Collections(
+    collections: ImmutableList<LibraryCollection>,
+    collectionId: String?,
+    onCollectionClicked: (String) -> Unit,
+) {
+    Text(
+        text = "Collection",
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    Text(
+        text = "Your collections from the Steam client. Pick one to see only what is in it, " +
+            "of every type unless types are picked above.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        collections.forEach { collection ->
+            val selected = collection.id == collectionId
+            FilterChip(
+                selected = selected,
+                onClick = { onCollectionClicked(collection.id) },
+                label = { Text("${collection.name} · ${collection.appIds.size}") },
+                leadingIcon = if (selected) {
+                    { Icon(Icons.Default.Check, contentDescription = null) }
+                } else {
+                    null
+                },
+            )
         }
     }
 }
@@ -94,8 +152,14 @@ private fun Preview() {
         GameBottomSheet(
             sheetState = rememberExpandedSheetState(),
             appTypes = persistentSetOf(SteamApp.AppType.game, SteamApp.AppType.dlc),
+            collections = persistentListOf(
+                LibraryCollection("favorite", "Favorites", persistentSetOf(440, 620)),
+                LibraryCollection("uc-1", "Co-op", persistentSetOf(620)),
+            ),
+            collectionId = "uc-1",
             onDismissRequest = {},
             onAppTypeClicked = {},
+            onCollectionClicked = {},
         )
     }
 }

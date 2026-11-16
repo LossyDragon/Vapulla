@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.service.api
 
 import androidx.compose.runtime.Immutable
+import `in`.dragonbra.javasteam.enums.ECommunityPrivacy
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.types.KeyValue
 import kotlinx.collections.immutable.ImmutableList
@@ -105,10 +106,61 @@ data class GroupChatMessage(
     val fromLocal: Boolean,
     /** Someone joined, left and the like, rather than something a member wrote. */
     val isServerMessage: Boolean,
+    val reactions: ImmutableList<MessageReaction> = persistentListOf(),
+    /** The message calls on the signed-in account: by name, or with `@all` or `@here`. */
+    val mentionsMe: Boolean = false,
 ) {
     /** Unique within a channel. */
     val key: String get() = "$timestamp:$ordinal"
 }
+
+/**
+ * One reaction on a chat message, as a chat screen shows it.
+ *
+ * @property reaction what Steam calls it: an emoticon's name between colons, e.g.
+ *   ":steamhappy:", or a sticker's name as it is.
+ * @property count how many people gave it.
+ * @property mine the signed-in account is one of them.
+ */
+@Immutable
+data class MessageReaction(
+    val reaction: String,
+    val isSticker: Boolean,
+    val count: Int,
+    val mine: Boolean,
+)
+
+/**
+ * A reaction given to a message of a group chat channel, or taken back, as Steam pushes it.
+ *
+ * @property timestamp of the message, in epoch milliseconds; with [ordinal] it names it.
+ * @property fromLocal it was the signed-in account's doing, here or on another device.
+ */
+data class GroupReactionChange(
+    val groupId: Long,
+    val chatId: Long,
+    val timestamp: Long,
+    val ordinal: Int,
+    val reaction: String,
+    val isSticker: Boolean,
+    val isAdd: Boolean,
+    val fromLocal: Boolean,
+)
+
+/**
+ * A member of a group chat.
+ *
+ * @property accountId the low half of [steamId], which is what a mention names someone by.
+ * @property rank "Owner", "Officer" or "Moderator"; empty for an ordinary member.
+ */
+@Immutable
+data class ChatGroupMember(
+    val steamId: Long,
+    val accountId: Int,
+    val name: String,
+    val avatarUrl: String,
+    val rank: String,
+)
 
 /** One page of channel history, newest first. */
 @Immutable
@@ -460,4 +512,22 @@ data class EquippedProfileItems(
     val miniBackground: ProfileItem? = null,
     val avatarFrame: ProfileItem? = null,
     val animatedAvatar: ProfileItem? = null,
+)
+
+/**
+ * Who may see each part of the account's profile, from `Player.GetPrivacySettings`. A part
+ * Steam sent no setting for, or one this app does not know, is `Invalid`.
+ *
+ * @property profile the profile as a whole; the others only matter where this lets someone in.
+ * @property ownedGames the games owned, with achievements and what is being played.
+ * @property playtime the total time played, which can be hidden while the games are shown.
+ */
+@Immutable
+data class PrivacySettings(
+    val profile: ECommunityPrivacy,
+    val ownedGames: ECommunityPrivacy,
+    val playtime: ECommunityPrivacy,
+    val friendsList: ECommunityPrivacy,
+    val inventory: ECommunityPrivacy,
+    val gifts: ECommunityPrivacy,
 )

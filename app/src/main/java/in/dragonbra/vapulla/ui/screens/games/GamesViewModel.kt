@@ -13,9 +13,12 @@ import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.db.entity.SteamApp.AppType
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.service.api.LibraryCollection
+import `in`.dragonbra.vapulla.service.api.SteamCollections
 import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import java.util.EnumSet
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentMapOf
@@ -39,8 +42,8 @@ import kotlinx.coroutines.flow.update
 data class DownloadBadge(val name: String, val state: DownloadState, val percent: Int)
 
 /**
- * The library: the owned apps, paged out of the database and narrowed by the search text and
- * the app types picked, with what each one's download is up to.
+ * The library: the owned apps, paged out of the database and narrowed by the search text, the
+ * app types picked and a collection, with what each one's download is up to.
  */
 class GamesViewModel(
     private val steamAppDao: SteamAppDao,
@@ -96,11 +99,34 @@ class GamesViewModel(
     private val _appTypes = MutableStateFlow(persistentSetOf<AppType>())
     val appTypes: StateFlow<ImmutableSet<AppType>> = _appTypes.asStateFlow()
 
+    /** The account's collections from the Steam client, to narrow the library to one. */
+    val collections: StateFlow<ImmutableList<LibraryCollection>> = SteamCollections.collections
+
+    private val pickedCollectionId = MutableStateFlow<String?>(null)
+
+    /**
+     * The collection the library is narrowed to; null for none. One that is picked and then
+     * goes away, deleted on Steam or with the session, counts as none.
+     */
+    val collection: StateFlow<LibraryCollection?> =
+        combine(collections, pickedCollectionId) { all, id -> all.find { it.id == id } }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null,
+            )
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val steamApps: Flow<PagingData<SteamAppListItem>> =
-        combine(appTypes, searchQuery) { selectedTypes, query ->
-            val typesToUse = selectedTypes.ifEmpty { setOf(AppType.game) }
+        combine(appTypes, searchQuery, collection) { selectedTypes, query, collection ->
+            // A collection can hold any kind of app, so with no type picked it shows them all.
+            val typesToUse = when {
+                selectedTypes.isNotEmpty() -> selectedTypes
+                collection != null -> AppType.entries
+                else -> setOf(AppType.game)
+            }
             val flags = AppType.toFlags(EnumSet.copyOf(typesToUse))
+            val within = collection?.appIds?.joinToString(",", prefix = ",", postfix = ",").orEmpty()
 
             Pager(
                 config = PagingConfig(pageSize = 20),
@@ -108,6 +134,7 @@ class GamesViewModel(
                     steamAppDao.getAllOwnedAppsPaged(
                         appType = flags,
                         query = query,
+                        within = within,
                     )
                 },
             ).flow
@@ -115,6 +142,11 @@ class GamesViewModel(
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    /** Narrows the library to the collection with [id], or back to all of it when it is picked. */
+    fun toggleCollection(id: String) {
+        pickedCollectionId.update { picked -> id.takeIf { it != picked } }
     }
 
     /** Adds [appType] to the types shown, or takes it out when it is one of them. */

@@ -44,6 +44,31 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
     }
 
     /**
+     * [appIds] as rows of a list, in that order, priced for [country]: what a wishlist is
+     * shown as. Apps the store no longer shows are left out; empty when Steam does not answer.
+     */
+    suspend fun listing(appIds: List<Int>, country: String): List<StoreSearchResult> {
+        val wanted = StoreBrowseItemDataRequest.newBuilder()
+            .setIncludeAssets(true)
+            .setIncludeRelease(true)
+
+        val found = appIds.chunked(ITEMS_PER_REQUEST)
+            .flatMap { items(it, country, wanted) }
+            .associateBy { it.appid }
+
+        return appIds.mapNotNull { appId ->
+            found[appId]?.let { item ->
+                StoreSearchResult(
+                    appId = appId,
+                    name = item.name,
+                    imageUrl = item.assetUrl(item.assets.smallCapsule),
+                    price = "",
+                ).pricedByStore(item)
+            }
+        }
+    }
+
+    /**
      * What the store holds on [appIds] as [country] sees it, with the parts asked for in
      * [wanted]. Apps the store does not know or does not show are left out; empty when
      * Steam does not answer.
@@ -115,20 +140,23 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
     private fun discountPercent(original: Long, final: Long): Int =
         if (original > final && final > 0) ((original - final) * 100 / original).toInt() else 0
 
+    /**
+     * The address of one of the item's pictures; empty when it has no such picture. File
+     * names are relative to a per-app folder that the item itself spells out.
+     */
+    private fun StoreItem.assetUrl(file: String): String = file.takeIf { it.isNotEmpty() }
+        ?.let { ASSET_URL + assets.assetUrlFormat.replace(FILE_PLACEHOLDER, it) }
+        .orEmpty()
+
     private fun StoreItem.toPage(tags: List<String>): StorePage {
         val reviews = this.reviews.summaryFiltered
         val (originalPrice, discountPercent) = discount()
-
-        // File names are relative to a per-app folder that the item itself spells out.
-        fun asset(file: String) = file.takeIf { it.isNotEmpty() }
-            ?.let { ASSET_URL + assets.assetUrlFormat.replace(FILE_PLACEHOLDER, it) }
-            .orEmpty()
 
         return StorePage(
             appId = appid,
             name = name,
             description = basicInfo.shortDescription,
-            headerUrl = asset(assets.header),
+            headerUrl = assetUrl(assets.header),
             developers = basicInfo.developersList.joinToString { it.name },
             publishers = basicInfo.publishersList.joinToString { it.name },
             isFree = isFree,
@@ -229,6 +257,9 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
 
     private companion object {
         const val TAG_COUNT = 8
+
+        /** How many apps one `GetItems` call is asked about. */
+        const val ITEMS_PER_REQUEST = 50
 
         /** What `success` holds for an item the store found (an `EResult.OK`). */
         const val SUCCESS = 1

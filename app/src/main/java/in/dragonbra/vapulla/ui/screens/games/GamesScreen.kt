@@ -45,6 +45,7 @@ import androidx.paging.compose.itemKey
 import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.db.entity.SteamAppListItem
+import `in`.dragonbra.vapulla.service.api.LibraryCollection
 import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
@@ -55,8 +56,10 @@ import `in`.dragonbra.vapulla.ui.screens.games.components.GameBottomSheet
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
 import `in`.dragonbra.vapulla.ui.screens.games.components.GamesFloatingToolbar
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.coroutines.flow.flowOf
@@ -73,10 +76,15 @@ fun GamesScreen(
     val appTypes by viewModel.appTypes.collectAsStateWithLifecycle()
     val localAccountId by viewModel.localAccountId.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val collections by viewModel.collections.collectAsStateWithLifecycle()
+    val collection by viewModel.collection.collectAsStateWithLifecycle()
 
     GamesScreenContent(
         steamApps = steamApps,
         appTypes = appTypes,
+        collections = collections,
+        collection = collection,
+        onCollectionClicked = viewModel::toggleCollection,
         localAccountId = localAccountId,
         searchQuery = searchQuery,
         onNavDrawerAction = onNavDrawerAction,
@@ -93,11 +101,14 @@ fun GamesScreen(
 private fun GamesScreenContent(
     steamApps: LazyPagingItems<SteamAppListItem>,
     appTypes: ImmutableSet<SteamApp.AppType>,
+    collections: ImmutableList<LibraryCollection>,
+    collection: LibraryCollection?,
     localAccountId: Int?,
     searchQuery: String,
     downloads: ImmutableMap<Int, DownloadBadge>,
     onNavDrawerAction: () -> Unit,
     onAppTypeClicked: (SteamApp.AppType) -> Unit,
+    onCollectionClicked: (String) -> Unit,
     onSearchQuery: (String) -> Unit,
     onGameClick: (Int) -> Unit,
     onOpenDownloads: () -> Unit,
@@ -182,6 +193,7 @@ private fun GamesScreenContent(
                     stickyHeader {
                         ListHeader(
                             count = steamApps.itemCount,
+                            collection = collection?.name,
                             isRefreshing = steamApps.loadState.refresh is LoadState.Loading,
                         )
                     }
@@ -223,8 +235,11 @@ private fun GamesScreenContent(
                     GameBottomSheet(
                         sheetState = sheetState,
                         appTypes = appTypes,
+                        collections = collections,
+                        collectionId = collection?.id,
                         onDismissRequest = { showSheet = false },
                         onAppTypeClicked = onAppTypeClicked,
+                        onCollectionClicked = onCollectionClicked,
                     )
                 }
             }
@@ -234,7 +249,7 @@ private fun GamesScreenContent(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ListHeader(count: Int, isRefreshing: Boolean) {
+private fun ListHeader(count: Int, collection: String?, isRefreshing: Boolean) {
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
@@ -244,9 +259,12 @@ private fun ListHeader(count: Int, isRefreshing: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "$count titles",
+                text = if (collection == null) "$count titles" else "$count titles in $collection",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
             if (isRefreshing) {
                 LoadingIndicator(modifier = Modifier.size(28.dp))
@@ -351,10 +369,13 @@ private fun GamesScreenContentPreview() {
         GamesScreenContent(
             steamApps = sampleApps,
             appTypes = persistentSetOf(),
+            collections = persistentListOf(),
+            collection = null,
             localAccountId = null,
             searchQuery = "",
             onNavDrawerAction = {},
             onAppTypeClicked = {},
+            onCollectionClicked = {},
             onSearchQuery = {},
             onGameClick = {},
             onOpenDownloads = {},

@@ -67,6 +67,10 @@ interface SteamAppDao {
      * name contains [query], alphabetical. Spacewar (480), Steamworks' test app that every
      * account has, is left out.
      *
+     * [within] narrows it to some apps, such as those of a collection: their IDs with a comma
+     * before and after each, e.g. ",440,620,"; empty for all. Written as text because a list
+     * of IDs would be one SQL variable each, and SQLite takes only so many.
+     *
      * Only the columns rendered by the games list are selected so a page load (which re-runs
      * on every invalidation of `steam_app`) never has to decode the JSON columns of [SteamApp].
      */
@@ -78,9 +82,14 @@ interface SteamAppDao {
             "AND packageId != ${SteamApp.NO_PACKAGE} " +
             "AND (type & :appType) != 0 " +
             "AND (:query = '' OR name LIKE '%' || :query || '%') " +
+            "AND (:within = '' OR instr(:within, ',' || id || ',') > 0) " +
             "ORDER BY LOWER(name)",
     )
-    fun getAllOwnedAppsPaged(appType: Int, query: String = ""): PagingSource<Int, SteamAppListItem>
+    fun getAllOwnedAppsPaged(
+        appType: Int,
+        query: String = "",
+        within: String = "",
+    ): PagingSource<Int, SteamAppListItem>
 
     /**
      * Owned games that register servers with Steam, alphabetical. The Steam client keys

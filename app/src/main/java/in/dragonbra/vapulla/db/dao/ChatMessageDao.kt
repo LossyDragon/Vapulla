@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.db.entity.StoredReaction
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -68,12 +69,29 @@ interface ChatMessageDao {
         confirmed: Boolean,
     ): List<ChatMessage>
 
-    /** Marks a locally sent message as accepted by Steam, with Steam's timestamp and text. */
+    /**
+     * Marks a locally sent message as accepted by Steam, with Steam's text for it and the
+     * timestamp and ordinal Steam knows it by.
+     */
     @Query(
         "UPDATE chat_message SET message = :message, timestamp = :timestamp, " +
-            "timestampConfirmed = 1 WHERE id = :id",
+            "ordinal = :ordinal, timestampConfirmed = 1 WHERE id = :id",
     )
-    suspend fun confirm(id: Long, message: String, timestamp: Long)
+    suspend fun confirm(id: Long, message: String, timestamp: Long, ordinal: Int)
+
+    @Query("SELECT * FROM chat_message WHERE id = :id")
+    suspend fun get(id: Long): ChatMessage?
+
+    /** The message Steam names by [timestamp], in epoch milliseconds, and [ordinal]. */
+    @Query(
+        "SELECT * FROM chat_message WHERE friendId = :friendId AND timestamp = :timestamp " +
+            "AND ordinal = :ordinal AND timestampConfirmed = 1 LIMIT 1",
+    )
+    suspend fun findByOrdinal(friendId: Long, timestamp: Long, ordinal: Int): ChatMessage?
+
+    /** Replaces a message's reactions, and its ordinal for a row stored before it was kept. */
+    @Query("UPDATE chat_message SET ordinal = :ordinal, reactions = :reactions WHERE id = :id")
+    suspend fun setReactions(id: Long, ordinal: Int, reactions: List<StoredReaction>)
 
     @Query("DELETE FROM chat_message WHERE id = :id")
     suspend fun delete(id: Long)

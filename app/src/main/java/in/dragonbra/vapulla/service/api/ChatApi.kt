@@ -7,8 +7,11 @@ import `in`.dragonbra.javasteam.enums.EChatEntryType
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_AckMessage_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_GetRecentMessages_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_IncomingMessage_Notification
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_MessageReaction_Notification
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_SendMessage_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendMessages_UpdateMessageReaction_Request
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.CFriendsMessages_GetActiveMessageSessions_Request
+import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesFriendmessagesSteamclient.EMessageReactionType
 import `in`.dragonbra.javasteam.rpc.service.FriendMessages
 import `in`.dragonbra.javasteam.rpc.service.FriendMessagesClient
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.callback.ServiceMethodNotification
@@ -16,6 +19,7 @@ import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager
 import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.db.entity.ChatMessage
+import `in`.dragonbra.vapulla.db.entity.StoredReaction
 import `in`.dragonbra.vapulla.service.SessionComponent
 import `in`.dragonbra.vapulla.service.SteamState
 import `in`.dragonbra.vapulla.util.NotificationHelper
@@ -42,8 +46,8 @@ import timber.log.Timber
 
 /**
  * One-to-one friend chat via the `FriendMessages` unified service: sending, history, read
- * state, and the messages Steam pushes. Everything is mirrored into the `chat_message` table,
- * which the chat screen and the friends list observe.
+ * state, reactions, and the messages Steam pushes. Everything is mirrored into the
+ * `chat_message` table, which the chat screen and the friends list observe.
  *
  * @param scope outlives a single sign-in; used for work started by a pushed message.
  */
@@ -84,6 +88,10 @@ class ChatApi(
             FriendMessagesClient,
             CFriendMessages_AckMessage_Notification.Builder,
             >(onReadElsewhere),
+        callbacks.subscribeServiceNotification<
+            FriendMessagesClient,
+            CFriendMessages_MessageReaction_Notification.Builder,
+            >(onReaction),
     )
 
     override fun start(session: CoroutineScope) {
@@ -141,7 +149,7 @@ class ChatApi(
             if (dao.find(sentMessage, timestamp, friendId, true, true) != null) {
                 dao.delete(localId)
             } else {
-                dao.confirm(localId, sentMessage, timestamp)
+                dao.confirm(localId, sentMessage, timestamp, body.ordinal)
             }
         }
 
@@ -231,10 +239,120 @@ class ChatApi(
                             timestamp > unreadAfter &&
                             activeChatFriendId != friendId,
                         timestampConfirmed = true,
+                        ordinal = message.ordinal,
+                        reactions = message.reactionsList.map {
+                            StoredReaction(
+                                reaction = it.reaction,
+                                isSticker = it.reactionType == STICKER,
+                                reactors = it.reactorsList,
+                            )
+                        },
                     )
                 },
+                withReactions = true,
             )
         }
+
+    /**
+     * Gives a reaction to a message of a friend chat, or takes it back.
+     *
+     * @param messageId the stored message's row ID.
+     * @param reaction an emoticon's name between colons, or a sticker's name.
+     * @return false when the message is not one Steam knows yet, or Steam refuses.
+     */
+    suspend fun react(messageId: Long, reaction: String, isSticker: Boolean, add: Boolean): Boolean =
+        withContext(Dispatchers.IO) {
+            val dao = db.chatMessageDao()
+            val message = dao.get(messageId)?.takeIf { it.timestampConfirmed }
+                ?: return@withContext false
+
+            val request = CFriendMessages_UpdateMessageReaction_Request.newBuilder()
+                .setSteamid(message.friendId)
+                .setServerTimestamp((message.timestamp / 1000).toInt())
+                .setOrdinal(message.ordinal)
+                .setReactionType(if (isSticker) STICKER else EMOTICON)
+                .setReaction(reaction)
+                .setIsAdd(add)
+                .build()
+
+            val body = friendMessages.updateMessageReaction(request)
+                .bodyOrNull("UpdateMessageReaction")
+                ?: return@withContext false
+
+            // The answer lists who has given this reaction now. Our own part in it is set
+            // from what was asked, in case the list is not what it is taken for.
+            val self = localSteamId()?.accountID?.toInt()
+            val reactors = body.reactorsList.filter { it != self } +
+                listOfNotNull(self.takeIf { add })
+
+            chatMutex.withLock {
+                val latest = dao.get(messageId) ?: return@withLock
+                dao.setReactions(
+                    id = messageId,
+                    ordinal = latest.ordinal,
+                    reactions = latest.reactions.with(reaction, isSticker, reactors),
+                )
+            }
+
+            true
+        }
+
+    /**
+     * Someone reacted to a message of a friend chat, or took a reaction back: the friend, or
+     * this account on another device.
+     */
+    private val onReaction:
+        (ServiceMethodNotification<CFriendMessages_MessageReaction_Notification.Builder>) -> Unit =
+        { notification ->
+            val body = notification.body
+            val isSticker = body.reactionType == STICKER
+            val reactor = SteamID(body.reactor).accountID.toInt()
+            Timber.d("onReaction() add=${body.isAdd}")
+
+            scope.launch {
+                chatMutex.withLock {
+                    val dao = db.chatMessageDao()
+                    val message = dao.findByOrdinal(
+                        friendId = body.steamidFriend,
+                        timestamp = body.serverTimestamp * 1000L,
+                        ordinal = body.ordinal,
+                    ) ?: return@withLock
+
+                    val current = message.reactions
+                        .find { it.reaction == body.reaction && it.isSticker == isSticker }
+                        ?.reactors
+                        .orEmpty()
+                    val reactors = if (body.isAdd) {
+                        (current + reactor).distinct()
+                    } else {
+                        current - reactor
+                    }
+
+                    dao.setReactions(
+                        id = message.id,
+                        ordinal = message.ordinal,
+                        reactions = message.reactions.with(body.reaction, isSticker, reactors),
+                    )
+                }
+            }
+        }
+
+    /**
+     * The reactions with those who gave [reaction] replaced by [reactors]. It keeps its
+     * place among the others, goes when nobody gives it any more, and is put last when new.
+     */
+    private fun List<StoredReaction>.with(
+        reaction: String,
+        isSticker: Boolean,
+        reactors: List<Int>,
+    ): List<StoredReaction> {
+        val changed = StoredReaction(reaction, isSticker, reactors)
+        val known = any { it.reaction == reaction && it.isSticker == isSticker }
+
+        return (if (known) this else this + changed)
+            .map { if (it.reaction == reaction && it.isSticker == isSticker) changed else it }
+            .filter { it.reactors.isNotEmpty() }
+    }
 
     /**
      * The chat with a friend was read on another device of the account: Steam echoes that
@@ -284,9 +402,14 @@ class ChatApi(
      * writers cannot deadlock each other. The single transaction means the paged chat list
      * is invalidated once per batch rather than once per message.
      *
+     * @param withReactions the messages carry their ordinal and reactions as Steam holds
+     *  them, as history does; those of a message already stored are then brought up to date.
      * @return the messages that were new.
      */
-    private suspend fun storeConfirmed(messages: List<ChatMessage>): List<ChatMessage> {
+    private suspend fun storeConfirmed(
+        messages: List<ChatMessage>,
+        withReactions: Boolean = false,
+    ): List<ChatMessage> {
         if (messages.isEmpty()) {
             return emptyList()
         }
@@ -305,6 +428,11 @@ class ChatApi(
                     )
 
                     if (known != null) {
+                        val changed = known.ordinal != incoming.ordinal ||
+                            known.reactions != incoming.reactions
+                        if (withReactions && changed) {
+                            dao.setReactions(known.id, incoming.ordinal, incoming.reactions)
+                        }
                         return@filter false
                     }
 
@@ -313,7 +441,12 @@ class ChatApi(
                         .minByOrNull { abs(incoming.timestamp - it.timestamp) }
 
                     if (unconfirmed != null) {
-                        dao.confirm(unconfirmed.id, unconfirmed.message, incoming.timestamp)
+                        dao.confirm(
+                            id = unconfirmed.id,
+                            message = unconfirmed.message,
+                            timestamp = incoming.timestamp,
+                            ordinal = incoming.ordinal,
+                        )
                         false
                     } else {
                         dao.insertMessage(incoming)
@@ -364,6 +497,7 @@ class ChatApi(
                                 fromLocal = fromLocal,
                                 unread = !fromLocal && !chatIsOpen,
                                 timestampConfirmed = true,
+                                ordinal = body.ordinal,
                             ),
                         ),
                     ).isNotEmpty()
@@ -449,5 +583,8 @@ class ChatApi(
          * message could reach the friend while its local copy stays unconfirmed.
          */
         val SEND_CONTEXT = Dispatchers.IO + NonCancellable
+
+        val EMOTICON = EMessageReactionType.k_EMessageReactionType_Emoticon
+        val STICKER = EMessageReactionType.k_EMessageReactionType_Sticker
     }
 }
