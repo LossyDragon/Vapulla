@@ -48,6 +48,7 @@ import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.CloudApi
 import `in`.dragonbra.vapulla.service.api.FamilyApi
 import `in`.dragonbra.vapulla.service.api.FavoritesApi
+import `in`.dragonbra.vapulla.service.api.FriendPreferencesApi
 import `in`.dragonbra.vapulla.service.api.FriendsApi
 import `in`.dragonbra.vapulla.service.api.InvitesApi
 import `in`.dragonbra.vapulla.service.api.LeaderboardsApi
@@ -60,6 +61,7 @@ import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
 import `in`.dragonbra.vapulla.service.api.SessionsApi
 import `in`.dragonbra.vapulla.service.api.SteamApis
 import `in`.dragonbra.vapulla.service.api.SteamFavorites
+import `in`.dragonbra.vapulla.service.api.SteamFriendPreferences
 import `in`.dragonbra.vapulla.service.api.StoreApi
 import `in`.dragonbra.vapulla.service.api.WebSessionApi
 import `in`.dragonbra.vapulla.service.api.WorkshopApi
@@ -347,6 +349,7 @@ class SteamConnection(
         SteamState.isAnonymous.value = false
         SteamAccount.signedOut()
         SteamFavorites.set(emptyList())
+        SteamFriendPreferences.set(emptyMap())
         SteamAccount.signedOut()
     }
 
@@ -509,6 +512,7 @@ class SteamConnection(
             ),
             friends = FriendsApi(db = db, steamFriends = steamFriends, player = player),
             favorites = FavoritesApi(unified.createService()),
+            friendPreferences = FriendPreferencesApi(player),
             chatRooms = ChatRoomsApi(
                 chatRoom = unified.createService(),
                 friends = steamFriends,
@@ -593,6 +597,7 @@ class SteamConnection(
             steamApis.chat,
             steamApis.chatRooms,
             steamApis.favorites,
+            steamApis.friendPreferences,
             licenses,
             remoteRequests,
         )

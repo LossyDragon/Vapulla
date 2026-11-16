@@ -196,7 +196,6 @@ Feature Ideas
 - Group chat: member list, reactions, mentions
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
 - Notification counts: comments, item announcements, offline messages (SteamNotifications)
-- Per-friend notification preferences (Player.GetPerFriendPreferences)
 - Reactions in friend chat (FriendMessages.UpdateMessageReaction)
 - Badges: per-game badge levels and community badge progress (Player service)
 

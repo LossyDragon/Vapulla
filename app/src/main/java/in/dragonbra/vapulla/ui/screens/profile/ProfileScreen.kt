@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.PersonRemove
@@ -33,6 +35,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,6 +67,7 @@ import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.service.api.EquippedProfileItems
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
+import `in`.dragonbra.vapulla.service.api.MobileNotifications
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
@@ -100,6 +105,7 @@ fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long
     val mutualFriends by viewModel.mutualFriends.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
     val equipped by viewModel.equipped.collectAsStateWithLifecycle()
+    val mobileNotifications by viewModel.mobileNotifications.collectAsStateWithLifecycle()
 
     ProfileScreenContent(
         friend = friend ?: SteamFriend(id = 0),
@@ -115,6 +121,8 @@ fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long
         onNickname = viewModel::setNickname,
         isFavorite = isFavorite,
         onFavorite = viewModel::toggleFavorite,
+        mobileNotifications = mobileNotifications,
+        onMobileNotifications = viewModel::setMobileNotifications,
         onChat = onChat,
     )
 }
@@ -135,6 +143,8 @@ private fun ProfileScreenContent(
     onNickname: (String) -> Unit,
     isFavorite: Boolean,
     onFavorite: () -> Unit,
+    mobileNotifications: MobileNotifications,
+    onMobileNotifications: (MobileNotifications) -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -165,6 +175,18 @@ private fun ProfileScreenContent(
         message = msgDialogState.message,
     )
 
+    var showNotificationsDialog by rememberSaveable { mutableStateOf(false) }
+    if (showNotificationsDialog) {
+        MobileNotificationsDialog(
+            selected = mobileNotifications,
+            onApply = {
+                showNotificationsDialog = false
+                onMobileNotifications(it)
+            },
+            onDismiss = { showNotificationsDialog = false },
+        )
+    }
+
     var showNicknameDialog by rememberSaveable { mutableStateOf(false) }
     if (showNicknameDialog) {
         NicknameDialog(
@@ -188,6 +210,15 @@ private fun ProfileScreenContent(
             showAliasesDialog = true
         },
         ProfileAction(Icons.Outlined.Edit, "Set nickname") { showNicknameDialog = true },
+        if (friend.isFriend) {
+            ProfileAction(
+                icon = Icons.Outlined.Notifications,
+                label = "Mobile notifications: ${mobileNotifications.label}",
+                onClick = { showNotificationsDialog = true },
+            )
+        } else {
+            null
+        },
         // Steam keeps favourites for friends; someone blocked or only asking is not one.
         if (friend.isFriend) {
             ProfileAction(
@@ -602,6 +633,69 @@ private fun NicknameDialog(
     )
 }
 
+/** How each choice is worded, on the profile and in the dialog. */
+private val MobileNotifications.label: String
+    get() = when (this) {
+        MobileNotifications.Default -> "Default"
+        MobileNotifications.Always -> "Always"
+        MobileNotifications.Never -> "Never"
+    }
+
+/**
+ * Picks whether this friend's chat messages are notified of on a phone. The setting is
+ * Steam's, shared with its own app, and this app's notifications follow it. Nothing is
+ * sent to Steam until Apply is pressed.
+ */
+@Composable
+private fun MobileNotificationsDialog(
+    selected: MobileNotifications,
+    onApply: (MobileNotifications) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var picked by rememberSaveable { mutableStateOf(selected) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(imageVector = Icons.Outlined.Notifications, contentDescription = null) },
+        title = { Text(text = "Mobile notifications") },
+        text = {
+            Column {
+                Text(
+                    text = "For chat messages from this friend. \"Default\" follows your " +
+                        "Steam notification settings.",
+                )
+                MobileNotifications.entries.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(MaterialTheme.shapes.small)
+                            .selectable(
+                                selected = option == picked,
+                                role = Role.RadioButton,
+                                onClick = { picked = option },
+                            )
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // The row is the click target; the button only shows the state.
+                        RadioButton(selected = option == picked, onClick = null)
+                        Text(text = option.label)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = picked != selected, onClick = { onApply(picked) }) {
+                Text(text = "Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(text = "Cancel") }
+        },
+    )
+}
+
 @Composable
 private fun AliasesDialog(aliases: ImmutableList<String>, onDismiss: () -> Unit) {
     AlertDialog(
@@ -659,6 +753,8 @@ private fun Preview() {
             onNickname = {},
             isFavorite = false,
             onFavorite = {},
+            mobileNotifications = MobileNotifications.Default,
+            onMobileNotifications = {},
         )
     }
 }
@@ -691,6 +787,8 @@ private fun Preview_Private() {
             onNickname = {},
             isFavorite = false,
             onFavorite = {},
+            mobileNotifications = MobileNotifications.Default,
+            onMobileNotifications = {},
         )
     }
 }

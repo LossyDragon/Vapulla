@@ -373,6 +373,11 @@ class ChatApi(
 
                         chatIsOpen -> ack(friendId)
 
+                        // The friend is set to "never notify on a phone" on Steam. The
+                        // message is still stored and counted as unread.
+                        SteamFriendPreferences.mobile(friendId) == MobileNotifications.Never ->
+                            Unit
+
                         else -> {
                             val friend = db.steamFriendDao().find(friendId)
                             NotificationHelper.sendFriendMessageNotification(

@@ -9,7 +9,9 @@ import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.service.api.EquippedProfileItems
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
+import `in`.dragonbra.vapulla.service.api.MobileNotifications
 import `in`.dragonbra.vapulla.service.api.SteamFavorites
+import `in`.dragonbra.vapulla.service.api.SteamFriendPreferences
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlinx.collections.immutable.ImmutableList
@@ -112,6 +114,20 @@ class ProfileViewModel(
         viewModelScope.launch {
             val favorite = !isFavorite.value
             connection.request("SetFavorites") { it.favorites.setFavorite(friendId, favorite) }
+        }
+    }
+
+    /** Whether Steam is set to notify of this friend's chat messages on a phone. */
+    val mobileNotifications: StateFlow<MobileNotifications> = SteamFriendPreferences.mobile
+        .map { it[friendId] ?: MobileNotifications.Default }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MobileNotifications.Default)
+
+    /** Changes that setting on Steam; [mobileNotifications] follows Steam's answer. */
+    fun setMobileNotifications(setting: MobileNotifications) {
+        viewModelScope.launch {
+            connection.request("SetPerFriendPreferences") {
+                it.friendPreferences.setMobileNotifications(friendId, setting)
+            }
         }
     }
 
