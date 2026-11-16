@@ -16,14 +16,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.db.entity.SteamApp
+import `in`.dragonbra.vapulla.ui.composables.rememberExpandedSheetState
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.helpers.capitalize
 import kotlinx.collections.immutable.ImmutableSet
@@ -93,10 +92,7 @@ internal fun GameBottomSheet(
 private fun Preview() {
     VapullaTheme {
         GameBottomSheet(
-            sheetState = rememberBottomSheetState(
-                initialValue = SheetValue.Hidden,
-                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-            ),
+            sheetState = rememberExpandedSheetState(),
             appTypes = persistentSetOf(SteamApp.AppType.game, SteamApp.AppType.dlc),
             onDismissRequest = {},
             onAppTypeClicked = {},

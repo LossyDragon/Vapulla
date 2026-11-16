@@ -15,11 +15,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -141,7 +141,7 @@ private fun NetworkLogContent(
             IconButton(onClick = { showTotals = !showTotals }) {
                 if (showTotals) {
                     Icon(
-                        imageVector = Icons.Default.FormatListBulleted,
+                        imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
                         contentDescription = "Show packets",
                     )
                 } else {

@@ -79,7 +79,13 @@ object NetworkLog : IDebugNetworkListener {
     override fun onOutgoingNetworkMessage(msgType: EMsg, data: ByteArray) =
         record(false, msgType, data)
 
-    fun clear() {
+    /**
+     * Held while the packets and the totals are changed together, so that a [clear] cannot
+     * land between the two halves of a packet being recorded and leave them disagreeing.
+     */
+    private val lock = Any()
+
+    fun clear() = synchronized(lock) {
         _entries.value = persistentListOf()
         _totals.value = persistentMapOf()
     }
@@ -94,19 +100,20 @@ object NetworkLog : IDebugNetworkListener {
             size = size,
             detail = PacketInspector.inspect(msg, data, keepBodies),
         )
-        _entries.appendCapped(entry, maxEntries)
-        SteamDiagnostics.packet(incoming, entry.label)
-
-        _totals.update { current ->
-            val total = current[msg] ?: NetworkLogTotal(msg)
-            current.put(
-                msg,
-                if (incoming) {
-                    total.copy(packetsIn = total.packetsIn + 1, bytesIn = total.bytesIn + size)
-                } else {
-                    total.copy(packetsOut = total.packetsOut + 1, bytesOut = total.bytesOut + size)
-                },
-            )
+        synchronized(lock) {
+            _entries.appendCapped(entry, maxEntries)
+            _totals.update { current ->
+                val total = current[msg] ?: NetworkLogTotal(msg)
+                current.putting(
+                    msg,
+                    if (incoming) {
+                        total.copy(packetsIn = total.packetsIn + 1, bytesIn = total.bytesIn + size)
+                    } else {
+                        total.copy(packetsOut = total.packetsOut + 1, bytesOut = total.bytesOut + size)
+                    },
+                )
+            }
         }
+        SteamDiagnostics.packet(incoming, entry.label)
     }
 }

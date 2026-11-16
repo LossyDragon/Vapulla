@@ -33,11 +33,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -65,6 +63,7 @@ import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.listContentPadding
+import `in`.dragonbra.vapulla.ui.composables.rememberExpandedSheetState
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -265,10 +264,7 @@ private fun GamePickerSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
+        sheetState = rememberExpandedSheetState(),
     ) {
         Column(
             modifier = Modifier

@@ -22,10 +22,8 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +49,7 @@ import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
+import `in`.dragonbra.vapulla.ui.composables.rememberExpandedSheetState
 import `in`.dragonbra.vapulla.ui.composables.search.SearchAppBar
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameBottomSheet
 import `in`.dragonbra.vapulla.ui.screens.games.components.GameListItem
@@ -104,10 +103,7 @@ private fun GamesScreenContent(
     onOpenDownloads: () -> Unit,
 ) {
     var showSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-    )
+    val sheetState = rememberExpandedSheetState()
 
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()

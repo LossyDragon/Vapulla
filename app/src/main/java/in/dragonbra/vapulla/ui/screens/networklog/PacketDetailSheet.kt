@@ -14,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -28,6 +27,7 @@ import `in`.dragonbra.vapulla.service.PacketInspector
 import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.Hint
 import `in`.dragonbra.vapulla.ui.composables.Section
+import `in`.dragonbra.vapulla.ui.composables.rememberExpandedSheetState
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
 import `in`.dragonbra.vapulla.util.Utils.toTimeString
@@ -45,7 +45,7 @@ private const val HEX_SHOWN = 2048
 fun PacketDetailSheet(entry: NetworkLogEntry, onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberExpandedSheetState(),
     ) {
         PacketDetailContent(entry)
     }
