@@ -431,3 +431,33 @@ data class RemoteApp(
     /** Bytes an install needs, as far as the client knows; 0 for an installed game. */
     val bytesRequired: Long,
 )
+
+/**
+ * One item of a Steam profile's decoration, from the Points Shop. Addresses are complete;
+ * a kind of file the item does not come in is empty.
+ *
+ * @property imageSmallUrl the item itself for an avatar frame or an animated avatar.
+ * @property imageLargeUrl the still picture of a background.
+ * @property movieMp4Url a background that moves, as H.264 video. Android decodes that in
+ *   hardware on every device, so it is preferred over [movieWebmUrl], the same as VP9.
+ */
+@Immutable
+data class ProfileItem(
+    val name: String,
+    val imageSmallUrl: String,
+    val imageLargeUrl: String,
+    val movieMp4Url: String,
+    val movieWebmUrl: String,
+) {
+    /** The video of a moving background, or empty when the item is a still. */
+    val movieUrl: String get() = movieMp4Url.ifEmpty { movieWebmUrl }
+}
+
+/** What a user has put on their profile; each is null when nothing of the kind is equipped. */
+@Immutable
+data class EquippedProfileItems(
+    val background: ProfileItem? = null,
+    val miniBackground: ProfileItem? = null,
+    val avatarFrame: ProfileItem? = null,
+    val animatedAvatar: ProfileItem? = null,
+)

@@ -7,7 +7,9 @@ import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.dao.SteamFriendDao
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.service.api.EquippedProfileItems
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
+import `in`.dragonbra.vapulla.service.api.SteamFavorites
 import `in`.dragonbra.vapulla.util.helpers.toSteamID
 import `in`.dragonbra.vapulla.util.helpers.toSteamIdString
 import kotlinx.collections.immutable.ImmutableList
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -46,6 +49,11 @@ class ProfileViewModel(
     private val _badgeLoading = MutableStateFlow(true)
     val badgeLoading: StateFlow<Boolean> = _badgeLoading.asStateFlow()
 
+    private val _equipped = MutableStateFlow(EquippedProfileItems())
+
+    /** The frame, animated avatar and backgrounds on the profile; all null until Steam answers. */
+    val equipped: StateFlow<EquippedProfileItems> = _equipped.asStateFlow()
+
     private val _mutualFriends = MutableStateFlow<ImmutableList<String>?>(null)
 
     /**
@@ -55,6 +63,15 @@ class ProfileViewModel(
     val mutualFriends: StateFlow<ImmutableList<String>?> = _mutualFriends.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            connection
+                .request("GetProfileItemsEquipped") {
+                    it.profile.equippedItems(friendId.toSteamID())
+                }
+                .getOrNull()
+                ?.let { _equipped.value = it }
+        }
+
         viewModelScope.launch {
             connection.request("GetProfileInfo") { it.friends.profileInfo(friendId.toSteamID()) }
                 .onSuccess { response ->
@@ -82,6 +99,19 @@ class ProfileViewModel(
                 .map { id -> friendDao.find(id)?.nameOrNickname ?: id.toSteamIdString() }
                 .sorted()
                 .toImmutableList()
+        }
+    }
+
+    /** Whether the friend is one of the account's favourites on Steam. */
+    val isFavorite: StateFlow<Boolean> = SteamFavorites.friendIds
+        .map { friendId in it }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /** Makes the friend a favourite, or no longer one; [isFavorite] follows Steam's answer. */
+    fun toggleFavorite() {
+        viewModelScope.launch {
+            val favorite = !isFavorite.value
+            connection.request("SetFavorites") { it.favorites.setFavorite(friendId, favorite) }
         }
     }
 

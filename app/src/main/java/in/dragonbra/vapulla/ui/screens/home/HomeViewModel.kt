@@ -9,11 +9,13 @@ import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.service.api.SteamFavorites
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * Friends list state: friends grouped into the sticky-header sections (requests, recent chats,
@@ -45,12 +48,26 @@ class HomeViewModel(
     friendDao: SteamFriendDao,
     chatDao: ChatMessageDao,
     settingsManager: SettingsManager,
-    connection: SteamServiceConnection,
+    private val connection: SteamServiceConnection,
 ) : ViewModel() {
 
     /** The collapsed sections. Blocked friends start out of the way. */
     private val _stickyHeaders = MutableStateFlow(persistentSetOf(R.string.headerFriendBlocked))
     val stickyHeaders: StateFlow<ImmutableSet<Int>> = _stickyHeaders.asStateFlow()
+
+    /**
+     * The favourite friends, in Steam's order, for the row above the list. A favourite who
+     * is no longer a friend is left out.
+     */
+    val favorites: StateFlow<ImmutableList<SteamFriend>> = combine(
+        friendDao.getFriendsFlow(),
+        SteamFavorites.friendIds,
+    ) { friends, favoriteIds ->
+        val byId = friends.filter { it.isFriend }.associateBy { it.id }
+        favoriteIds.mapNotNull { byId[it] }.toImmutableList()
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), persistentListOf())
 
     /** Emits at once and then every minute, so the Recent Chats cut-off is re-evaluated in time. */
     private val minuteTicker = flow {
@@ -153,6 +170,16 @@ class HomeViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = persistentSetOf(),
         )
+
+    /**
+     * Asks Steam which chats are still unread. A chat read on another device loses its
+     * counter this way; the screen calls this while it is in front.
+     */
+    fun refreshUnread() {
+        viewModelScope.launch {
+            connection.request("GetActiveMessageSessions") { it.chat.syncUnread() }
+        }
+    }
 
     /** Collapses the section with the header [value], or opens it again. */
     fun onStickyHeaderAction(value: Int) {

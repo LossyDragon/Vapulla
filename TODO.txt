@@ -79,6 +79,23 @@ To Verify
   filter and switching between them are confirmed on the emulator): a download under way
   on the other machine (progress, speed, time left, paused, queued), a game running
   there, and a client that is closed while the screen is open
+- Profile decorations (new 15 Nov 2026, Player.GetProfileItemsEquipped; a still and a
+  moving background behind the avatar and an avatar frame are confirmed on the emulator):
+  an animated avatar (a GIF, decoded with coil-gif); a profile with only a full
+  background and no mini profile one; how a frame sits on the rounded avatar; a video
+  that cannot be played; and how it behaves on a slow or metered connection (the videos
+  seen were 0.3 to 0.5 MB and start by themselves)
+- Favourite friends (new 15 Nov 2026; the row at the top of the friends list under its
+  own header that folds it away, with the
+  five favourites Steam has for the account, is confirmed on the emulator): adding and
+  removing one from a profile; a change made on another device showing up (FriendsList
+  Client.FavoritesChanged); tapping and long-pressing an avatar of the row; an account
+  with no favourites, and one whose favourites include a group
+- A chat read on another device (new 15 Nov 2026): its unread counter and notification
+  should go here too. Two ways in: FriendMessagesClient.NotifyAckMessageEcho, which was
+  seen in the network log once but not seen to clear a counter; and the friends list
+  asking Steam which chats are unread while it is on screen (every 30 s, and at
+  sign-in), which was seen to clear two counters left over from chats read on the PC
 - Sign-in screen without internet (new 15 Nov 2026; shown, and signing in again by itself
   when the network is back, are confirmed on the emulator): on a phone switching between
   Wi-Fi and mobile data, and on a network that is connected but has no internet
@@ -99,6 +116,15 @@ Issues or Bugs
   In JavaSteam:
       - val bitIndex = bitEntry["bit"].asInteger()
       + val bitIndex = bitEntry.name?.toIntOrNull() ?: bitEntry["bit"].asInteger()
+- Every time Vapulla signs in, the friends list of the account's desktop Steam client goes
+  offline and comes back as presence arrives. Likely cause: when the friends list arrives,
+  JavaSteam's SteamFriends.handleFriendsList sends ClientRequestFriendData for every
+  friend by itself; Steam answers without the state and sends the answers to every device
+  of the account. Asking for less is not the fix: tried 15 Nov 2026 without Status and
+  Presence, every friend lost their avatar instead (Presence carries it), so the flags
+  are all back. What should work: JavaSteam not sending that request (an option), and the
+  app getting the names and avatars of friends who are offline from
+  Player.GetPlayerLinkDetails, which answers only the device that asks
 - TryAnotherCM returns to sign-in instead of trying another CM
 - Two identical messages in the same second are stored as one
 - Downloads skip depots shared from another app (depotfromapp, mostly redistributables)
@@ -173,7 +199,6 @@ Feature Ideas
 - Per-friend notification preferences (Player.GetPerFriendPreferences)
 - Reactions in friend chat (FriendMessages.UpdateMessageReaction)
 - Badges: per-game badge levels and community badge progress (Player service)
-- Profile items: avatar frame, animated avatar and backgrounds (Player.GetProfileItemsEquipped)
 
 DECIDED AGAINST
 ---------------

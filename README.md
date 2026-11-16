@@ -29,11 +29,13 @@ The latest build is on the
 
 - Sign in with a QR code or with account name and password, including Steam Guard; the
   sign-in screen says when there is no internet and signs in again when it is back
-- Friends list with presence, nicknames, recent chats and unread counters
+- Friends list with presence, nicknames, recent chats and unread counters, and your Steam
+  favourites in a row at its top
 - Friend chat: history, sending, Steam emoticons and stickers, image upload, typing notices,
   notifications with inline reply that Android lists among its conversations, YouTube links
   shown as a video card, and a setting to show messages as raw BBCode
-- Friend profiles, with the raw persona state and rich presence Steam sent under "Under the hood",
+- Friend profiles, with their avatar frame, animated avatar and profile background (a moving
+  one plays as a silent loop), the raw persona state and rich presence Steam sent under "Under the hood",
   and for a friend request the friends you have in common
 - Group chats: channels, history, sending, live messages
 - Game library from licenses and PICS, with playtime, achievements, stats, leaderboards, the
@@ -153,6 +155,7 @@ The service package is the place to look for JavaSteam usage examples:
 | Set up the client, run its callbacks, reconnect | `service/SteamConnection.kt` |
 | Sign in with a password or a QR code, and with a saved token | `service/auth/SteamAuthenticator.kt` |
 | Follow friends, persona states and nicknames | `service/sync/FriendsSync.kt`, `service/api/FriendsApi.kt` |
+| Read and change favourite friends, and hear of changes made elsewhere | `service/api/FavoritesApi.kt` |
 | Send and receive friend messages, history, typing | `service/api/ChatApi.kt` |
 | Use group chats | `service/api/ChatRoomsApi.kt` |
 | Upload an image to a chat | `service/api/ChatMediaApi.kt` |

@@ -80,6 +80,10 @@ class ChatApi(
             FriendMessagesClient,
             CFriendMessages_IncomingMessage_Notification.Builder,
             >(onIncomingMessage),
+        callbacks.subscribeServiceNotification<
+            FriendMessagesClient,
+            CFriendMessages_AckMessage_Notification.Builder,
+            >(onReadElsewhere),
     )
 
     override fun start(session: CoroutineScope) {
@@ -232,6 +236,25 @@ class ChatApi(
             )
         }
 
+    /**
+     * The chat with a friend was read on another device of the account: Steam echoes that
+     * device's `AckMessage` to the others as `NotifyAckMessageEcho`. What was unread here up
+     * to that moment is read now, and its notification goes.
+     */
+    private val onReadElsewhere:
+        (ServiceMethodNotification<CFriendMessages_AckMessage_Notification.Builder>) -> Unit =
+        { notification ->
+            val friendId = notification.body.steamidPartner
+            // Steam's time is in seconds; messages are stored in milliseconds.
+            val until = notification.body.timestamp * 1000L
+            Timber.d("onReadElsewhere() the chat was read on another device")
+
+            scope.launch {
+                db.chatMessageDao().markMessagesAsReadUntil(friendId, until)
+                NotificationHelper.cancelFriendMessageNotification(context, friendId)
+            }
+        }
+
     /** Marks the chat with a friend as read, here and on Steam, and clears its notification. */
     suspend fun ack(friendId: Long) = withContext(Dispatchers.IO) {
         db.chatMessageDao().markMessagesAsRead(friendId)
@@ -366,11 +389,21 @@ class ChatApi(
         }
 
     /**
-     * Fetches the messages that arrived while signed out. Steam lists the conversations
-     * with unread messages and when each was last viewed; their recent history is then
-     * loaded with everything after that point marked unread.
+     * Brings the unread marks in line with Steam's. Steam lists the account's conversations
+     * with when each was last looked at, on any device, and how much is unread:
+     *
+     * - what is stored as unread from before that moment has been read elsewhere, on the PC
+     *   say, and is marked read here;
+     * - a conversation Steam counts unread messages in gets its recent history loaded, with
+     *   everything after that moment marked unread. That is how messages that arrived
+     *   while signed out come in.
+     *
+     * Steam has a notification for a chat read elsewhere as well (`NotifyAckMessageEcho`),
+     * see [onReadElsewhere], but that one was seen to arrive only some of the time, so the
+     * friends list
+     * asks with this as well while it is on screen.
      */
-    private suspend fun syncUnread() {
+    suspend fun syncUnread() {
         val request = CFriendsMessages_GetActiveMessageSessions_Request.newBuilder()
             .setOnlySessionsWithMessages(true)
             .build()
@@ -379,13 +412,20 @@ class ChatApi(
             .bodyOrNull("GetActiveMessageSessions")
             ?: return
 
-        val unread = body.messageSessionsList.filter { it.unreadMessageCount > 0 }
-        Timber.d("syncUnread: ${unread.size} conversation(s) with unread messages")
+        val unread = body.messageSessionsList.count { it.unreadMessageCount > 0 }
+        Timber.d("syncUnread: $unread conversation(s) with unread messages")
 
-        unread.forEach { session ->
+        body.messageSessionsList.forEach { session ->
             val friendId = session.accountidFriend.accountIdToSteamID().convertToUInt64()
+            // Steam's time is in seconds; messages are stored in milliseconds.
+            val lastView = session.lastView * 1000L
 
-            loadRecent(friendId, unreadAfter = session.lastView * 1000L)
+            db.chatMessageDao().markMessagesAsReadUntil(friendId, lastView)
+            if (session.unreadMessageCount > 0) {
+                loadRecent(friendId, unreadAfter = lastView)
+            } else {
+                NotificationHelper.cancelFriendMessageNotification(context, friendId)
+            }
         }
     }
 

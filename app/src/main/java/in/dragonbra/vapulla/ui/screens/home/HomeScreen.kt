@@ -14,13 +14,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.exceptBottom
@@ -32,11 +36,17 @@ import `in`.dragonbra.vapulla.ui.mock.mockStickyHeaders
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendList
 import `in`.dragonbra.vapulla.ui.screens.home.components.FriendListItem
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** How often the friends list asks Steam which chats are unread, while it is on screen. */
+private val UNREAD_REFRESH = 30.seconds
 
 /**
  * The friends list, in sections, with a search over it. Tapping a friend opens the chat; a
@@ -52,11 +62,24 @@ fun HomeScreen(
     onOpenChat: (Long) -> Unit,
     onOpenProfile: (Long) -> Unit,
 ) {
+    // Unread counters follow what was read on other devices while the list is in front.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner, viewModel) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                viewModel.refreshUnread()
+                delay(UNREAD_REFRESH)
+            }
+        }
+    }
+
+    val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val friendsList by viewModel.friends.collectAsStateWithLifecycle()
     val stickyHeaders by viewModel.stickyHeaders.collectAsStateWithLifecycle()
     val typing by viewModel.typing.collectAsStateWithLifecycle()
 
     HomeScreenContent(
+        favorites = favorites,
         friendsList = friendsList,
         stickyHeaders = stickyHeaders,
         typing = typing,
@@ -69,6 +92,7 @@ fun HomeScreen(
 
 @Composable
 private fun HomeScreenContent(
+    favorites: ImmutableList<SteamFriend>,
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
     stickyHeaders: ImmutableSet<Int>,
     typing: ImmutableSet<Long>,
@@ -153,6 +177,7 @@ private fun HomeScreenContent(
                     .fillMaxSize()
                     .padding(padding.exceptBottom()),
                 contentPadding = listContentPadding(padding, vertical = 4.dp),
+                favorites = favorites,
                 friendsList = friendsList,
                 stickyHeaders = stickyHeaders,
                 typing = typing,
@@ -169,6 +194,7 @@ private fun HomeScreenContent(
 private fun Preview() {
     VapullaTheme {
         HomeScreenContent(
+            favorites = persistentListOf(),
             friendsList = mockFriendsList,
             stickyHeaders = mockStickyHeaders,
             typing = persistentSetOf(),

@@ -47,6 +47,7 @@ import `in`.dragonbra.vapulla.service.api.ChatMediaApi
 import `in`.dragonbra.vapulla.service.api.ChatRoomsApi
 import `in`.dragonbra.vapulla.service.api.CloudApi
 import `in`.dragonbra.vapulla.service.api.FamilyApi
+import `in`.dragonbra.vapulla.service.api.FavoritesApi
 import `in`.dragonbra.vapulla.service.api.FriendsApi
 import `in`.dragonbra.vapulla.service.api.InvitesApi
 import `in`.dragonbra.vapulla.service.api.LeaderboardsApi
@@ -58,6 +59,7 @@ import `in`.dragonbra.vapulla.service.api.ScreenshotsApi
 import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
 import `in`.dragonbra.vapulla.service.api.SessionsApi
 import `in`.dragonbra.vapulla.service.api.SteamApis
+import `in`.dragonbra.vapulla.service.api.SteamFavorites
 import `in`.dragonbra.vapulla.service.api.StoreApi
 import `in`.dragonbra.vapulla.service.api.WebSessionApi
 import `in`.dragonbra.vapulla.service.api.WorkshopApi
@@ -343,7 +345,8 @@ class SteamConnection(
 
         SteamState.isLoggedIn.value = false
         SteamState.isAnonymous.value = false
-        SteamDiagnostics.signedOut()
+        SteamAccount.signedOut()
+        SteamFavorites.set(emptyList())
         SteamAccount.signedOut()
     }
 
@@ -447,12 +450,16 @@ class SteamConnection(
 
     /**
      * The client settings: where the CM server list is kept, which cell to ask Steam's
-     * directory for servers of, and what to hear about friends. Without the cell the
+     * directory for servers of, and what to ask about friends. Without the cell the
      * directory hands out servers from anywhere, and the first may be a continent away.
      */
     private fun steamConfiguration(): SteamConfiguration = SteamConfiguration.create {
         it.withServerListProvider(FileServerListProvider(serverListFile))
         it.withCellID(runBlocking { account.cellId() })
+        // What JavaSteam asks about every friend when the friends list arrives at sign-in.
+        // Every flag stays in: Steam sends the answers to all devices of the account, and
+        // they take what is not in an answer for empty. Asked without Presence, which also
+        // carries the avatar, every friend was left with the placeholder for an avatar.
         it.withDefaultPersonaStateFlags(
             EnumSet.of(
                 EClientPersonaStateFlag.Status,
@@ -501,6 +508,7 @@ class SteamConnection(
                 localSteamId = localSteamId,
             ),
             friends = FriendsApi(db = db, steamFriends = steamFriends, player = player),
+            favorites = FavoritesApi(unified.createService()),
             chatRooms = ChatRoomsApi(
                 chatRoom = unified.createService(),
                 friends = steamFriends,
@@ -580,7 +588,14 @@ class SteamConnection(
             downloads = downloads,
         )
 
-        return listOf(friends, steamApis.chat, steamApis.chatRooms, licenses, remoteRequests)
+        return listOf(
+            friends,
+            steamApis.chat,
+            steamApis.chatRooms,
+            steamApis.favorites,
+            licenses,
+            remoteRequests,
+        )
     }
 
     /** Starts connecting and runs the loop that hands Steam's messages to the callbacks. */

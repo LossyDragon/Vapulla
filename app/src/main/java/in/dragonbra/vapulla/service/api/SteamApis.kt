@@ -16,6 +16,7 @@ class SteamApis(
     val profile: ProfileApi,
     val chat: ChatApi,
     val friends: FriendsApi,
+    val favorites: FavoritesApi,
     val chatRooms: ChatRoomsApi,
     val media: ChatMediaApi,
     val servers: ServerBrowserApi,

@@ -36,6 +36,13 @@ interface ChatMessageDao {
     @Query("UPDATE chat_message SET unread = 0 WHERE friendId = :friendId AND fromLocal = 0")
     suspend fun markMessagesAsRead(friendId: Long)
 
+    /** Marks as read what the friend sent up to [until], in epoch milliseconds. */
+    @Query(
+        "UPDATE chat_message SET unread = 0 " +
+            "WHERE friendId = :friendId AND fromLocal = 0 AND timestamp <= :until",
+    )
+    suspend fun markMessagesAsReadUntil(friendId: Long, until: Long)
+
     /** Exact match used to skip messages that are already stored. */
     @Query(
         "SELECT * FROM chat_message WHERE message = :message AND timestamp = :timestamp " +

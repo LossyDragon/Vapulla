@@ -2,7 +2,9 @@ package `in`.dragonbra.vapulla.ui.screens.profile
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -20,6 +23,8 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.PersonRemove
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,12 +40,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,14 +61,18 @@ import `in`.dragonbra.javasteam.types.SteamID
 import `in`.dragonbra.vapulla.data.ProfileInfo
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.manager.LocalAppSettings
+import `in`.dragonbra.vapulla.service.api.EquippedProfileItems
 import `in`.dragonbra.vapulla.service.api.FavoriteBadge
 import `in`.dragonbra.vapulla.ui.composables.BBCodeText
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.DetailListSkeleton
 import `in`.dragonbra.vapulla.ui.composables.IconLabel
+import `in`.dragonbra.vapulla.ui.composables.ImageOptions
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.InfoPillSkeleton
+import `in`.dragonbra.vapulla.ui.composables.LoopingVideo
+import `in`.dragonbra.vapulla.ui.composables.RemoteImage
 import `in`.dragonbra.vapulla.ui.composables.Section
 import `in`.dragonbra.vapulla.ui.composables.dialog.DialogType
 import `in`.dragonbra.vapulla.ui.composables.dialog.MessageDialog
@@ -86,11 +98,14 @@ fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long
     val favoriteBadge by viewModel.favoriteBadge.collectAsStateWithLifecycle()
     val badgeLoading by viewModel.badgeLoading.collectAsStateWithLifecycle()
     val mutualFriends by viewModel.mutualFriends.collectAsStateWithLifecycle()
+    val isFavorite by viewModel.isFavorite.collectAsStateWithLifecycle()
+    val equipped by viewModel.equipped.collectAsStateWithLifecycle()
 
     ProfileScreenContent(
         friend = friend ?: SteamFriend(id = 0),
         profile = profile,
         favoriteBadge = favoriteBadge,
+        equipped = equipped,
         badgeLoading = badgeLoading,
         mutualFriends = mutualFriends,
         onBack = onBack,
@@ -98,6 +113,8 @@ fun ProfileScreen(viewModel: ProfileViewModel, onBack: () -> Unit, onChat: (Long
         onBlock = viewModel::toggleBlocked,
         onRemove = viewModel::removeFriend,
         onNickname = viewModel::setNickname,
+        isFavorite = isFavorite,
+        onFavorite = viewModel::toggleFavorite,
         onChat = onChat,
     )
 }
@@ -107,6 +124,7 @@ private fun ProfileScreenContent(
     friend: SteamFriend,
     profile: ProfileInfo?,
     favoriteBadge: FavoriteBadge?,
+    equipped: EquippedProfileItems,
     badgeLoading: Boolean,
     mutualFriends: ImmutableList<String>?,
     onBack: () -> Unit,
@@ -115,6 +133,8 @@ private fun ProfileScreenContent(
     onRemove: () -> Unit,
     onChat: (Long) -> Unit,
     onNickname: (String) -> Unit,
+    isFavorite: Boolean,
+    onFavorite: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -162,12 +182,22 @@ private fun ProfileScreenContent(
         AliasesDialog(aliases = friend.aliases, onDismiss = { showAliasesDialog = false })
     }
 
-    val actions = listOf(
+    val actions = listOfNotNull(
         ProfileAction(Icons.Outlined.History, "View aliases") {
             onAlias()
             showAliasesDialog = true
         },
         ProfileAction(Icons.Outlined.Edit, "Set nickname") { showNicknameDialog = true },
+        // Steam keeps favourites for friends; someone blocked or only asking is not one.
+        if (friend.isFriend) {
+            ProfileAction(
+                icon = if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                label = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                onClick = onFavorite,
+            )
+        } else {
+            null
+        },
         if (friend.isBlocked) {
             ProfileAction(Icons.Outlined.Person, "Unblock") {
                 msgDialogState = MessageDialogState(
@@ -221,6 +251,7 @@ private fun ProfileScreenContent(
                 ProfileHeader(
                     friend = friend,
                     favoriteBadge = favoriteBadge,
+                    equipped = equipped,
                     badgeLoading = badgeLoading,
                 )
             }
@@ -267,11 +298,103 @@ private fun MutualFriends(names: ImmutableList<String>) {
     }
 }
 
+private val AvatarSize = 128.dp
+
+/** Steam draws an avatar frame this much larger than the avatar it goes around. */
+private const val FRAME_SCALE = 1.22f
+
+/**
+ * The avatar on the background the user picked for their mini profile, or failing that for
+ * their profile. A background that moves is played as a silent loop, which fades in when it
+ * starts. Without a background the avatar stands alone.
+ */
+@Composable
+private fun ProfileBanner(friend: SteamFriend, equipped: EquippedProfileItems) {
+    val background = equipped.miniBackground ?: equipped.background
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.extraLarge),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (background != null) {
+            // Steam's still of a moving background is framed differently from the video, so
+            // going from one to the other shows as a jump. The still is therefore only for a
+            // background that does not move, or whose video will not play.
+            var videoFailed by remember(background) { mutableStateOf(false) }
+            val showVideo = background.movieUrl.isNotEmpty() && !videoFailed
+
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+            )
+            if (showVideo) {
+                LoopingVideo(
+                    url = background.movieUrl,
+                    modifier = Modifier.matchParentSize(),
+                    onError = { videoFailed = true },
+                )
+            } else {
+                RemoteImage(
+                    imageModel = { background.imageLargeUrl },
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+        }
+
+        DecoratedAvatar(
+            friend = friend,
+            equipped = equipped,
+            modifier = Modifier.padding(vertical = if (background != null) 20.dp else 0.dp),
+        )
+    }
+}
+
+/** The avatar, animated when the user has one that is, with their avatar frame around it. */
+@Composable
+private fun DecoratedAvatar(
+    friend: SteamFriend,
+    equipped: EquippedProfileItems,
+    modifier: Modifier = Modifier,
+) {
+    val animatedUrl = equipped.animatedAvatar?.imageSmallUrl.orEmpty()
+    val frameUrl = equipped.avatarFrame?.let { it.imageSmallUrl.ifEmpty { it.imageLargeUrl } }
+
+    Box(
+        // Room for the frame only when there is one, so a plain avatar sits where it did.
+        modifier = modifier.size(if (frameUrl != null) AvatarSize * FRAME_SCALE else AvatarSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (animatedUrl.isNotEmpty()) {
+            RemoteImage(
+                imageModel = { animatedUrl },
+                modifier = Modifier
+                    .size(AvatarSize)
+                    .clip(MaterialTheme.shapes.large),
+                imageOptions = ImageOptions(contentDescription = "Avatar for ${friend.name}"),
+            )
+        } else {
+            FriendAvatar(size = AvatarSize, friend = friend)
+        }
+
+        if (frameUrl != null) {
+            RemoteImage(
+                imageModel = { frameUrl },
+                modifier = Modifier.matchParentSize(),
+                imageOptions = ImageOptions(contentScale = ContentScale.Fit),
+            )
+        }
+    }
+}
+
 /** Avatar, name and presence, centred at the top of the profile. */
 @Composable
 private fun ProfileHeader(
     friend: SteamFriend,
     favoriteBadge: FavoriteBadge?,
+    equipped: EquippedProfileItems,
     badgeLoading: Boolean,
 ) {
     val isLight = MaterialTheme.colorScheme.background.isLight()
@@ -283,7 +406,7 @@ private fun ProfileHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        FriendAvatar(size = 128.dp, friend = friend)
+        ProfileBanner(friend = friend, equipped = equipped)
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -525,6 +648,7 @@ private fun Preview() {
                 summary = "Plays [b]Team Fortress 2[/b] most evenings.",
             ),
             favoriteBadge = FavoriteBadge(badgeId = 1, appId = 440, level = 5),
+            equipped = EquippedProfileItems(),
             badgeLoading = false,
             mutualFriends = persistentListOf("Ann", "Bob"),
             onBack = {},
@@ -533,6 +657,8 @@ private fun Preview() {
             onRemove = {},
             onChat = {},
             onNickname = {},
+            isFavorite = false,
+            onFavorite = {},
         )
     }
 }
@@ -554,6 +680,7 @@ private fun Preview_Private() {
                 summary = "",
             ),
             favoriteBadge = null,
+            equipped = EquippedProfileItems(),
             badgeLoading = true,
             mutualFriends = null,
             onBack = {},
@@ -562,6 +689,8 @@ private fun Preview_Private() {
             onRemove = {},
             onChat = {},
             onNickname = {},
+            isFavorite = false,
+            onFavorite = {},
         )
     }
 }

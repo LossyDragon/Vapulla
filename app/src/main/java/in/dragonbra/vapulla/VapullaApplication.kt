@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.StrictMode
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import coil.decode.ImageDecoderDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import `in`.dragonbra.javasteam.util.log.LogListener
@@ -104,6 +105,8 @@ class VapullaApplication :
         .components {
             add(IconDecoder.Factory())
             add(AnimatedPngDecoder.Factory())
+            // Animated GIFs, with the decoder Android has had since API 28.
+            add(ImageDecoderDecoder.Factory())
         }
         .build()
 

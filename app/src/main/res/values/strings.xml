@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Vapulla</string>
 
+    <string name="headerFriendFavorites">Favorites</string>
     <string name="headerFriendRequests">Friend Requests</string>
     <string name="headerFriendRecent">Recent Chats</string>
     <string name="headerFriendInGame">In Game</string>

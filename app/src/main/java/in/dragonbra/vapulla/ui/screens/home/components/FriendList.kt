@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.db.entity.SteamFriend
 import `in`.dragonbra.vapulla.ui.composables.groupedListShape
 import `in`.dragonbra.vapulla.ui.mock.mockFriendsList
@@ -34,20 +35,23 @@ import kotlin.collections.component2
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 import me.saket.swipe.SwipeAction
 import me.saket.swipe.SwipeableActionsBox
 import timber.log.Timber
 
 /**
- * The friends in their sections, each under a sticky header that folds it away. A long press
- * or a swipe on a row opens that friend's profile.
+ * The favourite friends in a row, then the friends in their sections, each under a sticky
+ * header that folds it away. A long press
+ * or a swipe on a row of a section opens that friend's profile.
  *
  * @param stickyHeaders the sections that are collapsed, by header.
  * @param typing the friends typing to us right now.
  */
 @Composable
 fun FriendList(
+    favorites: ImmutableList<SteamFriend>,
     friendsList: ImmutableMap<Int, ImmutableList<SteamFriend>>,
     stickyHeaders: ImmutableSet<Int>,
     typing: ImmutableSet<Long>,
@@ -80,6 +84,31 @@ fun FriendList(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        // The favourites are a section like the others, with a row for its content.
+        if (favorites.isNotEmpty()) {
+            val header = R.string.headerFriendFavorites
+
+            stickyHeader(key = "header-$header") {
+                FriendListHeader(
+                    isCollapsed = header in stickyHeaders,
+                    header = header,
+                    count = favorites.size,
+                    onHeaderAction = { onStickyHeaderAction(header) },
+                )
+            }
+
+            if (header !in stickyHeaders) {
+                item(key = "favorites") {
+                    FavoritesRow(
+                        favorites = favorites,
+                        onClick = onFriendClick,
+                        onLongClick = { onOpenProfile(it.id) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+            }
+        }
+
         for ((header, friends) in friendsList.entries) {
             stickyHeader(key = "header-$header") {
                 FriendListHeader(
@@ -131,6 +160,7 @@ private fun Preview() {
         Surface {
             FriendList(
                 modifier = Modifier.fillMaxSize(),
+                favorites = persistentListOf(),
                 friendsList = mockFriendsList,
                 stickyHeaders = mockStickyHeaders,
                 typing = persistentSetOf(),
