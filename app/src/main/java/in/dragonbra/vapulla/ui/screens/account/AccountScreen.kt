@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.service.AccountDetails
 import `in`.dragonbra.vapulla.service.api.FriendInvite
+import `in`.dragonbra.vapulla.service.api.NotificationCounts
 import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.GroupedListItem
 import `in`.dragonbra.vapulla.ui.composables.Hint
@@ -158,6 +159,7 @@ private fun AccountContent(
             ) {
                 uiState.playingElsewhere?.let { PlayingElsewhere(game = it) }
                 ProfileSection(uiState = uiState, onEditName = { editingName = true })
+                NotificationsSection(uiState.details.notifications)
                 WalletSection(uiState.details)
                 EmailSection(uiState.details)
                 InvitesSection(
@@ -224,6 +226,38 @@ private fun ProfileSection(uiState: AccountUiState, onEditName: () -> Unit) {
         )
         FilledTonalButton(onClick = onEditName, shapes = ButtonDefaults.shapes()) {
             IconLabel(Icons.Outlined.Edit, "Change name")
+        }
+    }
+}
+
+/** How much is waiting on Steam. A count Steam has not sent yet is left out. */
+@Composable
+private fun NotificationsSection(counts: NotificationCounts) {
+    Section(title = "Notifications") {
+        if (!counts.hasAny) {
+            Hint("Steam has not sent the notification counts yet.")
+        } else {
+            val hasComments = (counts.comments ?: 0) > 0
+            val friends = counts.offlineMessageFriends
+            val offlineMessages = counts.offlineMessages?.let { count ->
+                when {
+                    count == 0 || friends == 0 -> count.toString()
+                    friends == 1 -> "$count from 1 friend"
+                    else -> "$count from $friends friends"
+                }
+            }
+
+            DetailList(
+                listOf(
+                    "New comments" to counts.comments?.toString().orEmpty(),
+                    "On your content" to counts.commentsOnOwnContent
+                        .takeIf { hasComments }?.toString().orEmpty(),
+                    "On followed discussions" to counts.commentsOnSubscriptions
+                        .takeIf { hasComments }?.toString().orEmpty(),
+                    "New items" to counts.newItems?.toString().orEmpty(),
+                    "Offline messages" to offlineMessages.orEmpty(),
+                ),
+            )
         }
     }
 }
@@ -408,6 +442,14 @@ private fun Preview() {
                     email = "someone@example.com",
                     emailValidated = true,
                     customUrl = "vapulla",
+                    notifications = NotificationCounts(
+                        comments = 3,
+                        commentsOnOwnContent = 2,
+                        commentsOnSubscriptions = 1,
+                        newItems = 0,
+                        offlineMessages = 4,
+                        offlineMessageFriends = 2,
+                    ),
                 ),
                 invites = persistentListOf(
                     FriendInvite(

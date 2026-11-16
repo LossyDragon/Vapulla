@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service
 
 import androidx.compose.runtime.Immutable
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.vapulla.service.api.NotificationCounts
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.update
  *   app never plays anything, so a game here is one running on another device.
  * @property presenceGameName that game's name when the presence carries one, as it does
  *   for a game from outside Steam.
+ * @property notifications how much is waiting for the account on Steam.
  */
 @Immutable
 data class AccountDetails(
@@ -44,6 +46,7 @@ data class AccountDetails(
     val playingElsewhereAppId: Int = 0,
     val presenceGameAppId: Int = 0,
     val presenceGameName: String = "",
+    val notifications: NotificationCounts = NotificationCounts(),
 )
 
 /** Steam's answer to a request to change the profile name. */

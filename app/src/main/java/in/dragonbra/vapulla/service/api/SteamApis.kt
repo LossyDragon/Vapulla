@@ -33,4 +33,5 @@ class SteamApis(
     val leaderboards: LeaderboardsApi,
     val family: FamilyApi,
     val authTickets: AuthTicketApi,
+    val notifications: NotificationsApi,
 )

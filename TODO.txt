@@ -195,7 +195,6 @@ Feature Ideas
 - Game notifications and parental settings (read-only)
 - Group chat: member list, reactions, mentions
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
-- Notification counts: comments, item announcements, offline messages (SteamNotifications)
 - Reactions in friend chat (FriendMessages.UpdateMessageReaction)
 - Badges: per-game badge levels and community badge progress (Player service)
 - From other Steam apps (looked through 16 Nov 2026: GameNative, ArchiSteamFarm, Pluvia,

@@ -17,6 +17,7 @@ import `in`.dragonbra.javasteam.steam.handlers.steamfriends.callback.PersonaChan
 import `in`.dragonbra.javasteam.steam.handlers.steamgamecoordinator.SteamGameCoordinator
 import `in`.dragonbra.javasteam.steam.handlers.steamgameserver.SteamGameServer
 import `in`.dragonbra.javasteam.steam.handlers.steammasterserver.SteamMasterServer
+import `in`.dragonbra.javasteam.steam.handlers.steamnotifications.SteamNotifications
 import `in`.dragonbra.javasteam.steam.handlers.steamscreenshots.SteamScreenshots
 import `in`.dragonbra.javasteam.steam.handlers.steamunifiedmessages.SteamUnifiedMessages
 import `in`.dragonbra.javasteam.steam.handlers.steamuser.ChatMode
@@ -54,6 +55,7 @@ import `in`.dragonbra.vapulla.service.api.InvitesApi
 import `in`.dragonbra.vapulla.service.api.LeaderboardsApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
 import `in`.dragonbra.vapulla.service.api.ManifestApi
+import `in`.dragonbra.vapulla.service.api.NotificationsApi
 import `in`.dragonbra.vapulla.service.api.ProfileApi
 import `in`.dragonbra.vapulla.service.api.RemoteClientsApi
 import `in`.dragonbra.vapulla.service.api.ScreenshotsApi
@@ -545,6 +547,9 @@ class SteamConnection(
                 authTicket = requireNotNull(client.getHandler<SteamAuthTicket>()),
                 scope = scope,
             ),
+            notifications = NotificationsApi(
+                requireNotNull(client.getHandler<SteamNotifications>()),
+            ),
         )
     }
 
@@ -598,6 +603,7 @@ class SteamConnection(
             steamApis.chatRooms,
             steamApis.favorites,
             steamApis.friendPreferences,
+            steamApis.notifications,
             licenses,
             remoteRequests,
         )
@@ -757,9 +763,10 @@ class SteamConnection(
                 recordSignIn(it)
 
                 // Messages that arrived while signed out are fetched by ChatApi.start(), run by
-                // startSession() below. The older SteamNotifications / requestOfflineMessages
-                // path is not used: it returns plain text that cannot be matched against the
-                // BB Code copy from the FriendMessages service, so each message was stored twice.
+                // startSession() below. The older requestOfflineMessages path is not used: it
+                // returns plain text that cannot be matched against the BB Code copy from the
+                // FriendMessages service, so each message was stored twice. NotificationsApi
+                // only reads how many there are.
 
                 friendsSync?.resetPresence()
 

@@ -129,10 +129,16 @@ class AccountViewModel(
         }
     }
 
-    /** Fetches the invite links again. The other details arrive on their own. */
+    /**
+     * Fetches the invite links again and asks for the notification counts again. The other
+     * details arrive on their own.
+     */
     fun refresh() {
         viewModelScope.launch {
             invites.update { it.copy(loading = true) }
+
+            // The counts are answered through SteamAccount.details, whenever Steam does.
+            connection.request("NotificationCounts") { it.notifications.refresh() }
 
             // A failed request leaves the list as it was.
             val list = connection.request("GetFriendInviteTokens") { it.invites.invites() }
