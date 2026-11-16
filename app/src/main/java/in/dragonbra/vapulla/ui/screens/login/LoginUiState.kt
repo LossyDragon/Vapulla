@@ -9,6 +9,7 @@ import androidx.compose.runtime.Immutable
  * @property isWaitingForConfirmation the sign-in is waiting to be approved in the Steam
  *   mobile app.
  * @property error why the last sign-in attempt failed; shown until the next attempt starts.
+ * @property isOffline the device has no internet connection, which is shown in place of [error].
  */
 @Immutable
 data class LoginUiState(
@@ -21,4 +22,5 @@ data class LoginUiState(
     val loginStep: LoginStep = LoginStep.CREDENTIALS,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val isOffline: Boolean = false,
 )

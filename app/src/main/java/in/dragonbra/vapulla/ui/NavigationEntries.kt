@@ -34,6 +34,8 @@ import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import `in`.dragonbra.vapulla.ui.screens.networklog.NetworkLogScreen
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileScreen
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
+import `in`.dragonbra.vapulla.ui.screens.remote.RemoteClientsScreen
+import `in`.dragonbra.vapulla.ui.screens.remote.RemoteClientsViewModel
 import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsScreen
 import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsViewModel
 import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserScreen
@@ -270,6 +272,10 @@ internal fun EntryProviderScope<Routes>.accountEntries(
             onNavDrawerAction = onNavDrawerAction,
             onOpenGame = { appId -> backStack.add(Routes.StorePage(appId)) },
         )
+    }
+    entry<Routes.RemoteClients> {
+        val viewModel = koinViewModel<RemoteClientsViewModel>()
+        RemoteClientsScreen(viewModel = viewModel, onNavDrawerAction = onNavDrawerAction)
     }
     entry<Routes.Sessions> {
         val viewModel = koinViewModel<SessionsViewModel>()

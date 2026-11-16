@@ -2,12 +2,15 @@ package `in`.dragonbra.vapulla.ui.composables
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 private val OuterCorner = 24.dp
@@ -53,13 +56,17 @@ fun GroupedListItem(
 ) {
     val shape = groupedListShape(index, count)
     if (onClick != null) {
-        Surface(
-            onClick = onClick,
-            shape = shape,
-            color = color,
-            modifier = modifier.fillMaxWidth(),
-            content = content,
-        )
+        // Material pads a clickable surface out to a 48 dp touch target. A short row would
+        // get that as empty space above and below it, and the group would fall apart.
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+            Surface(
+                onClick = onClick,
+                shape = shape,
+                color = color,
+                modifier = modifier.fillMaxWidth(),
+                content = content,
+            )
+        }
     } else {
         Surface(shape = shape, color = color, modifier = modifier.fillMaxWidth(), content = content)
     }

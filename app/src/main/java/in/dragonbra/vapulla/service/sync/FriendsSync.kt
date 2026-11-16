@@ -298,17 +298,26 @@ class FriendsSync(
     }
 
     private val onNicknameList: Consumer<NicknameListCallback> = Consumer {
-        Timber.d("onNicknameList()")
+        Timber.d("onNicknameList() incremental=${it.isIncremental} removal=${it.isRemoval}")
         scope.launch {
             val dao = db.steamFriendDao()
             val nicknames = it.nicknames.associate { info ->
                 info.steamID.toLong() to info.nickname
             }
 
-            // Only clear rows losing their nickname; rows keeping one are set below.
-            dao.clearNicknamesExcept(nicknames.keys.toList())
+            when {
+                // Only the friends named have lost their nickname.
+                it.isRemoval -> nicknames.keys.forEach { id -> dao.setNickname(id, "") }
 
-            nicknames.forEach { (id, nickname) -> dao.setNickname(id, nickname) }
+                // Only the friends named have a new one; the others keep theirs.
+                it.isIncremental -> nicknames.forEach { (id, name) -> dao.setNickname(id, name) }
+
+                // The whole list: a friend who is not in it has no nickname.
+                else -> {
+                    dao.clearNicknamesExcept(nicknames.keys.toList())
+                    nicknames.forEach { (id, name) -> dao.setNickname(id, name) }
+                }
+            }
         }
     }
 

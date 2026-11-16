@@ -54,14 +54,14 @@ private fun SnapshotStateList<Routes>.returnToLogin() {
  * Hosts the navigation drawer and the single-pane back stack of [Routes]. The screens
  * themselves are in NavigationEntries.kt.
  *
- * @param openChat Steam ID of a friend whose chat a tapped notification asks for.
- * @param onChatOpened called once that chat is open, so it is not opened again.
+ * @param openScreen the screen a tapped notification asks for: a chat, a profile or Downloads.
+ * @param onScreenOpened called once that screen is open, so it is not opened again.
  */
 @Composable
 fun NavigationRoot(
     modifier: Modifier = Modifier,
-    openChat: Long? = null,
-    onChatOpened: () -> Unit = {},
+    openScreen: Routes? = null,
+    onScreenOpened: () -> Unit = {},
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val koin = getKoin()
@@ -124,20 +124,19 @@ fun NavigationRoot(
             }
     }
 
-    // A tapped message notification asks for a chat. Home being on the stack means we are
-    // signed in; until then (the app was started by the tap and is still signing in) the
-    // request waits, and is carried out as soon as Home appears.
+    // A tapped notification asks for a screen. Home being on the stack means we are signed
+    // in; until then (the app was started by the tap and is still signing in) the request
+    // waits, and is carried out as soon as Home appears.
     val signedIn = Routes.Home in backStack
-    LaunchedEffect(openChat, signedIn) {
-        if (openChat != null && signedIn) {
-            val chat = Routes.FriendChat(openChat)
-            if (backStack.lastOrNull() != chat) {
-                // Back from the chat leads to the friends list, whatever was open before.
+    LaunchedEffect(openScreen, signedIn) {
+        if (openScreen != null && signedIn) {
+            if (backStack.lastOrNull() != openScreen) {
+                // Back from it leads to the friends list, whatever was open before.
                 backStack.removeAll { it != Routes.Home }
-                backStack.add(chat)
+                backStack.add(openScreen)
             }
             drawerState.close()
-            onChatOpened()
+            onScreenOpened()
         }
     }
 

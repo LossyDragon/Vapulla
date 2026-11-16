@@ -63,6 +63,13 @@ data class AppSettings(
      * app. Empty for the default, the device's own storage.
      */
     val downloadLocation: String = "",
+    /**
+     * What kind of device the app tells Steam it is at sign-in, a code of JavaSteam's
+     * `EGamingDeviceType`. The account's other Steam clients list their fellow clients by
+     * it, and name only a few kinds: as a PC the app is listed as "PC Client", as a phone
+     * under a text key Steam never translated, and without a kind not at all.
+     */
+    val reportedDeviceType: Int = DEVICE_TYPE_PC,
 ) {
     companion object {
         val RECENT_CHATS_DAYS = listOf(1, 5, 7, 30)
@@ -76,6 +83,11 @@ data class AppSettings(
         val DOWNLOAD_CONNECTIONS = listOf(4, 8, 16, 32, 64)
         val DOWNLOAD_FILE_WRITES = listOf(1, 2, 4, 8, 16)
         val DOWNLOAD_DECOMPRESS_THREADS = listOf(0, 2, 4, 6, 8)
+
+        const val DEVICE_TYPE_PC = 1
+        const val DEVICE_TYPE_PHONE = 528
+        const val DEVICE_TYPE_NONE = 0
+        val REPORTED_DEVICE_TYPES = listOf(DEVICE_TYPE_PC, DEVICE_TYPE_PHONE, DEVICE_TYPE_NONE)
     }
 }
 
@@ -125,13 +137,16 @@ class SettingsManager(private val context: Context) {
         val DOWNLOAD_LOCATION =
             Stored(stringPreferencesKey("download_location")) { it.downloadLocation }
 
+        val REPORTED_DEVICE_TYPE =
+            Stored(intPreferencesKey("reported_device_type")) { it.reportedDeviceType }
+
         /** Every setting, for [update] to go through. */
         val ALL = listOf(
             DARK_THEME, DYNAMIC_COLOR, MAX_SERVERS, SERVER_TIMEOUT_MS, WORKSHOP_PAGE_SIZE,
             NETWORK_LOG_SIZE, NETWORK_LOG_BODIES, RECENT_CHATS_DAYS, APPEND_NICKNAMES,
             SHOW_BLOCKED_FRIENDS, RAW_BBCODE, SIGNED_IN_WEB_PAGES, DOWNLOAD_WIFI_ONLY,
             DOWNLOAD_SPEED_LIMIT, DOWNLOAD_CONNECTIONS, DOWNLOAD_FILE_WRITES,
-            DOWNLOAD_DECOMPRESS_THREADS, DOWNLOAD_LOCATION,
+            DOWNLOAD_DECOMPRESS_THREADS, DOWNLOAD_LOCATION, REPORTED_DEVICE_TYPE,
         )
     }
 
@@ -163,6 +178,7 @@ class SettingsManager(private val context: Context) {
             downloadFileWrites = DOWNLOAD_FILE_WRITES.read(prefs, defaults),
             downloadDecompressThreads = DOWNLOAD_DECOMPRESS_THREADS.read(prefs, defaults),
             downloadLocation = DOWNLOAD_LOCATION.read(prefs, defaults),
+            reportedDeviceType = REPORTED_DEVICE_TYPE.read(prefs, defaults),
         )
     }
 

@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Diversity3
 import androidx.compose.material.icons.outlined.Dns
@@ -155,6 +156,12 @@ private fun NavigationDrawerContent(
                 imageVector = Icons.Outlined.Diversity3,
                 selected = currentSelection == Routes.Family,
                 onClick = { onNavigationClick(Routes.Family) },
+            )
+            DrawerItem(
+                text = "Remote Clients",
+                imageVector = Icons.Outlined.Computer,
+                selected = currentSelection == Routes.RemoteClients,
+                onClick = { onNavigationClick(Routes.RemoteClients) },
             )
             DrawerItem(
                 text = "Sessions",

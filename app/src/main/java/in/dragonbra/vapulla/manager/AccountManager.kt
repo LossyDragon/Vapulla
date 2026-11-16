@@ -42,6 +42,7 @@ class AccountManager(private val context: Context) {
         val LOGIN_UUID = intPreferencesKey("account_uuid")
 
         val LAST_CHANGE_NUMBER = intPreferencesKey("last_change_number")
+        val CELL_ID = intPreferencesKey("cell_id")
         val DATA_OWNER = longPreferencesKey("data_owner_steamid")
     }
 
@@ -114,6 +115,18 @@ class AccountManager(private val context: Context) {
      */
     suspend fun setUuid(uuid: Int) {
         context.dataStore.edit { it[LOGIN_UUID] = uuid }
+    }
+
+    /**
+     * The Steam cell, a region of Steam's network, that Steam placed this device in at the
+     * last sign-in. It belongs to where the device is, not to the account, so it is kept
+     * when the account is forgotten.
+     */
+    suspend fun cellId(): Int = preference(CELL_ID).first() ?: 0
+
+    /** Saves the cell Steam answered a sign-in with, see [cellId]. */
+    suspend fun setCellId(cellId: Int) {
+        context.dataStore.edit { it[CELL_ID] = cellId }
     }
 
     /** Saves the PICS change number the library is up to date with; the next poll asks from it. */

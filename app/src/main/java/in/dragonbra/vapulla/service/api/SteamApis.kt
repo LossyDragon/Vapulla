@@ -22,6 +22,7 @@ class SteamApis(
     val cloud: CloudApi,
     val workshop: WorkshopApi,
     val sessions: SessionsApi,
+    val remoteClients: RemoteClientsApi,
     val screenshots: ScreenshotsApi,
     val manifests: ManifestApi,
     val invites: InvitesApi,

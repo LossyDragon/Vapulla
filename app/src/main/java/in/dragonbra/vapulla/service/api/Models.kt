@@ -393,3 +393,41 @@ data class Screenshot(
     /** Epoch seconds. */
     val timeCreated: Long,
 )
+
+/**
+ * A Steam client signed in to the account on another machine, from the `ClientComm` service.
+ *
+ * @property id what Steam calls the client instance; it names the client in every request.
+ */
+@Immutable
+data class RemoteClient(
+    val id: Long,
+    val machineName: String,
+    val osName: String,
+    /** Free space on the machine for installing games, in bytes. */
+    val freeBytes: Long,
+    /** The apps running on it now. */
+    val runningAppIds: ImmutableList<Int>,
+)
+
+/** One game as a [RemoteClient] has it: installed or not, and how a download of it stands. */
+@Immutable
+data class RemoteApp(
+    val appId: Int,
+    val name: String,
+    val installed: Boolean,
+    val running: Boolean,
+    /** Being downloaded, updated or removed, or waiting in the queue for it. */
+    val changing: Boolean,
+    val paused: Boolean,
+    val bytesDownloaded: Long,
+    val bytesToDownload: Long,
+    /** Bytes a second, 0 when nothing is arriving. */
+    val downloadRate: Long,
+    /** Seconds the client expects the download to take still; 0 when it does not say. */
+    val secondsRemaining: Int,
+    /** Place in the client's download queue, from 0; negative when it is not in it. */
+    val queuePosition: Int,
+    /** Bytes an install needs, as far as the client knows; 0 for an installed game. */
+    val bytesRequired: Long,
+)

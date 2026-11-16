@@ -124,6 +124,13 @@ interface SteamAppDao {
     @Query("SELECT id, packageId, lastChangeNumber FROM steam_app WHERE id IN (:appIds)")
     suspend fun findChangeInfo(appIds: List<Int>): List<SteamAppChangeInfo>
 
+    /** The IDs of the games the account owns, the library without Spacewar (480). */
+    @Query(
+        "SELECT id FROM steam_app WHERE id != 480 AND packageId != ${SteamApp.NO_PACKAGE} " +
+            "AND (type & ${SteamApp.GAME_TYPE}) != 0",
+    )
+    suspend fun ownedGameIds(): List<Int>
+
     /** Licensed apps whose app info never arrived, e.g. because an ingest was interrupted. */
     @Query(
         "SELECT id FROM steam_app WHERE receivedPICS = 0 AND packageId != ${SteamApp.NO_PACKAGE}",

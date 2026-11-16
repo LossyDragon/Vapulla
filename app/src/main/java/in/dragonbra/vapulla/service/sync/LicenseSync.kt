@@ -19,6 +19,7 @@ import `in`.dragonbra.vapulla.service.PicsFeed
 import `in`.dragonbra.vapulla.service.SessionComponent
 import `in`.dragonbra.vapulla.service.api.FamilyApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
+import `in`.dragonbra.vapulla.service.api.awaitOrNull
 import `in`.dragonbra.vapulla.util.generateSteamApp
 import `in`.dragonbra.vapulla.util.helpers.emptyEnumSet
 import `in`.dragonbra.vapulla.util.runSuspendCatching
@@ -132,8 +133,7 @@ class LicenseSync(
             val accessTokens = if (pkgsForAccessTokens.isNotEmpty()) {
                 steamApps
                     .picsGetAccessTokens(appIds = emptyList(), packageIds = pkgsForAccessTokens)
-                    .await()
-                    .packageTokens
+                    .awaitOrNull("PICSGetAccessTokens") ?.packageTokens.orEmpty()
             } else {
                 emptyMap()
             }
@@ -404,8 +404,17 @@ class LicenseSync(
             .timeChunked(PICS_BATCH_SIZE, PICS_BATCH_WINDOW)
             .collect { ids ->
                 Timber.d("Collected ${ids.size} app(s) to query PICS")
+
+                // Some apps only give up their full info for a token, which Steam hands
+                // out for the apps the account may see. Without an answer, ask without.
+                val tokens = steamApps
+                    .picsGetAccessTokens(appIds = ids, packageIds = emptyList())
+                    .awaitOrNull("PICSGetAccessTokens")
+                    ?.appTokens
+                    .orEmpty()
+
                 steamApps.picsGetProductInfo(
-                    apps = ids.map { PICSRequest(id = it, accessToken = 0) },
+                    apps = ids.map { PICSRequest(id = it, accessToken = tokens[it] ?: 0) },
                     packages = emptyList(),
                 )
             }

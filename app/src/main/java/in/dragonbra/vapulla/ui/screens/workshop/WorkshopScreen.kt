@@ -100,7 +100,17 @@ private fun WorkshopContent(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Workshop") },
+                title = {
+                    Text(
+                        text = if (uiState.gameName.isEmpty()) {
+                            "Workshop"
+                        } else {
+                            "${uiState.gameName} Workshop"
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 navigationIcon = { BackButton(onClick = onBack) },
             )
         },
@@ -315,6 +325,7 @@ private fun Preview() {
     VapullaTheme {
         WorkshopContent(
             uiState = WorkshopUiState(
+                gameName = "Team Fortress 2",
                 sort = WorkshopSort.MostSubscribed,
                 items = persistentListOf(
                     item(1, "Snowy Fortress", "A winter take on a classic map.", 152_340),

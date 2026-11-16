@@ -63,6 +63,8 @@ android-timber = { module = "com.jakewharton.timber:timber", version.ref = "timb
 bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 javasteam = { module = "in.dragonbra:javasteam", version.ref = "javasteam" }
 depotdownloader = { module = "in.dragonbra:javasteam-depotdownloader", version.ref = "javasteam" }
+# The messages and services of Steam's web interface, of which the app uses ClientComm.
+webui-protobufs = { module = "in.dragonbra:javasteam-protobufs-webui", version.ref = "javasteam" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 # Depot chunks are compressed with LZMA or Zstandard. JavaSteam leaves both libraries to the app.
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
@@ -112,6 +114,7 @@ koin = [
 javasteam = [
     "bouncycastle",
     "depotdownloader",
+    "webui-protobufs",
     "javasteam",
     "protobuf-java",
     "xz",

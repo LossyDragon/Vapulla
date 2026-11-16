@@ -1,6 +1,7 @@
 package `in`.dragonbra.vapulla.service.api
 
 import `in`.dragonbra.javasteam.enums.EPersonaState
+import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.protobufs.steamclient.SteammessagesPlayerSteamclient.CPlayer_GetMutualFriendsForIncomingInvites_Request
 import `in`.dragonbra.javasteam.rpc.service.Player
 import `in`.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends
@@ -100,17 +101,25 @@ class FriendsApi(
     /**
      * Sets the nickname of [friendId]; an empty [value] removes it.
      *
-     * The nickname is stored here as well as sent, so the change shows at once. Steam also
-     * announces a changed nickname to every signed-in device, which
-     * [in.dragonbra.vapulla.service.sync.FriendsSync] writes; if that reaches this device
-     * too it finds the nickname already in place. Steam's answer cannot be awaited with this
-     * call, so should it refuse the change, the list at the next sign-in puts the stored
-     * one right again.
+     * The nickname is stored once Steam has accepted it, so the change shows without waiting
+     * for the announcement Steam makes to every signed-in device, which
+     * [in.dragonbra.vapulla.service.sync.FriendsSync] writes as well.
+     *
+     * @return Steam's answer; `Timeout` when there is none. Nothing is stored unless it is `OK`.
      */
-    suspend fun setNickname(friendId: Long, value: String) {
+    suspend fun setNickname(friendId: Long, value: String): EResult {
         val nickname = value.trim()
-        steamFriends.setFriendNickname(friendId.toSteamID(), nickname)
-        db.steamFriendDao().setNickname(friendId, nickname)
+        val result = steamFriends.setFriendNickname(friendId.toSteamID(), nickname)
+            .awaitOrNull("SetFriendNickname")
+            ?.result
+            ?: return EResult.Timeout
+
+        if (result == EResult.OK) {
+            db.steamFriendDao().setNickname(friendId, nickname)
+        } else {
+            Timber.w("SetFriendNickname answered $result")
+        }
+        return result
     }
 
     /**

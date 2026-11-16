@@ -375,11 +375,15 @@ class DownloadManager(
 
     /**
      * Space a download could use: what is free, less what the other unfinished downloads
-     * have yet to fill.
+     * have yet to fill. A game that is downloaded already stays where it is, so for an
+     * update it is the space on that storage that counts, not on the one new downloads go to.
      */
     suspend fun availableBytes(appId: Int, workshopId: Long = 0L): Long =
         withContext(Dispatchers.IO) {
-            (freeBytes() - downloadDao.reservedBytes(appId, workshopId)).coerceAtLeast(0)
+            val installed = downloadDao.find(appId, workshopId)?.installDir?.let(::File)
+            val free = installed?.apply { mkdirs() }?.usableSpace ?: freeBytes()
+
+            (free - downloadDao.reservedBytes(appId, workshopId)).coerceAtLeast(0)
         }
 
     /**
@@ -435,6 +439,14 @@ class DownloadManager(
             val existing = downloadDao.find(download.appId, download.workshopId)
             val state = existing?.state
             if (state == DownloadState.QUEUED || state == DownloadState.DOWNLOADING) {
+                return@withContext null
+            }
+            // Paused: carry on with what is there. Queued anew, it would start from nothing.
+            if (state == DownloadState.PAUSED &&
+                existing.os == download.os && existing.language == download.language &&
+                existing.branch == download.branch
+            ) {
+                resume(download.appId, download.workshopId)
                 return@withContext null
             }
             if (isMoving(download.appId, download.workshopId)) {
@@ -765,16 +777,9 @@ class DownloadManager(
             tracker.onStatus(message)
         }
 
-        // Both progress callbacks come from the threads that write chunks to disk, so
-        // holding them up is what holds the download to the speed limit. The downloader
-        // reports the last chunk of a file here, in place of onChunkCompleted and without
-        // its size, so that chunk waits for what is owed but adds nothing to it; its bytes
-        // are counted when the depot next reports a chunk or completes.
-        override fun onFileCompleted(depotId: Int, fileName: String, depotPercentComplete: Float) {
-            tracker.onProgress(depotId, depotPercentComplete)
-            limiter.pace(0)
-        }
-
+        // Called for every chunk, from the threads that write chunks to disk, so holding it
+        // up is what holds the download to the speed limit. onFileCompleted follows a
+        // file's last chunk and has nothing to add.
         override fun onChunkCompleted(
             depotId: Int,
             depotPercentComplete: Float,

@@ -14,6 +14,7 @@ import `in`.dragonbra.vapulla.ui.screens.home.HomeViewModel
 import `in`.dragonbra.vapulla.ui.screens.leaderboards.LeaderboardsViewModel
 import `in`.dragonbra.vapulla.ui.screens.login.LoginViewModel
 import `in`.dragonbra.vapulla.ui.screens.profile.ProfileViewModel
+import `in`.dragonbra.vapulla.ui.screens.remote.RemoteClientsViewModel
 import `in`.dragonbra.vapulla.ui.screens.screenshots.ScreenshotsViewModel
 import `in`.dragonbra.vapulla.ui.screens.servers.ServerBrowserViewModel
 import `in`.dragonbra.vapulla.ui.screens.sessions.SessionsViewModel
@@ -35,7 +36,7 @@ import org.koin.dsl.module
 
 /** One view model per screen. Parameters are the friend's Steam ID or the app ID. */
 val ViewModelModules = module {
-    viewModel { LoginViewModel(get(), get()) }
+    viewModel { LoginViewModel(get(), get(), get()) }
     viewModel { HomeViewModel(get(), get(), get(), get()) }
     viewModel { GamesViewModel(get(), get(), get(), get()) }
     viewModel { DownloadsViewModel(get(), get(), get()) }
@@ -43,6 +44,7 @@ val ViewModelModules = module {
     viewModel { ServerBrowserViewModel(get(), get(), get()) }
     viewModel { ScreenshotsViewModel(get()) }
     viewModel { SessionsViewModel(get()) }
+    viewModel { RemoteClientsViewModel(get()) }
     viewModel { AccountViewModel(get(), get(), get()) }
     viewModel { StoreViewModel(get()) }
     viewModel { FamilyViewModel(get()) }
@@ -148,6 +150,7 @@ val ViewModelModules = module {
     viewModel { (appId: Int) ->
         WorkshopViewModel(
             appId = appId,
+            appDao = get(),
             connection = get(),
             settingsManager = get(),
             downloadDao = get(),

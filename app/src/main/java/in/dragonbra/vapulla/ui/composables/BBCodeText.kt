@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -58,6 +60,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import `in`.dragonbra.vapulla.service.api.YouTubeApi
@@ -288,8 +291,12 @@ private fun BBImage(image: BBBlock.Image) {
 
     // Steam sends the dimensions, so the bubble has its final size before the image loads
     // and the list does not jump. Without them a fixed-height crop is used.
+    // Never wider than the image is: a small one stretched to the bubble looks blurry.
+    val maxWidth = image.widthPx?.let { with(LocalDensity.current) { it.toDp() } } ?: Dp.Unspecified
+
     val sizeModifier = if (image.aspectRatio != null) {
         Modifier
+            .widthIn(max = maxWidth)
             .fillMaxWidth()
             .aspectRatio(image.aspectRatio)
     } else {
@@ -428,9 +435,16 @@ sealed interface BBBlock {
 
     data class Code(val content: String) : BBBlock
 
-    /** [aspectRatio] is width over height, when Steam sent the dimensions. */
-    data class Image(val url: String, val thumbnailUrl: String?, val aspectRatio: Float?) :
-        BBBlock
+    /**
+     * [aspectRatio] is width over height and [widthPx] the width in pixels, when Steam sent
+     * the dimensions.
+     */
+    data class Image(
+        val url: String,
+        val thumbnailUrl: String?,
+        val aspectRatio: Float?,
+        val widthPx: Float? = null,
+    ) : BBBlock
 
     data class Sticker(val type: String) : BBBlock
 
@@ -837,6 +851,7 @@ private fun parseImage(text: String, tag: Tag): BBBlock.Image? {
     return BBBlock.Image(
         url = url,
         thumbnailUrl = attributes["thumbnail_src"]?.takeIf(::isHttpUrl),
+        widthPx = width?.takeIf { it > 0f },
         aspectRatio = if (width != null && height != null && width > 0f && height > 0f) {
             // Keep a freak ratio from producing a sliver or a tower.
             (width / height).coerceIn(0.25f, 4f)

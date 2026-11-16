@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.db.dao.DownloadDao
+import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.entity.DownloadState
 import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
@@ -12,6 +13,7 @@ import `in`.dragonbra.vapulla.service.api.WorkshopItem
 import `in`.dragonbra.vapulla.service.api.WorkshopSort
 import `in`.dragonbra.vapulla.service.download.DownloadManager
 import `in`.dragonbra.vapulla.service.requestMessage
+import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.PersistentSet
@@ -33,6 +35,8 @@ import kotlinx.coroutines.launch
 
 @Immutable
 data class WorkshopUiState(
+    /** The name of the game the workshop belongs to; empty until it is read. */
+    val gameName: String = "",
     val sort: WorkshopSort = WorkshopSort.Trending,
     val searchText: String = "",
     val items: ImmutableList<WorkshopItem> = persistentListOf(),
@@ -52,6 +56,7 @@ data class WorkshopUiState(
  */
 class WorkshopViewModel(
     private val appId: Int,
+    appDao: SteamAppDao,
     private val connection: SteamServiceConnection,
     private val settingsManager: SettingsManager,
     downloadDao: DownloadDao,
@@ -67,6 +72,11 @@ class WorkshopViewModel(
     private var loadJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            val name = appDao.findAppName(appId)?.decodeHtml().orEmpty()
+            _uiState.update { it.copy(gameName = name) }
+        }
+
         load(reset = true)
 
         viewModelScope.launch {

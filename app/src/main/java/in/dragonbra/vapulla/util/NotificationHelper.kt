@@ -157,7 +157,7 @@ object NotificationHelper {
             .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentIntent(openAppIntent(context))
+            .setContentIntent(openDownloadsIntent(context))
             .setProgress(100, (fraction * 100).toInt(), false)
             .setGroup(GROUP_DOWNLOADS)
             .setOngoing(true)
@@ -180,7 +180,7 @@ object NotificationHelper {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setGroup(GROUP_DOWNLOADS)
-            .setContentIntent(openAppIntent(context))
+            .setContentIntent(openDownloadsIntent(context))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
@@ -191,6 +191,14 @@ object NotificationHelper {
     fun cancelDownloadFinished(context: Context, id: Int) {
         context.notificationManager.cancel(TAG_DOWNLOAD, id)
     }
+
+    /** Tapping a download's notification opens the Downloads screen. */
+    private fun openDownloadsIntent(context: Context): PendingIntent = PendingIntent.getActivity(
+        context,
+        0,
+        MainActivity.openDownloadsIntent(context),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
     private fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
@@ -336,7 +344,15 @@ object NotificationHelper {
             .setContentText("$friendName has added you to their friends list!")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(openAppIntent(context))
+            // Tapping opens the profile of whoever asks, to see who it is before answering.
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    context,
+                    notificationId,
+                    MainActivity.openProfileIntent(context, friendId),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
             .addAction(
                 R.drawable.ic_check,
                 "Accept",

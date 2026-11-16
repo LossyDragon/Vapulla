@@ -27,7 +27,8 @@ The latest build is on the
 
 ## Features
 
-- Sign in with a QR code or with account name and password, including Steam Guard
+- Sign in with a QR code or with account name and password, including Steam Guard; the
+  sign-in screen says when there is no internet and signs in again when it is back
 - Friends list with presence, nicknames, recent chats and unread counters
 - Friend chat: history, sending, Steam emoticons and stickers, image upload, typing notices,
   notifications with inline reply that Android lists among its conversations, YouTube links
@@ -52,6 +53,11 @@ The latest build is on the
   friend invite links
 - Steam Family: its members and the games it shares with you, which are in the library too
 - Signed-in devices list, with signing a device out
+- Remote clients: the Steam clients running on your other machines, which games each has
+  installed and how its downloads are getting on; and Vapulla answers the same question
+  when another device asks it: it shows up in Steam's own apps as a device of yours (as a
+  PC client by default; Settings has the choice), and a game picked for it there is
+  downloaded
 - Optional, off by default: Steam's community and store pages open inside the app, signed in
   to your account
 - Explore without signing in: an anonymous session, the way SteamCMD signs in, with the
@@ -156,10 +162,11 @@ The service package is the place to look for JavaSteam usage examples:
 | Fetch a depot manifest | `service/api/ManifestApi.kt` |
 | Call a unified service (most of the rest) | `service/api/SessionsApi.kt` is the shortest; Cloud, Workshop, Family, Store and Invites work the same way |
 | Read leaderboards and achievements | `service/api/LeaderboardsApi.kt`, `service/api/LibraryApi.kt` |
+| See the Steam clients on other machines and their games (`ClientComm`, from the `javasteam-protobufs-webui` artifact) | `service/api/RemoteClientsApi.kt` |
 | Query game servers | `service/api/ServerBrowserApi.kt`, `util/SourceQuery.kt` |
 | Make and read an auth ticket | `service/api/AuthTicketApi.kt`, `util/AuthTicketReader.kt` |
 | Get web cookies for Steam's sites | `service/api/WebSessionApi.kt` |
-| Add a message handler and callback of your own | `service/handler/VapullaHandler.kt`, `service/callback/` |
+| Add a message handler and callback of your own, and answer a request Steam sends the client | `service/handler/VapullaHandler.kt`, `service/callback/`, `service/download/RemoteRequests.kt` |
 | Watch every packet | `service/NetworkLog.kt`, `service/PacketInspector.kt` |
 
 View models reach these through `SteamServiceConnection.request`, which also covers the case

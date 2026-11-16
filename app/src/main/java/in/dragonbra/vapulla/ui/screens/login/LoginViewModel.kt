@@ -7,6 +7,7 @@ import `in`.dragonbra.vapulla.manager.AccountManager
 import `in`.dragonbra.vapulla.service.LoginResult
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.util.NetworkMonitor
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,7 @@ import timber.log.Timber
 class LoginViewModel(
     private val connection: SteamServiceConnection,
     private val accountManager: AccountManager,
+    private val networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -98,6 +100,25 @@ class LoginViewModel(
             }
         }
 
+        // Say so when there is no internet, and when it is back use the saved sign-in again
+        // without waiting for a tap. Not while something is being typed or shown instead.
+        viewModelScope.launch {
+            var wasOffline = false
+            networkMonitor.isOnline.collect { online ->
+                _uiState.update { it.copy(isOffline = !online) }
+
+                val state = _uiState.value
+                val idle = !state.isLoading &&
+                    state.loginStep == LoginStep.CREDENTIALS &&
+                    state.password.isEmpty() &&
+                    !SteamService.isLoggedIn.value &&
+                    !SteamService.isAnonymous.value
+                if (online && wasOffline && idle && connection.isBound.value) autoSignIn()
+
+                wasOffline = !online
+            }
+        }
+
         // An anonymous session has started and its screens are in front. This one stays
         // underneath, so leave it ready for when they are left again.
         viewModelScope.launch {
@@ -113,7 +134,7 @@ class LoginViewModel(
 
                     LoginResult.Success -> {
                         Timber.d("Logged in, navigating to home screen")
-                        _uiState.value = LoginUiState()
+                        _uiState.value = LoginUiState(isOffline = !networkMonitor.isOnline.value)
                         hasSavedSignIn = false
                         _navigateToHome.emit(Unit)
                     }
@@ -167,6 +188,13 @@ class LoginViewModel(
         if (username.isNullOrBlank() || refreshToken.isNullOrBlank()) return
 
         hasSavedSignIn = true
+
+        // No internet: the attempt could only fail. It is made when the network is back.
+        if (!networkMonitor.isOnline.value) {
+            _uiState.update { it.copy(username = username) }
+            return
+        }
+
         _uiState.update { it.copy(username = username, isLoading = true) }
         Timber.d("Auto Logging in ")
         signInWhenVisible = !signIn()

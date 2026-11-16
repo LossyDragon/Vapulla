@@ -16,6 +16,7 @@ sealed class Routes : Serializable {
     data object ChatRooms : Routes()
     data object ServerBrowser : Routes()
     data object Sessions : Routes()
+    data object RemoteClients : Routes()
     data object Account : Routes()
     data object Family : Routes()
     data object Store : Routes()

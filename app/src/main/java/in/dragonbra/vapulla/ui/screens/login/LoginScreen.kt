@@ -10,14 +10,19 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -144,7 +149,26 @@ private fun LoginScreenContent(
                     .height(32.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!uiState.isLoading && uiState.error != null) {
+                if (!uiState.isLoading && uiState.isOffline) {
+                    // Without internet nothing else can be the matter, so this takes the
+                    // place of whatever the last attempt failed with.
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.WifiOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = "No internet connection",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                } else if (!uiState.isLoading && uiState.error != null) {
                     Text(
                         text = uiState.error,
                         style = MaterialTheme.typography.bodyMedium,
@@ -225,6 +249,11 @@ class LoginUiStateProvider : PreviewParameterProvider<LoginUiState> {
             loginStep = LoginStep.CREDENTIALS,
             username = "My Username",
             error = "Sign-in failed: TryAnotherCM",
+        ),
+        LoginUiState(
+            loginStep = LoginStep.CREDENTIALS,
+            username = "My Username",
+            isOffline = true,
         ),
         LoginUiState(
             loginStep = LoginStep.QRCODE,

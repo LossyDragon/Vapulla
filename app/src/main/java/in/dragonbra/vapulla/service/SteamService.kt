@@ -7,6 +7,7 @@ import android.os.Binder
 import android.os.IBinder
 import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.api.SteamApis
 import `in`.dragonbra.vapulla.service.auth.SteamAuthenticator
 import `in`.dragonbra.vapulla.service.download.DownloadManager
@@ -96,6 +97,7 @@ class SteamService : Service() {
     private val db: VapullaDatabase by inject()
     private val account: AccountManager by inject()
     private val downloads: DownloadManager by inject()
+    private val settings: SettingsManager by inject()
 
     // Lazy because the application context is not available before onCreate.
     private val connection: SteamConnection by lazy {
@@ -107,6 +109,7 @@ class SteamService : Service() {
             onStatus = ::updateStatus,
             onShutDown = ::onConnectionShutDown,
             downloads = downloads,
+            settings = settings,
         )
     }
 

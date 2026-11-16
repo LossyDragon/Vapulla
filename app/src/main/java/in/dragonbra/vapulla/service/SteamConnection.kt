@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.service
 
 import android.content.Context
 import `in`.dragonbra.javasteam.enums.EClientPersonaStateFlag
+import `in`.dragonbra.javasteam.enums.EGamingDeviceType
 import `in`.dragonbra.javasteam.enums.EPersonaState
 import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.javasteam.rpc.service.Player
@@ -39,6 +40,7 @@ import `in`.dragonbra.javasteam.util.compat.Consumer
 import `in`.dragonbra.vapulla.BuildConfig
 import `in`.dragonbra.vapulla.db.VapullaDatabase
 import `in`.dragonbra.vapulla.manager.AccountManager
+import `in`.dragonbra.vapulla.manager.SettingsManager
 import `in`.dragonbra.vapulla.service.api.AuthTicketApi
 import `in`.dragonbra.vapulla.service.api.ChatApi
 import `in`.dragonbra.vapulla.service.api.ChatMediaApi
@@ -51,6 +53,7 @@ import `in`.dragonbra.vapulla.service.api.LeaderboardsApi
 import `in`.dragonbra.vapulla.service.api.LibraryApi
 import `in`.dragonbra.vapulla.service.api.ManifestApi
 import `in`.dragonbra.vapulla.service.api.ProfileApi
+import `in`.dragonbra.vapulla.service.api.RemoteClientsApi
 import `in`.dragonbra.vapulla.service.api.ScreenshotsApi
 import `in`.dragonbra.vapulla.service.api.ServerBrowserApi
 import `in`.dragonbra.vapulla.service.api.SessionsApi
@@ -60,6 +63,7 @@ import `in`.dragonbra.vapulla.service.api.WebSessionApi
 import `in`.dragonbra.vapulla.service.api.WorkshopApi
 import `in`.dragonbra.vapulla.service.callback.EmoticonListCallback
 import `in`.dragonbra.vapulla.service.download.DownloadManager
+import `in`.dragonbra.vapulla.service.download.RemoteRequests
 import `in`.dragonbra.vapulla.service.handler.VapullaHandler
 import `in`.dragonbra.vapulla.service.sync.AnonymousPicsFeed
 import `in`.dragonbra.vapulla.service.sync.FriendsSync
@@ -107,6 +111,7 @@ class SteamConnection(
     private val onStatus: (String) -> Unit,
     private val onShutDown: (sessionLost: Boolean) -> Unit,
     private val downloads: DownloadManager,
+    private val settings: SettingsManager,
 ) {
 
     // The client and what hangs off it are replaced by the thread that opens or closes the
@@ -138,6 +143,16 @@ class SteamConnection(
     /** Reconnect attempts made since the session was last signed in. */
     @Volatile
     private var retryCount = 0
+
+    /**
+     * What Steam calls this session among the account's clients, from the sign-in answer;
+     * 0 until signed in.
+     */
+    @Volatile
+    private var clientInstanceId = 0L
+
+    /** Where JavaSteam keeps the CM server list between runs. */
+    private val serverListFile = File(context.filesDir, "servers.bin")
 
     /** True once signed in: a dropped connection is then re-established and signed in again. */
     @Volatile
@@ -197,6 +212,10 @@ class SteamConnection(
             loginID = Utils.getUniqueId(account),
             machineName = DEVICE_NAME,
             chatMode = ChatMode.NEW_STEAM_CHAT,
+            // What kind of device this is, as picked in Settings; see AppSettings.
+            gamingDeviceType = EGamingDeviceType.from(
+                settings.settings.first().reportedDeviceType,
+            ),
         )
 
         steamUser?.logOn(loginDetails)
@@ -382,6 +401,10 @@ class SteamConnection(
         connectedSignal = CompletableDeferred()
 
         val client = SteamClient(steamConfiguration())
+
+        // The app's own handler goes in first: a session component is built on it.
+        client.addHandler<VapullaHandler>()
+
         val callbacks = CallbackManager(client)
         val steamApis = buildApis(client, callbacks)
 
@@ -408,10 +431,8 @@ class SteamConnection(
         )
         components.forEach { subscriptions.addAll(it.subscribe(callbacks)) }
 
-        // Configure handlers. Only the ones no screen uses are dropped.
+        // Only the handlers no screen uses are dropped.
         with(client) {
-            addHandler<VapullaHandler>()
-
             removeHandler<SteamGameCoordinator>()
             removeHandler<SteamGameServer>()
             removeHandler<SteamScreenshots>()
@@ -424,9 +445,14 @@ class SteamConnection(
         return callbacks
     }
 
-    /** The client settings: where the CM server list is kept, and what to hear about friends. */
+    /**
+     * The client settings: where the CM server list is kept, which cell to ask Steam's
+     * directory for servers of, and what to hear about friends. Without the cell the
+     * directory hands out servers from anywhere, and the first may be a continent away.
+     */
     private fun steamConfiguration(): SteamConfiguration = SteamConfiguration.create {
-        it.withServerListProvider(FileServerListProvider(File(context.filesDir, "servers.bin")))
+        it.withServerListProvider(FileServerListProvider(serverListFile))
+        it.withCellID(runBlocking { account.cellId() })
         it.withDefaultPersonaStateFlags(
             EnumSet.of(
                 EClientPersonaStateFlag.Status,
@@ -490,6 +516,7 @@ class SteamConnection(
             cloud = CloudApi(unified.createService()),
             workshop = WorkshopApi(unified.createService()),
             sessions = SessionsApi(unified.createService(), localSteamId),
+            remoteClients = RemoteClientsApi(unified.createService()) { clientInstanceId },
             screenshots = ScreenshotsApi(unified.createService(), localSteamId),
             manifests = ManifestApi(
                 client = client,
@@ -544,7 +571,16 @@ class SteamConnection(
         )
         friendsSync = friends
 
-        return listOf(friends, steamApis.chat, steamApis.chatRooms, licenses)
+        val remoteRequests = RemoteRequests(
+            scope = scope,
+            handler = requireNotNull(client.getHandler<VapullaHandler>()),
+            appDao = db.steamAppDao(),
+            downloadDao = db.downloadDao(),
+            licenseDao = db.steamLicenseDao(),
+            downloads = downloads,
+        )
+
+        return listOf(friends, steamApis.chat, steamApis.chatRooms, licenses, remoteRequests)
     }
 
     /** Starts connecting and runs the loop that hands Steam's messages to the callbacks. */
@@ -835,8 +871,26 @@ class SteamConnection(
         SteamAccount.nameChanged(NameChange(change.result, change.name))
     }
 
+    /**
+     * Keeps the cell Steam placed this sign-in in, for [steamConfiguration]. When it is not
+     * the one the stored server list was fetched for, the list is dropped, so the next
+     * connection asks the directory for servers of this cell. The session under way stays
+     * on the server it has.
+     */
+    private fun rememberCell(cellId: Int) {
+        scope.launch {
+            if (cellId == account.cellId()) return@launch
+
+            Timber.i("Steam cell is $cellId; dropping the stored server list")
+            account.setCellId(cellId)
+            serverListFile.delete()
+        }
+    }
+
     /** Keeps what the logon answer says about the session, for the Under the Hood screens. */
     private fun recordSignIn(callback: LoggedOnCallback) {
+        rememberCell(callback.cellID)
+        clientInstanceId = callback.clientInstanceId
         val client = steamClient
         val now = System.currentTimeMillis()
 
@@ -888,6 +942,8 @@ class SteamConnection(
             EResult.Revoked,
             // What Steam answers for a token it does not recognise.
             EResult.InvalidPassword,
+            // The token has run out.
+            EResult.Expired,
         )
     }
 }

@@ -334,6 +334,33 @@ private fun SettingsContent(
 
             item {
                 SettingsGroup(
+                    "Remote clients",
+                    { shape ->
+                        ChoiceRow(
+                            title = "Sign in to Steam as",
+                            subtitle = "How this device is listed on your other Steam " +
+                                "clients, which can then see its games. Steam only has a " +
+                                "name for a PC: a phone is listed under a text key it never " +
+                                "translated, and with \"Hidden\" the device is not listed " +
+                                "at all. Applies from the next sign-in.",
+                            options = AppSettings.REPORTED_DEVICE_TYPES,
+                            selected = settings.reportedDeviceType,
+                            shape = shape,
+                            onSelect = { type -> onChange { it.copy(reportedDeviceType = type) } },
+                            label = { type ->
+                                when (type) {
+                                    AppSettings.DEVICE_TYPE_PC -> "PC client"
+                                    AppSettings.DEVICE_TYPE_PHONE -> "Phone"
+                                    else -> "Hidden"
+                                }
+                            },
+                        )
+                    },
+                )
+            }
+
+            item {
+                SettingsGroup(
                     "Network log",
                     { shape ->
                         ChoiceRow(
@@ -493,10 +520,11 @@ private fun ChoiceRow(
     shape: Shape,
     onSelect: (Int) -> Unit,
     label: (Int) -> String = { "$it" },
+    subtitle: String? = null,
 ) {
     SettingRow(
         title = title,
-        subtitle = null,
+        subtitle = subtitle,
         shape = shape,
         below = {
             Row(

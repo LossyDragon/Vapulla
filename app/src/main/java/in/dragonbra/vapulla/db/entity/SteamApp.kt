@@ -264,6 +264,9 @@ data class SteamApp(
     companion object {
         /** The [packageId] of an app no license grants: known to the app, but not owned. */
         const val NO_PACKAGE = Int.MAX_VALUE
+
+        /** The bit of [AppType.game] in the type column, for queries. */
+        const val GAME_TYPE = 0x01
     }
 }
 

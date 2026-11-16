@@ -21,72 +21,90 @@ To Verify
 - Profile of someone who sent a friend request: the "Mutual friends" section (new, never
   run), with friends in common and with none
 - Family screen: an account that is in no family (the screen itself is confirmed)
-- TokenCipher on a device: encrypting and decrypting a token needs the Android Keystore,
+- TokenCipher on a real phone (on the emulator the token is stored encrypted and the saved
+  sign-in works): encrypting and decrypting a token needs the Android Keystore,
   so the unit tests (./gradlew :app:testDebugUnitTest) only cover telling the stored forms
   apart
-- The code clean-up of 15 Nov 2026 was checked on the emulator by opening every screen
-  (the upgrade from a version 15 database, auto sign-in, friends, a chat and a profile,
-  every drawer screen and Under the Hood tool, game detail, store search, PICS explorer,
-  depot suggestions, Settings and rotation). Not yet run:
+- The code clean-up of 15 Nov 2026 was checked on the emulator: the upgrade from a
+  version 15 database, auto sign-in, every screen and Under the Hood tool, Settings,
+  rotation, the PICS explorer filter, Workshop sort and leaderboards switched quickly, a
+  server query with no result and a game changed mid-query, a lost connection (three
+  tries, then sign-in), the network back mid-retry, and the last-message time on a
+  friends row. Not yet run, as each needs a second account, a password or a message:
   - Sign-in: typing another account while a token is saved (must use the typed one);
     wrong password; Steam Guard code; QR code, its cancel, and a second QR straight
     after (the poll is now every few seconds, it was every few milliseconds)
-  - Sign out and Stop from the drawer and the notification, then signing in again; a lost
-    connection (at most three tries, then sign-in); network back mid-retry
+  - Log Out and Stop, from the drawer and the notification, then signing in again
   - Explore without signing in: open a tool, rotate, leave, then sign in; back from the
     friends list must leave the app, not show sign-in
   - A reply or friend-request action from a notification after the session ended: the
     service should stop, not stay on "Starting..."
-  - Friends list: the time of the last message on a row (needs a stored chat)
-  - Nicknames set, changed and removed while the friend's presence changes; alias list
   - Friend chat: typing notices, the emoji panel, a failed send, leaving right after
     sending, image upload; group chat image and sticker
   - Chat text: a bold link, markup inside a link label and inside a spoiler, an image in
     a spoiler, emoticons
   - Downloads: pause right after queueing and while running, two moves at once
-  - Lists with airplane mode on mid-request: an error or empty list, not a spinner
-  - Workshop sort switched quickly; a failed "load more" in Workshop and Screenshots;
-    server browser with no result; leaderboards Everyone / Friends
-  - PICS explorer filter with open / close all
+  - A failed "load more" in Workshop and Screenshots
+- Fixed 15 Nov 2026 and not seen for real yet: a friend request notification opens the
+  profile and a download notification the Downloads screen (confirmed with the same
+  intents sent by adb, not by tapping a notification); a chat image smaller than the
+  bubble is drawn at its own size; a paused workshop item is resumed, not started over,
+  from the Workshop screen; updating a game checks free space on the storage it is on;
+  a token Steam calls Expired is forgotten
+- Downloads, not tried since JavaSteam pools its chunk buffers: pause and resume, remove
+  while downloading, losing the network, verify, workshop items, several downloads in a row
+- Vapulla as a remote client (new 15 Nov 2026). Confirmed on the emulator with the desktop
+  Steam client and the official Steam app: it is listed there as a device ("PC Client"
+  with the default of the "Sign in to Steam as" setting), answers with the account's
+  games, and a download asked for from the desktop client was queued and completed (LYNE,
+  134.5 MB), and paused and carried on with from there twice (its pause button sends
+  ClientEnableOrDisableDownloads; to carry on it sends that or the install request
+  again), and removed from there, files and all. Not seen: whether a finished or
+  removed game shows as such over there; what the other
+  device shows while a larger game downloads; a request that cannot be met (no space, a
+  game with nothing to download); and the Phone and Hidden choices of the setting.
+  Each new sign-in is a new session to Steam, and the desktop client keeps its list of
+  devices for five minutes, so a request made right after the app restarted is lost.
+  The device menu on the Install button of the desktop client's library is another
+  system and does not show Vapulla: it lists Remote Play clients, which find each other
+  with the RemoteClient protocol and a pairing, not with ClientComm. Steam does relay
+  those clients' announcements to Vapulla (RemoteClientSteamClient.
+  NotifySteamBroadcastPacket#1). Decoded once on the emulator: the payload is the LAN
+  discovery packet as it is (8 magic bytes ff ff ff ff 21 4c 5f a0, then a length and a
+  CMsgRemoteClientBroadcastHeader, then a length and the body). The PC sent a Status
+  (host name, OS type 20, device type 1, version 8 / minimum 6, connect port 27036,
+  enabled services 98, one user with an auth key ID) and a Discovery with no client IDs,
+  which asks every client to answer. Nothing in Vapulla reads or answers them.
+- Remote Clients screen (new 15 Nov 2026; both machines, their games, free space, the
+  filter and switching between them are confirmed on the emulator): a download under way
+  on the other machine (progress, speed, time left, paused, queued), a game running
+  there, and a client that is closed while the screen is open
+- Sign-in screen without internet (new 15 Nov 2026; shown, and signing in again by itself
+  when the network is back, are confirmed on the emulator): on a phone switching between
+  Wi-Fi and mobile data, and on a network that is connected but has no internet
+- With the JavaSteam snapshot published 16 Nov 2026 (UTC): a nickname list marked
+  incremental or removal is applied as such (not seen to be sent); the speed and the speed
+  limit on a game of many small files, now that every chunk reports its bytes. (Setting
+  and removing a nickname, from the app and from another client, and the alias list are
+  confirmed on the emulator.)
 
 Issues or Bugs
 -------------------
-- Sign-in screen: after the connection is lost while the app is open, it shows
-  "Disconnected from Steam" and does not try again by itself once the network is back;
-  "Sign in" has to be tapped (it then uses the saved sign-in)
-- PICS app access tokens are always requested as 0
+- Achievements screen: which achievements are unlocked is wrong (A Hat in Time: 17 / 41 on
+  the game page, "0 of 46 unlocked" in the list; 7 Days to Die: 39 / 43 and "43 of 43").
+  Found on the emulator: Steam's answer is right, and JavaSteam's
+  UserStatsCallback.getExpandedAchievements reads the bit of each achievement from a
+  "bit" field the schema does not have, so every achievement of a block gets the unlock
+  time of bit 0. The bit is the name of the entry ("bits" { "1" { name, display } ... }).
+  In JavaSteam:
+      - val bitIndex = bitEntry["bit"].asInteger()
+      + val bitIndex = bitEntry.name?.toIntOrNull() ?: bitEntry["bit"].asInteger()
 - TryAnotherCM returns to sign-in instead of trying another CM
-- Friend request notification only opens the app, not the profile
 - Two identical messages in the same second are stored as one
-- The client connects to a far-away CM server (seen: Buenos Aires from the US); it seems to take
-  the first server in the list rather than a near one
-- Tapping a download notification opens the app, not the Downloads screen
 - Downloads skip depots shared from another app (depotfromapp, mostly redistributables)
-- A chat image smaller than the bubble is stretched to its width and looks blurry (seen: a
-  96 x 96 image); it should not be drawn larger than the size Steam gives for it
-- Downloads, not tried since JavaSteam pools its chunk buffers: pause and resume, remove
-  while downloading, losing the network, verify, workshop items, several downloads in a row
 - Downloads, memory: the heap peaked at 321 to 465 MB of 512 across runs, and the first
   10 s of a download allocate 460 to 740 MB before any chunk arrives. Neither is looked
   at; nothing reads the heap after a download ends
-- Downloads: a paused or queued workshop item is started over, not resumed, when its button
-  on the Workshop screen is tapped; resume it from the Downloads screen instead
-- Updating a game installed to one storage checks free space on the storage picked in
-  Settings, not the one the game is on
-
-- Nicknames: should Steam ever send a ClientPlayerNicknameList with its "incremental" flag
-  set, the app would take that short list for the whole list and clear every other
-  nickname, because JavaSteam's NicknameListCallback leaves out the message's "incremental"
-  and "removal" flags. Not seen to happen; changes arrive through PlayerClient instead.
-  setFriendNickname returning a job that can be awaited would let the app wait for
-  Steam's answer
-
-- Achievements screen: which achievements are unlocked is wrong. Seen on the emulator:
-  A Hat in Time shows 17 / 41 on the game page and "0 of 46 unlocked" in the list; 7 Days
-  to Die shows 39 / 43 and "43 of 43 unlocked". The game page asks
-  Player.GetAchievementsProgress; the list takes isUnlocked from JavaSteam's
-  getExpandedAchievements (LibraryApi.gameStats). Older than the clean-up
-- Is "Expired" another EResult that should clear the saved token?
 - Code clean-up left over from the review of 15 Nov 2026:
   - Utils is still an object of mixed helpers; its functions could be top-level
   - Profile, Home, Games and the server browser expose several flows, not one UiState
@@ -99,11 +117,55 @@ Issues or Bugs
   - README has no screenshots
   - LicenseSync waits 5 seconds before it handles the license list, with no reason given
 
+JavaSteam: left as it is, to look at some day
+---------------------------------------------
+- A subscriber that throws stops whoever runs the callbacks (CallbackManager lets it
+  through, as SteamKit does). Vapulla catches inside its callback loop
+- Three ways to wait for an answer, each failing differently: handlers return
+  AsyncJobSingle, SteamContent.getManifestRequestCode and getServersForSteamPipe return
+  Deferred, SteamAuthTicket.getAuthSessionTicket and generateAccessTokenForApp return
+  CompletableFuture. A suspend variant of each would let callers treat them alike
+- DepotDownloader has no pause, no cancel for one item and no speed limit. The app closes
+  the whole downloader to pause, and throttles by holding up onChunkCompleted
+- Leaderboards cannot be listed for an app; the app reads the community XML instead
+- A job that times out is still a cancellation (AsyncJobTimeoutException), so awaiting
+  one directly ends the coroutine quietly; the app waits through runSuspendCatching
+
 Feature Ideas
 ----------------------------------------------------
-- Game Coordinator (TF2 / CS2 / Dota 2 / Deadlock modules)
-- Inventory service: owned items
-- Lobbies (SteamMatchmaking) next to the server browser
+- Remote Clients: install, pause and resume, uninstall and launch a game on another
+  machine (ClientComm.InstallClientApp, SetClientAppUpdateState, EnableOrDisableDownloads,
+  UninstallClientApp, LaunchClientApp). None has been called yet. The client's side of
+  SetClientAppUpdateState is a single "update" flag, so its "action" is most likely 1 to
+  carry on and 0 to pause
+- Vapulla in the device menu of the desktop client's library (Remote Play clients). What
+  it would take, as far as the protos show:
+  1. Announce: answer a Discovery with a Status of its own, through
+     RemoteClient.SendSteamBroadcastPacket (leave out IP and MAC addresses)
+  2. The key: the messages between two devices go through Steam as well
+     (RemoteClient.SendSteamToSteamPacket, RemoteClientSteamClient.
+     NotifySteamToSteamPacket: source and destination client ID, a "secretid" and an
+     encrypted payload). Where a client gets that key, and the cipher, are not known.
+     This decides whether the rest can be done
+  3. The messages inside (steammessages_remoteclient.proto, message numbers from 9500):
+     CMsgRemoteClientAppStatus for the state of each game, CMsgRemoteClientInstallApp
+     and its response, status requests and pings. An install can reuse the queue in
+     RemoteRequests
+  4. A setting to turn it on
+  Next: a NetHook capture of the desktop client, started before it signs in, with the
+  Steam Deck on; open the device menu of a game and install one on the Deck. In it:
+  search for the auth key ID the PC announced (1481747608 on 15 Nov 2026) to find the
+  message the key comes in; see whether "secretid" is that ID; and note the order of
+  the broadcast and device-to-device packets. A payload of a broadcast packet is bytes
+  to NetHookAnalyzer and is read as described under To Verify; the device-to-device
+  payload is encrypted before it reaches the CM connection. Without the key in a plain
+  message the idea ends there. The open-source in-home streaming clients may also
+  document the key
+- Vapulla as a remote client: the requests it does not act on yet. Steam also sends a
+  client ClientLaunchClientApp (5544) and ClientGetClientDetails (5515), each answered
+  with the next message number (steammessages_clientserver_uds.proto in JavaSteam). A
+  setting to ask on the phone before a download asked for from elsewhere starts would
+  also fit here
 - Game notifications and parental settings (read-only)
 - Group chat: member list, reactions, mentions
 - Video upload in chat (the uploader accepts WebM / MPEG / OGV)
