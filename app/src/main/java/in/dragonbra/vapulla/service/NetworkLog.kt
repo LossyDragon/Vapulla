@@ -109,7 +109,11 @@ object NetworkLog : IDebugNetworkListener {
                     if (incoming) {
                         total.copy(packetsIn = total.packetsIn + 1, bytesIn = total.bytesIn + size)
                     } else {
-                        total.copy(packetsOut = total.packetsOut + 1, bytesOut = total.bytesOut + size)
+                        total.copy(
+                            packetsOut = total.packetsOut + 1,
+                            bytesOut =
+                                total.bytesOut + size,
+                        )
                     },
                 )
             }

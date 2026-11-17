@@ -86,6 +86,12 @@ class SteamService : Service() {
          * it clears it, so the reason is shown once.
          */
         fun takeSignOutReason(): String? = SteamState.signOutReason.getAndUpdate { null }
+
+        /**
+         * Whether the user just disconnected with [disconnect], and so does not want the
+         * saved sign-in used on its own. Reading it clears it: it holds for one login screen.
+         */
+        fun takeStayDisconnected(): Boolean = SteamState.stayDisconnected.getAndUpdate { false }
     }
 
     // A failed job is logged instead of taking the whole process down.
@@ -181,6 +187,15 @@ class SteamService : Service() {
      */
     fun logOut(clearCredentials: Boolean = true) {
         connection.logOut(clearCredentials)
+    }
+
+    /**
+     * Signs off and stops the service, but keeps the saved sign-in. The login screen shown
+     * next waits for the user instead of signing in again, see [takeStayDisconnected].
+     */
+    fun disconnect() {
+        SteamState.stayDisconnected.value = true
+        logOut(clearCredentials = false)
     }
 
     /** Runs a notification action sent through [actionIntent]. */

@@ -260,42 +260,46 @@ class ChatApi(
      * @param reaction an emoticon's name between colons, or a sticker's name.
      * @return false when the message is not one Steam knows yet, or Steam refuses.
      */
-    suspend fun react(messageId: Long, reaction: String, isSticker: Boolean, add: Boolean): Boolean =
-        withContext(Dispatchers.IO) {
-            val dao = db.chatMessageDao()
-            val message = dao.get(messageId)?.takeIf { it.timestampConfirmed }
-                ?: return@withContext false
+    suspend fun react(
+        messageId: Long,
+        reaction: String,
+        isSticker: Boolean,
+        add: Boolean,
+    ): Boolean = withContext(Dispatchers.IO) {
+        val dao = db.chatMessageDao()
+        val message = dao.get(messageId)?.takeIf { it.timestampConfirmed }
+            ?: return@withContext false
 
-            val request = CFriendMessages_UpdateMessageReaction_Request.newBuilder()
-                .setSteamid(message.friendId)
-                .setServerTimestamp((message.timestamp / 1000).toInt())
-                .setOrdinal(message.ordinal)
-                .setReactionType(if (isSticker) STICKER else EMOTICON)
-                .setReaction(reaction)
-                .setIsAdd(add)
-                .build()
+        val request = CFriendMessages_UpdateMessageReaction_Request.newBuilder()
+            .setSteamid(message.friendId)
+            .setServerTimestamp((message.timestamp / 1000).toInt())
+            .setOrdinal(message.ordinal)
+            .setReactionType(if (isSticker) STICKER else EMOTICON)
+            .setReaction(reaction)
+            .setIsAdd(add)
+            .build()
 
-            val body = friendMessages.updateMessageReaction(request)
-                .bodyOrNull("UpdateMessageReaction")
-                ?: return@withContext false
+        val body = friendMessages.updateMessageReaction(request)
+            .bodyOrNull("UpdateMessageReaction")
+            ?: return@withContext false
 
-            // The answer lists who has given this reaction now. Our own part in it is set
-            // from what was asked, in case the list is not what it is taken for.
-            val self = localSteamId()?.accountID?.toInt()
-            val reactors = body.reactorsList.filter { it != self } +
-                listOfNotNull(self.takeIf { add })
+        // The answer lists who has given this reaction now. Our own part in it is set
+        // from what was asked, in case the list is not what it is taken for.
+        val self = localSteamId()?.accountID?.toInt()
+        val reactors = body.reactorsList.filter { it != self } +
+            listOfNotNull(self.takeIf { add })
 
-            chatMutex.withLock {
-                val latest = dao.get(messageId) ?: return@withLock
-                dao.setReactions(
-                    id = messageId,
-                    ordinal = latest.ordinal,
-                    reactions = latest.reactions.with(reaction, isSticker, reactors),
-                )
-            }
-
-            true
+        chatMutex.withLock {
+            val latest = dao.get(messageId) ?: return@withLock
+            dao.setReactions(
+                id = messageId,
+                ordinal = latest.ordinal,
+                reactions = latest.reactions.with(reaction, isSticker, reactors),
+            )
         }
+
+        true
+    }
 
     /**
      * Someone reacted to a message of a friend chat, or took a reaction back: the friend, or

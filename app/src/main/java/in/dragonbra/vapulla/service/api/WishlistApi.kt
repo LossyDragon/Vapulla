@@ -48,12 +48,11 @@ object SteamWishlist {
         _entries.update { current -> current?.let(change)?.sorted() }
     }
 
-    private fun List<WishlistEntry>.sorted(): ImmutableList<WishlistEntry> =
-        sortedWith(
-            compareBy<WishlistEntry> { it.priority == 0 }
-                .thenBy { it.priority }
-                .thenByDescending { it.dateAdded },
-        ).toImmutableList()
+    private fun List<WishlistEntry>.sorted(): ImmutableList<WishlistEntry> = sortedWith(
+        compareBy<WishlistEntry> { it.priority == 0 }
+            .thenBy { it.priority }
+            .thenByDescending { it.dateAdded },
+    ).toImmutableList()
 }
 
 /**
@@ -105,7 +104,8 @@ class WishlistApi(private val wishlist: Wishlist, private val localSteamId: () -
                 if (entries.any { it.appId == appId }) {
                     entries
                 } else {
-                    entries + WishlistEntry(appId, priority = 0, dateAdded = steamTimeNow().toLong())
+                    entries +
+                        WishlistEntry(appId, priority = 0, dateAdded = steamTimeNow().toLong())
                 }
             }
         }

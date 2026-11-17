@@ -54,6 +54,12 @@ class LoginViewModel(
     private var hasSavedSignIn = false
 
     /**
+     * The user disconnected to get here, keeping the saved sign-in. It is then not used
+     * until they ask: Sign In works without a password.
+     */
+    private var stayDisconnected = SteamService.takeStayDisconnected()
+
+    /**
      * Answers JavaSteam's Steam Guard prompts. Codes are asked for on the two-factor step and
      * handed back through [pendingGuardCode]; mobile confirmation just shows a waiting state.
      */
@@ -190,7 +196,8 @@ class LoginViewModel(
         hasSavedSignIn = true
 
         // No internet: the attempt could only fail. It is made when the network is back.
-        if (!networkMonitor.isOnline.value) {
+        // Disconnected by choice: it is left for the user to make.
+        if (stayDisconnected || !networkMonitor.isOnline.value) {
             _uiState.update { it.copy(username = username) }
             return
         }
@@ -294,6 +301,7 @@ class LoginViewModel(
         }
 
         _uiState.update { it.copy(error = null) }
+        stayDisconnected = false
 
         // The service stops itself when a session ends, so make sure it is started again.
         if (!connection.startForegroundService()) {

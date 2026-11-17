@@ -544,25 +544,24 @@ private fun Preview() {
         local: Boolean = false,
         server: Boolean = false,
         mentionsMe: Boolean = false,
-    ) =
-        GroupChatMessage(
-            mentionsMe = mentionsMe,
-            reactions = if (local) {
-                persistentListOf(MessageReaction(":steamhappy:", false, count = 2, mine = false))
-            } else {
-                persistentListOf()
-            },
-            groupId = 1,
-            chatId = 2,
-            senderId = 3,
-            senderName = "Gamer",
-            senderAvatarUrl = "",
-            message = text,
-            timestamp = 1_760_722_982_000 - ordinal * 60_000L,
-            ordinal = ordinal,
-            fromLocal = local,
-            isServerMessage = server,
-        )
+    ) = GroupChatMessage(
+        mentionsMe = mentionsMe,
+        reactions = if (local) {
+            persistentListOf(MessageReaction(":steamhappy:", false, count = 2, mine = false))
+        } else {
+            persistentListOf()
+        },
+        groupId = 1,
+        chatId = 2,
+        senderId = 3,
+        senderName = "Gamer",
+        senderAvatarUrl = "",
+        message = text,
+        timestamp = 1_760_722_982_000 - ordinal * 60_000L,
+        ordinal = ordinal,
+        fromLocal = local,
+        isServerMessage = server,
+    )
 
     VapullaTheme {
         GroupChatContent(

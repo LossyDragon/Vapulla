@@ -3,12 +3,12 @@ package `in`.dragonbra.vapulla.ui.screens.store
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.db.dao.SteamAppDao
 import `in`.dragonbra.vapulla.db.entity.SteamApp
 import `in`.dragonbra.vapulla.service.NotConnectedException
 import `in`.dragonbra.vapulla.service.SteamAccount
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
-import `in`.dragonbra.javasteam.enums.EResult
 import `in`.dragonbra.vapulla.service.api.SteamWishlist
 import `in`.dragonbra.vapulla.service.api.StorePage
 import `in`.dragonbra.vapulla.service.api.StoreSearchResult

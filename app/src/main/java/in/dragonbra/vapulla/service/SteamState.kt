@@ -27,4 +27,10 @@ internal object SteamState {
      * not exist yet at the moment the session ends.
      */
     val signOutReason = MutableStateFlow<String?>(null)
+
+    /**
+     * True when the user disconnected and kept the saved sign-in. The login screen that
+     * comes up next must then not use it to sign straight back in.
+     */
+    val stayDisconnected = MutableStateFlow(false)
 }

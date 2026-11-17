@@ -8,10 +8,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import androidx.navigation3.ui.NavDisplay
 import `in`.dragonbra.vapulla.manager.LocalAppSettings
 import `in`.dragonbra.vapulla.service.SteamService
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
+import `in`.dragonbra.vapulla.ui.composables.navigation.LogOutDialog
 import `in`.dragonbra.vapulla.ui.composables.navigation.NavigationDrawer
 import `in`.dragonbra.vapulla.ui.screens.web.LocalExternalUriHandler
 import `in`.dragonbra.vapulla.ui.screens.web.SteamPages
@@ -150,6 +153,22 @@ fun NavigationRoot(
     // An anonymous session has only Under the Hood to show, and no drawer to get lost in.
     val anonymous by SteamService.isAnonymous.collectAsStateWithLifecycle()
 
+    // Log Out in the drawer asks first, and whether to forget the saved sign-in as well.
+    var showLogOutDialog by rememberSaveable { mutableStateOf(false) }
+    if (showLogOutDialog) {
+        LogOutDialog(
+            onConfirm = { clearCredentials ->
+                showLogOutDialog = false
+                if (clearCredentials) {
+                    connection.steamService?.logOut()
+                } else {
+                    connection.steamService?.disconnect()
+                }
+            },
+            onDismiss = { showLogOutDialog = false },
+        )
+    }
+
     CompositionLocalProvider(
         LocalUriHandler provides uriHandler,
         LocalExternalUriHandler provides browser,
@@ -162,9 +181,7 @@ fun NavigationRoot(
             drawerContent = {
                 NavigationDrawer(
                     currentSelection = backStack.last(),
-                    onLogOut = {
-                        connection.steamService?.logOut()
-                    },
+                    onLogOut = { showLogOutDialog = true },
                     onNavigationClick = { route ->
                         // Home is the root of the stack, so going there only pops back to it.
                         backStack.removeAll { it != Routes.Home }

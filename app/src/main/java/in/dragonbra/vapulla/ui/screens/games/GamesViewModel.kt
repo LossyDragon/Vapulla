@@ -126,7 +126,11 @@ class GamesViewModel(
                 else -> setOf(AppType.game)
             }
             val flags = AppType.toFlags(EnumSet.copyOf(typesToUse))
-            val within = collection?.appIds?.joinToString(",", prefix = ",", postfix = ",").orEmpty()
+            val within = collection?.appIds?.joinToString(
+                ",",
+                prefix = ",",
+                postfix = ",",
+            ).orEmpty()
 
             Pager(
                 config = PagingConfig(pageSize = 20),

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
@@ -526,14 +527,16 @@ private fun Preview() {
 @Composable
 private fun Preview_Dialog() {
     VapullaTheme {
-        DownloadDialog(
-            choices = previewChoices,
-            freeBytes = 10_000_000_000,
-            onSelectBranch = {},
-            onUnlockBranch = { _, _ -> },
-            onSelectLanguage = {},
-            onConfirm = {},
-            onDismiss = {},
-        )
+        Box(Modifier.fillMaxSize()) {
+            DownloadDialog(
+                choices = previewChoices,
+                freeBytes = 10_000_000_000,
+                onSelectBranch = {},
+                onUnlockBranch = { _, _ -> },
+                onSelectLanguage = {},
+                onConfirm = {},
+                onDismiss = {},
+            )
+        }
     }
 }

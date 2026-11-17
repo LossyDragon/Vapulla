@@ -751,7 +751,12 @@ private fun Preview() {
                 headline = "",
                 summary = "Plays [b]Team Fortress 2[/b] most evenings.",
             ),
-            favoriteBadge = FavoriteBadge(1, appId = 440, level = 5, name = "Team Fortress 2 badge"),
+            favoriteBadge = FavoriteBadge(
+                1,
+                appId = 440,
+                level = 5,
+                name = "Team Fortress 2 badge",
+            ),
             equipped = EquippedProfileItems(),
             badgeLoading = false,
             mutualFriends = persistentListOf("Ann", "Bob"),

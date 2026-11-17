@@ -2,6 +2,7 @@ package `in`.dragonbra.vapulla.ui.screens.sessions
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -340,6 +341,8 @@ private fun Preview() {
 @Composable
 private fun Preview_SignOutDialog() {
     VapullaTheme {
-        SignOutDialog(session = previewSessions[1], onConfirm = {}, onDismiss = {})
+        Box(Modifier.fillMaxSize()) {
+            SignOutDialog(session = previewSessions[1], onConfirm = {}, onDismiss = {})
+        }
     }
 }
