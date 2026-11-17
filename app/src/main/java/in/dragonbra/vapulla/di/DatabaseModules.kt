@@ -14,9 +14,6 @@ val DatabaseModules = module {
             VapullaDatabase::class.java,
             VapullaDatabase.DATABASE_NAME,
         ).addMigrations(*VapullaDatabase.ALL_MIGRATIONS).apply {
-            // A migration is used wherever there is one. Where there is none, a debug build
-            // starts over with an empty database, so a schema can be tried out before its
-            // migration is written; a release build fails to open the database instead.
             if (BuildConfig.DEBUG) {
                 fallbackToDestructiveMigration(true)
             }

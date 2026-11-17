@@ -8,6 +8,7 @@ import `in`.dragonbra.vapulla.service.SteamService
 /** Asks [SteamService] to log off and stop, e.g. from the foreground notification. */
 class LogOutReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        context.startService(SteamService.actionIntent(context, SteamService.ACTION_STOP))
+        val service = SteamService.actionIntent(context, SteamService.ACTION_STOP)
+        context.startService(service)
     }
 }

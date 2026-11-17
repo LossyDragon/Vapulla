@@ -64,15 +64,14 @@ class CloudApi(private val cloud: Cloud) {
     }
 
     /** Cloud files are stored zlib-deflated, older ones as a single-entry zip. */
-    private fun decompress(bytes: ByteArray): ByteArray =
-        runCatching { InflaterInputStream(ByteArrayInputStream(bytes)).use { it.readBytes() } }
-            .recoverCatching {
-                ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
-                    checkNotNull(zip.nextEntry) { "Empty zip" }
-                    zip.readBytes()
-                }
-            }
-            .getOrElse { throw IOException("The cloud file is compressed in an unknown way", it) }
+    private fun decompress(bytes: ByteArray): ByteArray = runCatching {
+        InflaterInputStream(ByteArrayInputStream(bytes)).use { it.readBytes() }
+    }.recoverCatching {
+        ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
+            checkNotNull(zip.nextEntry) { "Empty zip" }
+            zip.readBytes()
+        }
+    }.getOrElse { throw IOException("The cloud file is compressed in an unknown way", it) }
 
     private companion object {
         const val MAX_FILES = 1000

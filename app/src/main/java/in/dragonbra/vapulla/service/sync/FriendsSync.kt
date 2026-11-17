@@ -60,10 +60,7 @@ class FriendsSync(
         callbacks.subscribe(onPersonaState),
         callbacks.subscribe(onFriendsList),
         callbacks.subscribe(onNicknameList),
-        callbacks.subscribeServiceNotification<
-            PlayerClient,
-            CPlayer_FriendNicknameChanged_Notification.Builder,
-            >(onNicknameChanged),
+        callbacks.subscribeServiceNotification<PlayerClient, _>(onNicknameChanged),
     )
 
     override fun start(session: CoroutineScope) {

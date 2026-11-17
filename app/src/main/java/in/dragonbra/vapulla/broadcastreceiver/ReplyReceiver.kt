@@ -16,14 +16,13 @@ class ReplyReceiver : BroadcastReceiver() {
         val message = RemoteInput.getResultsFromIntent(intent)?.getCharSequence(KEY_TEXT_REPLY)
         if (message.isNullOrBlank()) return
 
-        context.startService(
-            SteamService.actionIntent(
-                context = context,
-                action = SteamService.ACTION_REPLY,
-                friendId = friendId,
-                message = message,
-            ),
+        val service = SteamService.actionIntent(
+            context = context,
+            action = SteamService.ACTION_REPLY,
+            friendId = friendId,
+            message = message,
         )
+        context.startService(service)
     }
 
     companion object {

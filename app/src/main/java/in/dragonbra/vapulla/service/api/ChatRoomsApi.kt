@@ -90,14 +90,8 @@ class ChatRoomsApi(
     val reactionChanges: SharedFlow<GroupReactionChange> = _reactionChanges.asSharedFlow()
 
     override fun subscribe(callbacks: CallbackManager): List<Closeable> = listOf(
-        callbacks.subscribeServiceNotification<
-            ChatRoomClient,
-            CChatRoom_IncomingChatMessage_Notification.Builder,
-            >(onIncomingMessage),
-        callbacks.subscribeServiceNotification<
-            ChatRoomClient,
-            CChatRoom_MessageReaction_Notification.Builder,
-            >(onReaction),
+        callbacks.subscribeServiceNotification<ChatRoomClient, _>(onIncomingMessage),
+        callbacks.subscribeServiceNotification<ChatRoomClient, _>(onReaction),
     )
 
     /**

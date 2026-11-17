@@ -36,8 +36,9 @@ data class LibraryCollection(val id: String, val name: String, val appIds: Immut
 /** The account's library collections. Held in memory only: read from Steam at every sign-in. */
 object SteamCollections {
 
-    private val _collections =
-        MutableStateFlow<ImmutableList<LibraryCollection>>(persistentListOf())
+    private val _collections = MutableStateFlow<ImmutableList<LibraryCollection>>(
+        persistentListOf(),
+    )
 
     /** Favorites first, then by name; empty while signed out. Ones without apps are left out. */
     val collections: StateFlow<ImmutableList<LibraryCollection>> = _collections.asStateFlow()

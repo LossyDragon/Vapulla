@@ -48,13 +48,7 @@ val ViewModelModules = module {
     viewModel { AccountViewModel(get(), get(), get()) }
     viewModel { StoreViewModel(get()) }
     viewModel { FamilyViewModel(get()) }
-    viewModel { (appId: Int) ->
-        StorePageViewModel(
-            appId = appId,
-            connection = get(),
-            appDao = get(),
-        )
-    }
+    viewModel { (appId: Int) -> StorePageViewModel(appId, get(), get()) }
     viewModel { SettingsViewModel(get(), get()) }
     viewModel { CmServersViewModel(get()) }
     viewModel { LicensesViewModel(get(), get()) }
@@ -62,100 +56,24 @@ val ViewModelModules = module {
     viewModel { AuthTicketViewModel(get(), get()) }
     viewModel { DownloadInternalsViewModel(get(), get(), get()) }
     viewModel { (id: Int, isApp: Boolean) ->
-        PicsExplorerViewModel(
-            initialId = id,
-            initialIsApp = isApp,
-            connection = get(),
-            appDao = get(),
-            licenseDao = get(),
-        )
+        PicsExplorerViewModel(id, isApp, get(), get(), get())
     }
     viewModel { (appId: Int, depotId: Int, manifestId: Long, branch: String) ->
-        ManifestViewModel(
-            appId = appId,
-            depotId = depotId,
-            manifestId = manifestId,
-            branch = branch,
-            connection = get(),
-        )
+        ManifestViewModel(appId, depotId, manifestId, branch, get())
     }
-    viewModel { (appId: Int) ->
-        DepotsViewModel(
-            initialAppId = appId,
-            appDao = get(),
-            licenseDao = get(),
-            connection = get(),
-        )
-    }
+    viewModel { (appId: Int) -> DepotsViewModel(appId, get(), get(), get()) }
     viewModel { (friendId: Long) ->
-        ChatViewModel(
-            friendId = friendId,
-            friendDao = get(),
-            messageDao = get(),
-            emoticonDao = get(),
-            connection = get(),
-            application = androidApplication(),
-        )
+        ChatViewModel(friendId, get(), get(), get(), get(), androidApplication())
     }
     viewModel { (groupId: Long, chatId: Long, groupName: String, roomName: String) ->
-        GroupChatViewModel(
-            groupId = groupId,
-            chatId = chatId,
-            groupName = groupName,
-            roomName = roomName,
-            emoticonDao = get(),
-            connection = get(),
-            application = androidApplication(),
-        )
+        GroupChatViewModel(groupId, chatId, groupName, roomName, get(), get(), androidApplication())
     }
-    viewModel { (friendId: Long) ->
-        ProfileViewModel(
-            friendDao = get(),
-            appDao = get(),
-            connection = get(),
-            friendId = friendId,
-        )
-    }
+    viewModel { (friendId: Long) -> ProfileViewModel(get(), get(), get(), friendId) }
     viewModel { (appId: Int) ->
-        GameDetailViewModel(
-            appId = appId,
-            appDao = get(),
-            downloadDao = get(),
-            licenseDao = get(),
-            connection = get(),
-            downloads = get(),
-            friendDao = get(),
-        )
+        GameDetailViewModel(appId, get(), get(), get(), get(), get(), get())
     }
-    viewModel { (appId: Int) ->
-        LeaderboardsViewModel(
-            appId = appId,
-            connection = get(),
-            appDao = get(),
-        )
-    }
-    viewModel { (appId: Int) ->
-        AchievementsViewModel(
-            appId = appId,
-            appDao = get(),
-            connection = get(),
-        )
-    }
-    viewModel { (appId: Int) ->
-        CloudFilesViewModel(
-            appId = appId,
-            connection = get(),
-            application = androidApplication(),
-        )
-    }
-    viewModel { (appId: Int) ->
-        WorkshopViewModel(
-            appId = appId,
-            appDao = get(),
-            connection = get(),
-            settingsManager = get(),
-            downloadDao = get(),
-            downloads = get(),
-        )
-    }
+    viewModel { (appId: Int) -> LeaderboardsViewModel(appId, get(), get()) }
+    viewModel { (appId: Int) -> AchievementsViewModel(appId, get(), get()) }
+    viewModel { (appId: Int) -> CloudFilesViewModel(appId, get(), androidApplication()) }
+    viewModel { (appId: Int) -> WorkshopViewModel(appId, get(), get(), get(), get(), get()) }
 }

@@ -1,10 +1,10 @@
 package `in`.dragonbra.vapulla.service.api
 
+import android.net.Uri
 import android.util.LruCache
 import `in`.dragonbra.vapulla.util.LenientJson
 import `in`.dragonbra.vapulla.util.httpGetText
 import java.io.IOException
-import java.net.URLEncoder
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -34,7 +34,7 @@ object YouTubeApi {
      * cannot be reached; that is not kept, so the next showing of the video asks again.
      */
     suspend fun load(videoId: String): YouTubeVideo? = try {
-        val text = httpGetText(OEMBED_URL + URLEncoder.encode(WATCH_URL + videoId, "UTF-8"))
+        val text = httpGetText(OEMBED_URL + Uri.encode(WATCH_URL + videoId))
         LenientJson.decodeFromString<YouTubeVideo>(text).also { cache.put(videoId, it) }
     } catch (e: IOException) {
         Timber.d("No YouTube details for $videoId: ${e.message}")

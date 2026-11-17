@@ -8,7 +8,7 @@ sealed interface LoginResult {
     /** Steam accepted the logon. */
     data object Success : LoginResult
 
-    /** The QR flow finished, whether it succeeded, failed or was cancelled. */
+    /** The QR flow finished, whether it succeeded, failed or was canceled. */
     data object QRCodeEnded : LoginResult
 
     /** The logon failed; [error] is user-presentable. */

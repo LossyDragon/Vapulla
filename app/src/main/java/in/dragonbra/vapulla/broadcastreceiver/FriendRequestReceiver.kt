@@ -17,9 +17,12 @@ abstract class FriendRequestReceiver(private val action: String) : BroadcastRece
         val friendId = intent.getLongExtra(EXTRA_ID, 0L)
         if (friendId == 0L) return
 
-        context.startService(
-            SteamService.actionIntent(context = context, action = action, friendId = friendId),
+        val service = SteamService.actionIntent(
+            context = context,
+            action = action,
+            friendId = friendId,
         )
+        context.startService(service)
     }
 
     companion object {

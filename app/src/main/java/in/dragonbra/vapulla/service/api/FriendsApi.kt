@@ -84,7 +84,8 @@ class FriendsApi(
         val block = !friend.isBlocked
         Timber.d("toggleBlocked() id=%d relation=%s block=%b", friendId, friend.relation, block)
 
-        val callback = steamFriends.ignoreFriend(friendId.toSteamID(), setIgnore = block)
+        val callback = steamFriends
+            .ignoreFriend(friendId.toSteamID(), setIgnore = block)
             .awaitOrNull("IgnoreFriend")
         Timber.d("toggleBlocked() id=%d result=%s", friendId, callback?.result)
     }

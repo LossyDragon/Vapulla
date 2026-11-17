@@ -31,19 +31,17 @@ class AccountManager(private val context: Context) {
     private companion object {
         val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "preferences")
 
-        val ACCOUNT_NAME = stringPreferencesKey("account_name")
         val ACCOUNT_AVATAR_HASH = stringPreferencesKey("account_avatar_hash")
+        val ACCOUNT_LEVEL = intPreferencesKey("account_level")
+        val ACCOUNT_NAME = stringPreferencesKey("account_name")
         val ACCOUNT_PERSONA_STATE = intPreferencesKey("account_state")
         val ACCOUNT_STEAMID = longPreferencesKey("account_steamid")
-        val ACCOUNT_LEVEL = intPreferencesKey("account_level")
-
-        val LOGIN_USERNAME = stringPreferencesKey("account_username")
-        val LOGIN_REFRESH_TOKEN = stringPreferencesKey("account_refresh_token")
-        val LOGIN_UUID = intPreferencesKey("account_uuid")
-
-        val LAST_CHANGE_NUMBER = intPreferencesKey("last_change_number")
         val CELL_ID = intPreferencesKey("cell_id")
         val DATA_OWNER = longPreferencesKey("data_owner_steamid")
+        val LAST_CHANGE_NUMBER = intPreferencesKey("last_change_number")
+        val LOGIN_REFRESH_TOKEN = stringPreferencesKey("account_refresh_token")
+        val LOGIN_USERNAME = stringPreferencesKey("account_username")
+        val LOGIN_UUID = intPreferencesKey("account_uuid")
     }
 
     /** The account name used to sign in, which is not the profile name in [accountName]. */

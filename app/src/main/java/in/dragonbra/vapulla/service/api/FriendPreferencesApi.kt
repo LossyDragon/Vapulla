@@ -113,9 +113,9 @@ class FriendPreferencesApi(private val player: Player) : SessionComponent {
             .setNotificationsSendmobile(setting.toSteam())
             .build()
 
-        val request = CPlayer_SetPerFriendPreferences_Request.newBuilder().setPreferences(
-            changed,
-        ).build()
+        val request = CPlayer_SetPerFriendPreferences_Request.newBuilder()
+            .setPreferences(changed)
+            .build()
         val result = player.setPerFriendPreferences(request).resultOf("SetPerFriendPreferences")
         if (result == EResult.OK) {
             records[accountId] = changed
@@ -127,12 +127,10 @@ class FriendPreferencesApi(private val player: Player) : SessionComponent {
 
     private fun publish() {
         SteamFriendPreferences.set(
-            records.values
-                .associate {
-                    it.accountid.accountIdToSteamID().toLong() to
-                        it.notificationsSendmobile.toSetting()
-                }
-                .filterValues { it != MobileNotifications.Default },
+            records.values.associate {
+                it.accountid.accountIdToSteamID().toLong() to
+                    it.notificationsSendmobile.toSetting()
+            }.filterValues { it != MobileNotifications.Default },
         )
     }
 
