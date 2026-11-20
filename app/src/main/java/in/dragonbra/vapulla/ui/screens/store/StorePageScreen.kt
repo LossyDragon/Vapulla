@@ -3,7 +3,7 @@ package `in`.dragonbra.vapulla.ui.screens.store
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -33,7 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +52,7 @@ import `in`.dragonbra.vapulla.ui.composables.DetailList
 import `in`.dragonbra.vapulla.ui.composables.EmptyMessage
 import `in`.dragonbra.vapulla.ui.composables.IconLabel
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
+import `in`.dragonbra.vapulla.ui.composables.ImageViewer
 import `in`.dragonbra.vapulla.ui.composables.InfoPill
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
 import `in`.dragonbra.vapulla.ui.composables.RemoteImage
@@ -93,7 +96,6 @@ fun StorePageScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StorePageContent(
     uiState: StorePageUiState,
@@ -103,6 +105,42 @@ private fun StorePageContent(
     onToggleWishlist: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val page = uiState.page
+    var viewing by remember { mutableStateOf<String?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        StorePageScaffold(
+            uiState = uiState,
+            snackbarHostState = snackbarHostState,
+            onBack = onBack,
+            onStore = { page?.let { uriHandler.openUri(it.storeUrl) } },
+            onOpenLibrary = onOpenLibrary,
+            onToggleWishlist = onToggleWishlist,
+            onViewScreenshot = { viewing = it },
+        )
+
+        // Drawn over the whole screen, system bars included, so nothing of the page shows.
+        viewing?.let { url ->
+            ImageViewer(
+                imageUrl = url,
+                onDismiss = { viewing = null },
+                contentDescription = "Screenshot",
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StorePageScaffold(
+    uiState: StorePageUiState,
+    snackbarHostState: SnackbarHostState,
+    onBack: () -> Unit,
+    onStore: () -> Unit,
+    onOpenLibrary: (appId: Int) -> Unit,
+    onToggleWishlist: () -> Unit,
+    onViewScreenshot: (url: String) -> Unit,
+) {
     val page = uiState.page
 
     Scaffold(
@@ -162,7 +200,7 @@ private fun StorePageContent(
             item {
                 Actions(
                     inLibrary = uiState.inLibrary,
-                    onStore = { uriHandler.openUri(page.storeUrl) },
+                    onStore = onStore,
                     onLibrary = { onOpenLibrary(page.appId) },
                 )
             }
@@ -187,7 +225,7 @@ private fun StorePageContent(
             if (page.screenshots.isNotEmpty()) {
                 item {
                     Section(title = "Screenshots") {
-                        Screenshots(urls = page.screenshots, onOpen = uriHandler::openUri)
+                        Screenshots(urls = page.screenshots, onOpen = onViewScreenshot)
                     }
                 }
             }
@@ -290,7 +328,7 @@ private fun Tags(tags: List<String>) {
     }
 }
 
-/** The page's screenshots, side by side; tapping one opens it full size in the browser. */
+/** The page's screenshots, side by side; tapping one opens it full size. */
 @Composable
 private fun Screenshots(urls: List<String>, onOpen: (String) -> Unit) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

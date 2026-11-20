@@ -1,8 +1,6 @@
 package `in`.dragonbra.vapulla.ui.screens.screenshots
 
 import android.content.res.Configuration
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,16 +9,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -31,11 +24,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,7 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.service.api.Screenshot
 import `in`.dragonbra.vapulla.ui.composables.ImageOptions
-import `in`.dragonbra.vapulla.ui.composables.LoadingBox
+import `in`.dragonbra.vapulla.ui.composables.ImageViewer
 import `in`.dragonbra.vapulla.ui.composables.MenuButton
 import `in`.dragonbra.vapulla.ui.composables.PullToRefreshContent
 import `in`.dragonbra.vapulla.ui.composables.RefreshableMessage
@@ -202,66 +193,33 @@ private fun ScreenshotTileSkeleton() {
     )
 }
 
-/** The full-size image over a black backdrop, with where and when it was taken. */
+/** The full-size image, zoomable, with where and when it was taken. */
 @Composable
 private fun ScreenshotViewer(screenshot: Screenshot, onDismiss: () -> Unit) {
-    BackHandler(onBack = onDismiss)
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            // Keeps taps from reaching the grid underneath.
-            .pointerInput(Unit) {}
-            .systemBarsPadding(),
+    ImageViewer(
+        imageUrl = screenshot.imageUrl,
+        onDismiss = onDismiss,
+        contentDescription = screenshot.caption.ifEmpty { "Screenshot" },
     ) {
-        RemoteImage(
-            imageModel = { screenshot.imageUrl },
-            modifier = Modifier.fillMaxSize(),
-            imageOptions = ImageOptions(
-                contentScale = ContentScale.Fit,
-                contentDescription = screenshot.caption.ifEmpty { "Screenshot" },
-            ),
-            previewPlaceholder = painterResource(R.drawable.vapulla_background),
-            loading = { LoadingBox(modifier = Modifier.fillMaxSize()) },
-        )
-
-        FilledTonalIconButton(
-            onClick = onDismiss,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp),
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Close")
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.6f))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            if (screenshot.caption.isNotBlank()) {
-                Text(
-                    text = screenshot.caption,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
-                )
-            }
-            val size = if (screenshot.width > 0) {
-                "${screenshot.width} × ${screenshot.height}"
-            } else {
-                ""
-            }
+        if (screenshot.caption.isNotBlank()) {
             Text(
-                text = listOf(screenshot.appName, screenshot.timeCreated.toDateString(), size)
-                    .filter { it.isNotEmpty() }
-                    .joinToString(" · "),
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.8f),
+                text = screenshot.caption,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
             )
         }
+        val size = if (screenshot.width > 0) {
+            "${screenshot.width} × ${screenshot.height}"
+        } else {
+            ""
+        }
+        Text(
+            text = listOf(screenshot.appName, screenshot.timeCreated.toDateString(), size)
+                .filter { it.isNotEmpty() }
+                .joinToString(" · "),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = 0.8f),
+        )
     }
 }
 

@@ -25,6 +25,7 @@ room = "2.8.5" # https://mvnrepository.com/artifact/androidx.room/room-compiler
 shimmer = "1.5.0" # https://mvnrepository.com/artifact/com.valentinilk.shimmer/compose-shimmer
 stability-analyzer = "0.15.0" # https://mvnrepository.com/artifact/com.github.skydoves.compose.stability.analyzer/com.github.skydoves.compose.stability.analyzer.gradle.plugin
 swipe = "1.3.0" # https://mvnrepository.com/artifact/me.saket.swipe/swipe
+telephoto = "0.19.0" # https://mvnrepository.com/artifact/me.saket.telephoto/zoomable-image-coil
 timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
 xz = "1.12" # https://mvnrepository.com/artifact/org.tukaani/xz
 zstd = "1.5.7-28" # https://mvnrepository.com/artifact/com.github.luben/zstd-jni
@@ -75,6 +76,7 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
 compose-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version.ref = "shimmer" }
 qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
+telephoto = { module = "me.saket.telephoto:zoomable-image-coil", version.ref = "telephoto" }
 
 # Database & Storage
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
@@ -125,6 +127,7 @@ images = [
     "coil-gif",
     "compose-shimmer",
     "qrose",
+    "telephoto",
 ]
 
 database = [

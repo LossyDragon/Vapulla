@@ -40,7 +40,11 @@ class ScreenshotsApi(
                 id = details.publishedfileid,
                 appId = details.consumerAppid,
                 appName = appNames[details.consumerAppid].orEmpty(),
-                caption = details.title,
+                // Steam keeps a screenshot's caption in the description; the title is
+                // usually empty.
+                caption = details.title
+                    .ifEmpty { details.fileDescription }
+                    .ifEmpty { details.shortDescription },
                 imageUrl = details.imageUrl.ifEmpty { details.fileUrl },
                 thumbnailUrl = details.previewUrl.ifEmpty { details.imageUrl },
                 width = details.imageWidth,
