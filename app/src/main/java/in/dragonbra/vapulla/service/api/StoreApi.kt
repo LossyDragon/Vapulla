@@ -138,7 +138,7 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
 
     /** How much lower [final] is than [original], in percent; 0 when it is not a discount. */
     private fun discountPercent(original: Long, final: Long): Int =
-        if (original > final && final > 0) ((original - final) * 100 / original).toInt() else 0
+        if (final in 1..<original) ((original - final) * 100 / original).toInt() else 0
 
     /**
      * The address of one of the item's pictures; empty when it has no such picture. File
@@ -203,8 +203,7 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
      */
     suspend fun search(term: String, country: String): List<StoreSearchResult> {
         val address = SEARCH_URL +
-            "?term=${URLEncoder.encode(term, "UTF-8")}" +
-            "&l=$STEAM_LANGUAGE&cc=${URLEncoder.encode(country, "UTF-8")}"
+            "?term=${encode(term)}&l=$STEAM_LANGUAGE&cc=${encode(country)}"
         val found = LenientJson.decodeFromString<SearchAnswer>(httpGetText(address)).items
             .filter { it.type == "app" }
         if (found.isEmpty()) return emptyList()
@@ -225,6 +224,9 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
             priced[item.id]?.let { result.pricedByStore(it) } ?: result.pricedByWebsite(item.price)
         }
     }
+
+    /** [text] made safe to put in a query string. */
+    private fun encode(text: String): String = URLEncoder.encode(text, "UTF-8")
 
     private fun StoreSearchResult.pricedByStore(item: StoreItem): StoreSearchResult {
         val (originalPrice, discountPercent) = item.discount()
@@ -267,6 +269,6 @@ class StoreApi(private val storeBrowse: StoreBrowse, private val store: Store) {
         const val STORE_URL = "https://store.steampowered.com/"
         const val SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
         const val ASSET_URL = "https://shared.akamai.steamstatic.com/store_item_assets/"
-        const val FILE_PLACEHOLDER = "\${FILENAME}"
+        const val FILE_PLACEHOLDER = $$"${FILENAME}"
     }
 }

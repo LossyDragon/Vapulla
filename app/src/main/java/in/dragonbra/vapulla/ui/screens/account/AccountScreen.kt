@@ -19,8 +19,6 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -93,7 +91,6 @@ fun AccountScreen(viewModel: AccountViewModel, onNavDrawerAction: () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountContent(
     uiState: AccountUiState,
@@ -236,7 +233,6 @@ private fun PlayingElsewhere(game: String, onStop: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ProfileSection(uiState: AccountUiState, onEditName: () -> Unit) {
     val details = uiState.details
@@ -366,7 +362,6 @@ private fun ECommunityPrivacy.label(): String = when (this) {
     else -> ""
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun InvitesSection(
     invites: List<FriendInvite>,

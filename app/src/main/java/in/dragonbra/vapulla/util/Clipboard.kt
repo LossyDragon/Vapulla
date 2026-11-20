@@ -13,8 +13,8 @@ import android.widget.Toast
  * @param label what the text is, for apps that show the clipboard's contents.
  */
 fun Context.copyToClipboard(label: String, text: String) {
-    getSystemService(ClipboardManager::class.java)
-        .setPrimaryClip(ClipData.newPlainText(label, text))
+    val clip = ClipData.newPlainText(label, text)
+    getSystemService(ClipboardManager::class.java).setPrimaryClip(clip)
 
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()

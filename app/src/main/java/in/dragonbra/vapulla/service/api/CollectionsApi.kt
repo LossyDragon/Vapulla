@@ -107,6 +107,7 @@ class CollectionsApi(private val cloudConfig: CloudConfigStore) : SessionCompone
         val body = cloudConfig.download(request).bodyOrNull("CloudConfigStore.Download") ?: return
 
         val collections = body.dataList
+            .asSequence()
             .filter { it.enamespace == LIBRARY_NAMESPACE }
             .flatMap { it.entriesList }
             .filter { !it.isDeleted && it.key.startsWith(KEY_PREFIX) }
@@ -124,6 +125,7 @@ class CollectionsApi(private val cloudConfig: CloudConfigStore) : SessionCompone
                     appIds = stored.added.toImmutableSet(),
                 )
             }
+            .toList()
 
         Timber.d("Loaded ${collections.size} library collections")
         SteamCollections.set(collections)

@@ -20,11 +20,13 @@ import `in`.dragonbra.vapulla.service.download.DownloadPlan
 import `in`.dragonbra.vapulla.service.download.DownloadPlanner
 import `in`.dragonbra.vapulla.service.download.DownloadProgress
 import `in`.dragonbra.vapulla.util.runSuspendCatching
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -292,9 +295,13 @@ class GameDetailViewModel(
         }
 
         // Recounted whenever a download is added, moves on or goes away, since each of those
-        // changes what is free or what is already spoken for.
+        // changes what is free or what is already spoken for. A running download reports
+        // progress many times a second, so the changes in between two counts are skipped.
         viewModelScope.launch(Dispatchers.IO) {
-            downloadDao.observeAll().collect { freeBytes.value = downloads.availableBytes(appId) }
+            downloadDao.observeAll().conflate().collect {
+                freeBytes.value = downloads.availableBytes(appId)
+                delay(FREE_SPACE_INTERVAL)
+            }
         }
     }
 
@@ -409,5 +416,8 @@ class GameDetailViewModel(
     private companion object {
         /** How many friends a row names before it starts counting. */
         const val NAMES_SHOWN = 4
+
+        /** The least time between two counts of the free space. */
+        val FREE_SPACE_INTERVAL = 2.seconds
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -71,7 +70,6 @@ fun RemoteClientsScreen(viewModel: RemoteClientsViewModel, onNavDrawerAction: ()
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RemoteClientsContent(
     uiState: RemoteClientsUiState,

@@ -1,5 +1,7 @@
 package `in`.dragonbra.vapulla.ui.screens.login
 
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `in`.dragonbra.javasteam.steam.authentication.IAuthenticator
@@ -35,6 +37,12 @@ class LoginViewModel(
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    /**
+     * The password as typed, which the password field edits directly. It lives only here, in
+     * memory, so it is never written to the screen's saved state.
+     */
+    val password = TextFieldState()
 
     /** One-off messages for the screen to show. */
     private val _messages = MutableSharedFlow<String>()
@@ -116,7 +124,7 @@ class LoginViewModel(
                 val state = _uiState.value
                 val idle = !state.isLoading &&
                     state.loginStep == LoginStep.CREDENTIALS &&
-                    state.password.isEmpty() &&
+                    password.text.isEmpty() &&
                     !SteamService.isLoggedIn.value &&
                     !SteamService.isAnonymous.value
                 if (online && wasOffline && idle && connection.isBound.value) autoSignIn()
@@ -141,6 +149,7 @@ class LoginViewModel(
                     LoginResult.Success -> {
                         Timber.d("Logged in, navigating to home screen")
                         _uiState.value = LoginUiState(isOffline = !networkMonitor.isOnline.value)
+                        password.clearText()
                         hasSavedSignIn = false
                         _navigateToHome.emit(Unit)
                     }
@@ -227,10 +236,6 @@ class LoginViewModel(
         _uiState.update { it.copy(username = newUsername) }
     }
 
-    fun onPasswordChange(newPassword: String) {
-        _uiState.update { it.copy(password = newPassword) }
-    }
-
     fun onTwoFactorSubmit() {
         val code = _uiState.value.twoFactorCode.trim()
         val pending = pendingGuardCode ?: return
@@ -288,13 +293,14 @@ class LoginViewModel(
     /** @return false when the service could not be started, so nothing was sent. */
     private fun signIn(): Boolean {
         val state = _uiState.value
+        val password = password.text.toString()
 
         if (state.username.isBlank()) {
             Timber.w("username is blank!")
             viewModelScope.launch { _messages.emit("Username is empty") }
             return true
         }
-        if (state.password.isBlank() && !hasSavedSignIn) {
+        if (password.isBlank() && !hasSavedSignIn) {
             Timber.w("password is blank!")
             viewModelScope.launch { _messages.emit("Password is empty") }
             return true
@@ -312,7 +318,7 @@ class LoginViewModel(
 
         service.auth.handleCredentialLogin(
             username = state.username,
-            password = state.password,
+            password = password,
             authenticator = authenticator,
         )
         return true

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -615,7 +614,6 @@ private fun LocationRow(
  * why, sends the user there, and opens the folder picker once they are back with it given.
  */
 @RequiresApi(Build.VERSION_CODES.R)
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FolderPicker(onSelect: (String) -> Unit) {
     val context = LocalContext.current

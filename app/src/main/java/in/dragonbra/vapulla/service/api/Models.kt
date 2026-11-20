@@ -22,7 +22,7 @@ import kotlinx.collections.immutable.toImmutableList
  */
 class PicsProduct(
     val id: Int,
-    val isApp: Boolean,
+    @Suppress("unused") val isApp: Boolean,
     val changeNumber: Int,
     val token: Long,
     val missingToken: Boolean,

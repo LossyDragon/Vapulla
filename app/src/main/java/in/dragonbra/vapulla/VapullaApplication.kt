@@ -8,7 +8,6 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
-import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
 import `in`.dragonbra.javasteam.util.log.LogListener
 import `in`.dragonbra.javasteam.util.log.LogManager
@@ -107,8 +106,7 @@ class VapullaApplication :
             .components {
                 add(IconDecoder.Factory())
                 add(AnimatedPngDecoder.Factory())
-                // Animated GIFs, with the decoder Android has had since API 28.
-                add(AnimatedImageDecoder.Factory())
+                // Animated GIFs need nothing here: the coil-gif dependency adds its own decoder.
             }
             .build()
 

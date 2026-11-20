@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.service.download
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -264,14 +265,14 @@ class DownloadManager(
             InstallLocation(
                 path = dir.absolutePath,
                 name = storage.getStorageVolume(dir)?.getDescription(context) ?: "Storage",
-                freeBytes = dir.usableSpace,
+                freeBytes = freeSpace(dir),
             )
         }
 
         val picked = File(pickedFolder)
             .takeIf { pickedFolder.isNotEmpty() && it.isDirectory }
             ?.takeIf { folder -> volumes.none { it.path == folder.absolutePath } }
-            ?.let { InstallLocation(it.absolutePath, "Your folder", it.usableSpace) }
+            ?.let { InstallLocation(it.absolutePath, "Your folder", freeSpace(it)) }
 
         return volumes + listOfNotNull(picked)
     }
@@ -323,8 +324,8 @@ class DownloadManager(
                 val files = source.walkTopDown().filter { it.isFile }.toList()
                 val total = files.sumOf { it.length() }
 
-                target.parentFile?.mkdirs()
-                if (total > (target.parentFile?.usableSpace ?: 0L)) {
+                val parent = target.parentFile?.apply { mkdirs() }
+                if (parent == null || total > freeSpace(parent) || !makeRoom(parent, total)) {
                     throw IOException("not enough free space, ${total.toFileSize()} needed")
                 }
 
@@ -355,7 +356,45 @@ class DownloadManager(
         if (total <= 0L) 1f else (done.toFloat() / total).coerceIn(0f, 1f)
 
     /** Free space where new downloads are installed. */
-    fun freeBytes(): Long = libraryRoot.apply { mkdirs() }.usableSpace
+    fun freeBytes(): Long = freeSpace(libraryRoot.apply { mkdirs() })
+
+    /**
+     * Space that can be had at [dir]: what is free, or more than that where Android would
+     * clear other apps' caches to make room. Android's own figure can also come out lower,
+     * since it sets some space aside, so it only counts when it is the larger one.
+     */
+    @SuppressLint("UsableSpace")
+    private fun freeSpace(dir: File): Long {
+        val allocatable = try {
+            val storage = context.getSystemService(StorageManager::class.java)
+            storage.getAllocatableBytes(storage.getUuidForPath(dir))
+        } catch (_: Exception) {
+            // Android cannot tell for every folder, one on a memory card for instance.
+            0L
+        }
+
+        return maxOf(dir.usableSpace, allocatable)
+    }
+
+    /**
+     * Sees to it that [bytes] are free at [dir], with Android clearing caches where it takes
+     * that. Call it right before writing: the space is not held.
+     *
+     * @return false when the space could not be had.
+     */
+    @SuppressLint("UsableSpace")
+    private fun makeRoom(dir: File, bytes: Long): Boolean {
+        if (bytes <= dir.usableSpace) return true
+
+        return try {
+            val storage = context.getSystemService(StorageManager::class.java)
+            storage.allocateBytes(storage.getUuidForPath(dir), bytes)
+            true
+        } catch (e: Exception) {
+            Timber.w(e, "Could not make room for ${bytes.toFileSize()} at $dir")
+            false
+        }
+    }
 
     /** A Steam session is up: downloads can run, and whatever is queued starts. */
     fun attach(client: SteamClient, licenses: List<License>) {
@@ -381,7 +420,7 @@ class DownloadManager(
     suspend fun availableBytes(appId: Int, workshopId: Long = 0L): Long =
         withContext(Dispatchers.IO) {
             val installed = downloadDao.find(appId, workshopId)?.installDir?.let(::File)
-            val free = installed?.apply { mkdirs() }?.usableSpace ?: freeBytes()
+            val free = installed?.apply { mkdirs() }?.let(::freeSpace) ?: freeBytes()
 
             (free - downloadDao.reservedBytes(appId, workshopId)).coerceAtLeast(0)
         }
@@ -562,12 +601,17 @@ class DownloadManager(
         val installDir = File(download.installDir).apply { mkdirs() }
 
         val missing = download.totalBytes - download.downloadedBytes
-        val free = installDir.usableSpace
-        if (missing > free) {
+        val free = freeSpace(installDir)
+        val shortOfSpace = when {
+            missing > free -> "${free.toFileSize()} free"
+            !makeRoom(installDir, missing) -> "Android could not clear enough"
+            else -> null
+        }
+        if (shortOfSpace != null) {
             setState(
                 download,
                 DownloadState.FAILED,
-                "Not enough free space: ${missing.toFileSize()} needed, ${free.toFileSize()} free",
+                "Not enough free space: ${missing.toFileSize()} needed, $shortOfSpace",
             )
             return
         }

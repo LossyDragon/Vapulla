@@ -20,7 +20,6 @@ import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -67,7 +66,6 @@ import `in`.dragonbra.vapulla.ui.composables.listContentPadding
 import `in`.dragonbra.vapulla.ui.screens.gamedetail.components.DownloadSection
 import `in`.dragonbra.vapulla.ui.screens.games.components.HEADER_ASPECT
 import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
-import `in`.dragonbra.vapulla.util.Utils
 import `in`.dragonbra.vapulla.util.Utils.decodeHtml
 import `in`.dragonbra.vapulla.util.Utils.minutesToPlaytime
 import `in`.dragonbra.vapulla.util.Utils.toDateString

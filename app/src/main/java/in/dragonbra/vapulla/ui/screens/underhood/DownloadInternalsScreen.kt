@@ -32,6 +32,7 @@ import `in`.dragonbra.vapulla.ui.theme.VapullaTheme
 import `in`.dragonbra.vapulla.util.CpuGroup
 import `in`.dragonbra.vapulla.util.CpuUsage
 import `in`.dragonbra.vapulla.util.Utils.toFileSize
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -74,7 +75,7 @@ class DownloadInternalsViewModel(
         val usage = CpuUsage()
         while (true) {
             emit(usage.sample().toImmutableList())
-            delay(CPU_SAMPLE_MS)
+            delay(1.seconds)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -95,10 +96,6 @@ class DownloadInternalsViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = DownloadInternalsUiState(),
     )
-
-    private companion object {
-        const val CPU_SAMPLE_MS = 1000L
-    }
 }
 
 @Composable

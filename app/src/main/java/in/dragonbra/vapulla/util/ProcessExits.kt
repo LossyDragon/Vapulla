@@ -1,5 +1,6 @@
 package `in`.dragonbra.vapulla.util
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
@@ -21,7 +22,11 @@ data class ProcessExit(
 /**
  * Reads the system's record of how earlier runs of the app ended. A run that the system
  * killed, or that froze, leaves no trace of its own, so this is the only place it shows up.
+ *
+ * The reason constants are plain numbers compiled into the app, so comparing against ones
+ * newer than the device is safe; hence the suppressed lint check.
  */
+@SuppressLint("InlinedApi")
 object ProcessExits {
 
     /** The last [max] exits, newest first. Empty before Android 11, which keeps no record. */

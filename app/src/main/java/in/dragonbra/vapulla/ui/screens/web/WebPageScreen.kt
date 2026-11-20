@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -40,6 +39,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import `in`.dragonbra.vapulla.service.SteamServiceConnection
 import `in`.dragonbra.vapulla.ui.composables.BackButton
 import `in`.dragonbra.vapulla.ui.composables.LoadingBox
@@ -88,7 +88,7 @@ object SteamPages {
 
     /** True for an `https` address on Steam's community, store or help site. */
     fun isSignedInPage(address: String): Boolean {
-        val uri = Uri.parse(address)
+        val uri = address.toUri()
         return uri.scheme == "https" && uri.host?.lowercase() in SIGNED_IN_HOSTS
     }
 
@@ -123,7 +123,6 @@ object SteamPages {
  * removed again when the screen is left. Pages outside Steam's own sites are not opened here
  * but in the device's browser, so the cookie's reach stays with Steam.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WebPageScreen(url: String, onBack: () -> Unit) {
     val connection = koinInject<SteamServiceConnection>()
@@ -164,7 +163,7 @@ fun WebPageScreen(url: String, onBack: () -> Unit) {
                     Column {
                         Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            text = Uri.parse(address).host.orEmpty(),
+                            text = address.toUri().host.orEmpty(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,

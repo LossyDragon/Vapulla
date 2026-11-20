@@ -241,9 +241,11 @@ private fun AuthTicketContent(
 
                 state.appId == 0 -> EmptyMessage(
                     message = state.message
-                        ?: "Enter a game you own to make an auth session ticket for it: the " +
-                        "proof of who you are and that you own the game, which a game " +
-                        "hands to a server when you join",
+                        ?: (
+                            "Enter a game you own to make an auth session ticket for it: the " +
+                                "proof of who you are and that you own the game, which a game " +
+                                "hands to a server when you join"
+                            ),
                 )
 
                 else -> Column(

@@ -61,12 +61,11 @@ class UtilsTest {
 
     @Test
     fun `an avatar hash becomes the address of the full-size image`() {
-        val hash = "fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb"
+        // Not the default avatar's hash, which would give the same address either way.
+        val hash = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+        val expected = "${Utils.Constants.AVATAR_BASE_URL}a1/${hash}_full.jpg"
 
-        assertEquals(
-            "${Utils.Constants.AVATAR_BASE_URL}fe/${hash}_full.jpg",
-            Utils.getAvatarURL(hash),
-        )
+        assertEquals(expected, Utils.getAvatarURL(hash))
     }
 
     @Test

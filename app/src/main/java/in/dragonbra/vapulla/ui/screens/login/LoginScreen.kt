@@ -19,9 +19,10 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.WifiOff
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -75,6 +76,7 @@ fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
     LoginScreenContent(
         snackbarHostState = snackbarHostState,
         uiState = uiState,
+        passwordState = viewModel.password,
         onSignInViaCredentials = viewModel::onSignInViaCredentials,
         onSignInViaQR = viewModel::onSignInViaQR,
         onExplore = viewModel::onExplore,
@@ -82,7 +84,6 @@ fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
         onTwoFactorChange = viewModel::onTwoFactorChange,
         onTwoFactorSubmit = viewModel::onTwoFactorSubmit,
         onUsernameChange = viewModel::onUsernameChange,
-        onPasswordChange = viewModel::onPasswordChange,
     )
 }
 
@@ -90,6 +91,7 @@ fun LoginScreen(viewModel: LoginViewModel, onNavigateToHome: () -> Unit) {
 private fun LoginScreenContent(
     snackbarHostState: SnackbarHostState,
     uiState: LoginUiState,
+    passwordState: TextFieldState,
     onSignInViaCredentials: () -> Unit,
     onSignInViaQR: () -> Unit,
     onExplore: () -> Unit,
@@ -97,7 +99,6 @@ private fun LoginScreenContent(
     onTwoFactorSubmit: () -> Unit,
     onTwoFactorChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
 ) {
     Scaffold(
         modifier = Modifier
@@ -208,9 +209,8 @@ private fun LoginScreenContent(
                         username = uiState.username,
                         onUsernameChange = onUsernameChange,
                         passwordVisible = passwordVisible,
-                        password = uiState.password,
+                        passwordState = passwordState,
                         onPasswordVisible = { passwordVisible = it },
-                        onPasswordChange = onPasswordChange,
                         onSignInViaCredentials = onSignInViaCredentials,
                         onSignInViaQR = onSignInViaQR,
                         onExplore = onExplore,
@@ -238,7 +238,6 @@ class LoginUiStateProvider : PreviewParameterProvider<LoginUiState> {
         LoginUiState(
             loginStep = LoginStep.CREDENTIALS,
             username = "My Username",
-            password = "My Password",
         ),
         LoginUiState(
             loginStep = LoginStep.CREDENTIALS,
@@ -273,6 +272,7 @@ private fun Preview(@PreviewParameter(LoginUiStateProvider::class) uiState: Logi
         LoginScreenContent(
             snackbarHostState = SnackbarHostState(),
             uiState = uiState,
+            passwordState = rememberTextFieldState("My Password"),
             onSignInViaCredentials = { },
             onSignInViaQR = { },
             onExplore = { },
@@ -280,7 +280,6 @@ private fun Preview(@PreviewParameter(LoginUiStateProvider::class) uiState: Logi
             onTwoFactorChange = { },
             onTwoFactorSubmit = { },
             onUsernameChange = { },
-            onPasswordChange = { },
         )
     }
 }

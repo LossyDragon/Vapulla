@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -62,7 +61,6 @@ fun FamilyScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FamilyContent(
     uiState: FamilyUiState,
@@ -88,11 +86,11 @@ private fun FamilyContent(
                 .fillMaxSize()
                 .padding(padding.exceptBottom()),
         ) {
-            when {
-                family == null && uiState.isLoading ->
+            when (family) {
+                null if uiState.isLoading ->
                     SkeletonList(contentPadding = listContentPadding(padding))
 
-                family == null -> RefreshableMessage(message = uiState.message.orEmpty())
+                null -> RefreshableMessage(message = uiState.message.orEmpty())
 
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),

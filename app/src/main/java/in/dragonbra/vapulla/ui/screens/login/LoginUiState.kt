@@ -3,6 +3,8 @@ package `in`.dragonbra.vapulla.ui.screens.login
 import androidx.compose.runtime.Immutable
 
 /**
+ * What the login screen shows. The password is not in it; see `LoginViewModel.password`.
+ *
  * @property qrCode the address the QR code stands for; empty until Steam has sent one.
  * @property twoFactorCode the Steam Guard code as typed so far.
  * @property twoFactorMessage which Steam Guard code is asked for, and where to find it.
@@ -14,7 +16,6 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class LoginUiState(
     val username: String = "",
-    val password: String = "",
     val qrCode: String = "",
     val twoFactorCode: String = "",
     val twoFactorMessage: String = "",

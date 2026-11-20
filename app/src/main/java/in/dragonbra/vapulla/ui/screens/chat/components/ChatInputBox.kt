@@ -3,7 +3,6 @@ package `in`.dragonbra.vapulla.ui.screens.chat.components
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -68,7 +67,6 @@ private val EMOJI_PANEL_HEIGHT = 300.dp
  * @param onAttachClick shows the attach-image button when given.
  * @param isUploading an image is on its way; shows a progress line and holds further attaches.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ChatInputBox(
     textFieldState: TextFieldState,

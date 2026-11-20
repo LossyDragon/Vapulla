@@ -95,8 +95,10 @@ class RemoteRequests(
 
         Timber.d("Another device asked for the games here; answering with ${appIds.size}")
 
+        // Read once, so both places it is given say the same.
+        val free = downloads.freeBytes()
         val response = CMsgClientGetClientAppListResponse.newBuilder()
-            .setBytesAvailable(downloads.freeBytes())
+            .setBytesAvailable(free)
             .addAllApps(appIds.map { downloaded[it]?.toRemoteApp() ?: notInstalled(it) })
 
         if (request.includeClientInfo) {
@@ -104,7 +106,7 @@ class RemoteRequests(
                 CMsgClientGetClientDetailsResponse.newBuilder()
                     .setOs("Android ${Build.VERSION.RELEASE}")
                     .setMachineName(DEVICE_NAME)
-                    .setBytesAvailable(downloads.freeBytes())
+                    .setBytesAvailable(free)
                     .setProtocolVersion(PROTOCOL_VERSION)
                     .setClientcommVersion(CLIENTCOMM_VERSION),
             )

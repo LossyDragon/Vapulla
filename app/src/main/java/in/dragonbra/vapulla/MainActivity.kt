@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color.TRANSPARENT
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -12,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -104,7 +106,10 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            RequestNotificationPermission()
+            // Before Android 13 notifications need no permission.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                RequestNotificationPermission()
+            }
 
             val settings by settingsManager.settings.collectAsStateWithLifecycle(AppSettings())
 
@@ -177,6 +182,7 @@ class MainActivity : ComponentActivity() {
  * Asks for POST_NOTIFICATIONS when it is not granted: once each time the activity is created,
  * which Android itself stops showing after the second refusal.
  */
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun RequestNotificationPermission() {
     val context = LocalContext.current

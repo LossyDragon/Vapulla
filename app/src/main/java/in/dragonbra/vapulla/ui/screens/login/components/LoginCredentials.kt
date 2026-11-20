@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Lock
@@ -19,11 +21,11 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,8 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import `in`.dragonbra.vapulla.service.DEVICE_NAME
@@ -51,9 +51,8 @@ internal fun LoginCredentials(
     username: String,
     onUsernameChange: (String) -> Unit,
     passwordVisible: Boolean,
-    password: String,
+    passwordState: TextFieldState,
     onPasswordVisible: (Boolean) -> Unit,
-    onPasswordChange: (String) -> Unit,
     onSignInViaCredentials: () -> Unit,
     onSignInViaQR: () -> Unit,
     onExplore: () -> Unit,
@@ -78,13 +77,11 @@ internal fun LoginCredentials(
             ),
         )
 
-        OutlinedTextField(
+        OutlinedSecureTextField(
+            state = passwordState,
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading,
-            singleLine = true,
             shape = MaterialTheme.shapes.large,
-            value = password,
-            onValueChange = onPasswordChange,
             label = { Text("Password") },
             leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
@@ -103,16 +100,17 @@ internal fun LoginCredentials(
                     )
                 }
             },
-            visualTransformation = if (passwordVisible) {
-                VisualTransformation.None
+            textObfuscationMode = if (passwordVisible) {
+                TextObfuscationMode.Visible
             } else {
-                PasswordVisualTransformation()
+                TextObfuscationMode.Hidden
             },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
+                autoCorrectEnabled = false,
                 imeAction = ImeAction.Done,
             ),
-            keyboardActions = KeyboardActions(onDone = { onSignInViaCredentials() }),
+            onKeyboardAction = { onSignInViaCredentials() },
         )
 
         // Stays enabled while signing in: it only explains, and changes nothing.
@@ -211,9 +209,8 @@ private fun Preview() {
                 username = "My Username",
                 onUsernameChange = { },
                 passwordVisible = false,
-                password = "My Password",
+                passwordState = rememberTextFieldState("My Password"),
                 onPasswordVisible = { },
-                onPasswordChange = { },
                 onSignInViaCredentials = { },
                 onSignInViaQR = { },
                 onExplore = { },

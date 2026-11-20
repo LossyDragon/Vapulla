@@ -434,8 +434,10 @@ private fun PicsExplorerContent(
 
                 state.title == null -> EmptyMessage(
                     message = state.message
-                        ?: "Enter the ID of any app or package to see what Steam's catalogue " +
-                        "holds on it, or a game's name to find its ID",
+                        ?: (
+                            "Enter the ID of any app or package to see what Steam's catalogue " +
+                                "holds on it, or a game's name to find its ID"
+                            ),
                 )
 
                 else -> LazyColumn(
