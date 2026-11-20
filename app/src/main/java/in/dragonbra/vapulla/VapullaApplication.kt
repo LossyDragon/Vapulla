@@ -4,11 +4,12 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.os.Build
 import android.os.StrictMode
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.decode.ImageDecoderDecoder
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.disk.DiskCache
+import coil3.gif.AnimatedImageDecoder
+import coil3.memory.MemoryCache
 import `in`.dragonbra.javasteam.util.log.LogListener
 import `in`.dragonbra.javasteam.util.log.LogManager
 import `in`.dragonbra.vapulla.di.AppModules
@@ -39,7 +40,7 @@ import timber.log.Timber
  */
 class VapullaApplication :
     Application(),
-    ImageLoaderFactory {
+    SingletonImageLoader.Factory {
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -90,25 +91,26 @@ class VapullaApplication :
      * The Coil loader behind every image in the app, notifications included: a small memory
      * and disk cache plus decoders for Steam's `.ico` client icons and animated PNG avatars.
      */
-    override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
-        .memoryCache {
-            MemoryCache.Builder(this)
-                .maxSizePercent(0.1)
-                .build()
-        }
-        .diskCache {
-            DiskCache.Builder()
-                .maxSizePercent(0.03)
-                .directory(cacheDir.resolve("image_cache").toOkioPath())
-                .build()
-        }
-        .components {
-            add(IconDecoder.Factory())
-            add(AnimatedPngDecoder.Factory())
-            // Animated GIFs, with the decoder Android has had since API 28.
-            add(ImageDecoderDecoder.Factory())
-        }
-        .build()
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.1)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .maxSizePercent(0.03)
+                    .directory(cacheDir.resolve("image_cache").toOkioPath())
+                    .build()
+            }
+            .components {
+                add(IconDecoder.Factory())
+                add(AnimatedPngDecoder.Factory())
+                // Animated GIFs, with the decoder Android has had since API 28.
+                add(AnimatedImageDecoder.Factory())
+            }
+            .build()
 
     /**
      * Logs mistakes that do not crash but cost stability: slow work on the main thread and

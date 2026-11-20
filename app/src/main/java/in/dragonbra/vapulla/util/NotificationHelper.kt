@@ -13,11 +13,12 @@ import androidx.core.app.RemoteInput
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import androidx.core.graphics.drawable.toBitmap
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
-import coil.transform.CircleCropTransformation
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.transformations
+import coil3.toBitmap
+import coil3.transform.CircleCropTransformation
 import `in`.dragonbra.vapulla.MainActivity
 import `in`.dragonbra.vapulla.R
 import `in`.dragonbra.vapulla.broadcastreceiver.AcceptRequestReceiver
@@ -405,7 +406,7 @@ object NotificationHelper {
 
         return withTimeoutOrNull(AVATAR_TIMEOUT) {
             try {
-                (context.imageLoader.execute(request) as? SuccessResult)?.drawable?.toBitmap()
+                (context.imageLoader.execute(request) as? SuccessResult)?.image?.toBitmap()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load avatar for notification")
                 null

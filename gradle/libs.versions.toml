@@ -3,8 +3,8 @@ activityCompose = "1.13.0" # https://mvnrepository.com/artifact/androidx.activit
 agp = "9.5.1" # https://mvnrepository.com/artifact/com.android.application/com.android.application.gradle.plugin
 apng = "3.0.5" # https://mvnrepository.com/artifact/com.github.penfeizhou.android.animation/apng
 bouncycastle = "1.87" # https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
-coil = "2.7.0" # https://mvnrepository.com/artifact/io.coil-kt/coil-compose
-composeBom = "2026.09.00" # https://mvnrepository.com/artifact/androidx.compose/compose-bom
+coil = "3.6.3" # https://mvnrepository.com/artifact/io.coil-kt.coil3/coil-compose
+composeBom = "2026.11.01" # https://mvnrepository.com/artifact/androidx.compose/compose-bom
 datastore = "1.3.0" # https://mvnrepository.com/artifact/androidx.datastore/datastore-preferences
 javasteam = "1.9.0-SNAPSHOT" # https://mvnrepository.com/artifact/in.dragonbra/javasteam
 junit = "4.13.2" # https://mvnrepository.com/artifact/junit/junit
@@ -13,11 +13,11 @@ kotlin = "2.4.21" # https://mvnrepository.com/artifact/org.jetbrains.kotlin.andr
 kotlinter = "5.7.0" # https://plugins.gradle.org/plugin/org.jmailen.kotlinter
 kotlinxCollectionsImmutable = "0.5.2" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-collections-immutable
 kotlinxSerializationCore = "1.13.0" # https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm
-ksp = "2.3.13" # https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing-api?repo=central
-material3 = "1.5.0-rc01" # https://mvnrepository.com/artifact/androidx.compose.material3/material3
+ksp = "2.3.14" # https://mvnrepository.com/artifact/com.google.devtools.ksp/symbol-processing-api?repo=central
+material3 = "1.5.0" # https://mvnrepository.com/artifact/androidx.compose.material3/material3
 materialKolor = "5.0.1" # https://mvnrepository.com/artifact/com.materialkolor/material-kolor
-nav3Core = "1.2.1" # https://mvnrepository.com/artifact/androidx.navigation3/navigation3-runtime
-nav3Lifecycle = "2.11.0" # https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-viewmodel-navigation3
+nav3Core = "1.2.2" # https://mvnrepository.com/artifact/androidx.navigation3/navigation3-runtime
+nav3Lifecycle = "2.11.1" # https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-viewmodel-navigation3
 paging = "3.5.3" # https://mvnrepository.com/artifact/androidx.paging/paging-compose
 protobuf = "4.36.2" # https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
 qrose = "1.3.1" # https://mvnrepository.com/artifact/io.github.alexzhirkevich/qrose
@@ -25,7 +25,7 @@ room = "2.8.5" # https://mvnrepository.com/artifact/androidx.room/room-compiler
 shimmer = "1.5.0" # https://mvnrepository.com/artifact/com.valentinilk.shimmer/compose-shimmer
 stability-analyzer = "0.15.0" # https://mvnrepository.com/artifact/com.github.skydoves.compose.stability.analyzer/com.github.skydoves.compose.stability.analyzer.gradle.plugin
 swipe = "1.3.0" # https://mvnrepository.com/artifact/me.saket.swipe/swipe
-telephoto = "0.19.0" # https://mvnrepository.com/artifact/me.saket.telephoto/zoomable-image-coil
+telephoto = "0.19.0" # https://mvnrepository.com/artifact/me.saket.telephoto/zoomable-image-coil3
 timber = "5.0.1" # https://mvnrepository.com/artifact/com.jakewharton.timber/timber
 xz = "1.12" # https://mvnrepository.com/artifact/org.tukaani/xz
 zstd = "1.5.7-28" # https://mvnrepository.com/artifact/com.github.luben/zstd-jni
@@ -72,11 +72,12 @@ zstd = { module = "com.github.luben:zstd-jni", version.ref = "zstd" }
 # Images & Media
 apng = { module = "com.github.penfeizhou.android.animation:apng", version.ref = "apng" }
 swipe = { module = "me.saket.swipe:swipe", version.ref = "swipe" }
-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
-coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 compose-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version.ref = "shimmer" }
 qrose = { module = "io.github.alexzhirkevich:qrose", version.ref = "qrose" }
-telephoto = { module = "me.saket.telephoto:zoomable-image-coil", version.ref = "telephoto" }
+telephoto = { module = "me.saket.telephoto:zoomable-image-coil3", version.ref = "telephoto" }
 
 # Database & Storage
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
@@ -125,6 +126,7 @@ images = [
     "apng",
     "coil-compose",
     "coil-gif",
+    "coil-network-okhttp",
     "compose-shimmer",
     "qrose",
     "telephoto",

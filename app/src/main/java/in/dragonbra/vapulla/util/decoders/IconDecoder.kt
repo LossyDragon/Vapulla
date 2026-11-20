@@ -1,12 +1,12 @@
 package `in`.dragonbra.vapulla.util.decoders
 
 import android.graphics.BitmapFactory
-import androidx.core.graphics.drawable.toDrawable
-import coil.ImageLoader
-import coil.decode.DecodeResult
-import coil.decode.Decoder
-import coil.fetch.SourceResult
-import coil.request.Options
+import coil3.ImageLoader
+import coil3.asImage
+import coil3.decode.DecodeResult
+import coil3.decode.Decoder
+import coil3.fetch.SourceFetchResult
+import coil3.request.Options
 import okio.ByteString.Companion.toByteString
 import timber.log.Timber
 
@@ -14,13 +14,13 @@ import timber.log.Timber
  * Coil decoder for `.ico` files, which Steam uses for client icons. Android's
  * [BitmapFactory] can read the embedded PNG or BMP frame directly.
  */
-class IconDecoder(private val source: SourceResult, private val options: Options) : Decoder {
+class IconDecoder(private val source: SourceFetchResult) : Decoder {
 
     override suspend fun decode(): DecodeResult? = try {
         val bytes = source.source.source().readByteArray()
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { bitmap ->
             DecodeResult(
-                drawable = bitmap.toDrawable(options.context.resources),
+                image = bitmap.asImage(),
                 isSampled = false,
             )
         }
@@ -31,7 +31,7 @@ class IconDecoder(private val source: SourceResult, private val options: Options
 
     class Factory : Decoder.Factory {
         override fun create(
-            result: SourceResult,
+            result: SourceFetchResult,
             options: Options,
             imageLoader: ImageLoader,
         ): Decoder? {
@@ -41,7 +41,7 @@ class IconDecoder(private val source: SourceResult, private val options: Options
                 .peek()
                 .rangeEquals(0, ICO_HEADER.toByteString())
 
-            return if (validMimeType || validHeader) IconDecoder(result, options) else null
+            return if (validMimeType || validHeader) IconDecoder(result) else null
         }
 
         private companion object {

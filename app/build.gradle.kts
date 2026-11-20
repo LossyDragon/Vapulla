@@ -27,7 +27,9 @@ ksp {
 android {
     namespace = "in.dragonbra.vapulla"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 1
+        }
     }
 
     defaultConfig {
